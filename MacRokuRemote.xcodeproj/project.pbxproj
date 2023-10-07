@@ -1,0 +1,584 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AFC24EFF2AD0E5A1002AB66C /* MacRokuRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* MacRokuRemoteApp.swift */; };
+		AFC24F012AD0E5A1002AB66C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F002AD0E5A1002AB66C /* ContentView.swift */; };
+		AFC24F032AD0E5A1002AB66C /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F022AD0E5A1002AB66C /* Item.swift */; };
+		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
+		AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */; };
+		AFC24F132AD0E5A3002AB66C /* MacRokuRemoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F122AD0E5A3002AB66C /* MacRokuRemoteTests.swift */; };
+		AFC24F1D2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1C2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift */; };
+		AFC24F1F2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1E2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AFC24F0F2AD0E5A3002AB66C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AFC24EFA2AD0E5A1002AB66C;
+			remoteInfo = MacRokuRemote;
+		};
+		AFC24F192AD0E5A3002AB66C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AFC24EFA2AD0E5A1002AB66C;
+			remoteInfo = MacRokuRemote;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		AFC24EFB2AD0E5A1002AB66C /* MacRokuRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacRokuRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AFC24EFE2AD0E5A1002AB66C /* MacRokuRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRokuRemoteApp.swift; sourceTree = "<group>"; };
+		AFC24F002AD0E5A1002AB66C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AFC24F022AD0E5A1002AB66C /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		AFC24F092AD0E5A2002AB66C /* MacRokuRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacRokuRemote.entitlements; sourceTree = "<group>"; };
+		AFC24F0E2AD0E5A3002AB66C /* MacRokuRemoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacRokuRemoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AFC24F122AD0E5A3002AB66C /* MacRokuRemoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRokuRemoteTests.swift; sourceTree = "<group>"; };
+		AFC24F182AD0E5A3002AB66C /* MacRokuRemoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacRokuRemoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AFC24F1C2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRokuRemoteUITests.swift; sourceTree = "<group>"; };
+		AFC24F1E2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRokuRemoteUITestsLaunchTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AFC24EF82AD0E5A1002AB66C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFC24F0B2AD0E5A3002AB66C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFC24F152AD0E5A3002AB66C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AFC24EF22AD0E5A1002AB66C = {
+			isa = PBXGroup;
+			children = (
+				AFC24EFD2AD0E5A1002AB66C /* MacRokuRemote */,
+				AFC24F112AD0E5A3002AB66C /* MacRokuRemoteTests */,
+				AFC24F1B2AD0E5A3002AB66C /* MacRokuRemoteUITests */,
+				AFC24EFC2AD0E5A1002AB66C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AFC24EFC2AD0E5A1002AB66C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AFC24EFB2AD0E5A1002AB66C /* MacRokuRemote.app */,
+				AFC24F0E2AD0E5A3002AB66C /* MacRokuRemoteTests.xctest */,
+				AFC24F182AD0E5A3002AB66C /* MacRokuRemoteUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AFC24EFD2AD0E5A1002AB66C /* MacRokuRemote */ = {
+			isa = PBXGroup;
+			children = (
+				AFC24EFE2AD0E5A1002AB66C /* MacRokuRemoteApp.swift */,
+				AFC24F002AD0E5A1002AB66C /* ContentView.swift */,
+				AFC24F022AD0E5A1002AB66C /* Item.swift */,
+				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
+				AFC24F092AD0E5A2002AB66C /* MacRokuRemote.entitlements */,
+				AFC24F062AD0E5A2002AB66C /* Preview Content */,
+			);
+			path = MacRokuRemote;
+			sourceTree = "<group>";
+		};
+		AFC24F062AD0E5A2002AB66C /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		AFC24F112AD0E5A3002AB66C /* MacRokuRemoteTests */ = {
+			isa = PBXGroup;
+			children = (
+				AFC24F122AD0E5A3002AB66C /* MacRokuRemoteTests.swift */,
+			);
+			path = MacRokuRemoteTests;
+			sourceTree = "<group>";
+		};
+		AFC24F1B2AD0E5A3002AB66C /* MacRokuRemoteUITests */ = {
+			isa = PBXGroup;
+			children = (
+				AFC24F1C2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift */,
+				AFC24F1E2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift */,
+			);
+			path = MacRokuRemoteUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AFC24EFA2AD0E5A1002AB66C /* MacRokuRemote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "MacRokuRemote" */;
+			buildPhases = (
+				AFC24EF72AD0E5A1002AB66C /* Sources */,
+				AFC24EF82AD0E5A1002AB66C /* Frameworks */,
+				AFC24EF92AD0E5A1002AB66C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacRokuRemote;
+			productName = MacRokuRemote;
+			productReference = AFC24EFB2AD0E5A1002AB66C /* MacRokuRemote.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AFC24F0D2AD0E5A3002AB66C /* MacRokuRemoteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AFC24F252AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "MacRokuRemoteTests" */;
+			buildPhases = (
+				AFC24F0A2AD0E5A3002AB66C /* Sources */,
+				AFC24F0B2AD0E5A3002AB66C /* Frameworks */,
+				AFC24F0C2AD0E5A3002AB66C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AFC24F102AD0E5A3002AB66C /* PBXTargetDependency */,
+			);
+			name = MacRokuRemoteTests;
+			productName = MacRokuRemoteTests;
+			productReference = AFC24F0E2AD0E5A3002AB66C /* MacRokuRemoteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		AFC24F172AD0E5A3002AB66C /* MacRokuRemoteUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AFC24F282AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "MacRokuRemoteUITests" */;
+			buildPhases = (
+				AFC24F142AD0E5A3002AB66C /* Sources */,
+				AFC24F152AD0E5A3002AB66C /* Frameworks */,
+				AFC24F162AD0E5A3002AB66C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AFC24F1A2AD0E5A3002AB66C /* PBXTargetDependency */,
+			);
+			name = MacRokuRemoteUITests;
+			productName = MacRokuRemoteUITests;
+			productReference = AFC24F182AD0E5A3002AB66C /* MacRokuRemoteUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AFC24EF32AD0E5A1002AB66C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AFC24EFA2AD0E5A1002AB66C = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					AFC24F0D2AD0E5A3002AB66C = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = AFC24EFA2AD0E5A1002AB66C;
+					};
+					AFC24F172AD0E5A3002AB66C = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = AFC24EFA2AD0E5A1002AB66C;
+					};
+				};
+			};
+			buildConfigurationList = AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "MacRokuRemote" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AFC24EF22AD0E5A1002AB66C;
+			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AFC24EFA2AD0E5A1002AB66C /* MacRokuRemote */,
+				AFC24F0D2AD0E5A3002AB66C /* MacRokuRemoteTests */,
+				AFC24F172AD0E5A3002AB66C /* MacRokuRemoteUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AFC24EF92AD0E5A1002AB66C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */,
+				AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFC24F0C2AD0E5A3002AB66C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFC24F162AD0E5A3002AB66C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AFC24EF72AD0E5A1002AB66C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFC24F012AD0E5A1002AB66C /* ContentView.swift in Sources */,
+				AFC24F032AD0E5A1002AB66C /* Item.swift in Sources */,
+				AFC24EFF2AD0E5A1002AB66C /* MacRokuRemoteApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFC24F0A2AD0E5A3002AB66C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFC24F132AD0E5A3002AB66C /* MacRokuRemoteTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFC24F142AD0E5A3002AB66C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFC24F1D2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift in Sources */,
+				AFC24F1F2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AFC24F102AD0E5A3002AB66C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AFC24EFA2AD0E5A1002AB66C /* MacRokuRemote */;
+			targetProxy = AFC24F0F2AD0E5A3002AB66C /* PBXContainerItemProxy */;
+		};
+		AFC24F1A2AD0E5A3002AB66C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AFC24EFA2AD0E5A1002AB66C /* MacRokuRemote */;
+			targetProxy = AFC24F192AD0E5A3002AB66C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		AFC24F202AD0E5A3002AB66C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AFC24F212AD0E5A3002AB66C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		AFC24F232AD0E5A3002AB66C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacRokuRemote/MacRokuRemote.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MacRokuRemote/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.MacRokuRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AFC24F242AD0E5A3002AB66C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacRokuRemote/MacRokuRemote.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"MacRokuRemote/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.MacRokuRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AFC24F262AD0E5A3002AB66C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.MacRokuRemoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacRokuRemote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MacRokuRemote";
+			};
+			name = Debug;
+		};
+		AFC24F272AD0E5A3002AB66C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.MacRokuRemoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacRokuRemote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MacRokuRemote";
+			};
+			name = Release;
+		};
+		AFC24F292AD0E5A3002AB66C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.MacRokuRemoteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = MacRokuRemote;
+			};
+			name = Debug;
+		};
+		AFC24F2A2AD0E5A3002AB66C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.MacRokuRemoteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = MacRokuRemote;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "MacRokuRemote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AFC24F202AD0E5A3002AB66C /* Debug */,
+				AFC24F212AD0E5A3002AB66C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "MacRokuRemote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AFC24F232AD0E5A3002AB66C /* Debug */,
+				AFC24F242AD0E5A3002AB66C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AFC24F252AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "MacRokuRemoteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AFC24F262AD0E5A3002AB66C /* Debug */,
+				AFC24F272AD0E5A3002AB66C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AFC24F282AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "MacRokuRemoteUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AFC24F292AD0E5A3002AB66C /* Debug */,
+				AFC24F2A2AD0E5A3002AB66C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AFC24EF32AD0E5A1002AB66C /* Project object */;
+}
