@@ -12,7 +12,7 @@ import SwiftData
 struct MacRokuRemoteApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Device.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +25,7 @@ struct MacRokuRemoteApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RokuRemoteView()
         }
         .modelContainer(sharedModelContainer)
     }

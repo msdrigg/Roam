@@ -7,14 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AF11D36B2AD2D0B800527AF6 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
+		AF11D36D2AD2D41100527AF6 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36C2AD2D41100527AF6 /* Device.swift */; };
+		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AFC24EFF2AD0E5A1002AB66C /* MacRokuRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* MacRokuRemoteApp.swift */; };
-		AFC24F012AD0E5A1002AB66C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F002AD0E5A1002AB66C /* ContentView.swift */; };
-		AFC24F032AD0E5A1002AB66C /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F022AD0E5A1002AB66C /* Item.swift */; };
 		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
 		AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */; };
 		AFC24F132AD0E5A3002AB66C /* MacRokuRemoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F122AD0E5A3002AB66C /* MacRokuRemoteTests.swift */; };
 		AFC24F1D2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1C2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift */; };
 		AFC24F1F2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1E2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift */; };
+		AFFC71E62AD1212100EE8EA0 /* RokuRemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E52AD1212100EE8EA0 /* RokuRemoteView.swift */; };
+		AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */; };
+		AFFC71EC2AD1F8A000EE8EA0 /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71EB2AD1F8A000EE8EA0 /* AppLink.swift */; };
+		AFFC71EE2AD1FBE000EE8EA0 /* appLinks.json in Resources */ = {isa = PBXBuildFile; fileRef = AFFC71ED2AD1FBE000EE8EA0 /* appLinks.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,10 +40,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
+		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
+		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* MacRokuRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacRokuRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* MacRokuRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRokuRemoteApp.swift; sourceTree = "<group>"; };
-		AFC24F002AD0E5A1002AB66C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		AFC24F022AD0E5A1002AB66C /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		AFC24F092AD0E5A2002AB66C /* MacRokuRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacRokuRemote.entitlements; sourceTree = "<group>"; };
@@ -47,6 +53,10 @@
 		AFC24F182AD0E5A3002AB66C /* MacRokuRemoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacRokuRemoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24F1C2AD0E5A3002AB66C /* MacRokuRemoteUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRokuRemoteUITests.swift; sourceTree = "<group>"; };
 		AFC24F1E2AD0E5A3002AB66C /* MacRokuRemoteUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacRokuRemoteUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		AFFC71E52AD1212100EE8EA0 /* RokuRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuRemoteView.swift; sourceTree = "<group>"; };
+		AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
+		AFFC71EB2AD1F8A000EE8EA0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
+		AFFC71ED2AD1FBE000EE8EA0 /* appLinks.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = appLinks.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,12 +107,17 @@
 		AFC24EFD2AD0E5A1002AB66C /* MacRokuRemote */ = {
 			isa = PBXGroup;
 			children = (
+				AFFC71ED2AD1FBE000EE8EA0 /* appLinks.json */,
 				AFC24EFE2AD0E5A1002AB66C /* MacRokuRemoteApp.swift */,
-				AFC24F002AD0E5A1002AB66C /* ContentView.swift */,
-				AFC24F022AD0E5A1002AB66C /* Item.swift */,
+				AFFC71E52AD1212100EE8EA0 /* RokuRemoteView.swift */,
+				AF11D36E2AD35D2800527AF6 /* SettingsView.swift */,
+				AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */,
 				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
 				AFC24F092AD0E5A2002AB66C /* MacRokuRemote.entitlements */,
 				AFC24F062AD0E5A2002AB66C /* Preview Content */,
+				AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */,
+				AFFC71EB2AD1F8A000EE8EA0 /* AppLink.swift */,
+				AF11D36C2AD2D41100527AF6 /* Device.swift */,
 			);
 			path = MacRokuRemote;
 			sourceTree = "<group>";
@@ -238,6 +253,7 @@
 			files = (
 				AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */,
 				AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */,
+				AFFC71EE2AD1FBE000EE8EA0 /* appLinks.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,8 +278,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AFC24F012AD0E5A1002AB66C /* ContentView.swift in Sources */,
-				AFC24F032AD0E5A1002AB66C /* Item.swift in Sources */,
+				AFFC71E62AD1212100EE8EA0 /* RokuRemoteView.swift in Sources */,
+				AFFC71EC2AD1F8A000EE8EA0 /* AppLink.swift in Sources */,
+				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
+				AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */,
+				AF11D36D2AD2D41100527AF6 /* Device.swift in Sources */,
+				AF11D36B2AD2D0B800527AF6 /* AppLinksView.swift in Sources */,
 				AFC24EFF2AD0E5A1002AB66C /* MacRokuRemoteApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
