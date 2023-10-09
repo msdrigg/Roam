@@ -10,18 +10,18 @@ import SwiftData
 
 @Model
 final class Device: Identifiable {
-    public let id: UUID
+    public let id: String
     public var name: String
-    public var host: String
+    public var location: String
     public var lastSelectedAt: Date?
     public var lastOnlineAt: Date?
     
-    public init(name: String, host: String, lastSelectedAt: Date? = nil, lastOnlineAt: Date? = nil, id: UUID? = nil) {
+    public init(name: String, location: String, id: String, lastSelectedAt: Date? = nil, lastOnlineAt: Date? = nil) {
         self.name = name
         self.lastSelectedAt = lastSelectedAt
         self.lastOnlineAt = lastOnlineAt
-        self.id = id ?? UUID()
-        self.host = host
+        self.location = location
+        self.id = id
     }
     
     public func isOnline() -> Bool {
@@ -34,7 +34,7 @@ final class Device: Identifiable {
 
 func getTestingDevices() -> [Device] {
     [
-        Device(name: "Living Room TV", host: "192.168.0.1", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), id: UUID(uuidString: "118ccc25-e3fa-4d04-9b25-887b5d7e2f93")),
-        Device(name: "2nd Living Room", host: "192.168.0.2", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60), id: UUID(uuidString: "118ccc25-e3fa-4d04-9b25-887b5d7e2f94"))
+        Device(name: "Living Room TV", location: "192.168.0.1", id: "1", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0)),
+        Device(name: "2nd Living Room", location: "192.168.0.2", id: "2", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60))
     ]
 }

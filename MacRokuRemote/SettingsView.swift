@@ -5,7 +5,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Device.lastSelectedAt) private var devices: [Device]
     
-    @State private var selectedDeviceId: UUID?
+    @State private var selectedDeviceId: String?
     private var selectedDevice: Device? {
         devices.first {d in
             d.id == selectedDeviceId
@@ -22,7 +22,7 @@ struct SettingsView: View {
                             .frame(width: 8, height: 8)
                         Text(device.name)
                     }
-                    Text(device.host).foregroundStyle(Color.secondary)
+                    Text(device.location).foregroundStyle(Color.secondary)
                 }
             }
             .navigationTitle("Devices")
@@ -34,7 +34,7 @@ struct SettingsView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button( "Add device", systemImage: "plus") {
-                    let newDevice = Device(name: "New device", host: "192.168.0.1", lastSelectedAt: Date.now)
+                    let newDevice = Device(name: "New device", location: "192.168.0.1", id: UUID().uuidString, lastSelectedAt: Date.now)
                     modelContext.insert(newDevice)
                     selectedDeviceId = newDevice.id
                 }
@@ -52,7 +52,7 @@ struct DeviceDetailView: View {
         Form {
             Section {
                 TextField("Name", text: $device.name)
-                TextField("Host", text: $device.host)
+                TextField("Host", text: $device.location)
             }
             Section {
                 LabeledContent("Last Selected") {

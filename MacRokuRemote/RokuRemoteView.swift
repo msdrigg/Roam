@@ -5,11 +5,15 @@ struct RokuRemoteView: View {
     private var appLinks: [AppLink] = loadDefaultAppLinks()
     
     @Environment(\.modelContext) private var modelContext
-    //private var devices: [Device] = getTestingDevices()
-    @Query(sort: \Device.lastSelectedAt, order: .reverse) private var devices: [Device]
+    @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
+
+    // @State private var scanningActor: BackgroundScanningActor!
+    @State private var manuallySelectedDevice: Device?
     
-    var selectedDevice: Device? {
-        devices.first
+    private var selectedDevice: Device? {
+        manuallySelectedDevice ?? devices.min { d1, d2 in
+            d1.lastSelectedAt?.timeIntervalSince1970 ?? 0 < d2.lastSelectedAt?.timeIntervalSince1970 ?? 0
+        }
     }
     
     var body: some View {
@@ -31,29 +35,21 @@ struct RokuRemoteView: View {
                         .buttonStyle(.accessoryBar)
                     }.overlay {
                         HStack {
-                            
                             Spacer()
                             Menu {
-                                ForEach(devices) {device in
-                                    Button(action: {
-                                        device.lastSelectedAt = Date.now
-                                    }){
-                                        HStack {
-                                            Text(device.name)
-                                            Spacer()
-                                            Circle()
-                                                .foregroundColor(device.isOnline() ? Color.green : Color.gray)
-                                                .frame(width: 10, height: 10)
-                                            if let time = device.lastSelectedAt {
-                                                Text(time, style: .date)
-                                            } else {
-                                                Text("Never connected")
-                                            }
+                                if !devices.isEmpty {
+                                    Picker("Device", selection: $manuallySelectedDevice.withDefault(selectedDevice)) {
+                                        ForEach(devices) { device in
+                                            Text(device.name).tag(device as Device?)
+                                        }
+                                    }.pickerStyle(.inline).onChange(of: manuallySelectedDevice) { _oldSelected, selected in
+                                        if let chosenDevice = devices.first(where: { d in
+                                            d.id == selected?.id
+                                        }) {
+                                            chosenDevice.lastSelectedAt = Date.now
                                         }
                                     }
-                                }.frame(minHeight: 400)
-                                
-                                if (devices.count == 0) {
+                                } else {
                                     Text("No devices")
                                 }
                                 
@@ -65,7 +61,7 @@ struct RokuRemoteView: View {
                                     Text(selectedDevice?.name ?? "No devices")
                                 } icon: {
                                     if let selectedDevice = selectedDevice {
-                                        let color = selectedDevice.isOnline() ? Color.green : Color.gray
+                                        let color = selectedDevice.isOnline() ? Color.green : Color.secondary
                                         Image(systemName: "circle.fill").foregroundStyle(color, color)
                                     }
                                 }
@@ -201,6 +197,7 @@ struct RokuRemoteView: View {
                 SettingsView()
             }
         }
+
     }
 }
 
@@ -210,6 +207,24 @@ enum SettingsDestination {
 
 extension Color {
     static let appPrimary = Color(red: 0.434, green: 0.102, blue: 0.691)
+}
+
+extension Binding {
+    func withDefault<T>(_ defaultValue: Optional<T>) -> Binding<Optional<T>> where Value == Optional<T> {
+      return Binding<Optional<T>>(get: {
+        self.wrappedValue ?? defaultValue
+      }, set: { newValue in
+        self.wrappedValue = newValue
+      })
+    }
+    
+  func withDefault<T>(_ defaultValue: T) -> Binding<T> where Value == Optional<T> {
+    return Binding<T>(get: {
+      self.wrappedValue ?? defaultValue
+    }, set: { newValue in
+      self.wrappedValue = newValue
+    })
+  }
 }
 
 #Preview {
