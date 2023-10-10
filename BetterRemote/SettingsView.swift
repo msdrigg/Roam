@@ -3,6 +3,11 @@ import SwiftData
 import os
 
 struct SettingsView: View {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: SettingsView.self)
+    )
+    
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Device.lastSelectedAt) private var devices: [Device]
     
@@ -22,15 +27,19 @@ struct SettingsView: View {
                             .foregroundStyle(Color.secondary)
                     }
                 } else {
-                    List(devices, selection: $selectedDeviceId) { device in
-                        VStack(alignment: .leading) {
-                            HStack(alignment: .center, spacing: 4) {
-                                Circle()
-                                    .foregroundColor(device.isOnline() ? Color.green : Color.gray)
-                                    .frame(width: 8, height: 8)
-                                Text(device.name)
-                            }
-                            Text(device.location).foregroundStyle(Color.secondary)
+                    List {
+                        ForEach(devices) { device in
+                            Button(action: {selectedDeviceId = device.id}) {
+                                VStack(alignment: .leading) {
+                                    HStack(alignment: .center, spacing: 4) {
+                                        Circle()
+                                            .foregroundColor(device.isOnline() ? Color.green : Color.gray)
+                                            .frame(width: 8, height: 8)
+                                        Text(device.name)
+                                    }
+                                    Text(device.location).foregroundStyle(Color.secondary)
+                                }
+                            }.buttonStyle(.plain)
                         }
                     }
                     .sheet(isPresented: $selectedDeviceId.mappedToBool()) {
@@ -42,7 +51,12 @@ struct SettingsView: View {
             }
             Button( "Add device", systemImage: "plus") {
                 let newDevice = Device(name: "New device", location: "192.168.0.1", lastSelectedAt: Date.now, id: UUID().uuidString)
-                modelContext.insert(newDevice)
+                do {
+                    modelContext.insert(newDevice)
+                    try modelContext.save()
+                } catch {
+                    Self.logger.error("Error inserting new device \(error)")
+                }
                 selectedDeviceId = newDevice.id
             }
         }
@@ -103,8 +117,9 @@ struct DeviceDetailView: View {
                     do {
                         modelContext.delete(device)
                         try modelContext.save()
+                        presentationMode.wrappedValue.dismiss()
                     } catch {
-                        os_log("Error deleting device \(error)")
+                        print("Error deleting device \(error)")
                     }
                 }) {
                     Label("Delete device", systemImage: "trash")
