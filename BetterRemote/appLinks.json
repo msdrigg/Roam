@@ -1,0 +1,73 @@
+[
+    {
+        "name": "HBO Max",
+        "link": "https://play-lh.googleusercontent.com/VODqBhdZXQIkQlcv_A2nAq1gPNO7fwfDlUO3UZcgcMy6jAVx05CSU-vFuVFsr9gFUuo=w480-h960-rw",
+        "id": "61322"
+    },
+    {
+        "name": "Prime Video",
+        "link": "https://play-lh.googleusercontent.com/Y7drWZZo_F2GBE1RhjR1irOkE3yrtPorHS1U9YkLKAu1DnTjQ8gNbcRmrBtkd3tnHQ=w480-h960-rw",
+        "id": "13"
+    },
+    {
+        "name": "Youtube",
+        "link": "https://play-lh.googleusercontent.com/lMoItBgdPPVDJsNOVtP26EKHePkwBg-PkuY9NOrc-fumRtTFP4XhpUNk_22syN4Datc=w480-h960-rw",
+        "id": "837"
+    },
+    {
+        "name": "Tubi",
+        "link": "https://play-lh.googleusercontent.com/Xy8NOV0EXdrbji891ShNk9HKqYWtC0__mQDrSA_SNlqcg-a0OarjX1Ny3kIxxYPoZkc=w480-h960-rw",
+        "id": "41468"
+    },
+    {
+        "name": "Hulu",
+        "link": "https://play-lh.googleusercontent.com/4whGAVjZGrrlNxzheKAfBXrxggtyAb4euWLeQI8fDfVfdnFEZjE0DZTJ8DKoh64pqcIa=w480-h960-rw",
+        "id": "2285"
+    },
+    {
+        "name": "Disney+",
+        "link": "https://play-lh.googleusercontent.com/xoGGYH2LgLibLDBoxMg-ZE16b-RNfITw_OgXBWRAPin2FZY4FGB9QKBYApR-0rSCkQ=w480-h960-rw",
+        "id": "291097"
+    },
+    {
+        "name": "Netflix",
+        "link": "https://play-lh.googleusercontent.com/TBRwjS_qfJCSj1m7zZB93FnpJM5fSpMA_wUlFDLxWAb45T9RmwBvQd5cWR5viJJOhkI=w480-h960-rw",
+        "id": "12"
+    },
+    {
+        "name": "Spotify",
+        "link": "https://play-lh.googleusercontent.com/cShys-AmJ93dB0SV8kE6Fl5eSaf4-qMMZdwEDKI5VEmKAXfzOqbiaeAsqqrEBCTdIEs=w480-h960-rw",
+        "id": "22297"
+
+    },
+    {
+        "name": "Apple TV",
+        "link": "https://play-lh.googleusercontent.com/zovfDsfyegE7SF3hCrN_hWPiQ2VLSh_Hreg20YsgQD5d9rfeq_HLA1fdq3q9zn-QNg=w480-h960-rw",
+        "id": "551012"
+    },
+    {
+        "name": "Peacock",
+        "link": "https://play-lh.googleusercontent.com/tmGaBmInLjXVZIb4lWe5-LXINRP2RiY77Vg_hOLu-rxXBsY9vKC78A_A3Pkyx9vNBE8=w480-h960-rw",
+        "id": "593099"
+    },
+    {
+        "name": "WIS TV",
+        "link": "https://image.roku.com/developer_channels/prod/5326f8cc03703aa96d27dfef2b1b8c16d330b381b1373c77b8c7c9354f5aa153.png",
+        "id": "120407"
+    },
+    {
+        "name": "HDMI 1",
+        "link": "https://cdn-icons-png.flaticon.com/512/9524/9524567.png",
+        "id": "tvinput.hdmi1"
+    },
+    {
+        "name": "HDMI 2",
+        "link": "https://cdn-icons-png.flaticon.com/512/9524/9524567.png",
+        "id": "tvinput.hdmi2"
+    },
+    {
+        "name": "HDMI 3",
+        "link": "https://cdn-icons-png.flaticon.com/512/9524/9524567.png",
+        "id": "tvinput.hdmi3"
+    },
+]
