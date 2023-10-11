@@ -26,6 +26,15 @@
         "revision" : "3db5c4aeee8100d2db6f1eaf3864afdad5dc68fd",
         "version" : "2.59.0"
       }
+    },
+    {
+      "identity" : "vlckit-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tylerjonesio/vlckit-spm",
+      "state" : {
+        "branch" : "main",
+        "revision" : "d9006002f372c5bcf72a5ef24ebd02f89ef9f4fe"
+      }
     }
   ],
   "version" : 2

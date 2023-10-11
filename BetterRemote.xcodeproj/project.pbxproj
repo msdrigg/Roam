@@ -12,6 +12,10 @@
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AF4D5F312AD435060055AF35 /* DeviceControllerActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */; };
 		AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */ = {isa = PBXBuildFile; productRef = AF4D5F332AD4355E0055AF35 /* NIO */; };
+		AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
+		AF5B16EE2AD5FBA800053BDC /* VLCKitSPM in Frameworks */ = {isa = PBXBuildFile; productRef = AF5B16ED2AD5FBA800053BDC /* VLCKitSPM */; };
+		AF5B16F02AD5FE8200053BDC /* DeviceConnection.sdp in Resources */ = {isa = PBXBuildFile; fileRef = AF5B16EF2AD5FE8200053BDC /* DeviceConnection.sdp */; };
+		AF5B16F22AD6430800053BDC /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16F12AD6430800053BDC /* AsyncSemaphore.swift */; };
 		AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */; };
 		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
 		AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */; };
@@ -47,6 +51,9 @@
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControllerActor.swift; sourceTree = "<group>"; };
+		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
+		AF5B16EF2AD5FE8200053BDC /* DeviceConnection.sdp */ = {isa = PBXFileReference; lastKnownFileType = text; path = DeviceConnection.sdp; sourceTree = "<group>"; };
+		AF5B16F12AD6430800053BDC /* AsyncSemaphore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BetterRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteApp.swift; sourceTree = "<group>"; };
 		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -69,6 +76,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */,
+				AF5B16EE2AD5FBA800053BDC /* VLCKitSPM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -124,6 +132,8 @@
 				AFFC71ED2AD1FBE000EE8EA0 /* appLinks.json */,
 				AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */,
 				AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */,
+				AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */,
+				AF5B16F12AD6430800053BDC /* AsyncSemaphore.swift */,
 				AF11D36E2AD35D2800527AF6 /* SettingsView.swift */,
 				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
 				AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */,
@@ -133,6 +143,7 @@
 				AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */,
 				AFFC71EB2AD1F8A000EE8EA0 /* AppLink.swift */,
 				AF11D36C2AD2D41100527AF6 /* Device.swift */,
+				AF5B16EF2AD5FE8200053BDC /* DeviceConnection.sdp */,
 			);
 			path = BetterRemote;
 			sourceTree = "<group>";
@@ -180,6 +191,7 @@
 			name = BetterRemote;
 			packageProductDependencies = (
 				AF4D5F332AD4355E0055AF35 /* NIO */,
+				AF5B16ED2AD5FBA800053BDC /* VLCKitSPM */,
 			);
 			productName = BetterRemote;
 			productReference = AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */;
@@ -255,6 +267,7 @@
 			mainGroup = AFC24EF22AD0E5A1002AB66C;
 			packageReferences = (
 				AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */,
+				AF5B16EC2AD5FBA800053BDC /* XCRemoteSwiftPackageReference "vlckit-spm" */,
 			);
 			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
 			projectDirPath = "";
@@ -273,6 +286,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */,
+				AF5B16F02AD5FE8200053BDC /* DeviceConnection.sdp in Resources */,
 				AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */,
 				AFFC71EE2AD1FBE000EE8EA0 /* appLinks.json in Resources */,
 			);
@@ -301,8 +315,10 @@
 			files = (
 				AF4D5F312AD435060055AF35 /* DeviceControllerActor.swift in Sources */,
 				AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */,
+				AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */,
 				AFFC71EC2AD1F8A000EE8EA0 /* AppLink.swift in Sources */,
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
+				AF5B16F22AD6430800053BDC /* AsyncSemaphore.swift in Sources */,
 				AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */,
 				AF11D36D2AD2D41100527AF6 /* Device.swift in Sources */,
 				AF11D36B2AD2D0B800527AF6 /* AppLinksView.swift in Sources */,
@@ -493,6 +509,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -529,6 +546,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -653,6 +671,14 @@
 				minimumVersion = 2.59.0;
 			};
 		};
+		AF5B16EC2AD5FBA800053BDC /* XCRemoteSwiftPackageReference "vlckit-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tylerjonesio/vlckit-spm";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -660,6 +686,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
 			productName = NIO;
+		};
+		AF5B16ED2AD5FBA800053BDC /* VLCKitSPM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF5B16EC2AD5FBA800053BDC /* XCRemoteSwiftPackageReference "vlckit-spm" */;
+			productName = VLCKitSPM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
