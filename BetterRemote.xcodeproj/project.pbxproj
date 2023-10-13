@@ -12,20 +12,26 @@
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AF4D5F312AD435060055AF35 /* DeviceControllerActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */; };
 		AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */ = {isa = PBXBuildFile; productRef = AF4D5F332AD4355E0055AF35 /* NIO */; };
+		AF56E3B12AD97AB100F5E6E0 /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */; };
+		AF56E3B62AD9814100F5E6E0 /* spotify.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B22AD9814100F5E6E0 /* spotify.png */; };
+		AF56E3B72AD9814100F5E6E0 /* hulu.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B32AD9814100F5E6E0 /* hulu.png */; };
+		AF56E3B82AD9814100F5E6E0 /* disney.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B42AD9814100F5E6E0 /* disney.png */; };
+		AF56E3B92AD9814100F5E6E0 /* netflix.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B52AD9814100F5E6E0 /* netflix.png */; };
 		AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
-		AF5B16EE2AD5FBA800053BDC /* VLCKitSPM in Frameworks */ = {isa = PBXBuildFile; productRef = AF5B16ED2AD5FBA800053BDC /* VLCKitSPM */; };
-		AF5B16F02AD5FE8200053BDC /* DeviceConnection.sdp in Resources */ = {isa = PBXBuildFile; fileRef = AF5B16EF2AD5FE8200053BDC /* DeviceConnection.sdp */; };
-		AF5B16F22AD6430800053BDC /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16F12AD6430800053BDC /* AsyncSemaphore.swift */; };
+		AF76B8162AD8A14600DF6FF7 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
+		AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */; };
 		AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */; };
 		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
-		AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */; };
 		AFC24F132AD0E5A3002AB66C /* BetterRemoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F122AD0E5A3002AB66C /* BetterRemoteTests.swift */; };
 		AFC24F1D2AD0E5A3002AB66C /* BetterRemoteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1C2AD0E5A3002AB66C /* BetterRemoteUITests.swift */; };
 		AFC24F1F2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1E2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift */; };
 		AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */; };
 		AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */; };
-		AFFC71EC2AD1F8A000EE8EA0 /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71EB2AD1F8A000EE8EA0 /* AppLink.swift */; };
-		AFFC71EE2AD1FBE000EE8EA0 /* appLinks.json in Resources */ = {isa = PBXBuildFile; fileRef = AFFC71ED2AD1FBE000EE8EA0 /* appLinks.json */; };
+		AFFED2472AD749DD00357FA4 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED2462AD749DD00357FA4 /* XMLCoder */; };
+		AFFED24A2AD7536800357FA4 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED2492AD7536800357FA4 /* RTP */; };
+		AFFED24D2AD7537A00357FA4 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED24C2AD7537A00357FA4 /* Opus */; };
+		AFFED24F2AD759E200357FA4 /* NIOFoundationCompat in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */; };
+		AFFED2512AD75EAF00357FA4 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,15 +55,18 @@
 		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
 		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControllerActor.swift; sourceTree = "<group>"; };
+		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
+		AF56E3B22AD9814100F5E6E0 /* spotify.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = spotify.png; sourceTree = "<group>"; };
+		AF56E3B32AD9814100F5E6E0 /* hulu.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = hulu.png; sourceTree = "<group>"; };
+		AF56E3B42AD9814100F5E6E0 /* disney.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disney.png; sourceTree = "<group>"; };
+		AF56E3B52AD9814100F5E6E0 /* netflix.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = netflix.png; sourceTree = "<group>"; };
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
-		AF5B16EF2AD5FE8200053BDC /* DeviceConnection.sdp */ = {isa = PBXFileReference; lastKnownFileType = text; path = DeviceConnection.sdp; sourceTree = "<group>"; };
-		AF5B16F12AD6430800053BDC /* AsyncSemaphore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
+		AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuSession.swift; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BetterRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteApp.swift; sourceTree = "<group>"; };
 		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BetterRemote.entitlements; sourceTree = "<group>"; };
 		AFC24F0E2AD0E5A3002AB66C /* BetterRemoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BetterRemoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24F122AD0E5A3002AB66C /* BetterRemoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteTests.swift; sourceTree = "<group>"; };
@@ -66,8 +75,7 @@
 		AFC24F1E2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
 		AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
-		AFFC71EB2AD1F8A000EE8EA0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
-		AFFC71ED2AD1FBE000EE8EA0 /* appLinks.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = appLinks.json; sourceTree = "<group>"; };
+		AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryHeap.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,8 +83,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AFFED2472AD749DD00357FA4 /* XMLCoder in Frameworks */,
+				AFFED24A2AD7536800357FA4 /* RTP in Frameworks */,
 				AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */,
-				AF5B16EE2AD5FBA800053BDC /* VLCKitSPM in Frameworks */,
+				AFFED24D2AD7537A00357FA4 /* Opus in Frameworks */,
+				AFFED24F2AD759E200357FA4 /* NIOFoundationCompat in Frameworks */,
+				AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -104,6 +116,47 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		AF56E3AE2AD979B700F5E6E0 /* XCodeSupport */ = {
+			isa = PBXGroup;
+			children = (
+				AF4829722AD4C83D008E05FA /* Info.plist */,
+				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
+				AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */,
+			);
+			path = XCodeSupport;
+			sourceTree = "<group>";
+		};
+		AF56E3AF2AD97AA300F5E6E0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AF11D36C2AD2D41100527AF6 /* Device.swift */,
+				AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AF56E3BA2AD9863100F5E6E0 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */,
+				AF11D36E2AD35D2800527AF6 /* SettingsView.swift */,
+				AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */,
+				AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AF56E3BB2AD9865400F5E6E0 /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */,
+				AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */,
+				AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */,
+				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
 		AFC24EF22AD0E5A1002AB66C = {
 			isa = PBXGroup;
 			children = (
@@ -128,22 +181,12 @@
 		AFC24EFD2AD0E5A1002AB66C /* BetterRemote */ = {
 			isa = PBXGroup;
 			children = (
-				AF4829722AD4C83D008E05FA /* Info.plist */,
-				AFFC71ED2AD1FBE000EE8EA0 /* appLinks.json */,
 				AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */,
-				AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */,
-				AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */,
-				AF5B16F12AD6430800053BDC /* AsyncSemaphore.swift */,
-				AF11D36E2AD35D2800527AF6 /* SettingsView.swift */,
-				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
-				AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */,
-				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
-				AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */,
+				AF56E3BA2AD9863100F5E6E0 /* Views */,
+				AF56E3AF2AD97AA300F5E6E0 /* Models */,
+				AF56E3BB2AD9865400F5E6E0 /* Controllers */,
+				AF56E3AE2AD979B700F5E6E0 /* XCodeSupport */,
 				AFC24F062AD0E5A2002AB66C /* Preview Content */,
-				AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */,
-				AFFC71EB2AD1F8A000EE8EA0 /* AppLink.swift */,
-				AF11D36C2AD2D41100527AF6 /* Device.swift */,
-				AF5B16EF2AD5FE8200053BDC /* DeviceConnection.sdp */,
 			);
 			path = BetterRemote;
 			sourceTree = "<group>";
@@ -151,7 +194,10 @@
 		AFC24F062AD0E5A2002AB66C /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
-				AFC24F072AD0E5A2002AB66C /* Preview Assets.xcassets */,
+				AF56E3B42AD9814100F5E6E0 /* disney.png */,
+				AF56E3B32AD9814100F5E6E0 /* hulu.png */,
+				AF56E3B52AD9814100F5E6E0 /* netflix.png */,
+				AF56E3B22AD9814100F5E6E0 /* spotify.png */,
 			);
 			path = "Preview Content";
 			sourceTree = "<group>";
@@ -191,7 +237,11 @@
 			name = BetterRemote;
 			packageProductDependencies = (
 				AF4D5F332AD4355E0055AF35 /* NIO */,
-				AF5B16ED2AD5FBA800053BDC /* VLCKitSPM */,
+				AFFED2462AD749DD00357FA4 /* XMLCoder */,
+				AFFED2492AD7536800357FA4 /* RTP */,
+				AFFED24C2AD7537A00357FA4 /* Opus */,
+				AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */,
+				AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */,
 			);
 			productName = BetterRemote;
 			productReference = AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */;
@@ -267,7 +317,9 @@
 			mainGroup = AFC24EF22AD0E5A1002AB66C;
 			packageReferences = (
 				AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */,
-				AF5B16EC2AD5FBA800053BDC /* XCRemoteSwiftPackageReference "vlckit-spm" */,
+				AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */,
+				AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */,
+				AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */,
 			);
 			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
 			projectDirPath = "";
@@ -285,10 +337,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AFC24F082AD0E5A2002AB66C /* Preview Assets.xcassets in Resources */,
-				AF5B16F02AD5FE8200053BDC /* DeviceConnection.sdp in Resources */,
+				AF56E3B62AD9814100F5E6E0 /* spotify.png in Resources */,
+				AF56E3B82AD9814100F5E6E0 /* disney.png in Resources */,
+				AF56E3B72AD9814100F5E6E0 /* hulu.png in Resources */,
+				AF56E3B92AD9814100F5E6E0 /* netflix.png in Resources */,
 				AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */,
-				AFFC71EE2AD1FBE000EE8EA0 /* appLinks.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -316,12 +369,13 @@
 				AF4D5F312AD435060055AF35 /* DeviceControllerActor.swift in Sources */,
 				AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */,
 				AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */,
-				AFFC71EC2AD1F8A000EE8EA0 /* AppLink.swift in Sources */,
+				AFFED2512AD75EAF00357FA4 /* BinaryHeap.swift in Sources */,
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
-				AF5B16F22AD6430800053BDC /* AsyncSemaphore.swift in Sources */,
 				AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */,
 				AF11D36D2AD2D41100527AF6 /* Device.swift in Sources */,
 				AF11D36B2AD2D0B800527AF6 /* AppLinksView.swift in Sources */,
+				AF56E3B12AD97AB100F5E6E0 /* AppLink.swift in Sources */,
+				AF76B8162AD8A14600DF6FF7 /* RokuSession.swift in Sources */,
 				AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -484,20 +538,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = BetterRemote/BetterRemote.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_ENTITLEMENTS = BetterRemote/XCodeSupport/BetterRemote.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"BetterRemote/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemote/Info.plist;
+				INFOPLIST_FILE = BetterRemote/XCodeSupport/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -521,20 +575,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = BetterRemote/BetterRemote.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_ENTITLEMENTS = BetterRemote/XCodeSupport/BetterRemote.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"BetterRemote/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemote/Info.plist;
+				INFOPLIST_FILE = BetterRemote/XCodeSupport/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -671,12 +725,28 @@
 				minimumVersion = 2.59.0;
 			};
 		};
-		AF5B16EC2AD5FBA800053BDC /* XCRemoteSwiftPackageReference "vlckit-spm" */ = {
+		AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/tylerjonesio/vlckit-spm";
+			repositoryURL = "https://github.com/CoreOffice/XMLCoder.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.17.1;
+			};
+		};
+		AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alta/swift-rtp";
 			requirement = {
 				branch = main;
 				kind = branch;
+			};
+		};
+		AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alta/swift-opus";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -687,10 +757,30 @@
 			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
 			productName = NIO;
 		};
-		AF5B16ED2AD5FBA800053BDC /* VLCKitSPM */ = {
+		AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AF5B16EC2AD5FBA800053BDC /* XCRemoteSwiftPackageReference "vlckit-spm" */;
-			productName = VLCKitSPM;
+			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOWebSocket;
+		};
+		AFFED2462AD749DD00357FA4 /* XMLCoder */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */;
+			productName = XMLCoder;
+		};
+		AFFED2492AD7536800357FA4 /* RTP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */;
+			productName = RTP;
+		};
+		AFFED24C2AD7537A00357FA4 /* Opus */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */;
+			productName = Opus;
+		};
+		AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOFoundationCompat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -105,7 +105,11 @@ public struct CachedAsyncImage<Content>: View where Content: View {
     ///     displays. For example, set a value of `2` for an image that you
     ///     would name with the `@2x` suffix if stored in a file on disk.
     public init(url: URL?, urlCache: URLCache = .shared,  scale: CGFloat = 1) where Content == Image {
-        let urlRequest = url == nil ? nil : URLRequest(url: url!)
+        let urlRequest = if let url = url {
+            URLRequest(url: url)
+        } else {
+            nil as URLRequest?
+        }
         self.init(urlRequest: urlRequest, urlCache: urlCache, scale: scale)
     }
     
@@ -173,7 +177,11 @@ public struct CachedAsyncImage<Content>: View where Content: View {
     ///   - placeholder: A closure that returns the view to show until the
     ///     load operation completes successfully.
     public init<I, P>(url: URL?, urlCache: URLCache = .shared,  scale: CGFloat = 1, @ViewBuilder content: @escaping (Image) -> I, @ViewBuilder placeholder: @escaping () -> P) where Content == _ConditionalContent<I, P>, I : View, P : View {
-        let urlRequest = url == nil ? nil : URLRequest(url: url!)
+        let urlRequest = if let url = url {
+            URLRequest(url: url)
+        } else {
+            nil as URLRequest?
+        }
         self.init(urlRequest: urlRequest, urlCache: urlCache, scale: scale, content: content, placeholder: placeholder)
     }
     
@@ -254,7 +262,11 @@ public struct CachedAsyncImage<Content>: View where Content: View {
     ///   - content: A closure that takes the load phase as an input, and
     ///     returns the view to display for the specified phase.
     public init(url: URL?, urlCache: URLCache = .shared, scale: CGFloat = 1, transaction: Transaction = Transaction(), @ViewBuilder content: @escaping (AsyncImagePhase) -> Content) {
-        let urlRequest = url == nil ? nil : URLRequest(url: url!)
+        let urlRequest = if let url = url {
+            URLRequest(url: url)
+        } else {
+            nil as URLRequest?
+        }
         self.init(urlRequest: urlRequest, urlCache: urlCache, scale: scale, transaction: transaction, content: content)
     }
     

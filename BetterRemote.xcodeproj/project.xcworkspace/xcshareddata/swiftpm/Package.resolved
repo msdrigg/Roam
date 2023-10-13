@@ -28,12 +28,30 @@
       }
     },
     {
-      "identity" : "vlckit-spm",
+      "identity" : "swift-opus",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tylerjonesio/vlckit-spm",
+      "location" : "https://github.com/alta/swift-opus",
+      "state" : {
+        "revision" : "5f0164b8915fb9001265c54413aa0f0efbd3df06",
+        "version" : "0.0.2"
+      }
+    },
+    {
+      "identity" : "swift-rtp",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/alta/swift-rtp",
       "state" : {
         "branch" : "main",
-        "revision" : "d9006002f372c5bcf72a5ef24ebd02f89ef9f4fe"
+        "revision" : "6dcdffb1414cd40aa64bc4ae15c495a86ae0b026"
+      }
+    },
+    {
+      "identity" : "xmlcoder",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CoreOffice/XMLCoder.git",
+      "state" : {
+        "revision" : "b1e944cbd0ef33787b13f639a5418d55b3bed501",
+        "version" : "0.17.1"
       }
     }
   ],

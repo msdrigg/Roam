@@ -19,16 +19,18 @@ struct AppLinksView: View {
                             handleOpenApp(app)
                         }) {
                             VStack {
-                                CachedAsyncImage(url: URL(string: app.link)) { image in
-                                    image.resizable()
-                                } placeholder: {
-                                    ProgressView().controlSize(.small)
-                                }.aspectRatio(contentMode: .fit)
+                                DataImage(from: app.icon, fallback: "questionmark.app")
+                                    .resizable().aspectRatio(contentMode: .fit)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                     .frame(width: 50, height: 40)
                                     .shadow(radius: 4)
                                 
-                                Text(app.name).font(.caption)
+
+                                Text(app.name)
+                                    .font(.caption)
+                                    .truncationMode(.tail)
+                                    .lineLimit(1)
+                                    .frame(maxWidth: 50)
                             }
                         }.buttonStyle(.plain)
                     }
@@ -44,7 +46,6 @@ struct AppLinksView: View {
 }
 
 #Preview {
-    AppLinksView(appLinks: loadDefaultAppLinks(), handleOpenApp: {_ in })
+    AppLinksView(appLinks: getTestingAppLinks(), handleOpenApp: {_ in })
         .previewLayout(.fixed(width: 100.0, height: 300.0))
-    
 }

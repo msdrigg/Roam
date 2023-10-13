@@ -8,8 +8,6 @@ struct RemoteView: View {
         category: String(describing: RemoteView.self)
     )
     
-    private var appLinks: [AppLink] = loadDefaultAppLinks()
-    
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
     
@@ -112,6 +110,7 @@ struct RemoteView: View {
                             }
                             .disabled(selectedDevice == nil)
                             .buttonStyle(buttonStyle)
+                            .keyboardShortcut(.return)
                         }
 #if os(macOS)
                         .padding(.top, 20)
@@ -349,6 +348,7 @@ struct RemoteView: View {
                                     .frame(width: 28, height: 22)
                                     .labelStyle(.iconOnly)
                             }.buttonStyle(.bordered)
+                                .keyboardShortcut("m")
                             Button(action: {
                                 Task {
                                     if let device = selectedDevice {
@@ -360,6 +360,7 @@ struct RemoteView: View {
                                     .frame(width: 28, height: 22)
                                     .labelStyle(.iconOnly)
                             }.buttonStyle(.bordered)
+                                .keyboardShortcut(.downArrow)
                             Button(action: {
                                 Task {
                                     if let device = selectedDevice {
@@ -371,6 +372,7 @@ struct RemoteView: View {
                                     .frame(width: 28, height: 22)
                                     .labelStyle(.iconOnly)
                             }.buttonStyle(.bordered)
+                                .keyboardShortcut(.upArrow)
                         }
                         
 #if os(macOS)
@@ -378,7 +380,7 @@ struct RemoteView: View {
 #else
                         Spacer().frame(maxHeight: 5)
 #endif
-                        AppLinksView(appLinks: appLinks) { app in
+                        AppLinksView(appLinks: selectedDevice?.appsSorted ?? []) { app in
                             Task {
                                 if let location = selectedDevice?.location {
                                     await controllerActor.openApp(location: location, app: app)
@@ -386,7 +388,7 @@ struct RemoteView: View {
                             }
                         }
 #if os(macOS)
-                        Spacer().frame()
+                        Spacer()
 #endif
                     }
                     
@@ -424,7 +426,7 @@ func getKeypressForKey(key: KeyPress) -> String {
         KeyEquivalent.rightArrow.character: "right",
         KeyEquivalent.leftArrow.character: "left",
         KeyEquivalent.home.character: "home",
-        KeyEquivalent.return.character: "enter",
+        KeyEquivalent.return.character: "select",
     ]
     
     if let mappedString = keyMap[key.key.character] {
@@ -461,5 +463,5 @@ extension Binding {
 #if os(macOS)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 #endif
-        .modelContainer(for: Device.self, inMemory: true)
+        .modelContainer(devicePreviewContainer)
 }

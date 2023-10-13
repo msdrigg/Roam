@@ -12,6 +12,7 @@ import SwiftData
 struct BetterRemoteApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
+            AppLink.self,
             Device.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

@@ -30,14 +30,25 @@ struct SettingsView: View {
                     List {
                         ForEach(devices) { device in
                             Button(action: {selectedDeviceId = device.id}) {
-                                VStack(alignment: .leading) {
-                                    HStack(alignment: .center, spacing: 4) {
-                                        Circle()
-                                            .foregroundColor(device.isOnline() ? Color.green : Color.gray)
-                                            .frame(width: 8, height: 8)
-                                        Text(device.name)
+                                HStack(alignment: .center) {
+                                    VStack(alignment: .center) {
+                                        DataImage(from: device.deviceIcon, fallback: "tv")
+                                            .resizable()
+                                            .controlSize(.extraLarge)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 32.0, height: 32.0)
+  
+                                    }.frame(width: 80)
+                                        
+                                    VStack(alignment: .leading) {
+                                        HStack(alignment: .center, spacing: 4) {
+                                            Circle()
+                                                .foregroundColor(device.isOnline() ? Color.green : Color.gray)
+                                                .frame(width: 8, height: 8)
+                                            Text(device.name)
+                                        }
+                                        Text(device.location).foregroundStyle(Color.secondary)
                                     }
-                                    Text(device.location).foregroundStyle(Color.secondary)
                                 }
                             }.buttonStyle(.plain)
                         }
@@ -66,6 +77,26 @@ struct SettingsView: View {
     }
 }
 
+func DataImage(from data: Data?, fallback: String) -> Image {
+        if let data = data {
+#if os(macOS)
+            if let nsImage = NSImage(data: data) {
+                Image(nsImage: nsImage)
+            } else {
+                Image(systemName: fallback)
+            }
+#else
+            if let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+            } else {
+                Image(systemName: fallback)
+            }
+#endif
+        } else {
+            Image(systemName: fallback)
+        }
+}
+
 struct DeviceDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.presentationMode) var presentationMode
@@ -78,6 +109,7 @@ struct DeviceDetailView: View {
                 TextField("Name", text: $device.name)
                 TextField("Host", text: $device.location)
             }
+            
             Section {
                 LabeledContent("Id") {
                     Text(device.id)
@@ -101,6 +133,26 @@ struct DeviceDetailView: View {
                 }
                 LabeledContent("Ethernet MAC") {
                     Text(device.ethernetMAC ?? "--")
+                }
+                
+                
+                LabeledContent("Supports datagram") {
+                    if let supportsDatagram = device.supportsDatagram {
+                        if supportsDatagram {
+                            Text("Yes!")
+                        } else {
+                            Text("No :(")
+                        }
+                    } else {
+                        Text("Unknown")
+                    }
+                }
+                LabeledContent("RTCP Port") {
+                    if let rtcpPort = device.rtcpPort {
+                        Text("\(rtcpPort)")
+                    } else {
+                        Text("Unknown")
+                    }
                 }
             }
             .foregroundStyle(Color.secondary)
@@ -127,9 +179,9 @@ struct DeviceDetailView: View {
                 }
             }
         }
-        #if os(macOS)
+#if os(macOS)
         .padding()
-        #endif
+#endif
     }
 }
 
@@ -177,11 +229,10 @@ extension Binding {
 #Preview {
     SettingsView()
         .previewLayout(.fixed(width: 100.0, height: 300.0))
-        .modelContainer(for: Device.self, inMemory: true)
+        .modelContainer(devicePreviewContainer)
 }
 
 #Preview {
     DeviceDetailView(device: getTestingDevices()[0])
         .previewLayout(.fixed(width: 100.0, height: 300.0))
-        .modelContainer(for: Device.self, inMemory: true)
 }
