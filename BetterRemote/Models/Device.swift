@@ -4,7 +4,7 @@ import SwiftData
 
 @Model
 final class Device: Identifiable {
-    public let id: String
+    @Attribute(.unique) public let id: String
     public var name: String
     public var location: String
     
@@ -75,8 +75,8 @@ func getTestingDevices() -> [Device] {
     let apps = getTestingAppLinks()
     
     return [
-        Device(name: "Living Room TV", location: "192.168.0.1", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), id: "TD1", apps: apps),
-        Device(name: "2nd Living Room", location: "192.168.0.2", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60), id: "TD2", apps: [])
+        Device(name: "Living Room TV", location: "http://192.168.0.1:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), id: "TD1", apps: apps),
+        Device(name: "2nd Living Room", location: "http://192.168.0.2:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60), id: "TD2", apps: [])
     ]
 }
 

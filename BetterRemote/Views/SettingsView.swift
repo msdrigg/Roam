@@ -18,110 +18,207 @@ struct SettingsView: View {
         }
     }
     
+    @State private var scanningActor: DeviceControllerActor!
+    @State private var isScanning: Bool = false
+    
     var body: some View {
-        Form {
-            Section("Devices") {
-                if devices.isEmpty {
-                    List {
-                        Text("No devices")
-                            .foregroundStyle(Color.secondary)
-                    }
-                } else {
-                    List {
-                        ForEach(devices) { device in
-                            Button(action: {selectedDeviceId = device.id}) {
-                                HStack(alignment: .center) {
-                                    VStack(alignment: .center) {
-                                        DataImage(from: device.deviceIcon, fallback: "tv")
-                                            .resizable()
-                                            .controlSize(.extraLarge)
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 32.0, height: 32.0)
-  
-                                    }.frame(width: 80)
-                                        
-                                    VStack(alignment: .leading) {
-                                        HStack(alignment: .center, spacing: 4) {
-                                            Circle()
-                                                .foregroundColor(device.isOnline() ? Color.green : Color.gray)
-                                                .frame(width: 8, height: 8)
-                                            Text(device.name)
-                                        }
-                                        Text(device.location).foregroundStyle(Color.secondary)
-                                    }
-                                }
-                            }.buttonStyle(.plain)
-                        }
-                    }
-                    .sheet(isPresented: $selectedDeviceId.mappedToBool()) {
-                        if let selectedDevice = selectedDevice {
-                            DeviceDetailView(device: selectedDevice)
+#if os(macOS)
+        VStack {
+            deviceList
+                .sheet(isPresented: $selectedDeviceId.mappedToBool()) {
+                    if let dev = selectedDevice {
+                        DeviceDetailView(device: dev) {
+                            selectedDeviceId = nil
                         }
                     }
                 }
+                .onAppear {
+                    let modelContainer = modelContext.container
+                    self.scanningActor = DeviceControllerActor(modelContainer: modelContainer)
+                }
+                .task(priority: .low) {
+                    defer {
+                        isScanning = false
+                    }
+                    isScanning = true
+                    await self.scanningActor.scanIPV4Once()
+                }
+            
+            HStack (alignment: .center, spacing: 20) {
+                addDeviceButton
+                    .padding()
+                
+                scanDevicesButton
+                    .padding()
             }
-            Button( "Add device", systemImage: "plus") {
-                let newDevice = Device(name: "New device", location: "192.168.0.1", lastSelectedAt: Date.now, id: UUID().uuidString)
-                do {
-                    modelContext.insert(newDevice)
-                    try modelContext.save()
-                } catch {
-                    Self.logger.error("Error inserting new device \(error)")
+            
+        }
+#else
+        NavigationSplitView {
+            deviceList
+                .onAppear {
+                    let modelContainer = modelContext.container
+                    self.scanningActor = DeviceControllerActor(modelContainer: modelContainer)
                 }
-                selectedDeviceId = newDevice.id
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        addDeviceButton
+                    }
+                    ToolbarItem(placement: .status) {
+                        scanDevicesButton
+                    }
+                }
+                .task(priority: .low) {
+                    defer {
+                        isScanning = false
+                    }
+                    isScanning = true
+                    await self.scanningActor.scanIPV4Once()
+                }
+                .navigationTitle("Device settings")
+        } detail: {
+            if let dev = selectedDevice {
+                DeviceDetailView(device: dev) {
+                    selectedDeviceId = nil
+                }
             }
         }
-#if os(macOS)
-        .padding()
 #endif
+    }
+    
+    @ViewBuilder
+    var deviceList: some View {
+        if devices.isEmpty {
+            List {
+                Text("No devices")
+                    .foregroundStyle(Color.secondary)
+            }
+        } else {
+            List(devices, selection: $selectedDeviceId) { device in
+                DeviceListItem(device: device)
+            }
+        }
+        
+    }
+    
+    @ViewBuilder
+    var addDeviceButton: some View {
+        Button( "Add device", systemImage: "plus") {
+            let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, id: UUID().uuidString)
+            do {
+                modelContext.insert(newDevice)
+                try modelContext.save()
+            } catch {
+                Self.logger.error("Error inserting new device \(error)")
+            }
+            selectedDeviceId = newDevice.id
+        }
+        
+    }
+    
+    @ViewBuilder
+    var scanDevicesButton: some View {
+        Button(isScanning ? "Scanning..." : "Scan", systemImage: "rays") {
+            isScanning = !isScanning
+        }
+        .task(id: isScanning) {
+            Task {
+                if !isScanning {
+                    return
+                }
+                isScanning = true
+                defer {
+                    isScanning = false
+                }
+                
+                await scanningActor.scanIPV4Once()
+            }
+        }
+        .labelStyle(.titleAndIcon)
+        .symbolEffect(.variableColor, isActive: isScanning)
+        
     }
 }
 
 func DataImage(from data: Data?, fallback: String) -> Image {
-        if let data = data {
+    if let data = data {
 #if os(macOS)
-            if let nsImage = NSImage(data: data) {
-                Image(nsImage: nsImage)
-            } else {
-                Image(systemName: fallback)
-            }
-#else
-            if let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-            } else {
-                Image(systemName: fallback)
-            }
-#endif
+        if let nsImage = NSImage(data: data) {
+            Image(nsImage: nsImage)
         } else {
             Image(systemName: fallback)
         }
+#else
+        if let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+        } else {
+            Image(systemName: fallback)
+        }
+#endif
+    } else {
+        Image(systemName: fallback)
+    }
 }
 
-struct DeviceDetailView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.presentationMode) var presentationMode
-    
+struct DeviceListItem: View {
     @Bindable var device: Device
     
     var body: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .center) {
+                DataImage(from: device.deviceIcon, fallback: "tv")
+                    .resizable()
+                    .controlSize(.extraLarge)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 32.0, height: 32.0)
+            }.frame(width: 60)
+            
+            VStack(alignment: .leading) {
+                HStack(alignment: .center, spacing: 8) {
+                    Circle()
+                        .foregroundColor(device.isOnline() ? Color.green : Color.gray)
+                        .frame(width: 10, height: 10)
+                    Text(device.name)
+                }
+                Text(device.location).foregroundStyle(Color.secondary)
+            }
+        }
+    }
+}
+
+struct DeviceDetailView: View {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: DeviceDetailView.self)
+    )
+    
+    @Environment(\.modelContext) private var modelContext
+    
+    @Bindable var device: Device
+    @State var deviceName: String = ""
+    @State var deviceLocation: String = ""
+    
+    var dismiss: () -> Void
+    
+    var body: some View {
         Form {
-            Section {
-                TextField("Name", text: $device.name)
-                TextField("Host", text: $device.location)
+            Section("Parameters") {
+                TextField("Name", text: $deviceName)
+                    .frame(maxWidth: .infinity)
+                TextField("Location URL", text: $deviceLocation)
+                    .frame(maxWidth: .infinity)
             }
             
-            Section {
+            Section("Info") {
                 LabeledContent("Id") {
                     Text(device.id)
                 }
-                
                 LabeledContent("Last Selected") {
                     Text(device.lastSelectedAt?.formatted() ?? "Never")
                 }
                 LabeledContent("Last Online") {
                     Text(device.lastOnlineAt?.formatted() ?? "Never")
                 }
-                
                 LabeledContent("Power State") {
                     Text(device.powerMode ?? "--")
                 }
@@ -155,28 +252,37 @@ struct DeviceDetailView: View {
                     }
                 }
             }
-            .foregroundStyle(Color.secondary)
-            Section {
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Label("Save changes", systemImage: "checkmark")
-                }
+        }
+        .formStyle(.grouped)
+        .onAppear {
+            deviceName = device.name
+            deviceLocation = device.location
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Save", systemImage: "checkmark", action: {
+                    do {
+                        device.location = deviceLocation
+                        device.name = deviceName
+                        try modelContext.save()
+                        dismiss()
+                    } catch {
+                        Self.logger.error("Error saving device changes \(error)")
+                    }
+                })
             }
             
-            Section {
-                Button(action: {
+            ToolbarItem(placement: .destructiveAction) {
+                Button("Delete", systemImage: "trash", role: .destructive, action: {
                     do {
                         modelContext.delete(device)
                         try modelContext.save()
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     } catch {
-                        print("Error deleting device \(error)")
+                        Self.logger.error("Error deleting device \(error)")
                     }
-                }) {
-                    Label("Delete device", systemImage: "trash")
-                        .foregroundColor(Color.red)
-                }
+                })
+                .foregroundStyle(Color.red)
             }
         }
 #if os(macOS)
@@ -226,13 +332,13 @@ extension Binding {
 }
 
 
-#Preview {
+#Preview("Device List") {
     SettingsView()
         .previewLayout(.fixed(width: 100.0, height: 300.0))
         .modelContainer(devicePreviewContainer)
 }
 
-#Preview {
-    DeviceDetailView(device: getTestingDevices()[0])
+#Preview("Device Detail") {
+    DeviceDetailView(device: getTestingDevices()[0]){}
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }

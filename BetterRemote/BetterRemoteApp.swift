@@ -38,7 +38,6 @@ struct BetterRemoteApp: App {
             SettingsView()
         }
         .modelContainer(sharedModelContainer)
-        .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         #endif
 
     }

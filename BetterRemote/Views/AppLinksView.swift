@@ -3,17 +3,19 @@ import SwiftUI
 struct AppLinksView: View {
     var appLinks: [AppLink]
     var handleOpenApp: (AppLink) -> Void
+    let rows: Int
     
-    init(appLinks: [AppLink], handleOpenApp: @escaping (AppLink) -> Void) {
+    init(appLinks: [AppLink], rows: Int, handleOpenApp: @escaping (AppLink) -> Void) {
         self.appLinks = appLinks
         self.handleOpenApp = handleOpenApp
+        self.rows = rows
     }
     
     var body: some View {
         GeometryReader { geometry in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    Spacer()
+                Spacer()
+                LazyHGrid(rows: Array(repeating: GridItem(.fixed(60)), count: rows), spacing: 20) {
                     ForEach(appLinks) { app in
                         Button(action: {
                             handleOpenApp(app)
@@ -34,18 +36,26 @@ struct AppLinksView: View {
                             }
                         }.buttonStyle(.plain)
                     }
-                    Spacer()
                 }
-                .frame( 
+                .scrollTargetLayout()
+                .frame(
                     minWidth: geometry.frame(in: .global).width,
                     minHeight: geometry.frame(in: .global).height
                 )
+                Spacer()
             }
-        }.frame(minHeight: 80)
+            .scrollTargetBehavior(.viewAligned)
+            .safeAreaPadding(.horizontal, 4)
+        }.frame(height: 80 * CGFloat(rows))
     }
 }
 
 #Preview {
-    AppLinksView(appLinks: getTestingAppLinks(), handleOpenApp: {_ in })
+    AppLinksView(appLinks: getTestingAppLinks(), rows: 1, handleOpenApp: {_ in })
+        .previewLayout(.fixed(width: 100.0, height: 300.0))
+}
+
+#Preview {
+    AppLinksView(appLinks: getTestingAppLinks(), rows: 2, handleOpenApp: {_ in })
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }

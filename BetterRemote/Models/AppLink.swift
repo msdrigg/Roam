@@ -46,32 +46,36 @@ final class AppLink: Identifiable, Decodable, Encodable {
 }
 
 func getTestingAppLinks() -> [AppLink] {
-    let netflixIcon = loadPreviewAsset("netflix")
-    let huluIcon = loadPreviewAsset("hulu")
-    let spotifyIcon = loadPreviewAsset("spotify")
-    let disneyIcon = loadPreviewAsset("disney")
+    let netflixIcon = loadPreviewAsset("netflix.png")
+    let huluIcon = loadPreviewAsset("hulu.png")
+    let spotifyIcon = loadPreviewAsset("spotify.png")
+    let disneyIcon = loadPreviewAsset("disney.png")
     return [
         AppLink(id: "1", type: "appl", name: "Netflix", icon: netflixIcon),
         AppLink(id: "5", type: "appl", name: "Hulu", icon: huluIcon),
         AppLink(id: "3", type: "appl", name: "Spotify with test long name", icon: spotifyIcon),
         AppLink(id: "2", type: "appl", name: "Showtime (no icon)"),
         AppLink(id: "4", type: "appl", name: "Disney another sweet long name", icon: disneyIcon),
+        AppLink(id: "6", type: "appl", name: "Disney another sweet long name", icon: disneyIcon),
+        AppLink(id: "7", type: "appl", name: "Disney another sweet long name", icon: disneyIcon),
     ]
 }
 
-func loadPreviewAsset(_ assetName: String) -> Data {
+func loadPreviewAsset(_ assetName: String) -> Data? {
     let data: Data
     
-    guard let file = Bundle.main.url(forResource: assetName, withExtension: "png")
+    guard let file = Bundle.main.url(forResource: assetName, withExtension: nil)
     else {
-        fatalError("Couldn't find \(assetName) in preview xcassets.")
+        print("Couldn't find \(assetName) in preview xcassets.")
+        return nil
     }
     
     
     do {
         data = try Data(contentsOf: file)
     } catch {
-        fatalError("Couldn't load \(assetName) from preview xcassets:\n\(error)")
+        print("Couldn't load \(assetName) from preview xcassets:\n\(error)")
+        return nil
     }
     return data
 }

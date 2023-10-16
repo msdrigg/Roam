@@ -6,7 +6,7 @@ import XMLCoder
 import Network
 import Atomics
 
-// Only scan only 1 hour 
+// Only refresh every 1 hour
 let MIN_RESCAN_TIME: TimeInterval = 3600
 
 final actor DeviceControllerActor: ModelActor {
@@ -18,7 +18,6 @@ final actor DeviceControllerActor: ModelActor {
     let modelContainer: ModelContainer
     let modelExecutor: any ModelExecutor
     var bootstrap: DatagramBootstrap? = nil
-    var timeout: TimeAmount = .seconds(0)
     
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -26,8 +25,7 @@ final actor DeviceControllerActor: ModelActor {
         self.modelExecutor = DefaultSerialModelExecutor(modelContext: context)
     }
     
-    func itemFound(location: String, id: String) async {
-        Self.logger.debug("Discovered device! \(location) \(id)")
+    func findDeviceById(id: String) -> Device? {
         let modelContext = ModelContext(modelContainer)
         
         var matchingIds = FetchDescriptor<Device>(
@@ -36,33 +34,40 @@ final actor DeviceControllerActor: ModelActor {
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
         
-        let existingDevices: [Device] = (try? modelContext.fetch(matchingIds)) ?? []
-        
-        
-        
-        if let device = existingDevices.first {
-            device.lastOnlineAt = Date.now
-
-            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_TIME {
+        let existingDevices: [Device]? = (try? modelContext.fetch(matchingIds))
+        return existingDevices?.first
+    }
+    
+    func refreshDevice(id: String) async {
+        let existingDevice = findDeviceById(id: id)
+        if let device = existingDevice {
+            guard let deviceInfo = await fetchDeviceInfo(location: device.location) else {
+                Self.logger.info("Failed to get device info \(device.location)")
                 return
             }
-            device.location = location
+            if deviceInfo.udn != id {
+                return
+            }
+            
+            device.lastOnlineAt = Date.now
+            
+            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_TIME && (device.apps?.allSatisfy { $0.icon != nil} ?? true) {
+                return
+            }
             device.lastScannedAt = Date.now
             
-            if let deviceInfo = await self.fetchDeviceInfo(location: location) {
-                device.ethernetMAC = deviceInfo.ethernetMac
-                device.wifiMAC = deviceInfo.wifiMac
-                device.networkType = deviceInfo.networkType
-                device.powerMode = deviceInfo.powerMode
-                if device.name == "New device" {
-                    if let newName = deviceInfo.friendlyDeviceName {
-                        device.name = newName
-                    }
+            device.ethernetMAC = deviceInfo.ethernetMac
+            device.wifiMAC = deviceInfo.wifiMac
+            device.networkType = deviceInfo.networkType
+            device.powerMode = deviceInfo.powerMode
+            if device.name == "New device" {
+                if let newName = deviceInfo.friendlyDeviceName {
+                    device.name = newName
                 }
             }
             
             do {
-                let capabilities = try await fetchDeviceCapabilities(location: location)
+                let capabilities = try await fetchDeviceCapabilities(location: device.location)
                 device.rtcpPort = capabilities.rtcpPort
                 device.supportsDatagram = capabilities.supportsDatagram
                 
@@ -71,13 +76,13 @@ final actor DeviceControllerActor: ModelActor {
             }
             
             do {
-                let apps = try await fetchDeviceApps(location: location)
+                let apps = try await fetchDeviceApps(location: device.location)
                 
                 // Remove apps from device that aren't in fetchedApps
                 device.apps = device.apps?.filter { app in
                     apps.contains { $0.id == app.id }
                 }
-
+                
                 // Add new apps to device
                 var deviceApps = device.apps ?? []
                 for app in apps {
@@ -89,14 +94,14 @@ final actor DeviceControllerActor: ModelActor {
                 for (index, app) in deviceApps.enumerated() {
                     if app.icon == nil {
                         do {
-                            let iconData = try await fetchAppIcon(location: location, appId: app.id)
+                            let iconData = try await fetchAppIcon(location: device.location, appId: app.id)
                             deviceApps[index].icon = iconData
                         } catch {
                             Self.logger.error("Error getting device app icon \(error)")
                         }
                     }
                 }
-
+                
                 device.apps = deviceApps
             } catch {
                 Self.logger.error("Error getting device apps \(error)")
@@ -111,64 +116,38 @@ final actor DeviceControllerActor: ModelActor {
                     Self.logger.warning("Error getting device icon \(error)")
                 }
             }
-        } else {
-            let deviceInfo = await self.fetchDeviceInfo(location: location)
-            
-            let newDevice = Device(
-                name: deviceInfo?.friendlyDeviceName ?? "New device",
-                location: location,
-                lastOnlineAt: Date.now,
-                id: id
-            )
-            if let deviceInfo = deviceInfo {
-                newDevice.ethernetMAC = deviceInfo.ethernetMac
-                newDevice.wifiMAC = deviceInfo.wifiMac
-                newDevice.networkType = deviceInfo.networkType
-                newDevice.powerMode = deviceInfo.powerMode
-            }
-            do {
-                let capabilities = try await fetchDeviceCapabilities(location: location)
-                newDevice.rtcpPort = capabilities.rtcpPort
-                newDevice.supportsDatagram = capabilities.supportsDatagram
-                
-            } catch {
-                Self.logger.error("Error getting capabilities \(error)")
-            }
-            Self.logger.info("Getting icon for new device \(newDevice.id)")
-            do {
-                let iconData = try await tryFetchDeviceIcon(location: newDevice.location)
-                Self.logger.debug("Got icon!")
-                newDevice.deviceIcon = iconData
-            } catch {
-                Self.logger.warning("Error getting device icon \(error)")
-            }
-            
-            do {
-                let apps = try await fetchDeviceApps(location: location)
-                
-                // Fetch icons for apps in deviceApps
-                for (index, app) in apps.enumerated() {
-                    if app.icon == nil {
-                        do {
-                            let iconData = try await fetchAppIcon(location: location, appId: app.id)
-                            apps[index].icon = iconData
-                        } catch {
-                            Self.logger.error("Error getting device app icon \(error)")
-                        }
-                    }
-                }
+        }
+    }
+    
+    func addDevice(location: String) async {
+        Self.logger.debug("Discovered device! \(location)")
 
-                newDevice.apps = apps
-            } catch {
-                Self.logger.error("Error getting new device apps \(error)")
-            }
-
-            
-            Self.logger.info("Discovered new device \(newDevice.id), \(newDevice.location)")
-            modelContext.insert(newDevice)
+        guard let deviceInfo = await self.fetchDeviceInfo(location: location) else {
+            Self.logger.error("Error getting device info for found device \(location)")
+            return
         }
         
-        try? modelContext.save()
+        if findDeviceById(id: deviceInfo.udn) != nil{
+            Self.logger.info("Trying to add device that already exists with UDN \(deviceInfo.udn)")
+            return
+        }
+        
+        let modelContext = ModelContext(modelContainer)
+        modelContext.insert(Device(
+            name: deviceInfo.friendlyDeviceName ?? "New device",
+            location: location,
+            lastOnlineAt: Date.now,
+            id: deviceInfo.udn
+        ))
+
+        
+        do {
+            try modelContext.save()
+            Self.logger.info("Saved new device \(deviceInfo.udn), \(location)")
+            await self.refreshDevice(id: deviceInfo.udn)
+        } catch {
+            Self.logger.error("Error saving device with id \(deviceInfo.udn) \(location): \(error)")
+        }
     }
     
     func wakeOnLAN(macAddress: String) async {
@@ -298,8 +277,77 @@ final actor DeviceControllerActor: ModelActor {
             Self.logger.error("Error sending \(key) to \(location): \(error)")
         }
     }
+
+    func refreshSelectedDeviceContinually(id: String) async {
+        let timeout: TimeAmount = .seconds(30)
+        
+        while !Task.isCancelled {
+            Self.logger.debug("Refreshing device \(id)")
+            await self.refreshDevice(id: id)
+        
+            let jitter = Int64.random(in: 0..<500 * 100_000) // Random jitter
+            let timeoutNanos = UInt64(timeout.nanoseconds + jitter)
+            try? await Task.sleep(nanoseconds: timeoutNanos)
+        }
+    }
     
     func scanContinually() async {
+        while !Task.isCancelled {
+            await withDiscardingTaskGroup { taskGroup in
+                taskGroup.addTask {
+                    await self.scanIPV4Once()
+                }
+                
+                taskGroup.addTask {
+                    await self.scanSSDPContinually()
+                }
+            }
+        }
+    }
+    
+    func scanIPV4Once() async {
+        let scannableInterfaces = await getAllInterfaces().filter{ $0.isIPV4 && $0.isEthernetLike }
+        let sem = AsyncSemaphore(value: 67)
+        
+        await withDiscardingTaskGroup { taskGroup in
+            for iface in scannableInterfaces {
+                guard let range = iface.scannableIPV4NetworkRange else {
+                    continue
+                }
+                if range.count > 1024 {
+                    Self.logger.error("IPV4 range has \(range.count) items. Max is 1024")
+                } else {
+                    Self.logger.debug("Manually scanning \(range.count) devices in network range \(range)")
+                }
+                
+                for ipInt in range {
+                    print("Scanning \(uInt32ToIP(ipInt))")
+                    taskGroup.addTask {
+                        try? await sem.waitUnlessCancelled()
+                        if Task.isCancelled {
+                            return
+                        }
+                        defer {
+                            sem.signal()
+                        }
+                        
+                        let ipAddr = uInt32ToIP(ipInt)
+                        let location = "http://\(ipAddr):8060/"
+                        print("Scanning address \(ipAddr)")
+                        
+                        if !(await canConnectTCP(location: location, timeout: 1.2, interface: iface.nwInterface)) {
+                            // This device is a potential item
+                            return
+                        }
+                        
+                        await self.addDevice(location: location)
+                    }
+                }
+            }
+        }
+    }
+    
+    func scanSSDPContinually() async {
         if self.bootstrap == nil {
             self.bootstrap = DatagramBootstrap(group: MultiThreadedEventLoopGroup.singleton)
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_BROADCAST), value: 1)
@@ -308,7 +356,6 @@ final actor DeviceControllerActor: ModelActor {
                 }
         }
         while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
             var channel: Channel? = nil
             do {
                 channel = try await bootstrap?
@@ -318,13 +365,13 @@ final actor DeviceControllerActor: ModelActor {
                 Self.logger.error("Error getting channel: \(error)")
             }
             guard let channel = channel else {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 continue
             }
-            
+            var timeout: TimeAmount = .seconds(2)
             while !Task.isCancelled {
                 let jitter = Int64.random(in: 0..<500 * 100_000) // Random jitter
                 let timeoutNanos = UInt64(timeout.nanoseconds + jitter)
-                Self.logger.debug("Waiting \(timeoutNanos) nanoseconds")
                 try? await Task.sleep(nanoseconds: timeoutNanos)
                 timeout = max(min(.seconds(30), .nanoseconds(timeout.nanoseconds * 2)), .seconds(2))
                 do {
@@ -359,6 +406,7 @@ struct DeviceInfo: Codable {
     let ethernetMac: String?
     let wifiMac: String?
     let friendlyDeviceName: String?
+    let udn: String
     
     func isPowerOn() -> Bool {
         return powerMode == "PowerOn"
@@ -404,13 +452,12 @@ class DatagramHandler: ChannelInboundHandler {
         
         Self.logger.debug("Found discovery responses \(parsedResponse.keys)")
         
-        guard let id = parsedResponse["USN"],
-              let location = parsedResponse["LOCATION"] else {
+        guard let location = parsedResponse["LOCATION"] else {
             return
         }
         
         Task {
-            await scanner.itemFound(location: location, id: id)
+            await scanner.addDevice(location: location)
         }
     }
 }
@@ -504,20 +551,25 @@ func fetchDeviceCapabilities(location: String) async throws -> DeviceCapabilitie
     return DeviceCapabilities(supportsDatagram: isDatagramSupported ?? false, rtcpPort: rtcpPort)
 }
 
-
 let CheckConnectLogger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
     category: String(describing: canConnectTCP)
 )
-func canConnectTCP(location: String, timeout: TimeInterval) async -> Bool {
+
+func canConnectTCP(location: String, timeout: TimeInterval, interface: NWInterface? = nil) async -> Bool {
     CheckConnectLogger.debug("Checking can connect to url \(location)")
     guard let url = URL(string: location),
           let host = url.host,
           let port = url.port else {
         return false
     }
+    let tcpParams = NWProtocolTCP.Options()
+    let params = NWParameters(tls: nil, tcp: tcpParams)
+    if let interface = interface {
+        params.requiredInterface = interface
+    }
     
-    let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: UInt16(port))!, using: .tcp)
+    let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: UInt16(port))!, using: params)
     
     let result = await withTaskGroup(of: Bool.self) { taskGroup in
         taskGroup.addTask {
@@ -554,22 +606,22 @@ func canConnectTCP(location: String, timeout: TimeInterval) async -> Bool {
             do {
                 try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
                 connection.cancel()
-                CheckConnectLogger.debug("Slept for \(timeout) secs")
+                CheckConnectLogger.trace("Slept for \(timeout) secs")
             } catch {
-                CheckConnectLogger.debug("Cancelled before \(timeout) secs elapsed")
+                CheckConnectLogger.trace("Cancelled before \(timeout) secs elapsed")
             }
             return false
         }
         var didConnect = false
         for await result in taskGroup {
-            CheckConnectLogger.debug("Got task result \(result)")
+            CheckConnectLogger.trace("Got task result \(result)")
             taskGroup.cancelAll()
             didConnect = didConnect || result
         }
         
         return didConnect
     }
-    CheckConnectLogger.debug("Got couldConnect result \(result)")
+    CheckConnectLogger.trace("Got couldConnect result \(result)")
     return result
 }
 

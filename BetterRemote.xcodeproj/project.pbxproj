@@ -18,6 +18,7 @@
 		AF56E3B82AD9814100F5E6E0 /* disney.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B42AD9814100F5E6E0 /* disney.png */; };
 		AF56E3B92AD9814100F5E6E0 /* netflix.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B52AD9814100F5E6E0 /* netflix.png */; };
 		AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
+		AF5FDAD62ADB3C4B006CDEB3 /* Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */; };
 		AF76B8162AD8A14600DF6FF7 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
 		AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */; };
 		AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */; };
@@ -25,6 +26,8 @@
 		AFC24F132AD0E5A3002AB66C /* BetterRemoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F122AD0E5A3002AB66C /* BetterRemoteTests.swift */; };
 		AFC24F1D2AD0E5A3002AB66C /* BetterRemoteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1C2AD0E5A3002AB66C /* BetterRemoteUITests.swift */; };
 		AFC24F1F2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1E2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift */; };
+		AFC6E67D2ADCC4D50036EC90 /* VolumeListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */; };
+		AFC6E67F2ADCE5D80036EC90 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
 		AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */; };
 		AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */; };
 		AFFED2472AD749DD00357FA4 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED2462AD749DD00357FA4 /* XMLCoder */; };
@@ -63,6 +66,7 @@
 		AF56E3B42AD9814100F5E6E0 /* disney.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disney.png; sourceTree = "<group>"; };
 		AF56E3B52AD9814100F5E6E0 /* netflix.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = netflix.png; sourceTree = "<group>"; };
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
+		AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery.swift; sourceTree = "<group>"; };
 		AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuSession.swift; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BetterRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteApp.swift; sourceTree = "<group>"; };
@@ -73,6 +77,8 @@
 		AFC24F182AD0E5A3002AB66C /* BetterRemoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BetterRemoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24F1C2AD0E5A3002AB66C /* BetterRemoteUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteUITests.swift; sourceTree = "<group>"; };
 		AFC24F1E2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
+		AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
 		AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryHeap.swift; sourceTree = "<group>"; };
@@ -119,8 +125,8 @@
 		AF56E3AE2AD979B700F5E6E0 /* XCodeSupport */ = {
 			isa = PBXGroup;
 			children = (
-				AF4829722AD4C83D008E05FA /* Info.plist */,
 				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
+				AF4829722AD4C83D008E05FA /* Info.plist */,
 				AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */,
 			);
 			path = XCodeSupport;
@@ -149,10 +155,13 @@
 		AF56E3BB2AD9865400F5E6E0 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */,
 				AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */,
 				AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */,
 				AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */,
 				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
+				AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */,
+				AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -367,11 +376,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF4D5F312AD435060055AF35 /* DeviceControllerActor.swift in Sources */,
+				AFC6E67F2ADCE5D80036EC90 /* AsyncSemaphore.swift in Sources */,
 				AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */,
 				AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */,
 				AFFED2512AD75EAF00357FA4 /* BinaryHeap.swift in Sources */,
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
 				AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */,
+				AFC6E67D2ADCC4D50036EC90 /* VolumeListener.swift in Sources */,
+				AF5FDAD62ADB3C4B006CDEB3 /* Discovery.swift in Sources */,
 				AF11D36D2AD2D41100527AF6 /* Device.swift in Sources */,
 				AF11D36B2AD2D0B800527AF6 /* AppLinksView.swift in Sources */,
 				AF56E3B12AD97AB100F5E6E0 /* AppLink.swift in Sources */,
@@ -448,6 +460,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -512,6 +525,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -539,11 +553,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BetterRemote/XCodeSupport/BetterRemote.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content";
+				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content/netflix.png BetterRemote/Preview\\ Content/disney.png BetterRemote/Preview\\ Content/spotify.png BetterRemote/Preview\\ Content BetterRemote/Preview\\ Content/hulu.png";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -551,7 +565,7 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -560,6 +574,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
@@ -576,11 +591,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BetterRemote/XCodeSupport/BetterRemote.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content";
+				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content/netflix.png BetterRemote/Preview\\ Content/disney.png BetterRemote/Preview\\ Content/spotify.png BetterRemote/Preview\\ Content BetterRemote/Preview\\ Content/hulu.png";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -588,7 +603,7 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -597,6 +612,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
