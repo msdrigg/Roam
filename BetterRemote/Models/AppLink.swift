@@ -14,12 +14,14 @@ final class AppLink: Identifiable, Decodable, Encodable {
     let type: String
     let name: String
     @Attribute(.externalStorage) var icon: Data?
+    @Relationship(inverse: \Device.apps) var devices: [Device]
     
-    init(id: String, type: String, name: String, icon: Data? = nil) {
+    init(id: String, type: String, name: String, icon: Data? = nil, devices: [Device] = []) {
         self.id = id
         self.type = type
         self.name = name
         self.icon = icon
+        self.devices = devices
     }
     
     init(from decoder: Decoder) throws {
@@ -29,6 +31,8 @@ final class AppLink: Identifiable, Decodable, Encodable {
         
         let singleValueContainer = try decoder.singleValueContainer()
         name = try singleValueContainer.decode(String.self)
+        
+        devices = []
     }
     
     func encode(to encoder: Encoder) throws {

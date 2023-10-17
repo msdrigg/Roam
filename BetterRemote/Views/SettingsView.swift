@@ -21,7 +21,41 @@ struct SettingsView: View {
     @State private var scanningActor: DeviceControllerActor!
     @State private var isScanning: Bool = false
     
+    @State private var tabSelection = 0
+    
+    @AppStorage("scanIPAutomatically") private var scanIpAutomatically: Bool = true
+    @AppStorage("controlVolumeWithHWButtons") private var controlVolumeWithHWButtons: Bool = true
+    
     var body: some View {
+        TabView(selection: $tabSelection) {
+            deviceSettings
+                .tabItem {
+                    Label("Devices", systemImage: "sparkles.tv")
+                }
+                .tag(0)
+            
+            behaviorSettings
+                .tabItem {
+                    Label("Behavior", systemImage: "gearshape")
+                }
+                .tag(1)
+        }
+    }
+    
+@ViewBuilder
+    var behaviorSettings: some View {
+    Form {
+        #if os(iOS)
+        Toggle("Use volume buttons to control TV volume", isOn: $controlVolumeWithHWButtons)
+        #endif
+        
+        Toggle("Scan for devices when app opens", isOn: $scanIpAutomatically)
+    }
+    .formStyle(.grouped)
+}
+    
+    @ViewBuilder
+    var deviceSettings: some View {
 #if os(macOS)
         VStack {
             deviceList
@@ -37,6 +71,10 @@ struct SettingsView: View {
                     self.scanningActor = DeviceControllerActor(modelContainer: modelContainer)
                 }
                 .task(priority: .low) {
+                    if !scanIpAutomatically {
+                        return
+                    }
+
                     defer {
                         isScanning = false
                     }
@@ -44,7 +82,7 @@ struct SettingsView: View {
                     await self.scanningActor.scanIPV4Once()
                 }
             
-            HStack (alignment: .center, spacing: 20) {
+            HStack (alignment: .center) {
                 addDeviceButton
                     .padding()
                 
@@ -69,13 +107,16 @@ struct SettingsView: View {
                     }
                 }
                 .task(priority: .low) {
+                    if !scanIpAutomatically {
+                        return
+                    }
                     defer {
                         isScanning = false
                     }
                     isScanning = true
                     await self.scanningActor.scanIPV4Once()
                 }
-                .navigationTitle("Device settings")
+                .navigationTitle("Devices")
         } detail: {
             if let dev = selectedDevice {
                 DeviceDetailView(device: dev) {
@@ -84,6 +125,7 @@ struct SettingsView: View {
             }
         }
 #endif
+
     }
     
     @ViewBuilder
@@ -103,7 +145,7 @@ struct SettingsView: View {
     
     @ViewBuilder
     var addDeviceButton: some View {
-        Button( "Add device", systemImage: "plus") {
+        Button("Add device", systemImage: "plus") {
             let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, id: UUID().uuidString)
             do {
                 modelContext.insert(newDevice)
@@ -122,17 +164,15 @@ struct SettingsView: View {
             isScanning = !isScanning
         }
         .task(id: isScanning) {
-            Task {
-                if !isScanning {
-                    return
-                }
-                isScanning = true
-                defer {
-                    isScanning = false
-                }
-                
-                await scanningActor.scanIPV4Once()
+            if !isScanning {
+                return
             }
+            isScanning = true
+            defer {
+                isScanning = false
+            }
+            
+            await scanningActor.scanIPV4Once()
         }
         .labelStyle(.titleAndIcon)
         .symbolEffect(.variableColor, isActive: isScanning)

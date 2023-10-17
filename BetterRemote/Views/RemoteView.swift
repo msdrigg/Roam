@@ -1,7 +1,9 @@
 import SwiftUI
+import Intents
 import SwiftData
 import os
 import AVFoundation
+import AppIntents
 
 struct RemoteView: View {
     private static let logger = Logger(
@@ -22,6 +24,10 @@ struct RemoteView: View {
     @State private var keyboardEntryText: String = ""
     @State var screenSize: CGSize = .zero
     @State var inBackground: Bool = false
+    @State var buttonPresses: [RemoteButton: Int] = [:]
+    
+    @AppStorage("scanIPAutomatically") private var scanIpAutomatically: Bool = true
+    @AppStorage("controlVolumeWithHWButtons") private var controlVolumeWithHWButtons: Bool = true
     
     enum FocusField: Hashable {
         case field
@@ -58,14 +64,42 @@ struct RemoteView: View {
         selectedDevice?.isOnline() ?? false ? Color.green : Color.secondary
     }
     
-    @State var buttonPresses: [String: Int] = [:]
-    
-    func buttonPressCount(_ key: String) -> Int {
+    func buttonPressCount(_ key: RemoteButton) -> Int {
         buttonPresses[key] ?? 0
     }
     
-    func incrementButtonPressCount(_ key: String) {
+    func incrementButtonPressCount(_ key: RemoteButton) {
         buttonPresses[key] = (buttonPresses[key] ?? 0) + 1
+    }
+    
+    func donateButtonIntent(_ key: RemoteButton) {
+        switch key {
+        case .power:
+            let intent = PowerIntent()
+            intent.device = selectedDevice?.toAppEntity()
+            intent.donate()
+        case .select:
+            let intent = OkIntent()
+            intent.device = selectedDevice?.toAppEntity()
+            intent.donate()
+        case .mute:
+            let intent = MuteIntent()
+            intent.device = selectedDevice?.toAppEntity()
+            intent.donate()
+        case .playPause:
+            let intent = PlayIntent()
+            intent.device = selectedDevice?.toAppEntity()
+            intent.donate()
+        default:
+            return
+        }
+    }
+    
+    func donateAppLaunchIntent(_ link: AppLink) {
+        let intent = LaunchAppIntent()
+        intent.app = link.toAppEntity()
+        intent.device = selectedDevice?.toAppEntity()
+        intent.donate()
     }
     
     var body: some View {
@@ -106,8 +140,7 @@ struct RemoteView: View {
                             KeyboardEntry(str: $keyboardEntryText, onKeyPress: { key in
                                 if let device = selectedDevice {
                                     Task {
-                                        Self.logger.debug("Sending \(getKeypressForKey(key: key)) for \(key.key.character.unicodeScalars)")
-                                        await self.controllerActor.sendKeyToDevice(location: device.location, key: getKeypressForKey(key: key))
+                                        await self.controllerActor.sendKeyPressTodevice(location: device.location, key: key)
                                     }
                                 }
                                 return .ignored
@@ -123,7 +156,13 @@ struct RemoteView: View {
             .padding(.top, 20)
             .padding(.bottom, 10)
             .task(priority: .low) {
-                await self.scanningActor.scanContinually()
+                await self.scanningActor.scanSSDPContinually()
+            }
+            .task(priority: .low) {
+                if !scanIpAutomatically {
+                    return
+                }
+                await self.scanningActor.scanIPV4Once()
             }
             .task(id: selectedDevice?.id, priority: .medium) {
                 if let devId = selectedDevice?.id {
@@ -136,18 +175,18 @@ struct RemoteView: View {
                 self.controllerActor = DeviceControllerActor(modelContainer: modelContainer)
             }
 #if os(iOS)
-            .task(id: inBackground) {
-                if inBackground {
+            .task(id: inBackground || !controlVolumeWithHWButtons) {
+                if inBackground || !controlVolumeWithHWButtons {
                     return
                 }
                 if let stream = VolumeListener(session: AVAudioSession.sharedInstance()).events {
                     for await volumeEvent in stream {
-                        let key: String
+                        let key: RemoteButton
                         switch volumeEvent.direction {
                         case .Up:
-                            key = "VolumeUp"
+                            key = .volumeUp
                         case .Down:
-                            key = "VolumeDown"
+                            key = .volumeDown
                         }
                         Task {
                             if let device = selectedDevice {
@@ -203,10 +242,10 @@ struct RemoteView: View {
                         Divider()
 #if os(macOS)
                         SettingsLink {
-                            Label("Device Settings", systemImage: "gear")
+                            Label("Settings", systemImage: "gear")
                         }
 #else
-                        Button("Device Settings", systemImage: "gear") {
+                        Button("Settings", systemImage: "gear") {
                             showSettingsView = true
                         }
 #endif
@@ -226,7 +265,8 @@ struct RemoteView: View {
 #if os(macOS)
                 ToolbarItem(placement: .primaryAction) {
                     Button(role: .destructive, action: {
-                        incrementButtonPressCount("power")
+                        incrementButtonPressCount(.power)
+                        donateButtonIntent(.power)
                         Task {
                             if let device = selectedDevice {
                                 await controllerActor.powerToggleDevice(device: device)
@@ -240,8 +280,8 @@ struct RemoteView: View {
                     .labelStyle(.iconOnly)
                     .disabled(selectedDevice == nil)
                     .keyboardShortcut(.return)
-                    .sensoryFeedback(.impact, trigger: buttonPressCount("power"))
-                    .symbolEffect(.bounce, value: buttonPressCount("power"))
+                    .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
+                    .symbolEffect(.bounce, value: buttonPressCount(.power))
                 }
 #endif
                 
@@ -320,33 +360,36 @@ struct RemoteView: View {
     @ViewBuilder
     var appLinks: some View {
         AppLinksView(appLinks: selectedDevice?.appsSorted ?? [], rows: screenSize.height > 500 ? 2 : 1) { app in
+            
+            donateAppLaunchIntent(app)
+            incrementButtonPressCount(.inputAV1)
             Task {
-                incrementButtonPressCount("app")
                 if let location = selectedDevice?.location {
-                    await controllerActor.openApp(location: location, app: app)
+                    await controllerActor.openApp(location: location, app: app.id)
                 }
             }
         }
-        .sensoryFeedback(.impact, trigger: buttonPressCount("app"))
+        .sensoryFeedback(.impact, trigger: buttonPressCount(.inputAV1))
     }
     
     @ViewBuilder
     var buttonGrid: some View {
-        let buttons: [(String, String, String, KeyEquivalent?, Bool)] = [
-            ("Replay", "arrow.uturn.backward", "instantreplay", nil, false),
-            ("Options", "asterisk", "info", nil, false),
-            ("Private Listening", "headphones", "privateListening", nil, true),
-            ("Rewind", "backward.end.fill", "rev", nil, false),
-            ("Play/Pause", "playpause.fill", "play", nil, false),
-            ("Fast Forward", "forward.end.fill", "fwd", nil, false),
-            ("Mute", "speaker.slash.fill", "volumemute", "m", false),
-            ("Volume Down", "speaker.wave.1.fill", "volumedown", .downArrow, false),
-            ("Volume Up", "speaker.wave.2.fill", "volumeup", .upArrow, false)
+        let buttons: [(String, String, RemoteButton, KeyEquivalent?, Bool)] = [
+            ("Replay", "arrow.uturn.backward", .instantReplay, nil, false),
+            ("Options", "asterisk", .options, nil, false),
+            ("Private Listening", "headphones", .enter, nil, true),
+            ("Rewind", "backward.end.fill", .rewind, nil, false),
+            ("Play/Pause", "playpause.fill", .playPause, nil, false),
+            ("Fast Forward", "forward.end.fill", .fastForward, nil, false),
+            ("Mute", "speaker.slash.fill", .mute, "m", false),
+            ("Volume Down", "speaker.wave.1.fill", .volumeDown, .downArrow, false),
+            ("Volume Up", "speaker.wave.2.fill", .volumeUp, .upArrow, false)
         ]
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 48, maximum: 160)), count: 3), spacing: 10) {
             ForEach(buttons, id: \.0) { button in
                 let view = Button(action: {
                     incrementButtonPressCount(button.2)
+                    donateButtonIntent(button.2)
                     Task {
                         if let device = selectedDevice {
                             await controllerActor.sendKeyToDevice(location: device.location, key: button.2)
@@ -375,10 +418,10 @@ struct RemoteView: View {
     
     @ViewBuilder
     var centerController: some View {
-        let buttons: [(String?, String, String)?] = [
-            nil, ("chevron.up", "up", "Up"), nil,
-            ("chevron.left", "left", "Left"), (nil, "select", "OK"), ("chevron.right", "right", "Right"),
-            nil, ("chevron.down", "down", "Down"), nil
+        let buttons: [(String?, RemoteButton, String)?] = [
+            nil, ("chevron.up", .up, "Up"), nil,
+            ("chevron.left", .left, "Left"), (nil, .select, "OK"), ("chevron.right", .right, "Right"),
+            nil, ("chevron.down", .down, "Down"), nil
         ]
         Grid {
             ForEach(0..<3) { row in
@@ -387,6 +430,7 @@ struct RemoteView: View {
                         if let button = buttons[row * 3 + col] {
                             Button(action: {
                                 incrementButtonPressCount(button.1)
+                                donateButtonIntent(button.1)
                                 Task {
                                     if let device = selectedDevice {
                                         await controllerActor.sendKeyToDevice(location: device.location, key: button.1)
@@ -425,10 +469,11 @@ struct RemoteView: View {
                 Spacer()
             }
             Button(action: {
+                incrementButtonPressCount(.back)
+                donateButtonIntent(.back)
                 Task {
-                    incrementButtonPressCount("back")
                     if let device = selectedDevice {
-                        await controllerActor.sendKeyToDevice(location: device.location, key: "back")
+                        await controllerActor.sendKeyToDevice(location: device.location, key: .back)
                     }
                 }
             }) {
@@ -436,8 +481,8 @@ struct RemoteView: View {
             }
             .buttonStyle(.bordered)
             .labelStyle(.iconOnly)
-            .sensoryFeedback(.impact, trigger: buttonPressCount("back"))
-            .symbolEffect(.bounce, value: buttonPressCount("back"))
+            .sensoryFeedback(.impact, trigger: buttonPressCount(.back))
+            .symbolEffect(.bounce, value: buttonPressCount(.back))
             if !isHorizontal {
                 Spacer()
             }
@@ -447,8 +492,7 @@ struct RemoteView: View {
                 let _ = print("Getting key \(key)")
                 if let device = selectedDevice {
                     Task {
-                        Self.logger.debug("Sending \(getKeypressForKey(key: key)) for \(key.key.character.unicodeScalars)")
-                        await self.controllerActor.sendKeyToDevice(location: device.location, key: getKeypressForKey(key: key))
+                        await self.controllerActor.sendKeyPressTodevice(location: device.location, key: key)
                     }
                     return .handled
                 }
@@ -456,8 +500,9 @@ struct RemoteView: View {
             }
 #elseif os(iOS)
             Button("Power On/Off", systemImage: "power", role: .destructive, action: {
+                incrementButtonPressCount(.power)
+                donateButtonIntent(.power)
                 Task {
-                    incrementButtonPressCount("power")
                     if let device = selectedDevice {
                         await controllerActor.powerToggleDevice(device: device)
                     }
@@ -466,18 +511,19 @@ struct RemoteView: View {
             .font(.system(size: 24, weight: .bold))
             .labelStyle(.iconOnly)
             .controlSize(.large)
-            .sensoryFeedback(.impact, trigger: buttonPressCount("power"))
-            .symbolEffect(.bounce, value: buttonPressCount("power"))
+            .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
+            .symbolEffect(.bounce, value: buttonPressCount(.power))
 #endif
             if !isHorizontal {
                 Spacer()
             }
             
             Button(action: {
+                incrementButtonPressCount(.home)
+                donateButtonIntent(.home)
                 Task {
-                    incrementButtonPressCount("home")
                     if let device = selectedDevice {
-                        await controllerActor.sendKeyToDevice(location: device.location, key: "home")
+                        await controllerActor.sendKeyToDevice(location: device.location, key: .home)
                     }
                 }
             }) {
@@ -485,8 +531,8 @@ struct RemoteView: View {
             }
             .buttonStyle(.bordered)
             .labelStyle(.iconOnly)
-            .sensoryFeedback(.impact, trigger: buttonPressCount("home"))
-            .symbolEffect(.bounce, value: buttonPressCount("home"))
+            .sensoryFeedback(.impact, trigger: buttonPressCount(.home))
+            .symbolEffect(.bounce, value: buttonPressCount(.home))
             if !isHorizontal {
                 Spacer()
             }
@@ -542,28 +588,6 @@ struct KeyboardEntry: View {
     }
 }
 #endif
-
-func getKeypressForKey(key: KeyPress) -> String {
-    let keyMap: [Character: String] = [
-        KeyEquivalent.delete.character: "backspace",
-        KeyEquivalent.deleteForward.character: "backspace",
-        "\u{7F}": "backspace",
-        KeyEquivalent.escape.character: "back",
-        KeyEquivalent.space.character: "LIT_ ",
-        KeyEquivalent.downArrow.character: "down",
-        KeyEquivalent.upArrow.character: "up",
-        KeyEquivalent.rightArrow.character: "right",
-        KeyEquivalent.leftArrow.character: "left",
-        KeyEquivalent.home.character: "home",
-        KeyEquivalent.return.character: "select",
-    ]
-    
-    if let mappedString = keyMap[key.key.character] {
-        return mappedString
-    }
-    
-    return "LIT_\(key.characters)"
-}
 
 enum SettingsDestination {
     case Devices

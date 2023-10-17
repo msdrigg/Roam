@@ -2,7 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>InAlternativeAppNames</key>
+	<array>
+		<dict>
+			<key>INAlternativeAppName</key>
+			<string>Better Remote</string>
+		</dict>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict/>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>MuteIntent</string>
+		<string>PlayOrPauseIntent</string>
+		<string>PowerIntent</string>
+		<string>SelectIntent</string>
+	</array>
 </dict>
 </plist>

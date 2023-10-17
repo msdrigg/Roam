@@ -5,25 +5,19 @@ import os
 import XMLCoder
 import Network
 import Atomics
+import SwiftUI
 
 // Only refresh every 1 hour
 let MIN_RESCAN_TIME: TimeInterval = 3600
 
-final actor DeviceControllerActor: ModelActor {
+@ModelActor
+actor DeviceControllerActor {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: DeviceControllerActor.self)
     )
     
-    let modelContainer: ModelContainer
-    let modelExecutor: any ModelExecutor
     var bootstrap: DatagramBootstrap? = nil
-    
-    init(modelContainer: ModelContainer) {
-        self.modelContainer = modelContainer
-        let context = ModelContext(modelContainer)
-        self.modelExecutor = DefaultSerialModelExecutor(modelContext: context)
-    }
     
     func findDeviceById(id: String) -> Device? {
         let modelContext = ModelContext(modelContainer)
@@ -187,8 +181,8 @@ final actor DeviceControllerActor: ModelActor {
         }
     }
     
-    func openApp(location: String, app: AppLink) {
-        guard let url = URL(string: "\(location)/launch/\(app.id)") else { return }
+    func openApp(location: String, app: String) {
+        guard let url = URL(string: "\(location)/launch/\(app)") else { return }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -196,9 +190,9 @@ final actor DeviceControllerActor: ModelActor {
         let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 200 {
-                    Self.logger.info("Opened app \(app.name) to with location \(location)")
+                    Self.logger.info("Opened app \(app) to with location \(location)")
                 } else {
-                    Self.logger.error("Error opening app \(app.name) at \(location)/launch/\(app.id): \(httpResponse.statusCode)")
+                    Self.logger.error("Error opening app \(app) at \(location)/launch/\(app): \(httpResponse.statusCode)")
                 }
             }
         }
@@ -222,7 +216,7 @@ final actor DeviceControllerActor: ModelActor {
         
         // Attempt checking the device power mode
         Self.logger.debug("Attempting to power toggle device woth api")
-        await sendKeyToDevice(location: device.location, key: "power")
+        await sendKeyToDevice(location: device.location, key: .power)
     }
     
     func fetchDeviceInfo(location: String) async -> DeviceInfo? {
@@ -254,9 +248,16 @@ final actor DeviceControllerActor: ModelActor {
         return nil
     }
     
+    func sendKeyPressTodevice(location: String, key: KeyPress) async {
+        await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
+    }
     
-    func sendKeyToDevice(location: String, key: String) async {
-        let keypressURL = "\(location)/keypress/\(key)"
+    func sendKeyToDevice(location: String, key: RemoteButton) async {    
+        await internalSendKeyToDevice(location: location, rawKey: key.apiValue)
+    }
+        
+    private func internalSendKeyToDevice(location: String, rawKey: String) async {
+        let keypressURL = "\(location)/keypress/\(rawKey)"
         guard let url = URL(string: keypressURL) else {
             Self.logger.error("Unable to send key due to bad url url `\(keypressURL)`")
             return
@@ -268,13 +269,13 @@ final actor DeviceControllerActor: ModelActor {
             let (_, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 200 {
-                    Self.logger.debug("Sent \(key) to \(location)")
+                    Self.logger.debug("Sent \(rawKey) to \(location)")
                 } else {
-                    Self.logger.error("Error sending \(key) to \(location): \(httpResponse.statusCode)")
+                    Self.logger.error("Error sending \(rawKey) to \(location): \(httpResponse.statusCode)")
                 }
             }
         } catch {
-            Self.logger.error("Error sending \(key) to \(location): \(error)")
+            Self.logger.error("Error sending \(rawKey) to \(location): \(error)")
         }
     }
 
@@ -291,23 +292,11 @@ final actor DeviceControllerActor: ModelActor {
         }
     }
     
-    func scanContinually() async {
-        while !Task.isCancelled {
-            await withDiscardingTaskGroup { taskGroup in
-                taskGroup.addTask {
-                    await self.scanIPV4Once()
-                }
-                
-                taskGroup.addTask {
-                    await self.scanSSDPContinually()
-                }
-            }
-        }
-    }
-    
     func scanIPV4Once() async {
+        let MAX_CONCURRENT_SCANNED = 67
+        
         let scannableInterfaces = await getAllInterfaces().filter{ $0.isIPV4 && $0.isEthernetLike }
-        let sem = AsyncSemaphore(value: 67)
+        let sem = AsyncSemaphore(value: MAX_CONCURRENT_SCANNED)
         
         await withDiscardingTaskGroup { taskGroup in
             for iface in scannableInterfaces {
@@ -643,4 +632,27 @@ func fetchAppIcon(location: String, appId: String) async throws -> Data {
     let url = URL(string: "\(location)/query/icon/\(appId)")!
     let (data, _) = try await URLSession.shared.data(from: url)
     return data
+}
+
+
+private func getKeypressForKey(key: KeyPress) -> String {
+    let keyMap: [Character: String] = [
+        KeyEquivalent.delete.character: RemoteButton.back.apiValue,
+        KeyEquivalent.deleteForward.character: RemoteButton.back.apiValue,
+        "\u{7F}": RemoteButton.back.apiValue,
+        KeyEquivalent.escape.character: RemoteButton.back.apiValue,
+        KeyEquivalent.space.character: "LIT_ ",
+        KeyEquivalent.downArrow.character: RemoteButton.down.apiValue,
+        KeyEquivalent.upArrow.character: RemoteButton.up.apiValue,
+        KeyEquivalent.rightArrow.character: RemoteButton.right.apiValue,
+        KeyEquivalent.leftArrow.character: RemoteButton.left.apiValue,
+        KeyEquivalent.home.character: RemoteButton.home.apiValue,
+        KeyEquivalent.return.character: RemoteButton.select.apiValue,
+    ]
+    
+    if let mappedString = keyMap[key.key.character] {
+        return mappedString
+    }
+    
+    return "LIT_\(key.characters)"
 }

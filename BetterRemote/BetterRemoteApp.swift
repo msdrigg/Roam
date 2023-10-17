@@ -10,19 +10,15 @@ import SwiftData
 
 @main
 struct BetterRemoteApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            AppLink.self,
-            Device.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+    var sharedModelContainer: ModelContainer
+    init() {
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            sharedModelContainer = try getSharedModelContainer()
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+    }
+    
 
     var body: some Scene {
         WindowGroup {

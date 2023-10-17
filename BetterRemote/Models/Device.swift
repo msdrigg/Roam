@@ -98,3 +98,22 @@ let devicePreviewContainer: ModelContainer = {
         fatalError("Failed to create container with error: \(error.localizedDescription)")
     }
 }()
+
+func getSharedModelContainer() throws -> ModelContainer {
+    let schema = Schema([
+        AppLink.self,
+        Device.self,
+    ])
+    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    
+    return try ModelContainer(for: schema, configurations: [modelConfiguration])
+}
+
+func fetchSelectedDevice(context: ModelContext) -> Device? {
+    var descriptor = FetchDescriptor<Device>()
+    descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
+    descriptor.fetchLimit = 1
+    return (try? context.fetch(
+        descriptor
+    ))?.first
+}
