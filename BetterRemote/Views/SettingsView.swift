@@ -18,7 +18,7 @@ struct SettingsView: View {
         }
     }
     
-    @State private var scanningActor: DeviceControllerActor!
+    @State private var scanningActor: DeviceScanningActor!
     @State private var isScanning: Bool = false
     
     @State private var tabSelection = 0
@@ -68,7 +68,7 @@ struct SettingsView: View {
                 }
                 .onAppear {
                     let modelContainer = modelContext.container
-                    self.scanningActor = DeviceControllerActor(modelContainer: modelContainer)
+                    self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
                 }
                 .task(priority: .low) {
                     if !scanIpAutomatically {
@@ -78,6 +78,7 @@ struct SettingsView: View {
                     defer {
                         isScanning = false
                     }
+                    
                     isScanning = true
                     await self.scanningActor.scanIPV4Once()
                 }
@@ -96,7 +97,7 @@ struct SettingsView: View {
             deviceList
                 .onAppear {
                     let modelContainer = modelContext.container
-                    self.scanningActor = DeviceControllerActor(modelContainer: modelContainer)
+                    self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
                 }
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
@@ -234,6 +235,8 @@ struct DeviceDetailView: View {
     
     @Environment(\.modelContext) private var modelContext
     
+    @State private var scanningActor: DeviceScanningActor!
+    
     @Bindable var device: Device
     @State var deviceName: String = ""
     @State var deviceLocation: String = ""
@@ -301,13 +304,37 @@ struct DeviceDetailView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Save", systemImage: "checkmark", action: {
-                    do {
-                        device.location = deviceLocation
-                        device.name = deviceName
-                        try modelContext.save()
-                        dismiss()
-                    } catch {
-                        Self.logger.error("Error saving device changes \(error)")
+                    Task {
+                        // Try to get device id
+                        
+                        var deviceInfo: DeviceInfo? = nil
+                        
+                        if await canConnectTCP(location: deviceLocation, timeout: 1) {
+                            deviceInfo = await scanningActor.fetchDeviceInfo(location: deviceLocation)
+                        }
+                        
+                        if let id = deviceInfo?.udn {
+                            if id != device.id {
+                                modelContext.insert(Device(name: deviceName, location: deviceLocation, id: id))
+                                
+                                try modelContext.save()
+                                
+                                modelContext.delete(device)
+                            } else {
+                                device.location = deviceLocation
+                                device.name = deviceName
+                            }
+                        } else {
+                            device.location = deviceLocation
+                            device.name = deviceName
+                        }
+                        
+                        do {
+                            try modelContext.save()
+                            dismiss()
+                        } catch {
+                            Self.logger.error("Error saving device changes \(error)")
+                        }
                     }
                 })
             }
@@ -324,7 +351,12 @@ struct DeviceDetailView: View {
                 })
                 .foregroundStyle(Color.red)
             }
+        }          
+        .onAppear {
+            let modelContainer = modelContext.container
+            self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
         }
+
 #if os(macOS)
         .padding()
 #endif

@@ -7,77 +7,96 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AF11D36B2AD2D0B800527AF6 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
-		AF11D36D2AD2D41100527AF6 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36C2AD2D41100527AF6 /* Device.swift */; };
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
-		AF4D5F312AD435060055AF35 /* DeviceControllerActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */; };
+		AF205B1F2AE02CAF00041CDF /* MediumRemoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */; };
+		AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */; };
+		AF205B212AE02CAF00041CDF /* SmallRemoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */; };
+		AF205B242AE02D0100041CDF /* RemoteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */; };
+		AF205B252AE02D0100041CDF /* DeviceControllerActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */; };
+		AF205B262AE02D0100041CDF /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36C2AD2D41100527AF6 /* Device.swift */; };
+		AF205B272AE02D0100041CDF /* NetworkHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */; };
+		AF205B282AE02D0100041CDF /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */; };
+		AF205B292AE02D1C00041CDF /* LaunchAppIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */; };
+		AF205B2A2AE02D1C00041CDF /* RemoteButtonAppEnum.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */; };
+		AF205B2B2AE02D1C00041CDF /* ButtonPressIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */; };
+		AF205B2C2AE02D1C00041CDF /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
+		AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
+		AF205B2E2AE02D1C00041CDF /* AppLinkAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */; };
+		AF20AD0C2AE01E9100D371C7 /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */; };
+		AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36C2AD2D41100527AF6 /* Device.swift */; };
+		AF20AD132AE01ED100D371C7 /* DeviceControllerActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */; };
+		AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */; };
+		AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */; };
+		AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */; };
+		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
+		AF2740102AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift */; };
+		AF2740162AE02C26007C6208 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF2740152AE02C26007C6208 /* Assets.xcassets */; };
+		AF27401B2AE02C26007C6208 /* BetterRemoteWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
+		AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
+		AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
+		AF3EEF9C2AE0207900B661F3 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AF3EEF9B2AE0207900B661F3 /* RTP */; };
+		AF3EEF9E2AE0207F00B661F3 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AF3EEF9D2AE0207F00B661F3 /* Opus */; };
 		AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */ = {isa = PBXBuildFile; productRef = AF4D5F332AD4355E0055AF35 /* NIO */; };
-		AF56E3B12AD97AB100F5E6E0 /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */; };
-		AF56E3B62AD9814100F5E6E0 /* spotify.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B22AD9814100F5E6E0 /* spotify.png */; };
-		AF56E3B72AD9814100F5E6E0 /* hulu.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B32AD9814100F5E6E0 /* hulu.png */; };
-		AF56E3B82AD9814100F5E6E0 /* disney.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B42AD9814100F5E6E0 /* disney.png */; };
-		AF56E3B92AD9814100F5E6E0 /* netflix.png in Resources */ = {isa = PBXBuildFile; fileRef = AF56E3B52AD9814100F5E6E0 /* netflix.png */; };
-		AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
-		AF5FDAD62ADB3C4B006CDEB3 /* Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */; };
-		AF76B8162AD8A14600DF6FF7 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
 		AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */; };
+		AF95B6F72ADF2F9F005FC338 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = AF95B6F62ADF2F9F005FC338 /* README.md */; };
+		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
+		AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
+		AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */; };
+		AFA079DC2AE02561003E2754 /* RemoteButtonAppEnum.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */; };
+		AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */; };
+		AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */; };
+		AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
 		AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */; };
 		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
-		AFC24F132AD0E5A3002AB66C /* BetterRemoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F122AD0E5A3002AB66C /* BetterRemoteTests.swift */; };
-		AFC24F1D2AD0E5A3002AB66C /* BetterRemoteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1C2AD0E5A3002AB66C /* BetterRemoteUITests.swift */; };
-		AFC24F1F2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24F1E2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift */; };
-		AFC6E67D2ADCC4D50036EC90 /* VolumeListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */; };
-		AFC6E67F2ADCE5D80036EC90 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
-		AFC6E6882ADDDE110036EC90 /* ButtonPressIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */; };
-		AFC6E6892ADDDE110036EC90 /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
-		AFC6E68C2ADDDF450036EC90 /* RemoteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */; };
-		AFC6E68E2ADDE2BC0036EC90 /* AppLinkAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */; };
-		AFC6E6902ADDE4AA0036EC90 /* LaunchAppIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */; };
-		AFC6E6972ADDF6BB0036EC90 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AFC6E6962ADDF6BB0036EC90 /* Intents.framework */; };
-		AFC6E69A2ADDF6BB0036EC90 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6992ADDF6BB0036EC90 /* IntentHandler.swift */; };
-		AFC6E6AF2ADDF6BC0036EC90 /* RemoteIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AFC6E6952ADDF6BB0036EC90 /* RemoteIntents.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		AFC6E6B82ADE28C80036EC90 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
+		AFF6077D2ADFAC4900A7D657 /* VolumeListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */; };
+		AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
+		AFF607802ADFACBA00A7D657 /* Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */; };
+		AFF607812ADFACBA00A7D657 /* ScanningActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* ScanningActor.swift */; };
 		AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */; };
 		AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */; };
 		AFFED2472AD749DD00357FA4 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED2462AD749DD00357FA4 /* XMLCoder */; };
-		AFFED24A2AD7536800357FA4 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED2492AD7536800357FA4 /* RTP */; };
-		AFFED24D2AD7537A00357FA4 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED24C2AD7537A00357FA4 /* Opus */; };
 		AFFED24F2AD759E200357FA4 /* NIOFoundationCompat in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */; };
-		AFFED2512AD75EAF00357FA4 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		AFC24F0F2AD0E5A3002AB66C /* PBXContainerItemProxy */ = {
+		AF2740192AE02C26007C6208 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = AFC24EFA2AD0E5A1002AB66C;
-			remoteInfo = BetterRemote;
-		};
-		AFC24F192AD0E5A3002AB66C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = AFC24EFA2AD0E5A1002AB66C;
-			remoteInfo = BetterRemote;
-		};
-		AFC6E6AD2ADDF6BC0036EC90 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = AFC6E6942ADDF6BB0036EC90;
-			remoteInfo = RemoteIntents;
+			remoteGlobalIDString = AF27400A2AE02C25007C6208;
+			remoteInfo = BetterRemoteWidgetsExtension;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		AF95B7302ADF3F5A005FC338 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFA079CE2AE02352003E2754 /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			name = "Embed ExtensionKit Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AFC6E6B62ADDF6BC0036EC90 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				AFC6E6AF2ADDF6BC0036EC90 /* RemoteIntents.appex in Embed Foundation Extensions */,
+				AF27401B2AE02C26007C6208 /* BetterRemoteWidgetsExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -88,6 +107,12 @@
 		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
 		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteButtonAppEnum.swift; sourceTree = "<group>"; };
+		AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BetterRemoteWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF27400F2AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteWidgetsBundle.swift; sourceTree = "<group>"; };
+		AF2740152AE02C26007C6208 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AF2740182AE02C26007C6208 /* BetterRemoteWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BetterRemoteWidgets.entitlements; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControllerActor.swift; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
@@ -98,15 +123,18 @@
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery.swift; sourceTree = "<group>"; };
 		AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuSession.swift; sourceTree = "<group>"; };
+		AF95B6F62ADF2F9F005FC338 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
+		AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
+		AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallRemoteWidget.swift; sourceTree = "<group>"; };
+		AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetHelpers.swift; sourceTree = "<group>"; };
+		AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediumRemoteWidget.swift; sourceTree = "<group>"; };
+		AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkHelpers.swift; sourceTree = "<group>"; };
+		AF95B7532ADF4435005FC338 /* ScanningActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningActor.swift; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BetterRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteApp.swift; sourceTree = "<group>"; };
 		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BetterRemote.entitlements; sourceTree = "<group>"; };
-		AFC24F0E2AD0E5A3002AB66C /* BetterRemoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BetterRemoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		AFC24F122AD0E5A3002AB66C /* BetterRemoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteTests.swift; sourceTree = "<group>"; };
-		AFC24F182AD0E5A3002AB66C /* BetterRemoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BetterRemoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		AFC24F1C2AD0E5A3002AB66C /* BetterRemoteUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteUITests.swift; sourceTree = "<group>"; };
-		AFC24F1E2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
 		AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonPressIntents.swift; sourceTree = "<group>"; };
@@ -114,76 +142,65 @@
 		AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteButton.swift; sourceTree = "<group>"; };
 		AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinkAppEntity.swift; sourceTree = "<group>"; };
 		AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAppIntent.swift; sourceTree = "<group>"; };
-		AFC6E6952ADDF6BB0036EC90 /* RemoteIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RemoteIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC6E6962ADDF6BB0036EC90 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
-		AFC6E6992ADDF6BB0036EC90 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
-		AFC6E69B2ADDF6BB0036EC90 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AFC6E6A12ADDF6BC0036EC90 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
-		AFC6E6A42ADDF6BC0036EC90 /* IntentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentViewController.swift; sourceTree = "<group>"; };
-		AFC6E6A72ADDF6BC0036EC90 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
-		AFC6E6A92ADDF6BC0036EC90 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
+		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
 		AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryHeap.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AF2740082AE02C25007C6208 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */,
+				AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AFC24EF82AD0E5A1002AB66C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF3EEF9C2AE0207900B661F3 /* RTP in Frameworks */,
 				AFFED2472AD749DD00357FA4 /* XMLCoder in Frameworks */,
-				AFFED24A2AD7536800357FA4 /* RTP in Frameworks */,
 				AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */,
-				AFFED24D2AD7537A00357FA4 /* Opus in Frameworks */,
 				AFFED24F2AD759E200357FA4 /* NIOFoundationCompat in Frameworks */,
 				AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC24F0B2AD0E5A3002AB66C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC24F152AD0E5A3002AB66C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC6E6922ADDF6BB0036EC90 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AFC6E6972ADDF6BB0036EC90 /* Intents.framework in Frameworks */,
+				AF3EEF9E2AE0207F00B661F3 /* Opus in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AF27400E2AE02C25007C6208 /* BetterRemoteWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */,
+				AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */,
+				AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */,
+				AF27400F2AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift */,
+				AFF607892AE0037900A7D657 /* WidgetIntents.swift */,
+				AF2740152AE02C26007C6208 /* Assets.xcassets */,
+				AF2740172AE02C26007C6208 /* Info.plist */,
+				AF2740182AE02C26007C6208 /* BetterRemoteWidgets.entitlements */,
+			);
+			path = BetterRemoteWidgets;
+			sourceTree = "<group>";
+		};
 		AF4D5F322AD4355E0055AF35 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				AFC6E6962ADDF6BB0036EC90 /* Intents.framework */,
 				AFC6E6A12ADDF6BC0036EC90 /* IntentsUI.framework */,
+				AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */,
+				AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		AF56E3AE2AD979B700F5E6E0 /* XCodeSupport */ = {
-			isa = PBXGroup;
-			children = (
-				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
-				AF4829722AD4C83D008E05FA /* Info.plist */,
-				AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */,
-			);
-			path = XCodeSupport;
 			sourceTree = "<group>";
 		};
 		AF56E3AF2AD97AA300F5E6E0 /* Models */ = {
@@ -210,25 +227,49 @@
 		AF56E3BB2AD9865400F5E6E0 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
-				AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */,
+				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
+				AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
+		AF95B7372ADF3F9E005FC338 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				AFF6078C2AE005E400A7D657 /* Intents */,
+				AF56E3AF2AD97AA300F5E6E0 /* Models */,
+				AF56E3BB2AD9865400F5E6E0 /* Controllers */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		AF95B74D2ADF43A4005FC338 /* AudioPlayer */ = {
+			isa = PBXGroup;
+			children = (
 				AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */,
 				AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */,
 				AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */,
-				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
-				AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */,
-				AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */,
 			);
-			path = Controllers;
+			path = AudioPlayer;
+			sourceTree = "<group>";
+		};
+		AF95B74E2ADF43B2005FC338 /* Scanning */ = {
+			isa = PBXGroup;
+			children = (
+				AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */,
+				AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */,
+				AF95B7532ADF4435005FC338 /* ScanningActor.swift */,
+			);
+			path = Scanning;
 			sourceTree = "<group>";
 		};
 		AFC24EF22AD0E5A1002AB66C = {
 			isa = PBXGroup;
 			children = (
+				AF95B6F62ADF2F9F005FC338 /* README.md */,
 				AFC24EFD2AD0E5A1002AB66C /* BetterRemote */,
-				AFC24F112AD0E5A3002AB66C /* BetterRemoteTests */,
-				AFC24F1B2AD0E5A3002AB66C /* BetterRemoteUITests */,
-				AFC6E6982ADDF6BB0036EC90 /* RemoteIntents */,
-				AFC6E6A32ADDF6BC0036EC90 /* RemoteIntentsUI */,
+				AF95B7372ADF3F9E005FC338 /* Shared */,
+				AF27400E2AE02C25007C6208 /* BetterRemoteWidgets */,
 				AFC24EFC2AD0E5A1002AB66C /* Products */,
 				AF4D5F322AD4355E0055AF35 /* Frameworks */,
 			);
@@ -238,9 +279,7 @@
 			isa = PBXGroup;
 			children = (
 				AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */,
-				AFC24F0E2AD0E5A3002AB66C /* BetterRemoteTests.xctest */,
-				AFC24F182AD0E5A3002AB66C /* BetterRemoteUITests.xctest */,
-				AFC6E6952ADDF6BB0036EC90 /* RemoteIntents.appex */,
+				AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -249,11 +288,11 @@
 			isa = PBXGroup;
 			children = (
 				AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */,
-				AFC6E68A2ADDDEBD0036EC90 /* Intents */,
+				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
+				AF4829722AD4C83D008E05FA /* Info.plist */,
+				AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */,
+				AFF6077E2ADFAC4F00A7D657 /* Backend */,
 				AF56E3BA2AD9863100F5E6E0 /* Views */,
-				AF56E3AF2AD97AA300F5E6E0 /* Models */,
-				AF56E3BB2AD9865400F5E6E0 /* Controllers */,
-				AF56E3AE2AD979B700F5E6E0 /* XCodeSupport */,
 				AFC24F062AD0E5A2002AB66C /* Preview Content */,
 			);
 			path = BetterRemote;
@@ -270,57 +309,49 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
-		AFC24F112AD0E5A3002AB66C /* BetterRemoteTests */ = {
+		AFF6077E2ADFAC4F00A7D657 /* Backend */ = {
 			isa = PBXGroup;
 			children = (
-				AFC24F122AD0E5A3002AB66C /* BetterRemoteTests.swift */,
+				AF95B74E2ADF43B2005FC338 /* Scanning */,
+				AF95B74D2ADF43A4005FC338 /* AudioPlayer */,
+				AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */,
 			);
-			path = BetterRemoteTests;
+			path = Backend;
 			sourceTree = "<group>";
 		};
-		AFC24F1B2AD0E5A3002AB66C /* BetterRemoteUITests */ = {
+		AFF6078C2AE005E400A7D657 /* Intents */ = {
 			isa = PBXGroup;
 			children = (
-				AFC24F1C2AD0E5A3002AB66C /* BetterRemoteUITests.swift */,
-				AFC24F1E2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift */,
-			);
-			path = BetterRemoteUITests;
-			sourceTree = "<group>";
-		};
-		AFC6E68A2ADDDEBD0036EC90 /* Intents */ = {
-			isa = PBXGroup;
-			children = (
+				AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */,
 				AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */,
 				AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */,
 				AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */,
 				AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */,
-				AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */,
+				AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */,
 			);
 			path = Intents;
-			sourceTree = "<group>";
-		};
-		AFC6E6982ADDF6BB0036EC90 /* RemoteIntents */ = {
-			isa = PBXGroup;
-			children = (
-				AFC6E6992ADDF6BB0036EC90 /* IntentHandler.swift */,
-				AFC6E69B2ADDF6BB0036EC90 /* Info.plist */,
-			);
-			path = RemoteIntents;
-			sourceTree = "<group>";
-		};
-		AFC6E6A32ADDF6BC0036EC90 /* RemoteIntentsUI */ = {
-			isa = PBXGroup;
-			children = (
-				AFC6E6A42ADDF6BC0036EC90 /* IntentViewController.swift */,
-				AFC6E6A62ADDF6BC0036EC90 /* MainInterface.storyboard */,
-				AFC6E6A92ADDF6BC0036EC90 /* Info.plist */,
-			);
-			path = RemoteIntentsUI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AF27400A2AE02C25007C6208 /* BetterRemoteWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "BetterRemoteWidgetsExtension" */;
+			buildPhases = (
+				AF2740072AE02C25007C6208 /* Sources */,
+				AF2740082AE02C25007C6208 /* Frameworks */,
+				AF2740092AE02C25007C6208 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BetterRemoteWidgetsExtension;
+			productName = BetterRemoteWidgetsExtension;
+			productReference = AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		AFC24EFA2AD0E5A1002AB66C /* BetterRemote */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "BetterRemote" */;
@@ -329,77 +360,26 @@
 				AFC24EF82AD0E5A1002AB66C /* Frameworks */,
 				AFC24EF92AD0E5A1002AB66C /* Resources */,
 				AFC6E6B62ADDF6BC0036EC90 /* Embed Foundation Extensions */,
+				AF95B7302ADF3F5A005FC338 /* Embed Frameworks */,
+				AFA079CE2AE02352003E2754 /* Embed ExtensionKit Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				AFC6E6AE2ADDF6BC0036EC90 /* PBXTargetDependency */,
+				AF27401A2AE02C26007C6208 /* PBXTargetDependency */,
 			);
 			name = BetterRemote;
 			packageProductDependencies = (
 				AF4D5F332AD4355E0055AF35 /* NIO */,
 				AFFED2462AD749DD00357FA4 /* XMLCoder */,
-				AFFED2492AD7536800357FA4 /* RTP */,
-				AFFED24C2AD7537A00357FA4 /* Opus */,
 				AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */,
 				AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */,
+				AF3EEF9B2AE0207900B661F3 /* RTP */,
+				AF3EEF9D2AE0207F00B661F3 /* Opus */,
 			);
 			productName = BetterRemote;
 			productReference = AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */;
 			productType = "com.apple.product-type.application";
-		};
-		AFC24F0D2AD0E5A3002AB66C /* BetterRemoteTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = AFC24F252AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "BetterRemoteTests" */;
-			buildPhases = (
-				AFC24F0A2AD0E5A3002AB66C /* Sources */,
-				AFC24F0B2AD0E5A3002AB66C /* Frameworks */,
-				AFC24F0C2AD0E5A3002AB66C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				AFC24F102AD0E5A3002AB66C /* PBXTargetDependency */,
-			);
-			name = BetterRemoteTests;
-			productName = BetterRemoteTests;
-			productReference = AFC24F0E2AD0E5A3002AB66C /* BetterRemoteTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		AFC24F172AD0E5A3002AB66C /* BetterRemoteUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = AFC24F282AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "BetterRemoteUITests" */;
-			buildPhases = (
-				AFC24F142AD0E5A3002AB66C /* Sources */,
-				AFC24F152AD0E5A3002AB66C /* Frameworks */,
-				AFC24F162AD0E5A3002AB66C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				AFC24F1A2AD0E5A3002AB66C /* PBXTargetDependency */,
-			);
-			name = BetterRemoteUITests;
-			productName = BetterRemoteUITests;
-			productReference = AFC24F182AD0E5A3002AB66C /* BetterRemoteUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
-		AFC6E6942ADDF6BB0036EC90 /* RemoteIntents */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = AFC6E6B32ADDF6BC0036EC90 /* Build configuration list for PBXNativeTarget "RemoteIntents" */;
-			buildPhases = (
-				AFC6E6912ADDF6BB0036EC90 /* Sources */,
-				AFC6E6922ADDF6BB0036EC90 /* Frameworks */,
-				AFC6E6932ADDF6BB0036EC90 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = RemoteIntents;
-			productName = RemoteIntents;
-			productReference = AFC6E6952ADDF6BB0036EC90 /* RemoteIntents.appex */;
-			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -411,18 +391,10 @@
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
+					AF27400A2AE02C25007C6208 = {
+						CreatedOnToolsVersion = 15.0;
+					};
 					AFC24EFA2AD0E5A1002AB66C = {
-						CreatedOnToolsVersion = 15.0;
-					};
-					AFC24F0D2AD0E5A3002AB66C = {
-						CreatedOnToolsVersion = 15.0;
-						TestTargetID = AFC24EFA2AD0E5A1002AB66C;
-					};
-					AFC24F172AD0E5A3002AB66C = {
-						CreatedOnToolsVersion = 15.0;
-						TestTargetID = AFC24EFA2AD0E5A1002AB66C;
-					};
-					AFC6E6942ADDF6BB0036EC90 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -441,141 +413,180 @@
 				AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */,
 				AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */,
 				AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */,
+				AF95B7572ADF582F005FC338 /* XCRemoteSwiftPackageReference "swift-atomics" */,
 			);
 			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				AFC24EFA2AD0E5A1002AB66C /* BetterRemote */,
-				AFC24F0D2AD0E5A3002AB66C /* BetterRemoteTests */,
-				AFC24F172AD0E5A3002AB66C /* BetterRemoteUITests */,
-				AFC6E6942ADDF6BB0036EC90 /* RemoteIntents */,
+				AF27400A2AE02C25007C6208 /* BetterRemoteWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		AF2740092AE02C25007C6208 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF2740162AE02C26007C6208 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AFC24EF92AD0E5A1002AB66C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AF56E3B62AD9814100F5E6E0 /* spotify.png in Resources */,
-				AF56E3B82AD9814100F5E6E0 /* disney.png in Resources */,
-				AF56E3B72AD9814100F5E6E0 /* hulu.png in Resources */,
-				AF56E3B92AD9814100F5E6E0 /* netflix.png in Resources */,
+				AF95B6F72ADF2F9F005FC338 /* README.md in Resources */,
 				AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC24F0C2AD0E5A3002AB66C /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC24F162AD0E5A3002AB66C /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC6E6932ADDF6BB0036EC90 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AF2740072AE02C25007C6208 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF205B272AE02D0100041CDF /* NetworkHelpers.swift in Sources */,
+				AF205B2B2AE02D1C00041CDF /* ButtonPressIntents.swift in Sources */,
+				AF205B1F2AE02CAF00041CDF /* MediumRemoteWidget.swift in Sources */,
+				AF205B282AE02D0100041CDF /* AppLink.swift in Sources */,
+				AF205B2A2AE02D1C00041CDF /* RemoteButtonAppEnum.swift in Sources */,
+				AF205B212AE02CAF00041CDF /* SmallRemoteWidget.swift in Sources */,
+				AF205B2C2AE02D1C00041CDF /* WidgetIntents.swift in Sources */,
+				AF2740102AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift in Sources */,
+				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
+				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
+				AF205B252AE02D0100041CDF /* DeviceControllerActor.swift in Sources */,
+				AF205B242AE02D0100041CDF /* RemoteButton.swift in Sources */,
+				AF205B292AE02D1C00041CDF /* LaunchAppIntent.swift in Sources */,
+				AF205B2E2AE02D1C00041CDF /* AppLinkAppEntity.swift in Sources */,
+				AF205B262AE02D0100041CDF /* Device.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AFC24EF72AD0E5A1002AB66C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AF4D5F312AD435060055AF35 /* DeviceControllerActor.swift in Sources */,
-				AFC6E68C2ADDDF450036EC90 /* RemoteButton.swift in Sources */,
-				AFC6E67F2ADCE5D80036EC90 /* AsyncSemaphore.swift in Sources */,
+				AF20AD0C2AE01E9100D371C7 /* AppLink.swift in Sources */,
+				AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */,
+				AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */,
+				AFF607802ADFACBA00A7D657 /* Discovery.swift in Sources */,
+				AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */,
+				AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */,
+				AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */,
+				AF20AD132AE01ED100D371C7 /* DeviceControllerActor.swift in Sources */,
+				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
+				AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */,
+				AFF607812ADFACBA00A7D657 /* ScanningActor.swift in Sources */,
+				AFF6077D2ADFAC4900A7D657 /* VolumeListener.swift in Sources */,
+				AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */,
+				AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */,
 				AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */,
-				AFC6E6892ADDDE110036EC90 /* DeviceAppEntity.swift in Sources */,
-				AF5B16E42AD5D5BB00053BDC /* AudioPlayer.swift in Sources */,
-				AFFED2512AD75EAF00357FA4 /* BinaryHeap.swift in Sources */,
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
+				AFA079DC2AE02561003E2754 /* RemoteButtonAppEnum.swift in Sources */,
 				AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */,
-				AFC6E6B82ADE28C80036EC90 /* Shortcuts.swift in Sources */,
-				AFC6E6902ADDE4AA0036EC90 /* LaunchAppIntent.swift in Sources */,
-				AFC6E67D2ADCC4D50036EC90 /* VolumeListener.swift in Sources */,
-				AF5FDAD62ADB3C4B006CDEB3 /* Discovery.swift in Sources */,
-				AF11D36D2AD2D41100527AF6 /* Device.swift in Sources */,
-				AFC6E6882ADDDE110036EC90 /* ButtonPressIntents.swift in Sources */,
-				AF11D36B2AD2D0B800527AF6 /* AppLinksView.swift in Sources */,
-				AF56E3B12AD97AB100F5E6E0 /* AppLink.swift in Sources */,
-				AFC6E68E2ADDE2BC0036EC90 /* AppLinkAppEntity.swift in Sources */,
-				AF76B8162AD8A14600DF6FF7 /* RokuSession.swift in Sources */,
+				AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */,
+				AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */,
+				AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */,
 				AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC24F0A2AD0E5A3002AB66C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AFC24F132AD0E5A3002AB66C /* BetterRemoteTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC24F142AD0E5A3002AB66C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AFC24F1D2AD0E5A3002AB66C /* BetterRemoteUITests.swift in Sources */,
-				AFC24F1F2AD0E5A3002AB66C /* BetterRemoteUITestsLaunchTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AFC6E6912ADDF6BB0036EC90 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AFC6E69A2ADDF6BB0036EC90 /* IntentHandler.swift in Sources */,
+				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		AFC24F102AD0E5A3002AB66C /* PBXTargetDependency */ = {
+		AF27401A2AE02C26007C6208 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = AFC24EFA2AD0E5A1002AB66C /* BetterRemote */;
-			targetProxy = AFC24F0F2AD0E5A3002AB66C /* PBXContainerItemProxy */;
-		};
-		AFC24F1A2AD0E5A3002AB66C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = AFC24EFA2AD0E5A1002AB66C /* BetterRemote */;
-			targetProxy = AFC24F192AD0E5A3002AB66C /* PBXContainerItemProxy */;
-		};
-		AFC6E6AE2ADDF6BC0036EC90 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilter = ios;
-			target = AFC6E6942ADDF6BB0036EC90 /* RemoteIntents */;
-			targetProxy = AFC6E6AD2ADDF6BC0036EC90 /* PBXContainerItemProxy */;
+			target = AF27400A2AE02C25007C6208 /* BetterRemoteWidgetsExtension */;
+			targetProxy = AF2740192AE02C26007C6208 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
-/* Begin PBXVariantGroup section */
-		AFC6E6A62ADDF6BC0036EC90 /* MainInterface.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				AFC6E6A72ADDF6BC0036EC90 /* Base */,
-			);
-			name = MainInterface.storyboard;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
-
 /* Begin XCBuildConfiguration section */
+		AF27401C2AE02C27007C6208 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = BetterRemoteWidgets/BetterRemoteWidgets.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BetterRemoteWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BetterRemoteWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.BetterRemoteWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AF27401D2AE02C27007C6208 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = BetterRemoteWidgets/BetterRemoteWidgets.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BetterRemoteWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BetterRemoteWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.BetterRemoteWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		AFC24F202AD0E5A3002AB66C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -704,7 +715,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = BetterRemote/XCodeSupport/BetterRemote.entitlements;
+				CODE_SIGN_ENTITLEMENTS = BetterRemote/BetterRemote.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -713,7 +724,9 @@
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemote/XCodeSupport/Info.plist;
+				INFOPLIST_FILE = BetterRemote/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Better Remote";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -743,7 +756,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = BetterRemote/XCodeSupport/BetterRemote.entitlements;
+				CODE_SIGN_ENTITLEMENTS = BetterRemote/BetterRemote.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -752,7 +765,9 @@
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemote/XCodeSupport/Info.plist;
+				INFOPLIST_FILE = BetterRemote/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Better Remote";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -776,140 +791,18 @@
 			};
 			name = Release;
 		};
-		AFC24F262AD0E5A3002AB66C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemoteTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BetterRemote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BetterRemote";
-			};
-			name = Debug;
-		};
-		AFC24F272AD0E5A3002AB66C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemoteTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BetterRemote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BetterRemote";
-			};
-			name = Release;
-		};
-		AFC24F292AD0E5A3002AB66C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemoteUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = BetterRemote;
-			};
-			name = Debug;
-		};
-		AFC24F2A2AD0E5A3002AB66C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemoteUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = BetterRemote;
-			};
-			name = Release;
-		};
-		AFC6E6B42ADDF6BC0036EC90 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RemoteIntents/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RemoteIntents;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.RemoteIntents;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		AFC6E6B52ADDF6BC0036EC90 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RemoteIntents/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = RemoteIntents;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.RemoteIntents;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "BetterRemoteWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF27401C2AE02C27007C6208 /* Debug */,
+				AF27401D2AE02C27007C6208 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "BetterRemote" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -928,33 +821,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AFC24F252AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "BetterRemoteTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AFC24F262AD0E5A3002AB66C /* Debug */,
-				AFC24F272AD0E5A3002AB66C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		AFC24F282AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "BetterRemoteUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AFC24F292AD0E5A3002AB66C /* Debug */,
-				AFC24F2A2AD0E5A3002AB66C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		AFC6E6B32ADDF6BC0036EC90 /* Build configuration list for PBXNativeTarget "RemoteIntents" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AFC6E6B42ADDF6BC0036EC90 /* Debug */,
-				AFC6E6B52ADDF6BC0036EC90 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -964,6 +830,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 2.59.0;
+			};
+		};
+		AF95B7572ADF582F005FC338 /* XCRemoteSwiftPackageReference "swift-atomics" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-atomics.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
 			};
 		};
 		AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */ = {
@@ -993,6 +867,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AF3EEF9B2AE0207900B661F3 /* RTP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */;
+			productName = RTP;
+		};
+		AF3EEF9D2AE0207F00B661F3 /* Opus */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */;
+			productName = Opus;
+		};
 		AF4D5F332AD4355E0055AF35 /* NIO */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
@@ -1007,16 +891,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */;
 			productName = XMLCoder;
-		};
-		AFFED2492AD7536800357FA4 /* RTP */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */;
-			productName = RTP;
-		};
-		AFFED24C2AD7537A00357FA4 /* Opus */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */;
-			productName = Opus;
 		};
 		AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */ = {
 			isa = XCSwiftPackageProductDependency;

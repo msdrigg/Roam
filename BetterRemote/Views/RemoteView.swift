@@ -16,7 +16,7 @@ struct RemoteView: View {
     
     @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
     
-    @State private var scanningActor: DeviceControllerActor!
+    @State private var scanningActor: DeviceScanningActor!
     @State private var controllerActor: DeviceControllerActor!
     @State private var manuallySelectedDevice: Device?
     @State private var showKeyboardEntry: Bool = false
@@ -84,6 +84,14 @@ struct RemoteView: View {
             intent.donate()
         case .mute:
             let intent = MuteIntent()
+            intent.device = selectedDevice?.toAppEntity()
+            intent.donate()
+        case .volumeUp:
+            let intent = VolumeUpIntent()
+            intent.device = selectedDevice?.toAppEntity()
+            intent.donate()
+        case .volumeDown:
+            let intent = VolumeDownIntent()
             intent.device = selectedDevice?.toAppEntity()
             intent.donate()
         case .playPause:
@@ -171,7 +179,7 @@ struct RemoteView: View {
             }
             .onAppear {
                 let modelContainer = modelContext.container
-                self.scanningActor = DeviceControllerActor(modelContainer: modelContainer)
+                self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
                 self.controllerActor = DeviceControllerActor(modelContainer: modelContainer)
             }
 #if os(iOS)
@@ -179,7 +187,7 @@ struct RemoteView: View {
                 if inBackground || !controlVolumeWithHWButtons {
                     return
                 }
-                if let stream = VolumeListener(session: AVAudioSession.sharedInstance()).events {
+                if let stream = await VolumeListener(session: AVAudioSession.sharedInstance()).events {
                     for await volumeEvent in stream {
                         let key: RemoteButton
                         switch volumeEvent.direction {
@@ -369,7 +377,7 @@ struct RemoteView: View {
                 }
             }
         }
-        .sensoryFeedback(.impact, trigger: buttonPressCount(.inputAV1))
+        .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
     }
     
     @ViewBuilder

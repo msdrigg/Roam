@@ -4,17 +4,6 @@ A Roku remote that puts users first
 
 ## TODO
 
-- Work on widgets/intents
-    - Siri phrases are broken
-    - Figure out how to export intents as single-button widgets
-        - Widget extension? 
-    - Make new custom widgets
-        - Quick controls
-            - Volume Up/Down/Mute,  Power/Select/Back
-        - Full remote buttons
-            - Select/Arrow widget + Quick Controls
-- Use bluetooth to pair roku??
-    - Maybe just for power on/off
 - Need to add multicast capability to my app for real to get access to multicast networking
     - Currently waiting on response from apple in request
     - https://developer.apple.com/account 
