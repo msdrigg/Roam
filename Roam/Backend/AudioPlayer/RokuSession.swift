@@ -1,10 +1,3 @@
-//
-//  RokuSession.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/12/23.
-//
-
 import Foundation
 import Network
 

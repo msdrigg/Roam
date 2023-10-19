@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "AFC24EFA2AD0E5A1002AB66C"
-               BuildableName = "BetterRemote.app"
-               BlueprintName = "BetterRemote"
-               ReferencedContainer = "container:BetterRemote.xcodeproj">
+               BuildableName = "Roam.app"
+               BlueprintName = "Roam"
+               ReferencedContainer = "container:Roam.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -44,9 +44,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AFC24EFA2AD0E5A1002AB66C"
-            BuildableName = "BetterRemote.app"
-            BlueprintName = "BetterRemote"
-            ReferencedContainer = "container:BetterRemote.xcodeproj">
+            BuildableName = "Roam.app"
+            BlueprintName = "Roam"
+            ReferencedContainer = "container:Roam.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -61,9 +61,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AFC24EFA2AD0E5A1002AB66C"
-            BuildableName = "BetterRemote.app"
-            BlueprintName = "BetterRemote"
-            ReferencedContainer = "container:BetterRemote.xcodeproj">
+            BuildableName = "Roam.app"
+            BlueprintName = "Roam"
+            ReferencedContainer = "container:Roam.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

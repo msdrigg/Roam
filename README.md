@@ -1,4 +1,4 @@
-# Better Remote
+# Roam
 
 A Roku remote that puts users first
 
@@ -12,7 +12,7 @@ A Roku remote that puts users first
     - Add 3 sliding views
         - Main Controller (like small widget)
         - Button Grid (like small widget)
-        - App Links (scrollable list)
+        - App Links (scrollable list sorted by most recently opened)
     - Add small circular widgets configurable for each button
 - Add app launch widget
     - List of recently launched apps

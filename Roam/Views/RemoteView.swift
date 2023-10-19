@@ -133,6 +133,23 @@ struct RemoteView: View {
                 HStack {
                     Spacer()
                     VStack(alignment: .center) {
+                        if selectedDevice == nil {
+                            // Banner Content Here
+                            VStack(spacing: 2) {
+                                HStack {
+                                    Label("Setup a device to get started :)", systemImage: "gear")
+                                }
+                                .padding(8)
+                                .background(Color("AccentColor"))
+                                .tint(Color("AccentColor"))
+                                .cornerRadius(6)
+                                .frame(maxWidth: .infinity)
+                                .font(.subheadline)
+                                .labelStyle(.titleAndIcon)
+                                Spacer().frame(maxHeight: 8)
+                            }
+                        }
+                        
                         if isHorizontal {
                             horizontalBody
 #if os(iOS)
@@ -166,7 +183,8 @@ struct RemoteView: View {
                         
                     }
                     Spacer()
-                }
+                }       
+                .disabled(selectedDevice == nil)
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
                 .padding(.bottom, 10)
@@ -182,6 +200,7 @@ struct RemoteView: View {
                         }
                         .buttonStyle(.borderless)
                         .disabled(selectedDevice == nil)
+                        .font(.headline)
                     }
 #endif
                     ToolbarItem(placement: .automatic) {
@@ -204,10 +223,8 @@ struct RemoteView: View {
                                         Self.logger.error("Error saving device selection: \(error)")
                                     }
                                 }
-                                .font(.body)
                             } else {
                                 Text("No devices")
-                                    .font(.body)
                             }
                             
                             Divider()
@@ -223,16 +240,25 @@ struct RemoteView: View {
                             .labelStyle(.titleAndIcon)
 #endif
                         } label: {
-                            Group {
-                                Text(Image(systemName: "circle.fill") ).font(.system(size: 8))
-                                    .foregroundColor(deviceStatusColor)
-                                    .baselineOffset(2) +
-                                Text(" ") +
-                                Text(selectedDevice?.name ?? "No devices")
-                            }.multilineTextAlignment(.center)
-                                .truncationMode(.tail)
-                                .frame(maxWidth: 180)
+                            if let device = selectedDevice {
+                                Group {
+                                    Text(Image(systemName: "circle.fill") ).font(.system(size: 8))
+                                        .foregroundColor(deviceStatusColor)
+                                        .baselineOffset(2) +
+                                    Text(" ") +
+                                    Text(device.name)
+                                }.multilineTextAlignment(.center)
+                                    .truncationMode(.tail)
+                                    .frame(maxWidth: 180)
+                            } else {
+                                Text("No devices")
+                                    .multilineTextAlignment(.center)
+                                    .truncationMode(.tail)
+                                    .frame(maxWidth: 180)
+                            }
                         }
+                        .font(.body)
+
                     }
                     
 #if os(macOS)
@@ -253,6 +279,7 @@ struct RemoteView: View {
                         .keyboardShortcut(.return)
                         .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
                         .symbolEffect(.bounce, value: buttonPressCount(.power))
+                        .disabled(selectedDevice == nil)
                     }
 #endif
                 }
@@ -314,7 +341,6 @@ struct RemoteView: View {
         .font(.title2)
 #endif
         .fontDesign(.rounded)
-        .disabled(selectedDevice == nil)
         .controlSize(.extraLarge)
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle)

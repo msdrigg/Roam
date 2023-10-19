@@ -1,10 +1,3 @@
-//
-//  NetworkHelpers.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/17/23.
-//
-
 import Foundation
 import Network
 import os

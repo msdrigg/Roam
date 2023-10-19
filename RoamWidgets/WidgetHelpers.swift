@@ -1,10 +1,3 @@
-//
-//  WidgetHelpers.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/17/23.
-//
-
 import Foundation
 import SwiftData
 import AppIntents

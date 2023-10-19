@@ -1,15 +1,8 @@
-//
-//  BetterRemoteApp.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/6/23.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
-struct BetterRemoteApp: App {
+struct RoamApp: App {
     var sharedModelContainer: ModelContainer
     init() {
         do {

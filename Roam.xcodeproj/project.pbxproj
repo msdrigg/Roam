@@ -29,16 +29,12 @@
 		AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */; };
 		AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */; };
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
-		AF2740102AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift */; };
+		AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */; };
 		AF2740162AE02C26007C6208 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF2740152AE02C26007C6208 /* Assets.xcassets */; };
-		AF27401B2AE02C26007C6208 /* BetterRemoteWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
 		AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
 		AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
-		AF3EEF9C2AE0207900B661F3 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AF3EEF9B2AE0207900B661F3 /* RTP */; };
-		AF3EEF9E2AE0207F00B661F3 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AF3EEF9D2AE0207F00B661F3 /* Opus */; };
-		AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */ = {isa = PBXBuildFile; productRef = AF4D5F332AD4355E0055AF35 /* NIO */; };
-		AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */; };
 		AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
 		AF95B6F72ADF2F9F005FC338 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = AF95B6F62ADF2F9F005FC338 /* README.md */; };
 		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
@@ -48,16 +44,19 @@
 		AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */; };
 		AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */; };
 		AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
-		AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */; };
+		AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */; };
 		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
+		AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE192AE184FE003F6676 /* XMLCoder */; };
+		AFECDE1D2AE18511003F6676 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1C2AE18511003F6676 /* Opus */; };
+		AFECDE202AE18519003F6676 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1F2AE18519003F6676 /* RTP */; };
+		AFECDE232AE1853A003F6676 /* NIOCore in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE222AE1853A003F6676 /* NIOCore */; };
+		AFECDE252AE1853A003F6676 /* NIOFoundationCompat in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE242AE1853A003F6676 /* NIOFoundationCompat */; };
 		AFF6077D2ADFAC4900A7D657 /* VolumeListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */; };
 		AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
 		AFF607802ADFACBA00A7D657 /* Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */; };
 		AFF607812ADFACBA00A7D657 /* ScanningActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* ScanningActor.swift */; };
 		AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */; };
 		AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */; };
-		AFFED2472AD749DD00357FA4 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED2462AD749DD00357FA4 /* XMLCoder */; };
-		AFFED24F2AD759E200357FA4 /* NIOFoundationCompat in Frameworks */ = {isa = PBXBuildFile; productRef = AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -97,7 +96,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				AF27401B2AE02C26007C6208 /* BetterRemoteWidgetsExtension.appex in Embed Foundation Extensions */,
+				AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -109,11 +108,11 @@
 		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteButtonAppEnum.swift; sourceTree = "<group>"; };
-		AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BetterRemoteWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		AF27400F2AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteWidgetsBundle.swift; sourceTree = "<group>"; };
+		AF27400B2AE02C25007C6208 /* RoamWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoamWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWidgetsBundle.swift; sourceTree = "<group>"; };
 		AF2740152AE02C26007C6208 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AF2740182AE02C26007C6208 /* BetterRemoteWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BetterRemoteWidgets.entitlements; sourceTree = "<group>"; };
+		AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWidgets.entitlements; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControllerActor.swift; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
@@ -132,10 +131,10 @@
 		AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediumRemoteWidget.swift; sourceTree = "<group>"; };
 		AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkHelpers.swift; sourceTree = "<group>"; };
 		AF95B7532ADF4435005FC338 /* ScanningActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningActor.swift; sourceTree = "<group>"; };
-		AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BetterRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BetterRemoteApp.swift; sourceTree = "<group>"; };
+		AFC24EFB2AD0E5A1002AB66C /* Roam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamApp.swift; sourceTree = "<group>"; };
 		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BetterRemote.entitlements; sourceTree = "<group>"; };
+		AFC24F092AD0E5A2002AB66C /* Roam.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Roam.entitlements; sourceTree = "<group>"; };
 		AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
 		AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonPressIntents.swift; sourceTree = "<group>"; };
@@ -166,30 +165,29 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AF3EEF9C2AE0207900B661F3 /* RTP in Frameworks */,
-				AFFED2472AD749DD00357FA4 /* XMLCoder in Frameworks */,
-				AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */,
-				AFFED24F2AD759E200357FA4 /* NIOFoundationCompat in Frameworks */,
-				AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */,
-				AF3EEF9E2AE0207F00B661F3 /* Opus in Frameworks */,
+				AFECDE202AE18519003F6676 /* RTP in Frameworks */,
+				AFECDE252AE1853A003F6676 /* NIOFoundationCompat in Frameworks */,
+				AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */,
+				AFECDE232AE1853A003F6676 /* NIOCore in Frameworks */,
+				AFECDE1D2AE18511003F6676 /* Opus in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AF27400E2AE02C25007C6208 /* BetterRemoteWidgets */ = {
+		AF27400E2AE02C25007C6208 /* RoamWidgets */ = {
 			isa = PBXGroup;
 			children = (
 				AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */,
 				AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */,
 				AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */,
-				AF27400F2AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift */,
+				AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */,
 				AF2740152AE02C26007C6208 /* Assets.xcassets */,
 				AF2740172AE02C26007C6208 /* Info.plist */,
-				AF2740182AE02C26007C6208 /* BetterRemoteWidgets.entitlements */,
+				AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */,
 			);
-			path = BetterRemoteWidgets;
+			path = RoamWidgets;
 			sourceTree = "<group>";
 		};
 		AF4D5F322AD4355E0055AF35 /* Frameworks */ = {
@@ -267,9 +265,9 @@
 			isa = PBXGroup;
 			children = (
 				AF95B6F62ADF2F9F005FC338 /* README.md */,
-				AFC24EFD2AD0E5A1002AB66C /* BetterRemote */,
+				AFC24EFD2AD0E5A1002AB66C /* Roam */,
 				AF95B7372ADF3F9E005FC338 /* Shared */,
-				AF27400E2AE02C25007C6208 /* BetterRemoteWidgets */,
+				AF27400E2AE02C25007C6208 /* RoamWidgets */,
 				AFC24EFC2AD0E5A1002AB66C /* Products */,
 				AF4D5F322AD4355E0055AF35 /* Frameworks */,
 			);
@@ -278,27 +276,27 @@
 		AFC24EFC2AD0E5A1002AB66C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */,
-				AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */,
+				AFC24EFB2AD0E5A1002AB66C /* Roam.app */,
+				AF27400B2AE02C25007C6208 /* RoamWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AFC24EFD2AD0E5A1002AB66C /* BetterRemote */ = {
+		AFC24EFD2AD0E5A1002AB66C /* Roam */ = {
 			isa = PBXGroup;
 			children = (
-				AFC24EFE2AD0E5A1002AB66C /* BetterRemoteApp.swift */,
+				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
 				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
 				AF4829722AD4C83D008E05FA /* Info.plist */,
-				AFC24F092AD0E5A2002AB66C /* BetterRemote.entitlements */,
+				AFC24F092AD0E5A2002AB66C /* Roam.entitlements */,
 				AFF6077E2ADFAC4F00A7D657 /* Backend */,
 				AF56E3BA2AD9863100F5E6E0 /* Views */,
-				AFC24F062AD0E5A2002AB66C /* Preview Content */,
+				AFC24F062AD0E5A2002AB66C /* PreviewContent */,
 			);
-			path = BetterRemote;
+			path = Roam;
 			sourceTree = "<group>";
 		};
-		AFC24F062AD0E5A2002AB66C /* Preview Content */ = {
+		AFC24F062AD0E5A2002AB66C /* PreviewContent */ = {
 			isa = PBXGroup;
 			children = (
 				AF56E3B42AD9814100F5E6E0 /* disney.png */,
@@ -306,7 +304,7 @@
 				AF56E3B52AD9814100F5E6E0 /* netflix.png */,
 				AF56E3B22AD9814100F5E6E0 /* spotify.png */,
 			);
-			path = "Preview Content";
+			path = PreviewContent;
 			sourceTree = "<group>";
 		};
 		AFF6077E2ADFAC4F00A7D657 /* Backend */ = {
@@ -336,9 +334,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AF27400A2AE02C25007C6208 /* BetterRemoteWidgetsExtension */ = {
+		AF27400A2AE02C25007C6208 /* RoamWidgets */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "BetterRemoteWidgetsExtension" */;
+			buildConfigurationList = AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "RoamWidgets" */;
 			buildPhases = (
 				AF2740072AE02C25007C6208 /* Sources */,
 				AF2740082AE02C25007C6208 /* Frameworks */,
@@ -348,14 +346,14 @@
 			);
 			dependencies = (
 			);
-			name = BetterRemoteWidgetsExtension;
+			name = RoamWidgets;
 			productName = BetterRemoteWidgetsExtension;
-			productReference = AF27400B2AE02C25007C6208 /* BetterRemoteWidgetsExtension.appex */;
+			productReference = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		AFC24EFA2AD0E5A1002AB66C /* BetterRemote */ = {
+		AFC24EFA2AD0E5A1002AB66C /* Roam */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "BetterRemote" */;
+			buildConfigurationList = AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "Roam" */;
 			buildPhases = (
 				AFC24EF72AD0E5A1002AB66C /* Sources */,
 				AFC24EF82AD0E5A1002AB66C /* Frameworks */,
@@ -369,17 +367,16 @@
 			dependencies = (
 				AF27401A2AE02C26007C6208 /* PBXTargetDependency */,
 			);
-			name = BetterRemote;
+			name = Roam;
 			packageProductDependencies = (
-				AF4D5F332AD4355E0055AF35 /* NIO */,
-				AFFED2462AD749DD00357FA4 /* XMLCoder */,
-				AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */,
-				AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */,
-				AF3EEF9B2AE0207900B661F3 /* RTP */,
-				AF3EEF9D2AE0207F00B661F3 /* Opus */,
+				AFECDE192AE184FE003F6676 /* XMLCoder */,
+				AFECDE1C2AE18511003F6676 /* Opus */,
+				AFECDE1F2AE18519003F6676 /* RTP */,
+				AFECDE222AE1853A003F6676 /* NIOCore */,
+				AFECDE242AE1853A003F6676 /* NIOFoundationCompat */,
 			);
 			productName = BetterRemote;
-			productReference = AFC24EFB2AD0E5A1002AB66C /* BetterRemote.app */;
+			productReference = AFC24EFB2AD0E5A1002AB66C /* Roam.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -400,7 +397,7 @@
 					};
 				};
 			};
-			buildConfigurationList = AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "BetterRemote" */;
+			buildConfigurationList = AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "Roam" */;
 			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -410,18 +407,17 @@
 			);
 			mainGroup = AFC24EF22AD0E5A1002AB66C;
 			packageReferences = (
-				AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */,
-				AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */,
-				AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */,
-				AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */,
-				AF95B7572ADF582F005FC338 /* XCRemoteSwiftPackageReference "swift-atomics" */,
+				AFECDE182AE184FE003F6676 /* XCRemoteSwiftPackageReference "XMLCoder" */,
+				AFECDE1B2AE18511003F6676 /* XCRemoteSwiftPackageReference "swift-opus" */,
+				AFECDE1E2AE18519003F6676 /* XCRemoteSwiftPackageReference "swift-rtp" */,
+				AFECDE212AE1853A003F6676 /* XCRemoteSwiftPackageReference "swift-nio" */,
 			);
 			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AFC24EFA2AD0E5A1002AB66C /* BetterRemote */,
-				AF27400A2AE02C25007C6208 /* BetterRemoteWidgetsExtension */,
+				AFC24EFA2AD0E5A1002AB66C /* Roam */,
+				AF27400A2AE02C25007C6208 /* RoamWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -458,7 +454,7 @@
 				AF205B2A2AE02D1C00041CDF /* RemoteButtonAppEnum.swift in Sources */,
 				AF205B212AE02CAF00041CDF /* SmallRemoteWidget.swift in Sources */,
 				AF205B2C2AE02D1C00041CDF /* WidgetIntents.swift in Sources */,
-				AF2740102AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift in Sources */,
+				AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */,
 				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
 				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
 				AF205B252AE02D0100041CDF /* DeviceControllerActor.swift in Sources */,
@@ -495,7 +491,7 @@
 				AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */,
 				AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */,
 				AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */,
-				AFC24EFF2AD0E5A1002AB66C /* BetterRemoteApp.swift in Sources */,
+				AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -505,7 +501,7 @@
 /* Begin PBXTargetDependency section */
 		AF27401A2AE02C26007C6208 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = AF27400A2AE02C25007C6208 /* BetterRemoteWidgetsExtension */;
+			target = AF27400A2AE02C25007C6208 /* RoamWidgets */;
 			targetProxy = AF2740192AE02C26007C6208 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -516,14 +512,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = BetterRemoteWidgets/BetterRemoteWidgets.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RoamWidgets/RoamWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemoteWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = BetterRemoteWidgets;
+				INFOPLIST_FILE = RoamWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RoamWidgets;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -537,7 +533,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.BetterRemoteWidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.RoamWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -553,14 +549,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = BetterRemoteWidgets/BetterRemoteWidgets.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RoamWidgets/RoamWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemoteWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = BetterRemoteWidgets;
+				INFOPLIST_FILE = RoamWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RoamWidgets;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -574,7 +570,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.BetterRemoteWidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.RoamWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -717,15 +713,15 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = BetterRemote/BetterRemote.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content/netflix.png BetterRemote/Preview\\ Content/disney.png BetterRemote/Preview\\ Content/spotify.png BetterRemote/Preview\\ Content BetterRemote/Preview\\ Content/hulu.png";
+				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemote/Info.plist;
+				INFOPLIST_FILE = Roam/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Roam;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -737,7 +733,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
@@ -756,15 +752,15 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = BetterRemote/BetterRemote.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content/netflix.png BetterRemote/Preview\\ Content/disney.png BetterRemote/Preview\\ Content/spotify.png BetterRemote/Preview\\ Content BetterRemote/Preview\\ Content/hulu.png";
+				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BetterRemote/Info.plist;
+				INFOPLIST_FILE = Roam/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Roam;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -776,7 +772,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
@@ -792,7 +788,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "BetterRemoteWidgetsExtension" */ = {
+		AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "RoamWidgets" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AF27401C2AE02C27007C6208 /* Debug */,
@@ -801,7 +797,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "BetterRemote" */ = {
+		AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "Roam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AFC24F202AD0E5A3002AB66C /* Debug */,
@@ -810,7 +806,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "BetterRemote" */ = {
+		AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "Roam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AFC24F232AD0E5A3002AB66C /* Debug */,
@@ -822,23 +818,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-nio.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.59.0;
-			};
-		};
-		AF95B7572ADF582F005FC338 /* XCRemoteSwiftPackageReference "swift-atomics" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-atomics.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.0;
-			};
-		};
-		AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */ = {
+		AFECDE182AE184FE003F6676 /* XCRemoteSwiftPackageReference "XMLCoder" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/CoreOffice/XMLCoder.git";
 			requirement = {
@@ -846,15 +826,7 @@
 				minimumVersion = 0.17.1;
 			};
 		};
-		AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/alta/swift-rtp";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-		AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */ = {
+		AFECDE1B2AE18511003F6676 /* XCRemoteSwiftPackageReference "swift-opus" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/alta/swift-opus";
 			requirement = {
@@ -862,37 +834,48 @@
 				minimumVersion = 0.0.2;
 			};
 		};
+		AFECDE1E2AE18519003F6676 /* XCRemoteSwiftPackageReference "swift-rtp" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alta/swift-rtp";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+		AFECDE212AE1853A003F6676 /* XCRemoteSwiftPackageReference "swift-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-nio.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.59.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		AF3EEF9B2AE0207900B661F3 /* RTP */ = {
+		AFECDE192AE184FE003F6676 /* XMLCoder */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AFFED2482AD7536800357FA4 /* XCRemoteSwiftPackageReference "swift-rtp" */;
-			productName = RTP;
-		};
-		AF3EEF9D2AE0207F00B661F3 /* Opus */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AFFED24B2AD7537A00357FA4 /* XCRemoteSwiftPackageReference "swift-opus" */;
-			productName = Opus;
-		};
-		AF4D5F332AD4355E0055AF35 /* NIO */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
-			productName = NIO;
-		};
-		AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
-			productName = NIOWebSocket;
-		};
-		AFFED2462AD749DD00357FA4 /* XMLCoder */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AFFED2452AD749DD00357FA4 /* XCRemoteSwiftPackageReference "XMLCoder" */;
+			package = AFECDE182AE184FE003F6676 /* XCRemoteSwiftPackageReference "XMLCoder" */;
 			productName = XMLCoder;
 		};
-		AFFED24E2AD759E200357FA4 /* NIOFoundationCompat */ = {
+		AFECDE1C2AE18511003F6676 /* Opus */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AF4D5F2F2AD434FB0055AF35 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			package = AFECDE1B2AE18511003F6676 /* XCRemoteSwiftPackageReference "swift-opus" */;
+			productName = Opus;
+		};
+		AFECDE1F2AE18519003F6676 /* RTP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFECDE1E2AE18519003F6676 /* XCRemoteSwiftPackageReference "swift-rtp" */;
+			productName = RTP;
+		};
+		AFECDE222AE1853A003F6676 /* NIOCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFECDE212AE1853A003F6676 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOCore;
+		};
+		AFECDE242AE1853A003F6676 /* NIOFoundationCompat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFECDE212AE1853A003F6676 /* XCRemoteSwiftPackageReference "swift-nio" */;
 			productName = NIOFoundationCompat;
 		};
 /* End XCSwiftPackageProductDependency section */

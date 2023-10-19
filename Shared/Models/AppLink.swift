@@ -1,10 +1,3 @@
-//
-//  AppLink.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/13/23.
-//
-
 import Foundation
 import SwiftData
 

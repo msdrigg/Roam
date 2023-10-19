@@ -1,10 +1,3 @@
-//
-//  Select.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/16/23.
-//
-
 import Foundation
 import AppIntents
 import SwiftData

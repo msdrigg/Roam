@@ -1,10 +1,3 @@
-//
-//  SmallButtons.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/17/23.
-//
-
 import Foundation
 import SwiftUI
 import SwiftData
@@ -26,7 +19,7 @@ struct SmallDpadWidget: Widget {
     
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
-            kind: "com.msdrigg.betterremote.small-remote",
+            kind: "com.msdrigg.roam.small-remote",
             intent: DeviceChoiceIntent.self,
             provider: RemoteControlProvider()
         ) { entry in
@@ -63,7 +56,7 @@ struct SmallMediaWidget: Widget {
     
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
-            kind: "com.msdrigg.betterremote.media-remote",
+            kind: "com.msdrigg.roam.media-remote",
             intent: DeviceChoiceIntent.self,
             provider: RemoteControlProvider()
         ) { entry in

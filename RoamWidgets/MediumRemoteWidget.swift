@@ -1,10 +1,3 @@
-//
-//  SmallButtons.swift
-//  BetterRemote
-//
-//  Created by Scott Driggers on 10/17/23.
-//
-
 import Foundation
 import SwiftUI
 import SwiftData
@@ -14,7 +7,7 @@ import WidgetKit
 struct MediumRemoteWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
-            kind: "com.msdrigg.betterremote.medium-remote",
+            kind: "com.msdrigg.roam.medium-remote",
             intent: DeviceChoiceIntent.self,
             provider: RemoteControlProvider()
         ) { entry in

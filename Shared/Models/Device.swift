@@ -117,7 +117,7 @@ public func getSharedModelContainer() throws -> ModelContainer {
         Device.self,
     ])
     
-    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier("group.com.msdrigg.betterremote"))
+    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier("group.com.msdrigg.roam"))
     
     return try ModelContainer(for: schema, configurations: [modelConfiguration])
 }
