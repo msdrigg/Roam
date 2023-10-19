@@ -50,14 +50,9 @@ public struct ButtonPressIntent: AppIntent, CustomIntentMigratedAppIntent, Predi
         }
     }
     
-    public func withButton(_ button: RemoteButton) -> ButtonPressIntent {
+    public init(_ button: RemoteButton, device: DeviceAppEntity?) {
         self.button = RemoteButtonAppEnum(button)
-        return self
-    }
-    
-    public func withDevice(_ device: DeviceAppEntity?) -> ButtonPressIntent {
         self.device = device
-        return self
     }
 
     @MainActor

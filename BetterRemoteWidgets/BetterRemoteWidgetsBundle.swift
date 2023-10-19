@@ -11,7 +11,8 @@ import SwiftUI
 @main
 struct BetterRemoteWidgetsBundle: WidgetBundle {
    var body: some Widget {
-       SmallRemoteWidget()
+       SmallDpadWidget()
+       SmallMediaWidget()
        MediumRemoteWidget()
    }
 }

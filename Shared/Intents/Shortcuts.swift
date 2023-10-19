@@ -80,6 +80,32 @@ struct BetterRemoteAppShortcutsProvider: AppShortcutsProvider {
             systemImageName: "speaker.slash"
         )
         AppShortcut(
+            intent: OkIntent(),
+            phrases: [
+                "Press Ok with \(.applicationName)",
+                "Press Ok on \(\.$device) with \(.applicationName)",
+                "Press select with \(.applicationName)",
+                "Press select on \(\.$device) with \(.applicationName)",
+                "Select with \(.applicationName)",
+                "Select on \(\.$device) with \(.applicationName)",
+                "Confirm with \(.applicationName)",
+                "Confirm on \(\.$device) with \(.applicationName)"
+            ],
+            shortTitle: "Select",
+            systemImageName: "checkmark"
+        )
+        AppShortcut(
+            intent: ButtonPressIntent(),
+            phrases: [
+                "Press \(\.$button) with \(.applicationName)",
+                "Press \(\.$button) on \(\.$device) with \(.applicationName)",
+                "Launch \(\.$button) on TV with \(.applicationName)",
+                "Launch \(\.$button) on Roku \(.applicationName)",
+            ],
+            shortTitle: "Press Any Button",
+            systemImageName: "button.programmable"
+        )
+        AppShortcut(
             intent: LaunchAppIntent(),
             phrases: [
                 "Launch \(\.$app) with \(.applicationName)",
@@ -96,21 +122,6 @@ struct BetterRemoteAppShortcutsProvider: AppShortcutsProvider {
             ],
             shortTitle: "Launch App",
             systemImageName: "apps.iphone.landscape"
-        )
-        AppShortcut(
-            intent: OkIntent(),
-            phrases: [
-                "Press Ok with \(.applicationName)",
-                "Press Ok on \(\.$device) with \(.applicationName)",
-                "Press select with \(.applicationName)",
-                "Press select on \(\.$device) with \(.applicationName)",
-                "Select with \(.applicationName)",
-                "Select on \(\.$device) with \(.applicationName)",
-                "Confirm with \(.applicationName)",
-                "Confirm on \(\.$device) with \(.applicationName)"
-            ],
-            shortTitle: "Select",
-            systemImageName: "checkmark"
         )
     }
     

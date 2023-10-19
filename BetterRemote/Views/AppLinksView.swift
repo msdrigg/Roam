@@ -15,7 +15,7 @@ struct AppLinksView: View {
         GeometryReader { geometry in
             ScrollView(.horizontal, showsIndicators: false) {
                 Spacer()
-                LazyHGrid(rows: Array(repeating: GridItem(.fixed(60)), count: rows), spacing: 20) {
+                LazyHGrid(rows: Array(repeating: GridItem(.fixed(60)), count: rows), spacing: 10) {
                     ForEach(appLinks) { app in
                         Button(action: {
                             handleOpenApp(app)
@@ -24,7 +24,7 @@ struct AppLinksView: View {
                                 DataImage(from: app.icon, fallback: "questionmark.app")
                                     .resizable().aspectRatio(contentMode: .fit)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .frame(width: 50, height: 40)
+                                    .frame(width: 60, height: 44)
                                     .shadow(radius: 4)
                                 
 
@@ -32,7 +32,7 @@ struct AppLinksView: View {
                                     .font(.caption)
                                     .truncationMode(.tail)
                                     .lineLimit(1)
-                                    .frame(maxWidth: 50)
+                                    .frame(maxWidth: 60)
                             }
                         }.buttonStyle(.plain)
                     }

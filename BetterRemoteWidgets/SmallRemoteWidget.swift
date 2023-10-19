@@ -11,115 +11,141 @@ import SwiftData
 import AppIntents
 import WidgetKit
 
-struct SmallRemoteWidget: Widget {
+struct SmallDpadWidget: Widget {
+    let dpad: [[RemoteButton?]] = [
+        [
+            .back, .up, .power
+        ],
+        [
+            .left, .select, .right
+        ],
+        [
+            .volumeDown, .down, .volumeUp
+        ]
+    ]
+    
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: "com.msdrigg.betterremote.small-remote",
             intent: DeviceChoiceIntent.self,
             provider: RemoteControlProvider()
         ) { entry in
-            SmallRemoteView(device: entry.device)
+            SmallRemoteView(device: entry.device, controls: dpad)
+                .containerBackground(Color("WidgetBackground"), for: .widget)
+        }
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+func remoteButtonStyle(_ button: RemoteButton) -> any PrimitiveButtonStyle {
+    switch button {
+    case .power:
+            return .plain
+    case .up, .down, .left, .right, .select:
+        return .plain
+    default:
+        return .bordered
+    }
+}
+
+struct SmallMediaWidget: Widget {
+    let controls: [[RemoteButton?]] = [
+        [
+            .instantReplay, .power, .options
+        ],
+        [
+            .rewind, .playPause, .fastForward
+        ],
+        [
+            .volumeDown, .mute, .volumeUp
+        ]
+    ]
+    
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: "com.msdrigg.betterremote.media-remote",
+            intent: DeviceChoiceIntent.self,
+            provider: RemoteControlProvider()
+        ) { entry in
+            SmallRemoteView(device: entry.device, controls: controls)
+                .containerBackground(Color("WidgetBackground"), for: .widget)
         }
         .supportedFamilies([.systemSmall])
     }
 }
 
 struct SmallRemoteView: View {
-    var device: DeviceAppEntity?
+    let device: DeviceAppEntity?
+    let controls: [[RemoteButton?]]
     
     var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Button(intent: ButtonPressIntent().withButton(.left).withDevice(device)) {
-                    Image(systemName: "arrow.left")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
+        Grid(horizontalSpacing: 1, verticalSpacing: 1) {
+            ForEach(controls, id: \.self) { row in
+                GridRow {
+                    ForEach(row, id: \.self) { button in
+                        if let button = button {
+                            if button == .power {
+                                Button(intent: ButtonPressIntent(button, device: device)) {
+                                    button.label
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
+                                        .foregroundStyle(.red)
+                                }
+                                .buttonStyle(.plain)
+                            } else if [.up, .down, .left, .right, .select].contains(button) {
+                                Button(intent: ButtonPressIntent(button, device: device)) {
+                                    button.label
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
+                                }.buttonStyle(.borderedProminent)
+                            } else {
+                                Button(intent: ButtonPressIntent(button, device: device)) {
+                                    button.label
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.8)
+                                }
+                            }
+                        } else {
+                            Spacer()
+                        }
+                    }
                 }
-                .buttonBorderShape(.roundedRectangle)
-                
-                Button(intent: ButtonPressIntent().withButton(.power).withDevice(device)) {
-                    Image(systemName: "power")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(.red)
-                }.buttonStyle(.plain)
-                
-                Button(intent: ButtonPressIntent().withButton(.home).withDevice(device)) {
-                    Image(systemName: "house")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
-                }
-                .buttonBorderShape(.roundedRectangle)
-            }
-
-            HStack(spacing: 4) {
-                Button(intent: ButtonPressIntent().withButton(.left).withDevice(device)) {
-                    Image(systemName: "arrow.uturn.left")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
-                }
-                .buttonBorderShape(.roundedRectangle)
-                
-                Button(intent: ButtonPressIntent().withButton(.select).withDevice(device)) {
-                    Text("Ok")
-                        .font(.headline)
-                        .fixedSize()
-                        .fontDesign(.rounded)
-                        .frame(width: 18, height: 20)
-                }
-                .buttonBorderShape(.roundedRectangle)
-                
-                Button(intent: ButtonPressIntent().withButton(.playPause).withDevice(device)) {
-                    Image(systemName: "playpause")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
-                }
-                .buttonBorderShape(.roundedRectangle)
-            }
-            
-            HStack(spacing: 4) {
-                Button(intent: ButtonPressIntent().withButton(.mute).withDevice(device)) {
-                    Image(systemName: "speaker.slash")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
-                }
-                .buttonBorderShape(.roundedRectangle)
-                
-                Button(intent: ButtonPressIntent().withButton(.volumeDown).withDevice(device)) {
-                    Image(systemName: "minus")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
-                }
-                .buttonBorderShape(.roundedRectangle)
-                
-                Button(intent: ButtonPressIntent().withButton(.volumeUp).withDevice(device)) {
-                    Image(systemName: "plus")
-                        .font(.headline)
-                        .frame(width: 18, height: 20)
-                }
-                .buttonBorderShape(.roundedRectangle)
             }
         }
+        .fontDesign(.rounded)
+        .font(.body.bold())
+        .buttonBorderShape(.roundedRectangle)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .labelStyle(.iconOnly)
         .tint(Color("AccentColor"))
-        .containerBackground(Color("WidgetBackground"), for: .widget)
     }
 }
 
 
 #Preview(as: WidgetFamily.systemSmall) {
-    SmallRemoteWidget()
+    SmallDpadWidget()
 } timeline: {
     DeviceChoiceTimelineEntity (
         date: Date.now,
         device: getTestingDevices()[0].toAppEntity()
     )
+    DeviceChoiceTimelineEntity (
+        date: Date.now,
+        device: nil
+    )
 }
 
 #Preview(as: WidgetFamily.systemSmall) {
-    SmallRemoteWidget()
+    SmallMediaWidget()
 } timeline: {
+    DeviceChoiceTimelineEntity (
+        date: Date.now,
+        device: getTestingDevices()[0].toAppEntity()
+    )
     DeviceChoiceTimelineEntity (
         date: Date.now,
         device: nil

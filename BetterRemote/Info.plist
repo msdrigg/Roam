@@ -2,8 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>InAlternativeAppNames</key>
 	<array>
+		<dict>
+			<key>INAlternativeAppName</key>
+			<string>Remote</string>
+		</dict>
+		<dict>
+			<key>INAlternativeAppName</key>
+			<string>Roam</string>
+		</dict>
 		<dict>
 			<key>INAlternativeAppName</key>
 			<string>Better Remote</string>

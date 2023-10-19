@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 import AppIntents
 import WidgetKit
+import SwiftUI
 
 struct DeviceChoiceTimelineEntity: TimelineEntry {
     var date: Date

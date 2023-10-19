@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -39,6 +39,7 @@
 		AF3EEF9E2AE0207F00B661F3 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AF3EEF9D2AE0207F00B661F3 /* Opus */; };
 		AF4D5F342AD4355E0055AF35 /* NIO in Frameworks */ = {isa = PBXBuildFile; productRef = AF4D5F332AD4355E0055AF35 /* NIO */; };
 		AF76B8182AD8A15400DF6FF7 /* NIOWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = AF76B8172AD8A15400DF6FF7 /* NIOWebSocket */; };
+		AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
 		AF95B6F72ADF2F9F005FC338 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = AF95B6F62ADF2F9F005FC338 /* README.md */; };
 		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
@@ -184,7 +185,6 @@
 				AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */,
 				AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */,
 				AF27400F2AE02C25007C6208 /* BetterRemoteWidgetsBundle.swift */,
-				AFF607892AE0037900A7D657 /* WidgetIntents.swift */,
 				AF2740152AE02C26007C6208 /* Assets.xcassets */,
 				AF2740172AE02C26007C6208 /* Info.plist */,
 				AF2740182AE02C26007C6208 /* BetterRemoteWidgets.entitlements */,
@@ -322,6 +322,7 @@
 		AFF6078C2AE005E400A7D657 /* Intents */ = {
 			isa = PBXGroup;
 			children = (
+				AFF607892AE0037900A7D657 /* WidgetIntents.swift */,
 				AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */,
 				AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */,
 				AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */,
@@ -400,7 +401,7 @@
 				};
 			};
 			buildConfigurationList = AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "BetterRemote" */;
-			compatibilityVersion = "Xcode 14.0";
+			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -479,6 +480,7 @@
 				AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */,
 				AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */,
 				AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */,
+				AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */,
 				AF20AD132AE01ED100D371C7 /* DeviceControllerActor.swift in Sources */,
 				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
 				AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */,
@@ -517,7 +519,6 @@
 				CODE_SIGN_ENTITLEMENTS = BetterRemoteWidgets/BetterRemoteWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -536,7 +537,6 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.BetterRemoteWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -556,7 +556,6 @@
 				CODE_SIGN_ENTITLEMENTS = BetterRemoteWidgets/BetterRemoteWidgets.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -575,7 +574,6 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote.BetterRemoteWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -621,6 +619,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -643,6 +642,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -686,6 +686,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -702,6 +703,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -719,13 +721,12 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content/netflix.png BetterRemote/Preview\\ Content/disney.png BetterRemote/Preview\\ Content/spotify.png BetterRemote/Preview\\ Content BetterRemote/Preview\\ Content/hulu.png";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BetterRemote/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Better Remote";
+				INFOPLIST_KEY_CFBundleDisplayName = Roam;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
@@ -736,7 +737,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -760,13 +760,12 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "BetterRemote/Preview\\ Content/netflix.png BetterRemote/Preview\\ Content/disney.png BetterRemote/Preview\\ Content/spotify.png BetterRemote/Preview\\ Content BetterRemote/Preview\\ Content/hulu.png";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BetterRemote/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Better Remote";
+				INFOPLIST_KEY_CFBundleDisplayName = Roam;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
@@ -777,7 +776,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.BetterRemote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

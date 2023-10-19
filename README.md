@@ -4,19 +4,18 @@ A Roku remote that puts users first
 
 ## TODO
 
-- Need to add multicast capability to my app for real to get access to multicast networking
+- Add multicast capability to my app for real to get access to multicast networking
     - Currently waiting on response from apple in request
     - https://developer.apple.com/account 
     - https://developer.apple.com/forums/thread/663271 
-- Non-private listening goals
-    - Implement ecp-session with authentication procedure
-    - Switch to ecp-session for all keypress activities
-        - Implement consuming all tcp bytes and ignoring incoming
-        - Create and maintain ecp session with 3 retries
-            - Only retry after 3 times when user presses another button
-        - Can send keys with "request":"key-press"
-        - Can launch apps with "request":"launch"
-        - All requests look like: {"param-mode":"async","param-channel-id":"61322","request":"launch","request-id":"51"}
+- Add watch-os support
+    - Add 3 sliding views
+        - Main Controller (like small widget)
+        - Button Grid (like small widget)
+        - App Links (scrollable list)
+    - Add small circular widgets configurable for each button
+- Add app launch widget
+    - List of recently launched apps
 - Next logical steps for private listening
     - 1. Implement starting private session (and stopping it) with command
         - Ensure that this works and datagrams start coming through

@@ -1,6 +1,7 @@
 import Foundation
+import SwiftUI
 
-public enum RemoteButton: String, CaseIterable, Sendable {
+public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
     case up = "Up"
     case left = "Left"
     case right = "Right"
@@ -46,7 +47,7 @@ public enum RemoteButton: String, CaseIterable, Sendable {
         .left: "Left",
         .right: "Right",
         .down: "Down",
-        .select: "Select",
+        .select: "Ok",
         .home: "Home",
         .back: "Back",
         .power: "Power On/Off",
@@ -72,6 +73,39 @@ public enum RemoteButton: String, CaseIterable, Sendable {
         .inputHDMI3: "Input HDMI 3",
         .inputHDMI4: "Input HDMI 4",
         .inputAV1: "Input AV 1"
+    ]
+    
+    public static var systemIcons: [RemoteButton: String?] = [
+        .up: "chevron.up",
+        .left: "chevron.left",
+        .right: "chevron.right",
+        .down: "chevron.down",
+        .select: nil,
+        .home: "house",
+        .back: "arrow.left",
+        .power: "power",
+        .powerOn: "power",
+        .powerOff: "power",
+        .mute: "speaker.slash",
+        .volumeUp: "speaker.plus",
+        .volumeDown: "speaker.minus",
+        .options: "asterisk",
+        .instantReplay: "arrow.uturn.left",
+        .rewind: "backward",
+        .fastForward: "forward",
+        .playPause: "playpause",
+        .findRemote: "av.remote",
+        .backspace: "delete.left",
+        .search: "magnifyingglass",
+        .enter: "return",
+        .channelUp: "arrowtriangle.up",
+        .channelDown: "arrowtriangle.down",
+        .inputTuner: nil,
+        .inputHDMI1: nil,
+        .inputHDMI2: nil,
+        .inputHDMI3: nil,
+        .inputHDMI4: nil,
+        .inputAV1: nil
     ]
 
     public static var buttonApiDescription: [RemoteButton: String] = [
@@ -110,5 +144,26 @@ public enum RemoteButton: String, CaseIterable, Sendable {
     public var apiValue: String {
         Self.buttonApiDescription[self]!
     }
+    
+    public var systemIcon: String? {
+        // Why do I have to do this
+        if let icon = Self.systemIcons[self] {
+            return icon
+        } else {
+            return nil
+        }
+    }
+    
+    @ViewBuilder
+    public var label: some View {
+        if let systemIcon = systemIcon {
+            Label(description, systemImage: systemIcon)
+        } else {
+            Text(description)
+        }
+    }
+    
+    public var description: String {
+        Self.caseDisplayRepresentations[self]!
+    }
 }
-

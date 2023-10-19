@@ -5,6 +5,14 @@ import os
 import AVFoundation
 import AppIntents
 
+#if os(macOS)
+let BUTTON_WIDTH: CGFloat = 44
+let BUTTON_HEIGHT: CGFloat = 36
+#else
+let BUTTON_WIDTH: CGFloat = 28
+let BUTTON_HEIGHT: CGFloat = 20
+#endif
+
 struct RemoteView: View {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -127,20 +135,20 @@ struct RemoteView: View {
                     VStack(alignment: .center) {
                         if isHorizontal {
                             horizontalBody
-                            #if os(iOS)
+#if os(iOS)
                                 .contentShape(Rectangle())
-                                .onTapGesture(coordinateSpace: .global) { _ in
+                                .simultaneousGesture(TapGesture().onEnded {
                                     showKeyboardEntry = false
-                                }
-                            #endif
+                                })
+#endif
                         } else {
                             verticalBody
-                            #if os(iOS)
+#if os(iOS)
                                 .contentShape(Rectangle())
-                                .onTapGesture(coordinateSpace: .global) { _ in
+                                .simultaneousGesture(TapGesture().onEnded {
                                     showKeyboardEntry = false
-                                }
-                            #endif
+                                })
+#endif
                         }
                         
 #if os(iOS)
@@ -159,142 +167,158 @@ struct RemoteView: View {
                     }
                     Spacer()
                 }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 10)
-            .task(priority: .low) {
-                await self.scanningActor.scanSSDPContinually()
-            }
-            .task(priority: .low) {
-                if !scanIpAutomatically {
-                    return
-                }
-                await self.scanningActor.scanIPV4Once()
-            }
-            .task(id: selectedDevice?.id, priority: .medium) {
-                if let devId = selectedDevice?.id {
-                    await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
-                }
-            }
-            .onAppear {
-                let modelContainer = modelContext.container
-                self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
-                self.controllerActor = DeviceControllerActor(modelContainer: modelContainer)
-            }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 10)
+                .toolbar {
 #if os(iOS)
-            .task(id: inBackground || !controlVolumeWithHWButtons) {
-                if inBackground || !controlVolumeWithHWButtons {
-                    return
-                }
-                if let stream = await VolumeListener(session: AVAudioSession.sharedInstance()).events {
-                    for await volumeEvent in stream {
-                        let key: RemoteButton
-                        switch volumeEvent.direction {
-                        case .Up:
-                            key = .volumeUp
-                        case .Down:
-                            key = .volumeDown
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            showKeyboardEntry = !showKeyboardEntry
+                        }) {
+                            Label("Keyboard", systemImage: "keyboard")
+                                .controlSize(.large)
+                                .labelStyle(.iconOnly)
                         }
-                        Task {
-                            if let device = selectedDevice {
-                                await controllerActor.sendKeyToDevice(location: device.location, key: key)
-                            }
-                        }
+                        .buttonStyle(.borderless)
+                        .disabled(selectedDevice == nil)
                     }
-                } else {
-                    Self.logger.error("Unable to get volume events stream")
-                }
-            }
 #endif
-            .onChange(of: scenePhase) { _oldPhase, newPhase in
-                inBackground = newPhase != .active
-            }
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        showKeyboardEntry = !showKeyboardEntry
-                    }) {
-                        Label("Keyboard", systemImage: "keyboard")
-                            .controlSize(.large)
-                            .labelStyle(.iconOnly)
-                    }
-                    .disabled(selectedDevice == nil)
-                }
-#endif
-                ToolbarItem(placement: .automatic) {
-                    Menu {
-                        if !devices.isEmpty {
-                            Picker("Device", selection: $manuallySelectedDevice.withDefault(selectedDevice)) {
-                                ForEach(devices) { device in
-                                    Text(device.name).tag(device as Device?)
+                    ToolbarItem(placement: .automatic) {
+                        Menu {
+                            if !devices.isEmpty {
+                                Picker("Device", selection: $manuallySelectedDevice.withDefault(selectedDevice)) {
+                                    ForEach(devices) { device in
+                                        Text(device.name).tag(device as Device?)
+                                    }
+                                }.pickerStyle(.inline).onChange(of: manuallySelectedDevice) { _oldSelected, selected in
+                                    if let chosenDevice = devices.first(where: { d in
+                                        d.id == selected?.id
+                                    }) {
+                                        Self.logger.debug("Setting last selected at")
+                                        chosenDevice.lastSelectedAt = Date.now
+                                    }
+                                    do {
+                                        try modelContext.save()
+                                    } catch {
+                                        Self.logger.error("Error saving device selection: \(error)")
+                                    }
                                 }
-                            }.pickerStyle(.inline).onChange(of: manuallySelectedDevice) { _oldSelected, selected in
-                                if let chosenDevice = devices.first(where: { d in
-                                    d.id == selected?.id
-                                }) {
-                                    Self.logger.debug("Setting last selected at")
-                                    chosenDevice.lastSelectedAt = Date.now
-                                }
-                                do {
-                                    try modelContext.save()
-                                } catch {
-                                    Self.logger.error("Error saving device selection: \(error)")
-                                }
+                                .font(.body)
+                            } else {
+                                Text("No devices")
+                                    .font(.body)
                             }
-                        } else {
-                            Text("No devices")
-                        }
-                        
-                        Divider()
+                            
+                            Divider()
 #if os(macOS)
-                        SettingsLink {
-                            Label("Settings", systemImage: "gear")
-                        }
+                            SettingsLink {
+                                Label("Settings", systemImage: "gear")
+                                    .labelStyle(.titleAndIcon)
+                            }
 #else
-                        Button("Settings", systemImage: "gear") {
-                            showSettingsView = true
-                        }
+                            Button("Settings", systemImage: "gear") {
+                                showSettingsView = true
+                            }
+                            .labelStyle(.titleAndIcon)
 #endif
-                    } label: {
-                        Group {
-                            Text(Image(systemName: "circle.fill") ).font(.system(size: 8))
-                                .foregroundColor(deviceStatusColor)
-                                .baselineOffset(2) +
-                            Text(" ") +
-                            Text(selectedDevice?.name ?? "No devices")
-                        }.multilineTextAlignment(.center)
-                            .truncationMode(.tail)
-                            .frame(maxWidth: 180)
+                        } label: {
+                            Group {
+                                Text(Image(systemName: "circle.fill") ).font(.system(size: 8))
+                                    .foregroundColor(deviceStatusColor)
+                                    .baselineOffset(2) +
+                                Text(" ") +
+                                Text(selectedDevice?.name ?? "No devices")
+                            }.multilineTextAlignment(.center)
+                                .truncationMode(.tail)
+                                .frame(maxWidth: 180)
+                        }
+                    }
+                    
+#if os(macOS)
+                    ToolbarItem(placement: .primaryAction) {
+                        Button(role: .destructive, action: {
+                            incrementButtonPressCount(.power)
+                            donateButtonIntent(.power)
+                            Task {
+                                if let device = selectedDevice {
+                                    await controllerActor.powerToggleDevice(device: device)
+                                }
+                            }
+                        }) {
+                            Label("Power Off/On", systemImage: "power")
+                                .foregroundStyle(Color.red, Color.red)
+                                .labelStyle(.iconOnly)
+                        }
+                        .keyboardShortcut(.return)
+                        .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
+                        .symbolEffect(.bounce, value: buttonPressCount(.power))
+                    }
+#endif
+                }
+                
+                .onAppear {
+                    let modelContainer = modelContext.container
+                    self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
+                    self.controllerActor = DeviceControllerActor(modelContainer: modelContainer)
+                }
+                .task(priority: .low) {
+                    await self.scanningActor.scanSSDPContinually()
+                }
+                .task(priority: .low) {
+                    if !scanIpAutomatically {
+                        return
+                    }
+                    await self.scanningActor.scanIPV4Once()
+                }
+                .task(id: selectedDevice?.id, priority: .medium) {
+                    if let devId = selectedDevice?.id {
+                        await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                     }
                 }
                 
-#if os(macOS)
-                ToolbarItem(placement: .primaryAction) {
-                    Button(role: .destructive, action: {
-                        incrementButtonPressCount(.power)
-                        donateButtonIntent(.power)
-                        Task {
-                            if let device = selectedDevice {
-                                await controllerActor.powerToggleDevice(device: device)
+#if os(iOS)
+                .task(id: inBackground || !controlVolumeWithHWButtons) {
+                    if inBackground || !controlVolumeWithHWButtons {
+                        return
+                    }
+                    if let stream = await VolumeListener(session: AVAudioSession.sharedInstance()).events {
+                        for await volumeEvent in stream {
+                            let key: RemoteButton
+                            switch volumeEvent.direction {
+                            case .Up:
+                                key = .volumeUp
+                            case .Down:
+                                key = .volumeDown
+                            }
+                            Task {
+                                if let device = selectedDevice {
+                                    await controllerActor.sendKeyToDevice(location: device.location, key: key)
+                                }
                             }
                         }
-                    }) {
-                        Label("Power Off/On", systemImage: "power")
-                            .foregroundStyle(Color.red, Color.red)
-                            .labelStyle(.iconOnly)
+                    } else {
+                        Self.logger.error("Unable to get volume events stream")
                     }
-                    .labelStyle(.iconOnly)
-                    .disabled(selectedDevice == nil)
-                    .keyboardShortcut(.return)
-                    .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
-                    .symbolEffect(.bounce, value: buttonPressCount(.power))
                 }
 #endif
+                .onChange(of: scenePhase) { _oldPhase, newPhase in
+                    inBackground = newPhase != .active
+                }
                 
             }
         }
+#if os(macOS)
+        .font(.title2)
+#else
+        .font(.title2)
+#endif
+        .fontDesign(.rounded)
+        .disabled(selectedDevice == nil)
+        .controlSize(.extraLarge)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.roundedRectangle)
+        .labelStyle(.iconOnly)
 #if os(iOS)
         .sheet(isPresented: $showSettingsView) {
             SettingsView()
@@ -302,7 +326,6 @@ struct RemoteView: View {
 #endif
     }
     
-    @ViewBuilder
     var horizontalBody: some View {
         VStack(alignment: .center) {
             Spacer()
@@ -311,12 +334,15 @@ struct RemoteView: View {
                     Spacer()
                     // Center Controller with directional buttons
                     centerController
+                    .frame(maxWidth: .infinity)
                 }
                 Spacer()
                 
                 VStack(alignment: .center) {
                     // Row with Back and Home buttons
-                    topBar
+                    topBar   
+                        .frame(maxWidth: .infinity)
+
                     
                     
                     if !showKeyboardEntry {
@@ -324,10 +350,12 @@ struct RemoteView: View {
                         
                         // Grid of 9 buttons
                         buttonGrid
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 Spacer()
             }
+            .frame(maxWidth: 600)
             
             if !showKeyboardEntry && (selectedDevice?.appsSorted?.count ?? 0) > 0 {
                 Spacer()
@@ -337,7 +365,6 @@ struct RemoteView: View {
         }
     }
     
-    @ViewBuilder
     var verticalBody: some View {
         VStack(alignment: .center, spacing: 10) {
             // Row with Back and Home buttons
@@ -365,7 +392,6 @@ struct RemoteView: View {
         }
     }
     
-    @ViewBuilder
     var appLinks: some View {
         AppLinksView(appLinks: selectedDevice?.appsSorted ?? [], rows: screenSize.height > 500 ? 2 : 1) { app in
             
@@ -380,99 +406,97 @@ struct RemoteView: View {
         .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
     }
     
-    @ViewBuilder
     var buttonGrid: some View {
-        let buttons: [(String, String, RemoteButton, KeyEquivalent?, Bool)] = [
-            ("Replay", "arrow.uturn.backward", .instantReplay, nil, false),
+        let buttonRows: [[(String, String, RemoteButton, KeyEquivalent?, Bool)]] = [
+            [("Replay", "arrow.uturn.backward", .instantReplay, nil, false),
             ("Options", "asterisk", .options, nil, false),
-            ("Private Listening", "headphones", .enter, nil, true),
-            ("Rewind", "backward.end.fill", .rewind, nil, false),
-            ("Play/Pause", "playpause.fill", .playPause, nil, false),
-            ("Fast Forward", "forward.end.fill", .fastForward, nil, false),
-            ("Mute", "speaker.slash.fill", .mute, "m", false),
-            ("Volume Down", "speaker.wave.1.fill", .volumeDown, .downArrow, false),
-            ("Volume Up", "speaker.wave.2.fill", .volumeUp, .upArrow, false)
+            ("Private Listening", "headphones", .enter, nil, true)],
+            [("Rewind", "backward", .rewind, nil, false),
+            ("Play/Pause", "playpause", .playPause, nil, false),
+            ("Fast Forward", "forward", .fastForward, nil, false)],
+            [("Volume Down", "speaker.minus", .volumeDown, .downArrow, false),
+            ("Mute", "speaker.slash", .mute, "m", false),
+            ("Volume Up", "speaker.plus", .volumeUp, .upArrow, false)]
         ]
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 48, maximum: 160)), count: 3), spacing: 10) {
-            ForEach(buttons, id: \.0) { button in
-                let view = Button(action: {
-                    incrementButtonPressCount(button.2)
-                    donateButtonIntent(button.2)
-                    Task {
-                        if let device = selectedDevice {
-                            await controllerActor.sendKeyToDevice(location: device.location, key: button.2)
+    return Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+        ForEach(buttonRows, id: \.first?.0) { row in
+                GridRow {
+                    ForEach(row, id: \.0) { button in
+                        let view = Button(action: {
+                            incrementButtonPressCount(button.2)
+                            donateButtonIntent(button.2)
+                            Task {
+                                if let device = selectedDevice {
+                                    await controllerActor.sendKeyToDevice(location: device.location, key: button.2)
+                                }
+                            }
+                        }) {
+                            Label(button.0, systemImage: button.1)
+                                .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+                        }
+                            .disabled(button.4)
+                            .sensoryFeedback(.impact, trigger: buttonPressCount(button.2))
+                            .symbolEffect(.bounce, value: buttonPressCount(button.2))
+                        if let ks = button.3 {
+                            view
+                                .keyboardShortcut(ks)
+                        } else {
+                            view
                         }
                     }
-                }) {
-                    Label(button.0, systemImage: button.1)
-                        .frame(width: 26, height: 20)
-                }
-                    .disabled(button.4)
-                    .buttonStyle(.bordered)
-                    .labelStyle(.iconOnly)
-                    .clipShape(.rect(cornerSize: CGSize(width: 8, height: 8)))
-                    .sensoryFeedback(.impact, trigger: buttonPressCount(button.2))
-                    .symbolEffect(.bounce, value: buttonPressCount(button.2))
-                if let ks = button.3 {
-                    view
-                        .keyboardShortcut(ks)
-                } else {
-                    view
                 }
             }
         }
-        
     }
     
-    @ViewBuilder
     var centerController: some View {
         let buttons: [(String?, RemoteButton, String)?] = [
             nil, ("chevron.up", .up, "Up"), nil,
-            ("chevron.left", .left, "Left"), (nil, .select, "OK"), ("chevron.right", .right, "Right"),
+            ("chevron.left", .left, "Left"), (nil, .select, "Ok"), ("chevron.right", .right, "Right"),
             nil, ("chevron.down", .down, "Down"), nil
         ]
-        Grid {
-            ForEach(0..<3) { row in
-                GridRow {
-                    ForEach(0..<3) { col in
-                        if let button = buttons[row * 3 + col] {
-                            Button(action: {
-                                incrementButtonPressCount(button.1)
-                                donateButtonIntent(button.1)
-                                Task {
-                                    if let device = selectedDevice {
-                                        await controllerActor.sendKeyToDevice(location: device.location, key: button.1)
+        return VStack(alignment: .center) {
+            Grid(horizontalSpacing: 2, verticalSpacing: 2) {
+                ForEach(0..<3) { row in
+                    GridRow {
+                        ForEach(0..<3) { col in
+                            if let button = buttons[row * 3 + col] {
+                                Button(action: {
+                                    incrementButtonPressCount(button.1)
+                                    donateButtonIntent(button.1)
+                                    Task {
+                                        if let device = selectedDevice {
+                                            await controllerActor.sendKeyToDevice(location: device.location, key: button.1)
+                                        }
+                                    }
+                                }) {
+                                    if let systemImage = button.0 {
+                                        Label(button.2, systemImage: systemImage)
+                                            .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+                                    } else {
+                                        Text(button.2)
+                                            .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.6)
+                                        
                                     }
                                 }
-                            }) {
-                                if let systemImage = button.0 {
-                                    Label(button.2, systemImage: systemImage)
-                                        .padding(.horizontal, 2)
-                                        .padding(.vertical, 2)
-                                        .labelStyle(.iconOnly)
-                                } else {
-                                    Text(button.2)
-                                }
+                                .buttonStyle(.borderedProminent)
+                                .sensoryFeedback(.impact, trigger: buttonPressCount(button.1))
+                                .symbolEffect(.bounce, value: buttonPressCount(button.1))
+                            } else {
+                                Spacer()
                             }
-                            .buttonStyle(.borderedProminent)
-                            .buttonBorderShape(.roundedRectangle)
-                            .controlSize(.extraLarge)
-                            .fixedSize()
-                            .shadow(radius: 2)
-                            .sensoryFeedback(.impact, trigger: buttonPressCount(button.1))
-                            .symbolEffect(.bounce, value: buttonPressCount(button.1))
-                        } else {
-                            Text("")
                         }
                     }
                 }
             }
-        }.fixedSize()
+            .frame(maxWidth: BUTTON_WIDTH * 3 + 6, maxHeight: BUTTON_HEIGHT * 3 + 6)
+        }
     }
     
-    @ViewBuilder
     var topBar: some View {
-        HStack(spacing: isHorizontal ? 30 : nil) {
+        HStack(spacing: isHorizontal ? 10 : nil) {
             if !isHorizontal {
                 Spacer()
             }
@@ -486,13 +510,13 @@ struct RemoteView: View {
                 }
             }) {
                 Label("Back", systemImage: "arrow.left")
+                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
             }
-            .buttonStyle(.bordered)
-            .labelStyle(.iconOnly)
             .sensoryFeedback(.impact, trigger: buttonPressCount(.back))
             .symbolEffect(.bounce, value: buttonPressCount(.back))
             if !isHorizontal {
                 Spacer()
+                    .frame(maxWidth: 30)
             }
             
 #if os(macOS)
@@ -506,6 +530,9 @@ struct RemoteView: View {
                 }
                 return .ignored
             }
+            // Do this so the focus outline on macOS matches
+            .offset(y: 4)
+            
 #elseif os(iOS)
             Button("Power On/Off", systemImage: "power", role: .destructive, action: {
                 incrementButtonPressCount(.power)
@@ -516,14 +543,16 @@ struct RemoteView: View {
                     }
                 }
             })
-            .font(.system(size: 24, weight: .bold))
-            .labelStyle(.iconOnly)
-            .controlSize(.large)
+            .font(.title)
+            .foregroundStyle(.red)
+            .buttonStyle(.plain)
             .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
             .symbolEffect(.bounce, value: buttonPressCount(.power))
 #endif
             if !isHorizontal {
                 Spacer()
+                    .frame(maxWidth: 30)
+                
             }
             
             Button(action: {
@@ -536,9 +565,9 @@ struct RemoteView: View {
                 }
             }) {
                 Label("Home", systemImage: "house")
+                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+                
             }
-            .buttonStyle(.bordered)
-            .labelStyle(.iconOnly)
             .sensoryFeedback(.impact, trigger: buttonPressCount(.home))
             .symbolEffect(.bounce, value: buttonPressCount(.home))
             if !isHorizontal {
@@ -557,9 +586,10 @@ struct KeyboardMonitor: View {
     var body: some View {
         Button(action: {}) {
             Label("Keyboard", systemImage: "keyboard")
-                .controlSize(.large)
                 .labelStyle(.iconOnly)
         }
+        // Do this so the focus outline on macos matches
+        .offset(y: -4)
         .buttonStyle(.accessoryBar)
         .disabled(disabled)
         .focusable()
@@ -586,6 +616,7 @@ struct KeyboardEntry: View {
             TextField("Enter some text...", text: $str)
                 .focused($keyboardFocused)
                 .onKeyPress{ key in onKeyPress(key)}
+                .font(.body)
         }
         .frame(height: 100)
         .onAppear {
@@ -597,9 +628,6 @@ struct KeyboardEntry: View {
 }
 #endif
 
-enum SettingsDestination {
-    case Devices
-}
 
 extension Binding {
     func withDefault<T>(_ defaultValue: Optional<T>) -> Binding<Optional<T>> where Value == Optional<T> {
@@ -619,13 +647,7 @@ extension Binding {
     }
 }
 
-#Preview("Remote vertical", traits: .fixedLayout(width: 300, height: 600)) {
-    RemoteView()
-        .modelContainer(devicePreviewContainer)
-}
-
-
-#Preview("Remote horizontal", traits: .fixedLayout(width: 700, height: 600)) {
+#Preview("Remote horizontal") {
     RemoteView()
         .modelContainer(devicePreviewContainer)
 }
