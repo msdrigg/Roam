@@ -4,10 +4,6 @@ A Roku remote that puts users first
 
 ## TODO
 
-- Add multicast capability to my app for real to get access to multicast networking
-    - Currently waiting on response from apple in request
-    - https://developer.apple.com/account 
-    - https://developer.apple.com/forums/thread/663271 
 - Add watch-os support
     - Add 3 sliding views
         - Main Controller (like small widget)

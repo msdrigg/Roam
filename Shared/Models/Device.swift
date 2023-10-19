@@ -3,7 +3,7 @@ import SwiftData
 
 
 @Model
-public final class Device: Identifiable {
+public final class Device: Identifiable, Hashable {
     @Attribute(.unique) public var id: String
     public var name: String
     public var location: String

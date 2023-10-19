@@ -28,11 +28,11 @@ struct RemoteView: View {
     @State private var controllerActor: DeviceControllerActor!
     @State private var manuallySelectedDevice: Device?
     @State private var showKeyboardEntry: Bool = false
-    @State private var showSettingsView: Bool = false
     @State private var keyboardEntryText: String = ""
     @State var screenSize: CGSize = .zero
     @State var inBackground: Bool = false
     @State var buttonPresses: [RemoteButton: Int] = [:]
+    @State private var navigationPath: NavigationPath = NavigationPath()
     
     @AppStorage("scanIPAutomatically") private var scanIpAutomatically: Bool = true
     @AppStorage("controlVolumeWithHWButtons") private var controlVolumeWithHWButtons: Bool = true
@@ -119,7 +119,7 @@ struct RemoteView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        SettingsNavigationWrapper(path: $navigationPath) {
             ZStack {
                 Color.clear
                     .overlay(
@@ -183,7 +183,7 @@ struct RemoteView: View {
                         
                     }
                     Spacer()
-                }       
+                }
                 .disabled(selectedDevice == nil)
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -234,8 +234,8 @@ struct RemoteView: View {
                                     .labelStyle(.titleAndIcon)
                             }
 #else
-                            Button("Settings", systemImage: "gear") {
-                                showSettingsView = true
+                            NavigationLink(value: SettingsDestination.Global) {
+                                Label("Settings", systemImage: "gear")
                             }
                             .labelStyle(.titleAndIcon)
 #endif
@@ -258,7 +258,7 @@ struct RemoteView: View {
                             }
                         }
                         .font(.body)
-
+                        
                     }
                     
 #if os(macOS)
@@ -275,6 +275,7 @@ struct RemoteView: View {
                             Label("Power Off/On", systemImage: "power")
                                 .foregroundStyle(Color.red, Color.red)
                                 .labelStyle(.iconOnly)
+                                .font(.headline)
                         }
                         .keyboardShortcut(.return)
                         .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
@@ -288,9 +289,6 @@ struct RemoteView: View {
                     let modelContainer = modelContext.container
                     self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
                     self.controllerActor = DeviceControllerActor(modelContainer: modelContainer)
-                }
-                .task(priority: .low) {
-                    await self.scanningActor.scanSSDPContinually()
                 }
                 .task(priority: .low) {
                     if !scanIpAutomatically {
@@ -334,22 +332,17 @@ struct RemoteView: View {
                 }
                 
             }
+            .font(.title2)
+            .fontDesign(.rounded)
+            .controlSize(.extraLarge)
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.roundedRectangle)
+            .labelStyle(.iconOnly)
+            
+        }       
+        .task(priority: .low) {
+            await self.scanningActor.scanSSDPContinually()
         }
-#if os(macOS)
-        .font(.title2)
-#else
-        .font(.title2)
-#endif
-        .fontDesign(.rounded)
-        .controlSize(.extraLarge)
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.roundedRectangle)
-        .labelStyle(.iconOnly)
-#if os(iOS)
-        .sheet(isPresented: $showSettingsView) {
-            SettingsView()
-        }
-#endif
     }
     
     var horizontalBody: some View {
@@ -360,15 +353,15 @@ struct RemoteView: View {
                     Spacer()
                     // Center Controller with directional buttons
                     centerController
-                    .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity)
                 }
                 Spacer()
                 
                 VStack(alignment: .center) {
                     // Row with Back and Home buttons
-                    topBar   
+                    topBar
                         .frame(maxWidth: .infinity)
-
+                    
                     
                     
                     if !showKeyboardEntry {
@@ -435,17 +428,17 @@ struct RemoteView: View {
     var buttonGrid: some View {
         let buttonRows: [[(String, String, RemoteButton, KeyEquivalent?, Bool)]] = [
             [("Replay", "arrow.uturn.backward", .instantReplay, nil, false),
-            ("Options", "asterisk", .options, nil, false),
-            ("Private Listening", "headphones", .enter, nil, true)],
+             ("Options", "asterisk", .options, nil, false),
+             ("Private Listening", "headphones", .enter, nil, true)],
             [("Rewind", "backward", .rewind, nil, false),
-            ("Play/Pause", "playpause", .playPause, nil, false),
-            ("Fast Forward", "forward", .fastForward, nil, false)],
+             ("Play/Pause", "playpause", .playPause, nil, false),
+             ("Fast Forward", "forward", .fastForward, nil, false)],
             [("Volume Down", "speaker.minus", .volumeDown, .downArrow, false),
-            ("Mute", "speaker.slash", .mute, "m", false),
-            ("Volume Up", "speaker.plus", .volumeUp, .upArrow, false)]
+             ("Mute", "speaker.slash", .mute, "m", false),
+             ("Volume Up", "speaker.plus", .volumeUp, .upArrow, false)]
         ]
-    return Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-        ForEach(buttonRows, id: \.first?.0) { row in
+        return Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+            ForEach(buttonRows, id: \.first?.0) { row in
                 GridRow {
                     ForEach(row, id: \.0) { button in
                         let view = Button(action: {
@@ -557,7 +550,7 @@ struct RemoteView: View {
                 return .ignored
             }
             // Do this so the focus outline on macOS matches
-            .offset(y: 4)
+            .offset(y: 7)
             
 #elseif os(iOS)
             Button("Power On/Off", systemImage: "power", role: .destructive, action: {
@@ -614,8 +607,9 @@ struct KeyboardMonitor: View {
             Label("Keyboard", systemImage: "keyboard")
                 .labelStyle(.iconOnly)
         }
+        .font(.headline)
         // Do this so the focus outline on macos matches
-        .offset(y: -4)
+        .offset(y: -7)
         .buttonStyle(.accessoryBar)
         .disabled(disabled)
         .focusable()
@@ -638,13 +632,14 @@ struct KeyboardEntry: View {
     let onKeyPress:  (_ press: KeyPress) -> KeyPress.Result
     
     var body: some View {
-        Form {
-            TextField("Enter some text...", text: $str)
-                .focused($keyboardFocused)
-                .onKeyPress{ key in onKeyPress(key)}
-                .font(.body)
-        }
-        .frame(height: 100)
+        TextField("Enter some text...", text: $str)
+            .focused($keyboardFocused)
+            .onKeyPress{ key in onKeyPress(key)}
+            .font(.body)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 8).fill(.fill.tertiary))
+        .frame(height: 60)
         .onAppear {
             keyboardFocused = true
             str = ""

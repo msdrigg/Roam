@@ -24,8 +24,9 @@ struct RoamApp: App {
         
         #if os(macOS)
         Settings {
-            SettingsView()
+            MacSettings()
         }
+        .windowToolbarStyle(.unified(showsTitle: true))
         .modelContainer(sharedModelContainer)
         #endif
 

@@ -10,13 +10,7 @@ struct SettingsView: View {
     
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Device.lastSelectedAt) private var devices: [Device]
-    
-    @State private var selectedDeviceId: String?
-    private var selectedDevice: Device? {
-        devices.first {d in
-            d.id == selectedDeviceId
-        }
-    }
+    @Binding var path: NavigationPath
     
     @State private var scanningActor: DeviceScanningActor!
     @State private var isScanning: Bool = false
@@ -27,121 +21,73 @@ struct SettingsView: View {
     @AppStorage("controlVolumeWithHWButtons") private var controlVolumeWithHWButtons: Bool = true
     
     var body: some View {
-        TabView(selection: $tabSelection) {
-            deviceSettings
-                .tabItem {
-                    Label("Devices", systemImage: "sparkles.tv")
+        Form {
+            Section("Devices") {
+                if devices.isEmpty {
+                    Text("No devices")
+                        .foregroundStyle(Color.secondary)
+                } else {
+                    ForEach(devices) { device in
+                        DeviceListItem(device: device)
+                    }
                 }
-                .tag(0)
-            
-            behaviorSettings
-                .tabItem {
-                    Label("Behavior", systemImage: "gearshape")
-                }
-                .tag(1)
-        }
-    }
-    
-@ViewBuilder
-    var behaviorSettings: some View {
-    Form {
-        #if os(iOS)
-        Toggle("Use volume buttons to control TV volume", isOn: $controlVolumeWithHWButtons)
-        #endif
-        
-        Toggle("Scan for devices when app opens", isOn: $scanIpAutomatically)
-    }
-    .formStyle(.grouped)
-}
-    
-    @ViewBuilder
-    var deviceSettings: some View {
 #if os(macOS)
-        VStack {
-            deviceList
-                .sheet(isPresented: $selectedDeviceId.mappedToBool()) {
-                    if let dev = selectedDevice {
-                        DeviceDetailView(device: dev) {
-                            selectedDeviceId = nil
-                        }
-                    }
-                }
-                .onAppear {
-                    let modelContainer = modelContext.container
-                    self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
-                }
-                .task(priority: .low) {
-                    if !scanIpAutomatically {
-                        return
-                    }
-
-                    defer {
-                        isScanning = false
-                    }
+                HStack {
+                    addDeviceButton
                     
-                    isScanning = true
-                    await self.scanningActor.scanIPV4Once()
+                    Spacer()
+                    
+                    scanDevicesButton
                 }
-            
-            HStack (alignment: .center) {
-                addDeviceButton
-                    .padding()
-                
-                scanDevicesButton
-                    .padding()
-            }
-            
-        }
-#else
-        NavigationSplitView {
-            deviceList
-                .onAppear {
-                    let modelContainer = modelContext.container
-                    self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
-                }
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        addDeviceButton
-                    }
-                    ToolbarItem(placement: .status) {
-                        scanDevicesButton
-                    }
-                }
-                .task(priority: .low) {
-                    if !scanIpAutomatically {
-                        return
-                    }
-                    defer {
-                        isScanning = false
-                    }
-                    isScanning = true
-                    await self.scanningActor.scanIPV4Once()
-                }
-                .navigationTitle("Devices")
-        } detail: {
-            if let dev = selectedDevice {
-                DeviceDetailView(device: dev) {
-                    selectedDeviceId = nil
-                }
-            }
-        }
 #endif
-
-    }
-    
-    @ViewBuilder
-    var deviceList: some View {
-        if devices.isEmpty {
-            List {
-                Text("No devices")
-                    .foregroundStyle(Color.secondary)
+                
             }
-        } else {
-            List(devices, selection: $selectedDeviceId) { device in
-                DeviceListItem(device: device)
+            
+            Section("Behavior") {
+#if os(iOS)
+                Toggle("Use volume buttons to control TV volume", isOn: $controlVolumeWithHWButtons)
+#endif
+                
+                Toggle("Scan for devices automatically", isOn: $scanIpAutomatically)
             }
         }
-        
+        .refreshable {
+            isScanning = true
+            defer {
+                isScanning = false
+            }
+            
+            await scanningActor.scanIPV4Once()
+        }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItem(placement: .status) {
+                scanDevicesButton
+                    .labelStyle(.titleAndIcon)
+            }
+            ToolbarItem(placement: .primaryAction) {
+                addDeviceButton
+            }
+        }
+        #endif
+        .navigationTitle("Settings")
+        .formStyle(.grouped)
+        .onAppear {
+            let modelContainer = modelContext.container
+            self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
+        }
+        .task(priority: .low) {
+            if !scanIpAutomatically {
+                return
+            }
+            
+            defer {
+                isScanning = false
+            }
+            
+            isScanning = true
+            await self.scanningActor.scanIPV4Once()
+        }
     }
     
     @ViewBuilder
@@ -151,17 +97,18 @@ struct SettingsView: View {
             do {
                 modelContext.insert(newDevice)
                 try modelContext.save()
+                path.append(DeviceSettingsDestination(newDevice))
             } catch {
                 Self.logger.error("Error inserting new device \(error)")
             }
-            selectedDeviceId = newDevice.id
+            
         }
         
     }
     
     @ViewBuilder
     var scanDevicesButton: some View {
-        Button(isScanning ? "Scanning..." : "Scan", systemImage: "rays") {
+        Button(isScanning ? "Scanning for devices..." : "Scan for devices", systemImage: "rays") {
             isScanning = !isScanning
         }
         .task(id: isScanning) {
@@ -175,7 +122,6 @@ struct SettingsView: View {
             
             await scanningActor.scanIPV4Once()
         }
-        .labelStyle(.titleAndIcon)
         .symbolEffect(.variableColor, isActive: isScanning)
         
     }
@@ -205,24 +151,56 @@ struct DeviceListItem: View {
     @Bindable var device: Device
     
     var body: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .center) {
-                DataImage(from: device.deviceIcon, fallback: "tv")
-                    .resizable()
-                    .controlSize(.extraLarge)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 32.0, height: 32.0)
-            }.frame(width: 60)
-            
-            VStack(alignment: .leading) {
-                HStack(alignment: .center, spacing: 8) {
-                    Circle()
-                        .foregroundColor(device.isOnline() ? Color.green : Color.gray)
-                        .frame(width: 10, height: 10)
-                    Text(device.name)
+        NavigationLink(value: DeviceSettingsDestination(device)) {
+            HStack(alignment: .center) {
+                VStack(alignment: .center) {
+                    DataImage(from: device.deviceIcon, fallback: "tv")
+                        .resizable()
+                        .controlSize(.extraLarge)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 24.0, height: 24.0)
+                        .padding(4)
                 }
-                Text(device.location).foregroundStyle(Color.secondary)
+                
+                VStack(alignment: .leading) {
+                    HStack(alignment: .center, spacing: 8) {
+                        Circle()
+                            .foregroundColor(device.isOnline() ? Color.green : Color.gray)
+                            .frame(width: 10, height: 10)
+                        Text(device.name).lineLimit(1)
+                    }
+                    Text(device.location).foregroundStyle(Color.secondary).lineLimit(1)
+                }
             }
+        }
+    }
+}
+
+struct SettingsNavigationWrapper<Content>: View where Content : View {
+    @Binding var path: NavigationPath
+    @ViewBuilder let content: () -> Content
+    
+    var body: some View {
+        NavigationStack(path: $path) {
+            content()
+            
+                .navigationDestination(for: SettingsDestination.self) { _ in
+                    SettingsView(path: $path)
+                }
+                .navigationDestination(for: DeviceSettingsDestination.self) { destination in
+                    DeviceDetailView(device: destination.device) {
+                        path.removeLast()
+                    }
+                }
+        }
+    }
+}
+
+struct MacSettings: View {
+    @State var navPath = NavigationPath()
+    var body: some View {
+        SettingsNavigationWrapper(path: $navPath) {
+            SettingsView(path: $navPath)
         }
     }
 }
@@ -351,12 +329,12 @@ struct DeviceDetailView: View {
                 })
                 .foregroundStyle(Color.red)
             }
-        }          
+        }
         .onAppear {
             let modelContainer = modelContext.container
             self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
         }
-
+        
 #if os(macOS)
         .padding()
 #endif
@@ -404,8 +382,22 @@ extension Binding {
 }
 
 
+enum SettingsDestination{
+    case Global
+}
+
+struct DeviceSettingsDestination: Hashable {
+    let device: Device
+    
+    init(_ device: Device) {
+        self.device = device
+    }
+}
+
+
 #Preview("Device List") {
-    SettingsView()
+    @State var path: NavigationPath = NavigationPath()
+    return SettingsView(path: $path)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
         .modelContainer(devicePreviewContainer)
 }
