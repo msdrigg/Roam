@@ -1,5 +1,13 @@
 import SwiftUI
 
+//extension AnyTransition {
+//    static func ripple(index: Int) -> Animation {
+//        Animation.spring(dampingFraction: 0.5)
+//            .speed(2)
+//            .delay(0.03 * Double(index))
+//    }
+//}
+
 struct AppLinksView: View {
     var appLinks: [AppLink]
     var handleOpenApp: (AppLink) -> Void
@@ -16,7 +24,7 @@ struct AppLinksView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 Spacer()
                 LazyHGrid(rows: Array(repeating: GridItem(.fixed(60)), count: rows), spacing: 10) {
-                    ForEach(appLinks) { app in
+                    ForEach(Array(appLinks.enumerated()), id: \.offset) { index, app in
                         Button(action: {
                             handleOpenApp(app)
                         }) {
@@ -34,7 +42,8 @@ struct AppLinksView: View {
                                     .lineLimit(1)
                                     .frame(maxWidth: 60)
                             }
-                        }.buttonStyle(.plain)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .scrollTargetLayout()

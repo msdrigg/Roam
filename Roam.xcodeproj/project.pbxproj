@@ -32,6 +32,12 @@
 		AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */; };
 		AF2740162AE02C26007C6208 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF2740152AE02C26007C6208 /* Assets.xcassets */; };
 		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */; };
+		AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5542AE2910B00E2D780 /* CenterController.swift */; };
+		AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5562AE2928600E2D780 /* TopBar.swift */; };
+		AF3AD5592AE2940A00E2D780 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */; };
+		AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */; };
+		AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */; };
 		AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
 		AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
 		AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
@@ -113,6 +119,12 @@
 		AF2740152AE02C26007C6208 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWidgets.entitlements; sourceTree = "<group>"; };
+		AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonGrid.swift; sourceTree = "<group>"; };
+		AF3AD5542AE2910B00E2D780 /* CenterController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenterController.swift; sourceTree = "<group>"; };
+		AF3AD5562AE2928600E2D780 /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBar.swift; sourceTree = "<group>"; };
+		AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMonitor.swift; sourceTree = "<group>"; };
+		AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEntry.swift; sourceTree = "<group>"; };
+		AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControllerActor.swift; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
@@ -218,6 +230,12 @@
 				AF11D36E2AD35D2800527AF6 /* SettingsView.swift */,
 				AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */,
 				AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */,
+				AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */,
+				AF3AD5542AE2910B00E2D780 /* CenterController.swift */,
+				AF3AD5562AE2928600E2D780 /* TopBar.swift */,
+				AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */,
+				AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */,
+				AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -470,7 +488,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF20AD0C2AE01E9100D371C7 /* AppLink.swift in Sources */,
+				AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */,
 				AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */,
+				AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */,
 				AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */,
 				AFF607802ADFACBA00A7D657 /* Discovery.swift in Sources */,
 				AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */,
@@ -479,6 +499,8 @@
 				AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */,
 				AF20AD132AE01ED100D371C7 /* DeviceControllerActor.swift in Sources */,
 				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
+				AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */,
+				AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */,
 				AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */,
 				AFF607812ADFACBA00A7D657 /* ScanningActor.swift in Sources */,
 				AFF6077D2ADFAC4900A7D657 /* VolumeListener.swift in Sources */,
@@ -492,6 +514,8 @@
 				AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */,
 				AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */,
 				AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */,
+				AF3AD5592AE2940A00E2D780 /* KeyboardMonitor.swift in Sources */,
+				AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

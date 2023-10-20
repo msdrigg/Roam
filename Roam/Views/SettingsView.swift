@@ -109,18 +109,14 @@ struct SettingsView: View {
     @ViewBuilder
     var scanDevicesButton: some View {
         Button(isScanning ? "Scanning for devices..." : "Scan for devices", systemImage: "rays") {
-            isScanning = !isScanning
-        }
-        .task(id: isScanning) {
-            if !isScanning {
-                return
+            Task {
+                isScanning = true
+                defer {
+                    isScanning = false
+                }
+                
+                await scanningActor.scanIPV4Once()
             }
-            isScanning = true
-            defer {
-                isScanning = false
-            }
-            
-            await scanningActor.scanIPV4Once()
         }
         .symbolEffect(.variableColor, isActive: isScanning)
         

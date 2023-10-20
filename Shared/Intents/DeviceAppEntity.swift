@@ -44,18 +44,20 @@ public struct DeviceAppEntity: AppEntity {
     }
     public static var defaultQuery = DeviceAppEntityQuery()
 
-   public var name: String
-   public var location: String
+    public var name: String
+    public var location: String
     public var id: String
+    public var mac: String?
     
     public var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
 
-    init(name: String, location: String, id: String) {
+    init(name: String, location: String, id: String, mac: String?) {
         self.name = name
         self.location = location
         self.id = id
+        self.mac = mac
     }
     
     
@@ -63,7 +65,7 @@ public struct DeviceAppEntity: AppEntity {
 
 public extension Device {
     func toAppEntity() -> DeviceAppEntity {
-        return DeviceAppEntity(name: self.name, location: self.location, id: self.id)
+        return DeviceAppEntity(name: self.name, location: self.location, id: self.id, mac: self.usingMac())
     }
 }
 
@@ -78,7 +80,7 @@ public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async th
         return
     }
     
-    await deviceController.sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: button.apiValue)
+    await deviceController.sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: button.apiValue, mac: targetDevice.mac)
     
     return
 }

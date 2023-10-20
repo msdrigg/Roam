@@ -1,0 +1,49 @@
+//
+//  TopBar.swift
+//  Roam
+//
+//  Created by Scott Driggers on 10/20/23.
+//
+
+import Foundation
+import SwiftUI
+    
+struct TopBar: View {
+    let pressCounter: (RemoteButton) -> Int
+    let action: (RemoteButton) -> Void
+    let onKeyPress: (KeyPress) -> KeyPress.Result
+
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            Button(action: {action(.back)}) {
+                Label("Back", systemImage: "arrow.left")
+                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+            }
+            .sensoryFeedback(.impact, trigger: pressCounter(.back))
+            .symbolEffect(.bounce, value: pressCounter(.back))
+            
+#if os(macOS)
+            KeyboardMonitor(onKeyPress: onKeyPress)
+            // Do this so the focus outline on macOS matches
+                .offset(y: 7)
+            
+#elseif os(iOS)
+            Button("Power On/Off", systemImage: "power", role: .destructive, action: {action(.home)})
+            .font(.title)
+            .foregroundStyle(.red)
+            .buttonStyle(.plain)
+            .sensoryFeedback(.impact, trigger: pressCounter(.power))
+            .symbolEffect(.bounce, value: pressCounter(.power))
+#endif
+            
+            Button(action: {action(.home)}) {
+                Label("Home", systemImage: "house")
+                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+                
+            }
+            .sensoryFeedback(.impact, trigger: pressCounter(.home))
+            .symbolEffect(.bounce, value: pressCounter(.home))
+        }
+    }
+}

@@ -12,11 +12,7 @@ public actor DeviceControllerActor {
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: DeviceControllerActor.self)
     )
-        
-    func findDeviceById(id: String) -> Device? {
-        return Device.findById(id: id, context: modelContext)
-    }
-        
+    
     func wakeOnLAN(macAddress: String) async {
         let host = NWEndpoint.Host("255.255.255.255")
         let port = NWEndpoint.Port(rawValue: 9)!
@@ -107,14 +103,14 @@ public actor DeviceControllerActor {
         
     }
     
-    public func powerToggleDevice(device: Device) async {
-        Self.logger.debug("Toggling power for device \(device.id)")
+    public func powerToggleDevice(location: String, mac: String?) async {
+        Self.logger.debug("Toggling power for device \(location)")
         
-        let onlineAtFirst = await canConnectTCP(location: device.location, timeout: 0.5)
+        let onlineAtFirst = await canConnectTCP(location: location, timeout: 0.5)
         
         // Attempt WOL if not already connected
         if !onlineAtFirst {
-            if let mac = device.usingMac() {
+            if let mac = mac {
                 Self.logger.debug("Sending wol packet to \(mac)")
                 await wakeOnLAN(macAddress: mac)
             }
@@ -123,19 +119,27 @@ public actor DeviceControllerActor {
         
         // Attempt checking the device power mode
         Self.logger.debug("Attempting to power toggle device woth api")
-        await sendKeyToDevice(location: device.location, key: .power)
+        await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue)
     }
     
     public func sendKeyPressTodevice(location: String, key: KeyPress) async {
         await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
     }
     
-    public func sendKeyToDevice(location: String, key: RemoteButton) async {    
-        await internalSendKeyToDevice(location: location, rawKey: key.apiValue)
+    public func sendKeyToDevice(device: Device, key: RemoteButton) async {
+        if key == .power {
+            await self.powerToggleDevice(location: device.location, mac: device.usingMac())
+        } else {
+            await internalSendKeyToDevice(location: device.location, rawKey: key.apiValue)
+        }
     }
     
-    public func sendKeyToDeviceRawNotRecommended(location: String, key: String) async {
-        await internalSendKeyToDevice(location: location, rawKey: key)
+    public func sendKeyToDeviceRawNotRecommended(location: String, key: String, mac: String?) async {
+        if key == RemoteButton.power.apiValue {
+            await powerToggleDevice(location: location, mac: mac)
+        } else {
+            await internalSendKeyToDevice(location: location, rawKey: key)
+        }
     }
         
     private func internalSendKeyToDevice(location: String, rawKey: String) async {

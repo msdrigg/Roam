@@ -177,6 +177,12 @@ actor DeviceScanningActor {
     }
     
     func scanIPV4Once() async {
+        // Don't scan IPV4 in previews
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            return
+        }
+
+        
         let MAX_CONCURRENT_SCANNED = 67
         
         let scannableInterfaces = await getAllInterfaces().filter{ $0.isIPV4 && $0.isEthernetLike }
