@@ -55,9 +55,8 @@ public struct ButtonPressIntent: AppIntent, CustomIntentMigratedAppIntent, Predi
         self.device = device
     }
 
-    @MainActor
     public func perform() async throws -> some IntentResult {
-        Self.logger.debug("Pressing widget button \(button.button.apiValue) on device \(device?.name ?? "nil")")
+        Self.logger.debug("Pressing widget button \(button.button.apiValue ?? "nil") on device \(device?.name ?? "nil")")
         
         try await clickButton(button: button.button, device: device)
         

@@ -11,60 +11,44 @@ public struct AppLinkAppEntity: AppEntity {
         
         public init() {}
         
-        @MainActor
         public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
 //            let device = launchAppIntent?.device
-
-            let container = try getSharedModelContainer()
-            let links = try container.mainContext.fetch(
-                FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
-                    identifiers.contains(appLink.id)
-                })
-            )
-            return links.map {$0.toAppEntity()}
+            let appLinkActor = try AppLinkActor(modelContainer: getSharedModelContainer())
+            return try await appLinkActor.entities(for: identifiers)
         }
         
-        @MainActor
         func entities(matching string: String) async throws -> [AppLinkAppEntity] {
 //            let device = launchAppIntent?.device
    
-            let container = try getSharedModelContainer()
-            let links = try container.mainContext.fetch(
-                FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
-                    appLink.name.contains(string)
-                })
-            )
-            return links.map {$0.toAppEntity()}
+            let appLinkActor = try AppLinkActor(modelContainer: getSharedModelContainer())
+            return try await appLinkActor.entities(matching: string)
         }
         
-        @MainActor
         public func suggestedEntities() async throws -> [AppLinkAppEntity] {
-            let container = try getSharedModelContainer()
-            let descriptor = FetchDescriptor<AppLink>()
-            let links = try container.mainContext.fetch(
-                descriptor
-            )
-            return links.map {$0.toAppEntity()}
+            let appLinkActor = try AppLinkActor(modelContainer: getSharedModelContainer())
+            return try await appLinkActor.suggestedEntities()
         }
     }
     public static var defaultQuery = AppLinkAppEntityQuery()
 
     var name: String
     public var id: String
+    public var type: String
     
     public  var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
 
-    init(name: String, id: String) {
+    init(name: String, id: String, type: String) {
         self.name = name
         self.id = id
+        self.type = type
     }
 }
 
 
 public extension AppLink {
     func toAppEntity() -> AppLinkAppEntity {
-        return AppLinkAppEntity(name: self.name, id: self.id)
+        return AppLinkAppEntity(name: self.name, id: self.id, type: self.type)
     }
 }

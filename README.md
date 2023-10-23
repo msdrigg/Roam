@@ -4,6 +4,13 @@ A Roku remote that puts users first
 
 ## TODO
 
+- Bugs
+    - Periodic crashes
+        - Possibly due to threadunsafety from swift data. Tried to fix on 10/23
+    - When volume zero, volume down press doesn't work to change roku volume
+        - Need an approach like this https://developer.apple.com/forums/thread/649183 to sync phone audio with device audio
+    - Sometimes I get a big delay with sent keys and then they all queue up and blast through after they aren't relevant anymore
+        - Either Use timeout or ECPSession for button presses
 - Add watch-os support
     - Add 3 sliding views
         - Main Controller (like small widget)
@@ -13,12 +20,6 @@ A Roku remote that puts users first
 - Add app launch widget
     - List of recently launched apps
 - Next logical steps for private listening
-    - 1. Implement starting private session (and stopping it) with command
-        - Ensure that this works and datagrams start coming through
-    - 2. Setup RTCP handshake
-        - Ensure that rtcp messages are valid confirmation is received (logging if not)
-        - Ensure that at least at the beginning, rtp messages are coming through (Wireshark)
-    - 3. Setup RTCP controller to send continual empty receiver report packets
     - 4. Setup  RTP listener to decode packets
         - Ensure that packets are coming through evenly-spaced and are getting decoded in-order and that RTP timestamp matches expectations
     - 5. Setup RTP listener to continuously receive and decode packets
@@ -28,9 +29,9 @@ A Roku remote that puts users first
     - 6. Stop playing wave file and instead play audio pcm buffers naively as they come out (in order, but no fanciness with any scheduling or anything)
         - Ensure audio can come out of speakers and works (probably terrible sounding)
     - 7. Start enqueuing buffers using estimated start time intervals
-- Each packet is about 10 MS
-    - Buffer 3x/4 ms of packets from time-of-arrival to time-of-decoding
-    - Decode packets into frames as they come off the line
+- Each packet is 10 MS. Set X ms as the buffer time
+    - Buffer 3x/4 ms of packets from time-of-arrival to time-of-decoding. Assume fixed small time of flight for udp packets. Maybe have a device setting for audio delay.
+    - Decode packets into frames as they come off the line PQ buffer
     - Decoded packets get popped off and enter the audio queue and played frame-by-frame matching 1 packet each 10  ms
     - Decoded packets are assumed to be 48000 Hz, and can get times from https://developer.apple.com/documentation/avfaudio/avaudiotime/1387972-init 
     - Checks:

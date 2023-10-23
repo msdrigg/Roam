@@ -2,15 +2,48 @@ import Network
 import Darwin
 import Foundation
 
+struct IP4Address: Comparable, Equatable, Strideable {
+    func distance(to other: IP4Address) -> Int {
+        Int(other.address) - Int(self.address)
+    }
+    
+    func advanced(by n: Int) -> IP4Address {
+        let address: UInt32 = UInt32(Int(address) + n)
+        return IP4Address(address: address)
+    }
+    
+    typealias Stride = Int
+    
+    private let address: UInt32
+    
+    private init(address: UInt32) {
+        self.address = address
+    }
+    init?(string: String) {
+        guard let address = ipToUInt32(string) else {
+            return nil
+        }
+        
+        self.address = address
+    }
+    
+    var addressString: String {
+        uInt32ToIP(address)
+    }
+    
+    func localNetworkRange(subnetMask: IP4Address) -> Range<IP4Address> {
+        let networkAddressInt = self.address & subnetMask.address
+        let broadcastAddressInt = networkAddressInt | ~subnetMask.address
+        
+        return IP4Address(address: networkAddressInt)..<IP4Address(address: broadcastAddressInt)
+    }
+}
 
-
-typealias IPAddress = String
-
-struct NetworkInterface {
+struct Addressed4NetworkInterface {
     let name: String
     let family: Int32
-    let address: String
-    let netmask: String
+    let address: IP4Address
+    let netmask: IP4Address
     let flags: UInt32
     let nwInterface: NWInterface?
     
@@ -22,19 +55,19 @@ struct NetworkInterface {
         family == AF_INET
     }
     
-    var scannableIPV4NetworkRange: Range<UInt32>? {
-        getLocalNetworkRange(localIP: address, subnetMask: netmask)
+    var scannableIPV4NetworkRange: Range<IP4Address> {
+        address.localNetworkRange(subnetMask: netmask)
     }
     
-    func withNWInterface(_ iface: NWInterface?) -> NetworkInterface {
-        return NetworkInterface(name: name, family: family, address: address, netmask: netmask, flags: flags, nwInterface: iface)
+    func withNWInterface(_ iface: NWInterface?) -> Addressed4NetworkInterface {
+        return Addressed4NetworkInterface(name: name, family: family, address: address, netmask: netmask, flags: flags, nwInterface: iface)
     }
 }
 
-func getAllInterfaces() async -> [NetworkInterface] {
+func allAddressedInterfaces() async -> [Addressed4NetworkInterface] {
     let darwinInterfaces = listInterfacesDarwin()
     let nwInterfaces = await listInterfacesNW()
-    var combinedInterfaces: [NetworkInterface] = []
+    var combinedInterfaces: [Addressed4NetworkInterface] = []
     
     for netInterface in darwinInterfaces {
         if let matched = nwInterfaces.first(where: { $0.name == netInterface.name }) {
@@ -45,7 +78,7 @@ func getAllInterfaces() async -> [NetworkInterface] {
     return combinedInterfaces
 }
 
-func ipToUInt32(_ ip: IPAddress) -> UInt32? {
+private func ipToUInt32(_ ip: String) -> UInt32? {
     let segments = ip.split(separator: ".")
     guard segments.count == 4 else { return nil }
     
@@ -58,7 +91,7 @@ func ipToUInt32(_ ip: IPAddress) -> UInt32? {
     return result
 }
 
-func uInt32ToIP(_ intVal: UInt32) -> IPAddress {
+private func uInt32ToIP(_ intVal: UInt32) -> String {
     var remaining = intVal
     var segments: [UInt32] = []
     
@@ -71,9 +104,9 @@ func uInt32ToIP(_ intVal: UInt32) -> IPAddress {
     return segments.map(String.init).joined(separator: ".")
 }
 
-private func listInterfacesDarwin() -> [NetworkInterface] {
+private func listInterfacesDarwin() -> [Addressed4NetworkInterface] {
     var addrList: UnsafeMutablePointer<ifaddrs>?
-    var networkInterfaces: [NetworkInterface] = []
+    var networkInterfaces: [Addressed4NetworkInterface] = []
     
     if getifaddrs(&addrList) == 0 {
         var ptr = addrList
@@ -99,7 +132,11 @@ private func listInterfacesDarwin() -> [NetworkInterface] {
                             nil, socklen_t(0), NI_NUMERICHOST)
             }
             if family == AF_INET || family == AF_INET6 {
-                networkInterfaces.append(NetworkInterface(name: name, family: Int32(family), address: String(cString: host), netmask: String(cString: netmask), flags: flags, nwInterface: nil))
+                let addressString = String(cString: host)
+                let netmaskString = String(cString: netmask)
+                if let address = IP4Address(string: addressString), let netmask = IP4Address(string: netmaskString) {
+                    networkInterfaces.append(Addressed4NetworkInterface(name: name, family: Int32(family), address: address, netmask: netmask, flags: flags, nwInterface: nil))
+                }
             }
         }
         freeifaddrs(addrList)
@@ -113,21 +150,11 @@ private func listInterfacesNW() async -> [NWInterface] {
     monitor.start(queue: DispatchQueue.global())
     
     let matchedNWInterfaces = await withCheckedContinuation { continuation in
-        monitor.pathUpdateHandler = { path in            continuation.resume(returning: path.availableInterfaces)
+        monitor.pathUpdateHandler = { path in     
+            continuation.resume(returning: path.availableInterfaces)
         }
     }
     
     monitor.cancel()
     return matchedNWInterfaces
-}
-
-
-private func getLocalNetworkRange(localIP: IPAddress, subnetMask: IPAddress) -> Range<UInt32>? {
-    guard let localIPInt = ipToUInt32(localIP),
-          let subnetMaskInt = ipToUInt32(subnetMask) else { return nil }
-    
-    let networkAddressInt = localIPInt & subnetMaskInt
-    let broadcastAddressInt = networkAddressInt | ~subnetMaskInt
-    
-    return networkAddressInt..<broadcastAddressInt
 }

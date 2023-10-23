@@ -23,16 +23,25 @@ struct RemoteControlProvider: AppIntentTimelineProvider {
         }
     }
     
-    @MainActor
     func snapshot(for configuration: DeviceChoiceIntent, in context: Context) async -> DeviceChoiceTimelineEntity {
-        let entry = DeviceChoiceTimelineEntity(date: Date(), device: configuration.useDefaultDevice ? nil : configuration.device ?? fetchSelectedDevice(context: modelContainer.mainContext)?.toAppEntity())
+        let device = if !configuration.useDefaultDevice, let device = configuration.device {
+            device
+        } else {
+            await fetchSelectedDevice(modelContainer: modelContainer)
+        }
+        let entry = DeviceChoiceTimelineEntity(date: Date(), device: configuration.useDefaultDevice ? nil : device)
         return entry
     }
     
-    @MainActor
     func timeline(for configuration: DeviceChoiceIntent, in context: Context) async -> Timeline<DeviceChoiceTimelineEntity> {
         let currentDate = Date()
-        let entry = DeviceChoiceTimelineEntity(date: currentDate, device: configuration.useDefaultDevice ? nil : configuration.device ?? fetchSelectedDevice(context: modelContainer.mainContext)?.toAppEntity())
+        
+        let device = if !configuration.useDefaultDevice, let device = configuration.device {
+            device
+        } else {
+            await fetchSelectedDevice(modelContainer: modelContainer)
+        }
+        let entry = DeviceChoiceTimelineEntity(date: currentDate, device: device)
         let timeline = Timeline(entries: [entry], policy: .atEnd)
         return timeline
     }

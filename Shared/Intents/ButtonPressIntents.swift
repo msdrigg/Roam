@@ -27,7 +27,6 @@ public struct PlayIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigr
         }
     }
 
-    @MainActor
     public func perform() async throws -> some IntentResult {
         try await clickButton(button: .power, device: device)
         return .result()
@@ -59,7 +58,6 @@ public struct OkIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigrat
         }
     }
 
-    @MainActor
     public func perform() async throws -> some IntentResult {
         try await clickButton(button: .select, device: device)
         return .result()
@@ -91,7 +89,6 @@ public struct MuteIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigr
         }
     }
 
-    @MainActor
     public func perform() async throws -> some IntentResult {
         try await clickButton(button: .select, device: device)
         return .result()
@@ -123,7 +120,6 @@ public struct VolumeUpIntent: AppIntent, WidgetConfigurationIntent, CustomIntent
         }
     }
 
-    @MainActor
     public func perform() async throws -> some IntentResult {
         try await clickButton(button: .volumeUp, device: device)
         return .result()
@@ -155,7 +151,6 @@ public struct VolumeDownIntent: AppIntent, WidgetConfigurationIntent, CustomInte
         }
     }
 
-    @MainActor
     public func perform() async throws -> some IntentResult {
         try await clickButton(button: .volumeDown, device: device)
         return .result()
@@ -188,7 +183,6 @@ public struct PowerIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMig
         }
     }
 
-    @MainActor
     public func perform() async throws -> some IntentResult {
         try await clickButton(button: .playPause, device: device)
         return .result()

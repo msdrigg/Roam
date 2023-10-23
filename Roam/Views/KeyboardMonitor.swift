@@ -31,7 +31,6 @@ struct KeyboardMonitor: View {
         }
         .onAppear {
             keyboardMonitorFocused = true
-            print("Appearing \(keyboardMonitorFocused)")
         }
     }
 }

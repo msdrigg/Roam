@@ -38,7 +38,7 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
     case inputHDMI3 = "InputHDMI3"
     case inputHDMI4 = "InputHDMI4"
     case inputAV1 = "InputAV1"
-    
+    case privateListening = "Private Listening"
     
     public static var typeDisplayName: String = "Button"
 
@@ -72,7 +72,8 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
         .inputHDMI2: "Input HDMI 2",
         .inputHDMI3: "Input HDMI 3",
         .inputHDMI4: "Input HDMI 4",
-        .inputAV1: "Input AV 1"
+        .inputAV1: "Input AV 1",
+        .privateListening: "Private Listening"
     ]
     
     public static var systemIcons: [RemoteButton: String?] = [
@@ -100,6 +101,7 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
         .enter: "return",
         .channelUp: "arrowtriangle.up",
         .channelDown: "arrowtriangle.down",
+        .privateListening: "headphones",
         .inputTuner: nil,
         .inputHDMI1: nil,
         .inputHDMI2: nil,
@@ -141,8 +143,8 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
         .inputAV1: "InputAV1"
     ]
     
-    public var apiValue: String {
-        Self.buttonApiDescription[self]!
+    public var apiValue: String? {
+        Self.buttonApiDescription[self]
     }
     
     public var systemIcon: String? {

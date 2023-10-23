@@ -12,7 +12,7 @@ struct SettingsView: View {
     @Query(sort: \Device.lastSelectedAt) private var devices: [Device]
     @Binding var path: NavigationPath
     
-    @State private var scanningActor: DeviceScanningActor!
+    @State private var scanningActor: DeviceDiscoveryActor!
     @State private var isScanning: Bool = false
     
     @State private var tabSelection = 0
@@ -74,7 +74,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .onAppear {
             let modelContainer = modelContext.container
-            self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
+            self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
         }
         .task(priority: .low) {
             if !scanIpAutomatically {
@@ -176,6 +176,8 @@ struct SettingsNavigationWrapper<Content>: View where Content : View {
     @Binding var path: NavigationPath
     @ViewBuilder let content: () -> Content
     
+    @Environment(\.dismiss) private var dismiss
+    
     var body: some View {
         NavigationStack(path: $path) {
             content()
@@ -185,7 +187,9 @@ struct SettingsNavigationWrapper<Content>: View where Content : View {
                 }
                 .navigationDestination(for: DeviceSettingsDestination.self) { destination in
                     DeviceDetailView(device: destination.device) {
-                        path.removeLast()
+                        if path.count > 0 {
+                            path.removeLast()
+                        }
                     }
                 }
         }
@@ -209,7 +213,7 @@ struct DeviceDetailView: View {
     
     @Environment(\.modelContext) private var modelContext
     
-    @State private var scanningActor: DeviceScanningActor!
+    @State private var scanningActor: DeviceDiscoveryActor!
     
     @Bindable var device: Device
     @State var deviceName: String = ""
@@ -284,7 +288,7 @@ struct DeviceDetailView: View {
                         var deviceInfo: DeviceInfo? = nil
                         
                         if await canConnectTCP(location: deviceLocation, timeout: 1) {
-                            deviceInfo = await scanningActor.fetchDeviceInfo(location: deviceLocation)
+                            deviceInfo = await fetchDeviceInfo(location: deviceLocation)
                         }
                         
                         if let id = deviceInfo?.udn {
@@ -328,7 +332,7 @@ struct DeviceDetailView: View {
         }
         .onAppear {
             let modelContainer = modelContext.container
-            self.scanningActor = DeviceScanningActor(modelContainer: modelContainer)
+            self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
         }
         
 #if os(macOS)

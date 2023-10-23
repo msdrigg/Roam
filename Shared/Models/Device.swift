@@ -1,6 +1,6 @@
 import Foundation
 import SwiftData
-
+import os
 
 @Model
 public final class Device: Identifiable, Hashable {
@@ -61,19 +61,6 @@ public final class Device: Identifiable, Hashable {
         return Date().timeIntervalSince(lastOnlineAt) < 60
     }
     
-    public static func findById(id: String, context: ModelContext) -> Device? {
-        var matchingIds = FetchDescriptor<Device>(
-            predicate: #Predicate { $0.id == id }
-        )
-        matchingIds.fetchLimit = 1
-        matchingIds.includePendingChanges = true
-        
-        let existingDevices: [Device]? = (try? context.fetch(matchingIds))
-        
-        return existingDevices?.first
-    }
-    
-    
     func usingMac() -> String? {
         if networkType == "ethernet" {
             return ethernetMAC
@@ -122,11 +109,187 @@ public func getSharedModelContainer() throws -> ModelContainer {
     return try ModelContainer(for: schema, configurations: [modelConfiguration])
 }
 
-public func fetchSelectedDevice(context: ModelContext) -> Device? {
-    var descriptor = FetchDescriptor<Device>()
-    descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
-    descriptor.fetchLimit = 1
-    return (try? context.fetch(
-        descriptor
-    ))?.first
+public func fetchSelectedDevice(modelContainer: ModelContainer) async -> DeviceAppEntity? {
+    let deviceActor = DeviceActor(modelContainer: modelContainer)
+    return await deviceActor.fetchSelectedDeviceAppEntity()
 }
+
+// Models shouldn't be sendable
+@available(*, unavailable)
+extension Device: Sendable {}
+
+
+@ModelActor
+actor DeviceActor {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: DeviceActor.self)
+    )
+    
+    // Only refresh every 1 hour
+    private let MIN_RESCAN_INTERVAL: TimeInterval = 3600
+
+    
+    public func entities(for identifiers: [DeviceAppEntity.ID]) async throws -> [DeviceAppEntity] {
+        let links = try modelContext.fetch(
+            FetchDescriptor<Device>(predicate: #Predicate {
+                identifiers.contains($0.id)
+            })
+        )
+        return links.map {$0.toAppEntity()}
+    }
+    
+    public func entities(matching string: String) async throws -> [DeviceAppEntity] {
+        let links = try modelContext.fetch(
+            FetchDescriptor<Device>(predicate: #Predicate {
+                $0.name.contains(string)
+            })
+        )
+        return links.map {$0.toAppEntity()}
+    }
+    
+    public func suggestedEntities() async throws -> [DeviceAppEntity] {
+        var descriptor = FetchDescriptor<Device>()
+        descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
+        let links = try modelContext.fetch(
+            descriptor
+        )
+        return links.map {$0.toAppEntity()}
+    }
+
+
+    func addDevice(location: String, friendlyDeviceName: String, id: String) throws {
+        modelContext.insert(Device(
+            name: friendlyDeviceName,
+            location: location,
+            lastOnlineAt: Date.now,
+            id: id
+        ))
+
+        try modelContext.save()
+    }
+    
+    func deviceExists(id: String) -> Bool {
+        var matchingIds = FetchDescriptor<Device>(
+            predicate: #Predicate { $0.id == id }
+        )
+        matchingIds.fetchLimit = 1
+        matchingIds.includePendingChanges = true
+        
+        let existingDevices: [Device]? = try? modelContext.fetch(matchingIds)
+        
+        return existingDevices?.first != nil
+    }
+
+    
+    func findDeviceById(id: String) -> DeviceAppEntity? {
+        var matchingIds = FetchDescriptor<Device>(
+            predicate: #Predicate { $0.id == id }
+        )
+        matchingIds.fetchLimit = 1
+        matchingIds.includePendingChanges = true
+        
+        let existingDevices: [Device]? = try? modelContext.fetch(matchingIds)
+        
+        return existingDevices?.first?.toAppEntity()
+    }
+    
+    func fetchSelectedDeviceAppEntity() -> DeviceAppEntity? {
+        var descriptor = FetchDescriptor<Device>()
+        descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
+        descriptor.fetchLimit = 1
+        
+        let selectedDevice: Device? = try? modelContext.fetch(descriptor).first
+        
+        return selectedDevice?.toAppEntity()
+    }
+    
+    func refreshDevice(_ id: String) async {
+        var matchingIds = FetchDescriptor<Device>(
+            predicate: #Predicate { $0.id == id }
+        )
+        matchingIds.fetchLimit = 1
+        matchingIds.includePendingChanges = true
+        
+        let existingDevice: Device? = try? modelContext.fetch(matchingIds).first
+        
+        if let device = existingDevice {
+            guard let deviceInfo = await fetchDeviceInfo(location: device.location) else {
+                Self.logger.info("Failed to get device info \(device.location)")
+                return
+            }
+            if deviceInfo.udn != id {
+                return
+            }
+            
+            device.lastOnlineAt = Date.now
+            
+            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_INTERVAL && (device.apps?.allSatisfy { $0.icon != nil} ?? true) {
+                return
+            }
+            device.lastScannedAt = Date.now
+            
+            device.ethernetMAC = deviceInfo.ethernetMac
+            device.wifiMAC = deviceInfo.wifiMac
+            device.networkType = deviceInfo.networkType
+            device.powerMode = deviceInfo.powerMode
+            if device.name == "New device" {
+                if let newName = deviceInfo.friendlyDeviceName {
+                    device.name = newName
+                }
+            }
+            
+            do {
+                let capabilities = try await fetchDeviceCapabilities(location: device.location)
+                device.rtcpPort = capabilities.rtcpPort
+                device.supportsDatagram = capabilities.supportsDatagram
+                
+            } catch {
+                Self.logger.error("Error getting capabilities \(error)")
+            }
+            
+            do {
+                let apps = try await fetchDeviceApps(location: device.location)
+                
+                // Remove apps from device that aren't in fetchedApps
+                device.apps = device.apps?.filter { app in
+                    apps.contains { $0.id == app.id }
+                }
+                
+                // Add new apps to device
+                var deviceApps = device.apps ?? []
+                for app in apps {
+                    if !deviceApps.contains(where: { $0.id == app.id }) {
+                        deviceApps.append(AppLink(id: app.id, type: app.type, name: app.name))
+                    }
+                }
+                // Fetch icons for apps in deviceApps
+                for (index, app) in deviceApps.enumerated() {
+                    if app.icon == nil {
+                        do {
+                            let iconData = try await fetchAppIcon(location: device.location, appId: app.id)
+                            deviceApps[index].icon = iconData
+                        } catch {
+                            Self.logger.error("Error getting device app icon \(error)")
+                        }
+                    }
+                }
+                
+                device.apps = deviceApps
+            } catch {
+                Self.logger.error("Error getting device apps \(error)")
+            }
+            if device.deviceIcon == nil {
+                Self.logger.info("Getting icon for device \(device.id)")
+                do {
+                    let iconData = try await tryFetchDeviceIcon(location: device.location)
+                    Self.logger.debug("Got icon!")
+                    device.deviceIcon = iconData
+                } catch {
+                    Self.logger.warning("Error getting device icon \(error)")
+                }
+            }
+        }
+    }
+}
+

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import os
 
 @Model
 public final class AppLink: Identifiable, Decodable, Encodable {
@@ -75,4 +76,42 @@ func loadPreviewAsset(_ assetName: String) -> Data? {
         return nil
     }
     return data
+}
+
+// Models shouldn't be sendable
+@available(*, unavailable)
+extension AppLink: Sendable {}
+
+@ModelActor
+actor AppLinkActor {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: AppLinkActor.self)
+    )
+    
+    public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
+        let links = try modelContext.fetch(
+            FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
+                identifiers.contains(appLink.id)
+            })
+        )
+        return links.map {$0.toAppEntity()}
+    }
+    
+    public func entities(matching string: String) async throws -> [AppLinkAppEntity] {
+        let links = try modelContext.fetch(
+            FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
+                appLink.name.contains(string)
+            })
+        )
+        return links.map {$0.toAppEntity()}
+    }
+    
+    public func suggestedEntities() async throws -> [AppLinkAppEntity] {
+        let descriptor = FetchDescriptor<AppLink>()
+        let links = try modelContext.fetch(
+            descriptor
+        )
+        return links.map {$0.toAppEntity()}
+    }
 }

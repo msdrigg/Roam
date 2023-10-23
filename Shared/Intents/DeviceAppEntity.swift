@@ -7,39 +7,23 @@ public struct DeviceAppEntity: AppEntity {
     public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Device")
 
     public struct DeviceAppEntityQuery: EntityQuery {
-        public init() {}
+        public init() {
+        }
         
-        @MainActor
         public func entities(for identifiers: [DeviceAppEntity.ID]) async throws -> [DeviceAppEntity] {
-            let container = try getSharedModelContainer()
-            let links = try container.mainContext.fetch(
-                FetchDescriptor<Device>(predicate: #Predicate {
-                    identifiers.contains($0.id)
-                })
-            )
-            return links.map {$0.toAppEntity()}
+            let deviceActor = try DeviceActor(modelContainer: getSharedModelContainer())
+            
+            return try await deviceActor.entities(for: identifiers)
         }
         
-        @MainActor
         public func entities(matching string: String) async throws -> [DeviceAppEntity] {
-            let container = try getSharedModelContainer()
-            let links = try container.mainContext.fetch(
-                FetchDescriptor<Device>(predicate: #Predicate {
-                    $0.name.contains(string)
-                })
-            )
-            return links.map {$0.toAppEntity()}
+            let deviceActor = try DeviceActor(modelContainer: getSharedModelContainer())
+            return try await deviceActor.entities(matching: string)
         }
         
-        @MainActor
         public func suggestedEntities() async throws -> [DeviceAppEntity] {
-            let container = try getSharedModelContainer()
-            var descriptor = FetchDescriptor<Device>()
-            descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
-            let links = try container.mainContext.fetch(
-                descriptor
-            )
-            return links.map {$0.toAppEntity()}
+            let deviceActor = try DeviceActor(modelContainer: getSharedModelContainer())
+            return try await deviceActor.suggestedEntities()
         }
     }
     public static var defaultQuery = DeviceAppEntityQuery()
@@ -73,14 +57,16 @@ public extension Device {
 
 public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async throws {
     let modelContainer = try getSharedModelContainer()
-    let deviceController = DeviceControllerActor(modelContainer: modelContainer)
-    let context = ModelContext(modelContainer)
+    let deviceController = DeviceControllerActor()
     
-    guard let targetDevice = device ?? fetchSelectedDevice(context: context)?.toAppEntity() else {
-        return
+    var targetDevice = device
+    if targetDevice == nil {
+        targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
     }
     
-    await deviceController.sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: button.apiValue, mac: targetDevice.mac)
+    if let deviceKey = button.apiValue, let targetDevice = targetDevice {
+        await deviceController.sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.mac)
+    }
     
     return
 }

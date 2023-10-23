@@ -1,38 +1,10 @@
 import AVFoundation
 import RTP
-import NIO
-import NIOFoundationCompat
-import RTP
 import os
 import Opus
 
 
-
-/// UDP handler for forwarding RTP packets
-class RTPHandler: ChannelInboundHandler {
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier!,
-        category: String(describing: RTPHandler.self)
-    )
-    
-    typealias InboundIn = AddressedEnvelope<ByteBuffer>
-    typealias InboundOut = Packet
-    
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        let envelope = self.unwrapInboundIn(data)
-        let byteBuffer: ByteBuffer = envelope.data
-        let data: Data = Data(buffer: byteBuffer)
-        
-        do {
-            let packet = try Packet(from: data)
-            context.fireChannelRead(NIOAny(packet))
-        } catch {
-            Self.logger.warning("Error decoding packet as RTP \(envelope)")
-        }
-    }
-}
-
-class OpusDecoderWithJitterBuffer: ChannelInboundHandler {
+class OpusDecoderWithJitterBuffer {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: OpusDecoderWithJitterBuffer.self)
@@ -64,26 +36,26 @@ class OpusDecoderWithJitterBuffer: ChannelInboundHandler {
         self.bufferDelay = bufferDelay
     }
     
-    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        let packet = self.unwrapInboundIn(data)
-        
-        // Check payload type
-        if packet.payloadType != PayloadType(97) || packet.ssrc != 0 {
-            // Invalid
-            Self.logger.error("Error bad packet ssrc (\(packet.ssrc) or payload type (\(packet.payloadType.rawValue))")
-        } else {
-            self.jitterBuffer.insert(packet)
-        }
-        guard let maybeNext = self.maybeNext() else {
-            return
-        }
-        
-        do {
-            let decoded = try opusDecoder.decode(packet.payload)
-        } catch {
-            Self.logger.error("Error decoding packet payload with seqNo \(packet.sequenceNumber) and payload \(packet.payload.map{ String(format: "%02x", $0) }.joined())")
-        }
-    }
+//    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+//        let packet = self.unwrapInboundIn(data)
+//        
+//        // Check payload type
+//        if packet.payloadType != PayloadType(97) || packet.ssrc != 0 {
+//            // Invalid
+//            Self.logger.error("Error bad packet ssrc (\(packet.ssrc) or payload type (\(packet.payloadType.rawValue))")
+//        } else {
+//            self.jitterBuffer.insert(packet)
+//        }
+//        guard let maybeNext = self.maybeNext() else {
+//            return
+//        }
+//        
+//        do {
+//            let decoded = try opusDecoder.decode(packet.payload)
+//        } catch {
+//            Self.logger.error("Error decoding packet payload with seqNo \(packet.sequenceNumber) and payload \(packet.payload.map{ String(format: "%02x", $0) }.joined())")
+//        }
+//    }
     
     func maybeNext() -> AVAudioPCMBuffer? {
         while true {
@@ -336,18 +308,6 @@ class OpusDecoderWithJitterBuffer: ChannelInboundHandler {
 //    }
 //}
 //
-//extension UInt32 {
-//    func toData() -> Data {
-//        var copy = self.bigEndian
-//        return Data(bytes: &copy, count: 4)
-//    }
-//
-//    init?(rtpData data: Data) {
-//        guard data.count == 4 else { return nil }
-//
-//        self = UInt32(bigEndian: data.withUnsafeBytes { $0.load(as: UInt32.self) })
-//    }
-//}
 //
 //let BANDWIDTH: Double = 10000.0
 //

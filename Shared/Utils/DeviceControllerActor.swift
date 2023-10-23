@@ -6,7 +6,6 @@ import SwiftData
 import Network
 
 
-@ModelActor
 public actor DeviceControllerActor {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -119,18 +118,21 @@ public actor DeviceControllerActor {
         
         // Attempt checking the device power mode
         Self.logger.debug("Attempting to power toggle device woth api")
-        await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue)
+        // Power has apiValue
+        await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!)
     }
     
     public func sendKeyPressTodevice(location: String, key: KeyPress) async {
         await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
     }
     
-    public func sendKeyToDevice(device: Device, key: RemoteButton) async {
+    public func sendKeyToDevice(location: String, mac: String?, key: RemoteButton) async {
         if key == .power {
-            await self.powerToggleDevice(location: device.location, mac: device.usingMac())
+            await self.powerToggleDevice(location: location, mac: mac)
         } else {
-            await internalSendKeyToDevice(location: device.location, rawKey: key.apiValue)
+            if let apiValue = key.apiValue {
+                await internalSendKeyToDevice(location: location, rawKey: apiValue)
+            }
         }
     }
     
@@ -167,18 +169,19 @@ public actor DeviceControllerActor {
 }
 
 private func getKeypressForKey(key: KeyPress) -> String {
+    // All of these keys are gauranteed to have api values
     let keyMap: [Character: String] = [
-        KeyEquivalent.delete.character: RemoteButton.back.apiValue,
-        KeyEquivalent.deleteForward.character: RemoteButton.back.apiValue,
-        "\u{7F}": RemoteButton.back.apiValue,
-        KeyEquivalent.escape.character: RemoteButton.back.apiValue,
+        KeyEquivalent.delete.character: RemoteButton.back.apiValue!,
+        KeyEquivalent.deleteForward.character: RemoteButton.back.apiValue!,
+        "\u{7F}": RemoteButton.back.apiValue!,
+        KeyEquivalent.escape.character: RemoteButton.back.apiValue!,
         KeyEquivalent.space.character: "LIT_ ",
-        KeyEquivalent.downArrow.character: RemoteButton.down.apiValue,
-        KeyEquivalent.upArrow.character: RemoteButton.up.apiValue,
-        KeyEquivalent.rightArrow.character: RemoteButton.right.apiValue,
-        KeyEquivalent.leftArrow.character: RemoteButton.left.apiValue,
-        KeyEquivalent.home.character: RemoteButton.home.apiValue,
-        KeyEquivalent.return.character: RemoteButton.select.apiValue,
+        KeyEquivalent.downArrow.character: RemoteButton.down.apiValue!,
+        KeyEquivalent.upArrow.character: RemoteButton.up.apiValue!,
+        KeyEquivalent.rightArrow.character: RemoteButton.right.apiValue!,
+        KeyEquivalent.leftArrow.character: RemoteButton.left.apiValue!,
+        KeyEquivalent.home.character: RemoteButton.home.apiValue!,
+        KeyEquivalent.return.character: RemoteButton.select.apiValue!,
     ]
     
     if let mappedString = keyMap[key.key.character] {

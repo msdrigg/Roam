@@ -1,0 +1,398 @@
+//
+//  Rtcp.swift
+//  Roam
+//
+//  Created by Scott Driggers on 10/21/23.
+//
+
+import Foundation
+import os
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier!,
+    category: "RTCP"
+)
+
+enum RtcpPacket {
+    case receiverReport(RtcpReceiverReport)
+    case senderReport(RtcpSenderReport)
+    case appSpecific(RtcpAppSpecific)
+    case unknown(RtcpUnknown)
+    case bye(RtcpBye)
+    
+    static func vdly(delayMs: UInt32) -> RtcpPacket {
+        .appSpecific(.vdly(RtcpVdly(delayMs: delayMs)))
+    }
+    
+    static func cver(clientVersion: UInt32) -> RtcpPacket {
+        .appSpecific(.cver(RtcpCver(clientVersion: clientVersion)))
+    }
+    
+    static func report() -> RtcpPacket {
+        .receiverReport(RtcpReceiverReport(ssrc: 0, reportBlocks: []))
+    }
+
+    
+    init?(data: Data) {
+        //         0                   1                   2                   3
+        //         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+        //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        // header |V=2|P| Subtype |      PT       |             length            |
+        //        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        //        |                          ...                                  |
+        //   body +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        guard data.count >= 4 else {
+            return nil
+        }
+        
+        let firstByte = data[0]
+        let version = firstByte >> 6
+        // Padding (Currently unused
+        let _ = (firstByte & 0x20) == 0x20
+        let subtypeData = firstByte & 0x1F
+        let packetType = data[1]
+        
+        let data = data.dropFirst(2)
+        
+        if version != 2 {
+            logger.warning("Bad rtcp packet recevied with version = \(version). Expected version = 2")
+            return nil
+        }
+        
+        let lengthData = data.prefix(2)
+        guard let _ = UInt16(bigEndian: lengthData) else {
+            return nil
+        }
+        
+        let packetData = data.dropFirst(2)
+        
+        switch packetType {
+        case 200:
+            self = Self.senderReport(RtcpSenderReport(data: packetData))
+        case 201:
+            guard let packet = RtcpReceiverReport(data: packetData) else {
+                logger.warning("Bad receiver report recevied with data \(packetData)")
+                return nil
+            }
+            self = Self.receiverReport(packet)
+        case 203:
+            guard let packet = RtcpBye(data: packetData) else {
+                logger.warning("Bad bye packet recevied with data \(packetData)")
+                return nil
+            }
+            self = Self.bye(packet)
+        case 204:
+            guard let packet = RtcpAppSpecific(subtypeData: subtypeData, packet: packetData) else {
+                logger.warning("Bad app packet recevied with data \(packetData)")
+                return nil
+            }
+            self = Self.appSpecific(packet)
+        default:
+            self = Self.unknown(RtcpUnknown(packetType: packetType, data: packetData, subtypeData: subtypeData))
+        }
+    }
+    
+    func packet() -> Data {
+        var packet = Data()
+        
+        // Extract packet data and related values
+        let (packetData, subtypeData, packetType): (Data, UInt8, UInt8)
+        switch self {
+        case .receiverReport(let inner):
+            packetData = inner.packetData()
+            subtypeData = inner.subtypeData()
+            packetType = RtcpReceiverReport.PACKET_TYPE
+        case .bye(let inner):
+            packetData = inner.packetData()
+            subtypeData = inner.subtypeData()
+            packetType = RtcpBye.PACKET_TYPE
+        case .senderReport(let inner):
+            packetData = inner.packetData()
+            subtypeData = inner.subtypeData()
+            packetType = RtcpSenderReport.PACKET_TYPE
+        case .appSpecific(let inner):
+            packetData = inner.packetData()
+            subtypeData = inner.subtypeData()
+            packetType = RtcpAppSpecific.PACKET_TYPE
+        case .unknown(let inner):
+            packetData = inner.data
+            subtypeData = inner.subtypeData
+            packetType = inner.packetType
+        }
+        
+        // First byte: Version, Padding and Subtype
+        let V_P_ST: UInt8 = (2 << 6) | (0 << 5) | subtypeData
+        packet.append(V_P_ST)
+        
+        // Second byte: Packet Type
+        packet.append(packetType)
+        
+        // Length: 16 bits, in 32-bit words minus one
+        let length = UInt16(packetData.count / 4)
+        packet.append(length.toData())
+        
+        // Packet data
+        packet.append(packetData)
+        
+        return packet
+    }
+}
+
+struct RtcpUnknown {
+    let packetType: UInt8
+    let data: Data
+    let subtypeData: UInt8
+}
+
+struct RtcpReceiverReport {
+    let reportBlocks: [ReceiverReportBlock]
+    let ssrc: UInt32
+    
+    static let PACKET_TYPE: UInt8 = 201
+    
+    func subtypeData() -> UInt8 {
+        return UInt8(reportBlocks.count)
+    }
+    
+    func packetData() -> Data {
+        return ssrc.toData()
+    }
+    
+    init?(data: Data) {
+        return nil
+    }
+    
+    init(ssrc: UInt32, reportBlocks: [ReceiverReportBlock]) {
+        self.reportBlocks = reportBlocks
+        self.ssrc = ssrc
+    }
+
+}
+struct RtcpBye {
+    let ssrc: [UInt32]
+    
+    static let PACKET_TYPE: UInt8 = 203
+    
+    func subtypeData() -> UInt8 {
+        return UInt8(ssrc.count)
+    }
+    
+    func packetData() -> Data {
+        var data = Data()
+        ssrc.map{$0.toData()}.forEach {
+            data.append($0)
+        }
+        return data
+    }
+    
+    init?(data: Data) {
+        return nil
+    }
+    
+    init(ssrc: [UInt32]) {
+        self.ssrc = ssrc
+    }
+
+    init(ssrc: UInt32) {
+        self.ssrc = [ssrc]
+    }
+}
+
+
+struct ReceiverReportBlock {
+    
+}
+
+struct RtcpSenderReport {
+    static let PACKET_TYPE: UInt8 = 200
+    let data: Data
+    
+    func subtypeData() -> UInt8{
+        return UInt8.zero
+    }
+    
+    init(data: Data) {
+        self.data = data
+    }
+    
+    func packetData() -> Data {
+        return Data()
+    }
+}
+
+enum RtcpAppSpecific {
+    case ncli(RtcpNcli)
+    case cver(RtcpCver)
+    case xdly(RtcpXdly)
+    case vdly(RtcpVdly)
+    case other(RtcpUnknownApp)
+    
+    static let PACKET_TYPE: UInt8 = 204
+    
+    init?(subtypeData: UInt8, packet: Data) {
+        logger.trace("Initing app packet with stData \(subtypeData), packet \(packet.map { String(format: "%02x", $0) }.joined()))")
+        // SSRC Data. Always 0 for our use case
+        let _ = packet.prefix(4)
+        let nameData = packet.dropFirst(4).prefix(4)
+        guard let name = String(data: nameData, encoding: .utf8) else {
+            logger.warning("Bad data for name in app data \(nameData)")
+            return nil
+        }
+        
+        switch name {
+        case "VDLY":
+            guard let subPacket = RtcpVdly(data: packet.dropFirst(8)) else {
+                return nil
+            }
+            self = Self.vdly(subPacket)
+        case "XDLY":
+            guard let subPacket = RtcpXdly(data: packet.dropFirst(8)) else {
+                return nil
+            }
+            self = Self.xdly(subPacket)
+        case "NCLI":
+            self = Self.ncli(RtcpNcli())
+        case "CVER":
+            guard let subPacket = RtcpCver(data: packet.dropFirst(8)) else {
+                return nil
+            }
+            self = Self.cver(subPacket)
+        default:
+            self = Self.other(RtcpUnknownApp(name: name, subtypeData:subtypeData, packetContent: packet.dropFirst(8)))
+        }
+        
+    }
+    
+    func subtypeData() -> UInt8{
+        return UInt8.zero
+    }
+    
+    func packetData() -> Data {
+        //        0                   1                   2                   3
+        //        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+        //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        //       |V=2|P| subtype |   PT=APP=204  |             length            |
+        //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        //       |                           SSRC/CSRC                           |
+        //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        //       |                          name (ASCII)                         |
+        //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        //       |                   application-dependent data                ...
+        //       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        var packet = Data()
+        
+        // Determine the 'name' and 'packetData' based on the enum case
+        // SAFETY: We know name is a utf8 encoded string
+        let (nameData, packetData): (Data, Data)
+        switch self {
+        case .ncli(let inner):
+            nameData = RtcpNcli.NAME.data(using: .utf8)!
+            packetData = inner.packetContent()
+        case .cver(let inner):
+            nameData = RtcpCver.NAME.data(using: .utf8)!
+            packetData = inner.packetContent()
+        case .xdly(let inner):
+            nameData = RtcpXdly.NAME.data(using: .utf8)!
+            packetData = inner.packetContent()
+        case .vdly(let inner):
+            nameData = RtcpVdly.NAME.data(using: .utf8)!
+            packetData = inner.packetContent()
+        case .other(let inner):
+            nameData = inner.name.data(using: .utf8)!
+            packetData = inner.packetContent
+        }
+        // SSRC/CSRC (assuming you have a value for it)
+        packet.append(GLOBAL_SSRC.toData())
+        
+        packet.append(nameData)
+        
+        // Packet data
+        packet.append(packetData)
+        
+        return packet
+    }
+}
+
+let GLOBAL_SSRC: UInt32 = 0
+let RTCP_VERSION: UInt8 = 2
+let RTCP_PADDING: UInt8 = 0
+let RTCP_TYPE_APP: UInt8 = 204
+let RTCP_TYPE_RECEIVER_REPORT: UInt8 = 201
+let RTCP_TYPE_SENDER_REPORT: UInt8 = 200
+
+struct RtcpVdly {
+    let delayMicroseconds: UInt32
+    
+    static let NAME: String = "VDLY"
+    
+    func packetContent() -> Data {
+        return delayMicroseconds.toData()
+    }
+    
+    init(delayMs: UInt32) {
+        self.delayMicroseconds = delayMs * 1000
+    }
+    
+    init?(data: Data) {
+        guard let delay = UInt32(bigEndian: data) else {
+            logger.warning("Bad data for vdly delay in app data \(data)")
+            return nil
+        }
+        self.delayMicroseconds = delay
+    }
+}
+
+struct RtcpXdly {
+    let delayMicroseconds: UInt32
+    
+    static let NAME: String = "XDLY"
+    
+    func packetContent() -> Data {
+        return delayMicroseconds.toData()
+    }
+    
+    init?(data: Data) {
+        guard let delay = UInt32(bigEndian: data) else {
+            logger.warning("Bad data for vdly delay in app data \(data)")
+            return nil
+        }
+        self.delayMicroseconds = delay
+    }
+}
+
+struct RtcpNcli {
+    static let NAME: String = "NCLI"
+    
+    func packetContent() -> Data {
+        return Data()
+    }
+}
+
+struct RtcpCver {
+    let clientVersion: UInt32
+    
+    static let NAME: String = "CVER"
+    
+    func packetContent() -> Data {
+        return clientVersion.toData()
+    }
+    
+    init(clientVersion: UInt32) {
+        self.clientVersion = clientVersion
+    }
+    
+    init?(data: Data) {
+        guard let clientVersion = UInt32(bigEndian: data) else {
+            logger.warning("Bad data for client version in app data \(data)")
+            return nil
+        }
+        self.clientVersion = clientVersion
+    }
+    
+}
+
+struct RtcpUnknownApp {
+    let name: String
+    let subtypeData: UInt8
+    let packetContent: Data
+}
