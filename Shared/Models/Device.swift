@@ -169,6 +169,22 @@ actor DeviceActor {
         try modelContext.save()
     }
     
+    func updateDevice(_ id: PersistentIdentifier, name: String, location: String) throws {
+        if let device = self[id, as: Device.self] {
+            device.location = location
+            device.name = name
+            try modelContext.save()
+        }
+    }
+    
+    func delete(_ id: PersistentIdentifier) throws {
+        if let device = self[id, as: Device.self] {
+            modelContext.delete(device)
+            try modelContext.save()
+        }
+    }
+    
+    
     func deviceExists(id: String) -> Bool {
         var matchingIds = FetchDescriptor<Device>(
             predicate: #Predicate { $0.id == id }
@@ -225,6 +241,7 @@ actor DeviceActor {
             device.lastOnlineAt = Date.now
             
             if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_INTERVAL && (device.apps?.allSatisfy { $0.icon != nil} ?? true) {
+                try? modelContext.save()
                 return
             }
             device.lastScannedAt = Date.now

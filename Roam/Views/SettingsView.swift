@@ -76,7 +76,7 @@ struct SettingsView: View {
             let modelContainer = modelContext.container
             self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
         }
-        .task(priority: .low) {
+        .task(priority: .background) {
             if !scanIpAutomatically {
                 return
             }
@@ -214,6 +214,7 @@ struct DeviceDetailView: View {
     @Environment(\.modelContext) private var modelContext
     
     @State private var scanningActor: DeviceDiscoveryActor!
+    @State private var deviceActor: DeviceActor!
     
     @Bindable var device: Device
     @State var deviceName: String = ""
@@ -291,41 +292,47 @@ struct DeviceDetailView: View {
                             deviceInfo = await fetchDeviceInfo(location: deviceLocation)
                         }
                         
-                        if let id = deviceInfo?.udn {
-                            if id != device.id {
-                                modelContext.insert(Device(name: deviceName, location: deviceLocation, id: id))
-                                
-                                try modelContext.save()
-                                
-                                modelContext.delete(device)
-                            } else {
-                                device.location = deviceLocation
-                                device.name = deviceName
+                        if let id = deviceInfo?.udn, id != device.id {
+                            do {
+                                try await deviceActor.addDevice(
+                                    location: deviceLocation, friendlyDeviceName: deviceName, id: id
+                                )
+                                try await deviceActor.delete(device.persistentModelID)
+
+                            } catch {
+                                Self.logger.error("Error saving devic \(error)")
                             }
-                        } else {
-                            device.location = deviceLocation
-                            device.name = deviceName
+                            dismiss()
+                            return
                         }
                         
                         do {
-                            try modelContext.save()
-                            dismiss()
+                            try await deviceActor.updateDevice(
+                                device.persistentModelID,
+                                name: deviceName,
+                                location: deviceLocation
+                            )
                         } catch {
-                            Self.logger.error("Error saving device changes \(error)")
+                            Self.logger.error("Error saving devic \(error)")
                         }
                     }
+                    dismiss()
                 })
             }
             
             ToolbarItem(placement: .destructiveAction) {
                 Button("Delete", systemImage: "trash", role: .destructive, action: {
-                    do {
-                        modelContext.delete(device)
-                        try modelContext.save()
+                        // Don't block the dismiss waiting for save
+                        Task {
+                            do {
+                                try await deviceActor.delete(device.persistentModelID)
+                            } catch {
+                                 Self.logger.error("Error deleting device \(error)")
+       
+                            }
+                        }
+
                         dismiss()
-                    } catch {
-                        Self.logger.error("Error deleting device \(error)")
-                    }
                 })
                 .foregroundStyle(Color.red)
             }
@@ -333,6 +340,7 @@ struct DeviceDetailView: View {
         .onAppear {
             let modelContainer = modelContext.container
             self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
+            self.deviceActor = DeviceActor(modelContainer: modelContainer)
         }
         
 #if os(macOS)

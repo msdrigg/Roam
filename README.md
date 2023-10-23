@@ -5,12 +5,10 @@ A Roku remote that puts users first
 ## TODO
 
 - Bugs
-    - Periodic crashes
-        - Possibly due to threadunsafety from swift data. Tried to fix on 10/23
     - When volume zero, volume down press doesn't work to change roku volume
         - Need an approach like this https://developer.apple.com/forums/thread/649183 to sync phone audio with device audio
     - Sometimes I get a big delay with sent keys and then they all queue up and blast through after they aren't relevant anymore
-        - Either Use timeout or ECPSession for button presses
+        - Either use ECPSession for button presses
 - Add watch-os support
     - Add 3 sliding views
         - Main Controller (like small widget)

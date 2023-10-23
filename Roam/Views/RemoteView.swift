@@ -140,7 +140,7 @@ struct RemoteView: View {
                 remotePage
             } else {
                 remotePage
-                    .task(priority: .low) {
+                    .task(priority: .background) {
                         await withDiscardingTaskGroup { taskGroup in
                             taskGroup.addTask {
                                 await self.scanningActor.scanSSDPContinually()

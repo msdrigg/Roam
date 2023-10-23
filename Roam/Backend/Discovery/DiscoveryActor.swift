@@ -47,6 +47,8 @@ actor DeviceDiscoveryActor {
     
     func refreshSelectedDeviceContinually(id: String) async {
         // Refresh every 30 seconds
+        Self.logger.debug("Refreshing device \(id)")
+        await self.refreshDevice(id: id)
         for await _ in interval(time: 30) {
             Self.logger.debug("Refreshing device \(id)")
             await self.refreshDevice(id: id)
@@ -60,7 +62,7 @@ actor DeviceDiscoveryActor {
         }
         
         
-        let MAX_CONCURRENT_SCANNED = 67
+        let MAX_CONCURRENT_SCANNED = 37
         
         let scannableInterfaces = await allAddressedInterfaces().filter{ $0.isIPV4 && $0.isEthernetLike }
         let sem = AsyncSemaphore(value: MAX_CONCURRENT_SCANNED)
