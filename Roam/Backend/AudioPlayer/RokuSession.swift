@@ -51,11 +51,14 @@ public func listenContinually(location: String, rtcpPort: UInt16?) async throws 
                 do {
                     try await ecpSession.configure()
                     try await ecpSession.requestPrivateListening(requestId: "1")
+                    await Task.sleepUntilCancelled()
                 } catch {
                     logger.error("Error requesting private listing \(error)")
                     // Throwing an error from a child task in a throwingDiscardingTaskGroup cancels the whole group
+                    await ecpSession.close()
                     throw error
                 }
+                await ecpSession.close()
             }
             
             taskGroup.addTask {
@@ -78,7 +81,12 @@ actor RTPSession {
         category: String(describing: RTPSession.self)
     )
     
-    let videoDelayMs: UInt32 = 100
+    let videoBufferMs: UInt32 = 400
+    let baseAudioTransitTime: UInt32 = 100
+    
+    var overallAudioDelay: UInt32 {
+        videoBufferMs + baseAudioTransitTime + UInt32(AVAudioSession.sharedInstance().outputLatency * 1000)
+    }
     
     let rtcpStream: AsyncThrowingBufferedChannel<RtcpPacket, any Error>
     let rtpStream: AsyncThrowingBufferedChannel<RtpPacket, any Error>
@@ -197,6 +205,7 @@ actor RTPSession {
                 return
             }
 
+            Self.logger.info("Getting rtp connection \(String(describing: rtpConnection))")
             
             @Sendable func closure(_ data: Data?, _ contentContext: NWConnection.ContentContext?, _ isComplete: Bool, _ error: NWError?) {
                 guard let data = data else {
@@ -204,6 +213,8 @@ actor RTPSession {
                 }
                 do {
                     let packet = try RtpPacket(data: data)
+//                    Self.logger.info("Sending rtp packet to stream \(String(describing: packet)) with stream \(String(describing: rtpStream.state.withCriticalRegion{ $0 }))")
+
                     rtpStream.send(packet)
                 } catch {
                     Self.logger.error("Error parsing rtp packet")
@@ -254,7 +265,7 @@ actor RTPSession {
         // Send VDLY rtcp packet using rtcpConnection
         // Wait for response XDLY using rtcpStream
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(), Error>) -> Void in
-            remoteRtcpConnection.send(content: RtcpPacket.vdly(delayMs: videoDelayMs).packet(), completion: .contentProcessed({ error in
+            remoteRtcpConnection.send(content: RtcpPacket.vdly(delayMs: overallAudioDelay).packet(), completion: .contentProcessed({ error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
@@ -267,11 +278,11 @@ actor RTPSession {
         for try await packet in rtcpStream {
             switch packet {
             case .appSpecific(.xdly(let xdly)):
-                if xdly.delayMicroseconds == videoDelayMs * 1000 {
+                if xdly.delayMicroseconds == overallAudioDelay * 1000 {
                     Self.logger.info("Got good xdly packet from rtcp as expected")
                     return
                 }
-                Self.logger.warning("Got bad xdly microseconds. Expecting \(self.videoDelayMs * 1000)")
+                Self.logger.warning("Got bad xdly microseconds. Expecting \(self.overallAudioDelay * 1000)")
             default:
                 Self.logger.warning("Got bad packet from rtcp. Expecting App.XDLY. Got \(String(describing: packet))")
             }
@@ -330,7 +341,7 @@ actor RTPSession {
     }
     
     func sendRTCPReceiverReport() async throws {
-        Self.logger.info("Sending receiver report")
+//        Self.logger.info("Sending receiver report")
         
         let report = RtcpPacket.receiverReport(.init(ssrc: 0, reportBlocks: []))
         
@@ -339,7 +350,6 @@ actor RTPSession {
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
-                    Self.logger.debug("RR Sent")
                     continuation.resume(returning: ())
                 }
             }))
@@ -348,7 +358,7 @@ actor RTPSession {
     
     
     func sendRTCPReceiverReports() async throws {
-        Self.logger.info("Sending receiver reports")
+//        Self.logger.info("Sending receiver reports")
         var timerStream = AsyncTimerSequence.repeating(every: .seconds(1)).makeAsyncIterator()
         while !Task.isCancelled {
             do {
@@ -362,9 +372,8 @@ actor RTPSession {
     }
     
     func streamAudio() async throws {
-#if os(iOS)
+#if !os(macOS)
         setupSessionForAudioPlayback()
-        try AVAudioSession.sharedInstance().setActive(true)
         defer {
             do {
                 try AVAudioSession.sharedInstance().setActive(false)
@@ -373,31 +382,77 @@ actor RTPSession {
             }
         }
 #endif
+
         
-        
-        // TODO: Listen for RTP packets, buffer them, and play them with audioplayer
-        try? await Task.sleep(nanoseconds: UInt64.max / 2)
-        
-    }
-    
-#if !os(macOS)
-    func releaseAudioPlayback() {
-        // Retrieve the shared audio session.
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            // Set the audio session category and mode.
-            try audioSession.setActive(true)
-        } catch {
-            Self.logger.error("Failed to set the audio session configuration: \(error)")
+        try await withThrowingDiscardingTaskGroup { taskGroup in
+            let rtpAudioPlayer = AudioPlayer()
+            let decoder: OpusDecoderWithJitterBuffer = try OpusDecoderWithJitterBuffer(audioBuffer: Double(videoBufferMs) / 1000)
+            taskGroup.addTask {
+                var count = 0
+                var lsqNo: UInt16 = 0
+                do {
+                    for try await rtpPacket in self.rtpStream {
+//                        Self.logger.debug("Getting packet from stream \(String(describing: rtpPacket)) at count \(count)")
+                        count += 1
+                        if count < 5 {
+                            continue
+                        }
+                        if lsqNo != rtpPacket.packet.sequenceNumber - 1 {
+                            Self.logger.info("Packet with seqno received \(rtpPacket.packet.sequenceNumber) when expecting \(lsqNo + 1)")
+                        }
+                        lsqNo = rtpPacket.packet.sequenceNumber
+                        
+                        await decoder.addPacket(packet: rtpPacket)
+                    }
+                } catch {
+                    Self.logger.error("Error iterating rtpstream \(error)")
+                }
+            }
+            
+            taskGroup.addTask {
+                await rtpAudioPlayer.start()
+                defer {
+                    Task {
+                        await rtpAudioPlayer.stop()
+                    }
+                }
+
+                
+                for await _ in AsyncTimerSequence.repeating(every: .milliseconds(10), tolerance: .microseconds(10)) {
+                    Task {
+                        if let lrt = await rtpAudioPlayer.lastRender() {
+                            await decoder.syncAudio(time: lrt)
+                            if let (pcmBuffer, audioTime) = await decoder.nextPacket(atTime: lrt) {
+                                Self.logger.info("Scheduling at time \(lrt.sampleTime), valid: \(lrt.isSampleTimeValid), lrt \(lrt)")
+                                await rtpAudioPlayer.scheduleAudioBytes(buffer: pcmBuffer, atTime: audioTime)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            taskGroup.addTask {
+                if let stream = LatencyListener(session: AVAudioSession.sharedInstance()).events {
+                    for await latency in stream {
+                        Self.logger.error("New latency event \(latency)")
+                        try await self.performVDLYHandshake()
+                    }
+                } else {
+                    Self.logger.error("Unable to get latency events stream")
+                }
+            }
         }
     }
     
+#if !os(macOS)
     func setupSessionForAudioPlayback() {
         // Retrieve the shared audio session.
         let audioSession = AVAudioSession.sharedInstance()
         do {
+            Self.logger.info("Settingup audio session")
             // Set the audio session category and mode.
-            try audioSession.setCategory(.playback, mode: .moviePlayback)
+            try audioSession.setCategory(.playback, mode: .default, policy: .longFormAudio)
+            try audioSession.setActive(true)
         } catch {
             Self.logger.error("Failed to set the audio session configuration: \(error)")
         }
@@ -437,7 +492,8 @@ actor ECPSession {
         self.webSocketTask.resume()
     }
     
-    deinit {
+    public func close() async {
+        Self.logger.info("Closing ecp")
         webSocketTask.cancel()
         session.invalidateAndCancel()
     }

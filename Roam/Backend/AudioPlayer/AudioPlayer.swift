@@ -4,154 +4,228 @@ import os
 import Opus
 
 
-class OpusDecoderWithJitterBuffer {
+struct AudioFrame {
+    let frame: AVAudioPCMBuffer
+    let scheduleAt: AVAudioFramePosition
+}
+
+actor OpusDecoderWithJitterBuffer {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: OpusDecoderWithJitterBuffer.self)
     )
     
-    // RTPPacket
-    typealias InboundIn = Packet
-    typealias InboundOut = AVAudioPCMBuffer
+    var jitterBuffer = MaxHeap<RtpPacket>()
+    let opusDecoder: Opus.RoamDecoder
+    // Delay (in realtime)
+    let videoDelay: TimeInterval
+    let sampleRate: Double = 48000
+    // Assuming stereo, with 48000 Hz and 10 ms frames = (48000 / 100 * 2)
+    var lastPacketNumber: Int64 = 0
+    var syncPacket: RtpPacket? = nil
+    var lastSampleTime: AVAudioTime? = nil
     
-    var jitterBuffer = BinaryHeap<Packet> { (a: Packet, b: Packet) in
-        return a.sequenceNumber < b.sequenceNumber
-    }
-    var lastPacketTs: UInt32?
-    let opusDecoder: Opus.Decoder
-    // Delay (in realtime) 
-    let bufferDelay: TimeInterval
-    
-    init?(bufferDelay: TimeInterval) {
-        guard let opusFormat = AVAudioFormat(opusPCMFormat: .float32, sampleRate: 48000, channels: 2) else {
-            Self.logger.error("Error initializing opus av format. This is a bug")
-            return nil
+    init(audioBuffer: TimeInterval) throws {
+        guard let opusFormat = AVAudioFormat(opusPCMFormat: .float32, sampleRate: sampleRate, channels: 2) else {
+            fatalError("Error initializing opus av format. This is a bug")
         }
         do {
-            opusDecoder = try Opus.Decoder(format: opusFormat)
+            opusDecoder = try Opus.RoamDecoder(format: opusFormat)
         } catch {
             Self.logger.error("Error initializing opus decoder \(error)")
-            return nil
+            throw error
         }
-        self.bufferDelay = bufferDelay
+        self.videoDelay = audioBuffer
+    }
+        
+    func syncAudio(time: AVAudioTime) {
+        guard let syncPacket = syncPacket else {
+            Self.logger.info("Not synced packet yet. Can't sync audio yet")
+            return
+        }
+        if lastSampleTime != nil {
+            // Already synced
+            return
+        }
+        // 1. Need to delay mach time by 3/4 video delay (go 3/4 video delay into the past)
+        //  Set latest packet number to be the time between that delayed time and time 10 ms in the past
+        //  Last packet number can be negative
+        // Video is in seconds, and we assume 10s per packet
+        let packetsSubtracted = Int64(videoDelay * 100)
+        
+        let currentEstimatedPacketNumber = Int64((machTimeToSeconds(time.hostTime) - machTimeToSeconds(syncPacket.receivedAt)) * 100) + Int64(syncPacket.packet.sequenceNumber)
+        lastPacketNumber = currentEstimatedPacketNumber - packetsSubtracted
+        lastSampleTime = AVAudioTime(hostTime: time.hostTime, sampleTime: time.sampleTime + Int64(time.sampleRate), atRate: time.sampleRate)
+    }
+
+    func addPacket(packet: RtpPacket) {
+        if syncPacket == nil {
+            syncPacket = packet
+        }
+        
+        // Check payload type
+        if packet.packet.payloadType != PayloadType(97) || packet.packet.ssrc != 0 {
+            // Invalid payload
+            Self.logger.error("Error bad packet ssrc (\(packet.packet.ssrc) or payload type (\(packet.packet.payloadType.rawValue))")
+        }
+        if lastPacketNumber < packet.packet.sequenceNumber {
+//            Self.logger.trace("Adding packet with seqNo \(packet.packet.sequenceNumber) when current seqNo is \(self.lastPacketNumber)")
+            self.jitterBuffer.insert(packet)
+        } else {
+            Self.logger.error("Error bad packet with seqNo \(packet.packet.timestamp) when current seqNo is \(self.lastPacketNumber)")
+        }
     }
     
-//    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-//        let packet = self.unwrapInboundIn(data)
-//        
-//        // Check payload type
-//        if packet.payloadType != PayloadType(97) || packet.ssrc != 0 {
-//            // Invalid
-//            Self.logger.error("Error bad packet ssrc (\(packet.ssrc) or payload type (\(packet.payloadType.rawValue))")
-//        } else {
-//            self.jitterBuffer.insert(packet)
-//        }
-//        guard let maybeNext = self.maybeNext() else {
-//            return
-//        }
-//        
-//        do {
-//            let decoded = try opusDecoder.decode(packet.payload)
-//        } catch {
-//            Self.logger.error("Error decoding packet payload with seqNo \(packet.sequenceNumber) and payload \(packet.payload.map{ String(format: "%02x", $0) }.joined())")
-//        }
-//    }
-    
-    func maybeNext() -> AVAudioPCMBuffer? {
-        while true {
-            guard let nextPacket = self.jitterBuffer.peek() else {
-                return nil
-            }
-            
-            Self.logger.trace("Checking packet \(nextPacket.sequenceNumber), \(nextPacket.timestamp)")
-            let lastPacketTs = self.lastPacketTs ?? UInt32.max
-            if lastPacketTs <= nextPacket.timestamp {
-                Self.logger.trace("Dropping packet with ts \(nextPacket.timestamp) because it is before self ts by \(lastPacketTs - nextPacket.timestamp)")
-                let _ = jitterBuffer.pop()
-                continue
-            }
-            let packetTs = nextPacket.timestamp
+    func nextPacket(atTime: AVAudioTime) -> (AVAudioPCMBuffer, AVAudioTime)? {
+        guard let lastSampleTime = lastSampleTime else {
+            Self.logger.info("Not synced yet")
+            return nil
         }
+        
+        // No need to worry about wrapping because we get several years of stream before we wrap
+        var nextPacket: RtpPacket? = nil
+        while true {
+            if let np = jitterBuffer.peek(),
+                np.packet.sequenceNumber <= lastPacketNumber + 1 {
+                if let destroyed = nextPacket {
+                    Self.logger.error("Destroying packet \(destroyed.packet.sequenceNumber) when lastPacket \(self.lastPacketNumber) next paacket \(np.packet.sequenceNumber)")
+                }
+                nextPacket = jitterBuffer.remove()
+            } else {
+                break
+            }
+        }
+        
+        if nextPacket == nil {
+            Self.logger.error("Missing packet \(String(describing: self.jitterBuffer.peek())), lpn \(self.lastPacketNumber)")
+        }
+                
+        // Need to get schedule time for when to schedule the packet
+        let sampleTime = AVAudioTime(hostTime: secondsToMachTime(0.01) + lastSampleTime.hostTime, sampleTime: lastSampleTime.sampleTime + Int64(lastSampleTime.sampleRate) / 100, atRate: lastSampleTime.sampleRate)
+        
+        self.lastSampleTime = sampleTime
+        self.lastPacketNumber = lastPacketNumber + 1
+
+        let nextPcm: AVAudioPCMBuffer
+        do {
+            if let np = nextPacket {
+                nextPcm = try opusDecoder.decode(np.payload)
+//                Self.logger.info("Getting decoded packet \(nextPcm.frameLength) \(nextPcm)")
+            } else {
+                nextPcm = try opusDecoder.decode_loss_concealment(sampleCount: Int64(sampleRate) / 100)
+                Self.logger.error("Getting loss concealment packet for sqNo \(self.lastPacketNumber)")
+            }
+        } catch {
+            Self.logger.error("Error decoding packet \(error)")
+            return nil
+        }
+        
+        guard sampleTime.isSampleTimeValid else {
+            return nil
+        }
+        
+        return (nextPcm, sampleTime)
     }
 }
 
-// // Need to rework whole thing following this impl https://github.com/alin23/roku-audio-receiver/blob/2b42d832ea1de14638197392a2b29a09adc7de90/roku.py#L540
-//actor AudioPlayer {
-//    private let engine: AVAudioEngine
-//    private let streamAudioNode: AVAudioPlayerNode
-//
-//    public init () {
-//        engine = AVAudioEngine()
-//        streamAudioNode = AVAudioPlayerNode()
-//        engine.attach(streamAudioNode)
-//        engine.connect(streamAudioNode, to: engine.outputNode, format: nil)
-//    }
-//
-//    public func start() {
-//        try! engine.start()
-//        streamAudioNode.play()
-//    }
-//
-//    public func scheduleAudioBytes(buffer: AVAudioPCMBuffer) async {
-//        await streamAudioNode.scheduleBuffer(buffer)
-//
-//
-//    }
-//
-//    public func stop() {
-//        engine.stop()
-//        streamAudioNode.stop()
-//    }
-//}
-//
+
+public extension Opus.Decoder {
+}
+
+// Need to rework whole thing following this impl
+// https://github.com/alin23/roku-audio-receiver/blob/2b42d832ea1de14638197392a2b29a09adc7de90/roku.py#L540
+actor AudioPlayer {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: AudioPlayer.self)
+    )
+    
+    private let engine: AVAudioEngine
+    private let streamAudioNode: AVAudioPlayerNode
+    private let convertor: AVAudioConverter
+
+    public init () {
+        engine = AVAudioEngine()
+        streamAudioNode = AVAudioPlayerNode()
+        engine.attach(streamAudioNode)
+        let audioFormat = AVAudioFormat(opusPCMFormat: .float32, sampleRate: 48000, channels: 2)!
+        engine.connect(streamAudioNode, to: engine.mainMixerNode, format: nil)
+        engine.connect(engine.mainMixerNode, to: engine.outputNode, format: nil)
+        convertor = AVAudioConverter(from: audioFormat, to: engine.mainMixerNode.outputFormat(forBus: 0))!
+    }
+
+    public func start() {
+        try! engine.start()
+        streamAudioNode.play()
+    }
+
+    public func scheduleAudioBytes(buffer: AVAudioPCMBuffer, atTime: AVAudioTime) async {
+        // Prepare input and output buffer
+        let outputBuffer = AVAudioPCMBuffer(pcmFormat: convertor.outputFormat, frameCapacity: AVAudioFrameCount(convertor.outputFormat.sampleRate) * buffer.frameLength / AVAudioFrameCount(buffer.format.sampleRate))!
+        // When you fill your Int16 buffer with data, send it to converter
+        var error: NSError? = nil
+        self.convertor.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+        
+        if let error = error {
+            Self.logger.error("Error converting buffers \(error)")
+        } else {
+            Self.logger.info("Scheduling buffer \(atTime), from now \(atTime.offsetFromNow())")
+            #if os(iOS)
+            await streamAudioNode.scheduleBuffer(outputBuffer)
+            #else
+            await streamAudioNode.scheduleBuffer(outputBuffer, at: atTime)
+            #endif
+        }
+        
+    }
+    
+    public func lastRender() -> AVAudioTime? {
+        return self.streamAudioNode.lastRenderTime
+    }
+
+    public func stop() {
+        Self.logger.info("Stopping audioplayer")
+        engine.stop()
+        streamAudioNode.stop()
+    }
+}
+
+func machTimeToSeconds(_ machTime: UInt64) -> Double {
+    var timebaseInfo = mach_timebase_info()
+    mach_timebase_info(&timebaseInfo)
+    let machTimeInNanoseconds = Double(machTime) * Double(timebaseInfo.numer) / Double(timebaseInfo.denom)
+    let machTimeInSeconds = machTimeInNanoseconds / 1_000_000_000.0
+    return machTimeInSeconds
+}
+
+func secondsToMachTime(_ seconds: Double) -> UInt64 {
+    var timebaseInfo = mach_timebase_info()
+    mach_timebase_info(&timebaseInfo)
+    let machTimeInNanoseconds = seconds * 1_000_000_000.0
+    let machTime = UInt64(machTimeInNanoseconds) * UInt64(timebaseInfo.denom) / UInt64(timebaseInfo.numer)
+    return machTime
+}
+
+extension AVAudioTime {
+    func offsetFromNow() -> TimeInterval {
+        let timeNow = mach_absolute_time()
+        let machTime = Int64(hostTime) - Int64(timeNow)
+        
+        var timebaseInfo = mach_timebase_info()
+        mach_timebase_info(&timebaseInfo)
+        let machTimeInNanoseconds = Double(machTime) * Double(timebaseInfo.numer) / Double(timebaseInfo.denom)
+        let machTimeInSeconds = machTimeInNanoseconds / 1_000_000_000.0
+        return machTimeInSeconds
+    }
+}
+
+
 //enum RPError: Error {
 //    case BadAudioFormat
 //}
-//
-//public func connectAndPlay(rokuIp: String, testUrl: URL) async throws {
-//    let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-//    defer {
-//        try! group.syncShutdownGracefully()
-//    }
-//
-//    let udpBootstrap = DatagramBootstrap(group: group)
-//        .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
-//
-//    // 1. RTP-UDP packet forwarder
-//    let udpChannel = try await udpBootstrap.bind(host: "0.0.0.0", port: 38948).get()
-//    let udpHandler = RTPForwarder(destination: "127.0.0.1", port: 36148)
-//    try await udpChannel.pipeline.addHandler(udpHandler).get()
-//
-//    // 2. VLCKit media player
-//    let mediaPlayer = VLCMediaPlayer()
-//    mediaPlayer.media = VLCMedia(url: testUrl)
-//    mediaPlayer.play()
-//
-//    // Flag for starting RTCP connection
-//    var startRTCP = false
-//
-//    // Wait for the first RTP packet to arrive
-//    await udpHandler.firstPacketReceived.futureResult.whenComplete { _ in
-//
-//    }
-//
-//    // 3. Initiate RTCP connection if RTP packet is received
-//    if startRTCP {
-//        // Your RTCP initiation code here
-//    }
-//
-//    // 4. Create WebSocket connection
-//    let webSocket = try WebSocket.connect(to: "ws://\(rokuIp):8060/ecp-session", on: group.next()).wait()
-//
-//    // Cleanup
-//    // Stop UDP forwarding, VLC Media player, and close WebSocket
-//    udpChannel.close(promise: nil)
-//    mediaPlayer.stop()
-//    try webSocket.close().wait()
-//}
-//
-//
-//
 //
 //struct RTPPacket {
 //    let payloadType: UInt8

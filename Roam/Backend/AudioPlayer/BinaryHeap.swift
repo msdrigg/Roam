@@ -1,145 +1,79 @@
-public struct BinaryHeap<Element> {
-    public typealias Index = Int
-
-    var storage: [Element]
-    let comparator: (Element, Element) -> Bool
-
-    public var count: Int {
-        storage.count
+// Swift code for the above approach:
+class MaxHeap<T: Comparable> {
+    var heap: [T] = []
+      
+    // Insert a new element into the heap
+    func insert(_ element: T) {
+        heap.append(element)
+        var currentIndex = heap.count - 1
+          
+        // Bubble up the element until the
+        // heap property is restored
+        while currentIndex > 0 && heap[currentIndex] > heap[(currentIndex-1)/2] {
+            heap.swapAt(currentIndex, (currentIndex-1)/2)
+            currentIndex = (currentIndex-1)/2
+        }
     }
-
-    public init(comparator: @escaping (Element, Element) -> Bool) {
-        self.storage = []
-        self.comparator = comparator
-    }
-
-    /// Inserts the given element into the `BinaryHeap`.
-    ///
-    /// - Complexity: O(log n)
-    public mutating func insert(_ element: Element) {
-        storage.append(element)
-        siftUp(startingAt: lastStorageIndex)
-    }
-
-    /// Returns the first element in the `BinaryHeap`.
-    ///
-    /// - Complexity: O(1)
-    public func peek() -> Element? {
-        storage.first
-    }
-
-    /// Removes and returns the first element from the `BinaryHeap`.
-    ///
-    /// - Complexity: O(log n)
-    public mutating func pop() -> Element? {
-        delete(at: 0)
-    }
-
-    // MARK: - Internals
-
-    /// Remove the item at the given index
-    ///
-    /// - Complexity: O(log n)
-    private mutating func delete(at index: Index) -> Element? {
-        guard storage.count > index else {
+      
+    // Remove and return the top
+    // element of the heap
+    func remove() -> T? {
+        guard !heap.isEmpty else {
             return nil
         }
-
-        guard storage.count > 1 else {
-            // The element to remove is the only one we have
-            return storage.removeLast()
-        }
-
-        storage.swapAt(index, lastStorageIndex)
-        let removed = storage.removeLast()
-
-        siftDown(startingAt: index)
-
-        return removed
-    }
-
-    private mutating func siftUp(startingAt startIndex: Index) {
-        var idx = startIndex
-
-        // 1. Compare the element at idx to its parent.
-        // 2. If they are not in the correct order:
-        //    * Swap them
-        //    * Go back to 1
-        while idx > 0 && comparator(storage[idx], storage[parentIndex(of: idx)]) {
-            let parentIdx = parentIndex(of: idx)
-            storage.swapAt(idx, parentIdx)
-            idx = parentIdx
-        }
-    }
-
-    private mutating func siftDown(startingAt startIndex: Index) {
-        var idx = startIndex
-
-        // 1. Compare the element at idx with its children.
-        // 2. If they are not in the correct order:
-        //    * Swap the parent with its children based on the comparator
-        //    * Go back to 1
-        while idx < lastStorageIndex {
-            let leftIdx = leftChildIndex(of: idx)
-            let rightIdx = rightChildIndex(of: idx)
-
-            guard leftIdx < storage.count, rightIdx < storage.count else {
-                break
-            }
-
-            let leftChild = storage[leftIdx]
-            let rightChild = storage[rightIdx]
-
-            guard comparator(leftChild, storage[idx]) || comparator(rightChild, storage[idx]) else {
-                // The heap is already in the correct order
-                break
-            }
-
-            if comparator(leftChild, rightChild) {
-                storage.swapAt(idx, leftIdx)
-                idx = leftIdx
-            } else {
-                storage.swapAt(idx, rightIdx)
-                idx = rightIdx
+          
+        let topElement = heap[0]
+          
+        if heap.count == 1 {
+            heap.removeFirst()
+        } else {
+            
+            // Replace the top element
+            // with the last element in
+            // the heap
+            heap[0] = heap.removeLast()
+            var currentIndex = 0
+              
+            // Bubble down the element until
+            // the heap property is restored
+            while true {
+                let leftChildIndex = 2*currentIndex+1
+                let rightChildIndex = 2*currentIndex+2
+                  
+                // Determine the index of
+                // the larger child
+                var maxIndex = currentIndex
+                if leftChildIndex < heap.count && heap[leftChildIndex] > heap[maxIndex] {
+                    maxIndex = leftChildIndex
+                }
+                if rightChildIndex < heap.count && heap[rightChildIndex] > heap[maxIndex] {
+                    maxIndex = rightChildIndex
+                }
+                  
+                // If the heap property is
+                // restored, break out of the loop
+                if maxIndex == currentIndex {
+                    break
+                }
+                  
+                // Otherwise, swap the current
+                // element with its larger child
+                heap.swapAt(currentIndex, maxIndex)
+                currentIndex = maxIndex
             }
         }
+          
+        return topElement
     }
-
-    // MARK: Index Helpers
-
-    private var lastStorageIndex: Index {
-        storage.endIndex - 1
+      
+    // Get the top element of the
+    // heap without removing it
+    func peek() -> T? {
+        return heap.first
     }
-
-    private func parentIndex(of index: Index) -> Index {
-        (index - 1) / 2
-    }
-
-    private func leftChildIndex(of index: Index) -> Index {
-        index * 2 + 1
-    }
-
-    private func rightChildIndex(of index: Index) -> Index {
-        index * 2 + 2
-    }
-}
-
-// MARK: -
-
-extension BinaryHeap {
-    public init<Value>(keyPath: KeyPath<Element, Value>, comparator: @escaping (Value, Value) -> Bool) {
-        self.init { lhs, rhs in
-            comparator(lhs[keyPath: keyPath], rhs[keyPath: keyPath])
-        }
-    }
-}
-
-extension BinaryHeap where Element: Comparable {
-    public static func minHeap() -> Self {
-        self.init(comparator: <)
-    }
-
-    public static func maxHeap() -> Self {
-        self.init(comparator: >)
+      
+    // Check if the heap is empty
+    var isEmpty: Bool {
+        return heap.isEmpty
     }
 }

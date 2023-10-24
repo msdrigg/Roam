@@ -55,6 +55,7 @@
 		AF3AD5592AE2940A00E2D780 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */; };
 		AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */; };
 		AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */; };
+		AF3D62D72AE6F703006AB8E9 /* OpusDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */; };
 		AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
 		AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
 		AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
@@ -149,6 +150,7 @@
 		AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMonitor.swift; sourceTree = "<group>"; };
 		AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEntry.swift; sourceTree = "<group>"; };
 		AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
+		AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusDecoder.swift; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControllerActor.swift; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
@@ -323,6 +325,7 @@
 				AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */,
 				AF19CA1A2AE4510900A42DFF /* RTP.swift */,
 				AF19CA1D2AE4517600A42DFF /* RTCP.swift */,
+				AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */,
 			);
 			path = AudioPlayer;
 			sourceTree = "<group>";
@@ -555,6 +558,7 @@
 				AF20AD0C2AE01E9100D371C7 /* AppLink.swift in Sources */,
 				AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */,
 				AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */,
+				AF3D62D72AE6F703006AB8E9 /* OpusDecoder.swift in Sources */,
 				AF19CA3C2AE6BFC400A42DFF /* DeviceApi.swift in Sources */,
 				AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */,
 				AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */,

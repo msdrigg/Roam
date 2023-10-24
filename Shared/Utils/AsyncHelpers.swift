@@ -71,6 +71,11 @@ public extension Task where Success == Never, Failure == Never {
     @inlinable static func sleep(duration: TimeInterval) async throws {
         try await sleep(nanoseconds: UInt64(duration*1e9))
     }
+    
+    /// Sleep until cancelled
+    @inlinable static func sleepUntilCancelled() async {
+        try? await sleep(nanoseconds: UInt64.max / 2)
+    }
 }
 
 public struct TimeoutError: Error, LocalizedError {

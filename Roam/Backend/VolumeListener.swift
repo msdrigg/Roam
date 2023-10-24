@@ -83,4 +83,60 @@ actor VolumeListener {
         }
     }
 }
+
+
+class LatencyListener {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: LatencyListener.self)
+    )
+    
+    var latencyObservation: NSKeyValueObservation? = nil
+    var latencyChangeHandler: ((Double) -> Void)? = nil
+    let session: AVAudioSession
+    
+    init(session: AVAudioSession) {
+        self.session = session
+    }
+    
+    @objc func handleRouteChange(notification: Notification) {
+        self.newLatencyObserved(session.outputLatency)
+    }
+    
+    func startListening() throws {
+        Self.logger.info("Starting Latency observations")
+        // Get the default notification center instance.
+        NotificationCenter.default.addObserver(
+           self,
+           selector: #selector(handleRouteChange),
+           name: AVAudioSession.routeChangeNotification,
+           object: nil
+        )
+    }
+    
+    func newLatencyObserved(_ newLatency: Double) {
+        self.latencyChangeHandler?(newLatency)
+    }
+    
+    func stopListening() {
+        Self.logger.info("Stoping Latency observations")
+        NotificationCenter.default.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: nil)
+    }
+    
+    var events: AsyncStream<Double>? {
+        return AsyncStream { continuation in
+            do {
+                try startListening()
+                self.latencyChangeHandler = { latency in
+                    continuation.yield(latency)
+                }
+                continuation.onTermination = { @Sendable _ in
+                    self.stopListening()
+                }
+            } catch {
+                
+            }
+        }
+    }
+}
 #endif

@@ -9,9 +9,17 @@ import Foundation
 import RTP
 import Opus
 
-struct RtpPacket {
+struct RtpPacket: Comparable {
+    static func < (lhs: RtpPacket, rhs: RtpPacket) -> Bool {
+        lhs.packet.sequenceNumber > rhs.packet.sequenceNumber
+    }
+    
+    static func == (lhs: RtpPacket, rhs: RtpPacket) -> Bool {
+        lhs.packet.sequenceNumber == rhs.packet.sequenceNumber
+    }
+    
     let packet: Packet
-    let receivedAt: Date
+    let receivedAt: UInt64
     
     var payload: Data {
         packet.payload
@@ -23,6 +31,6 @@ struct RtpPacket {
     
     init(data: Data) throws {
         packet = try Packet(from: data)
-        receivedAt = Date.now
+        receivedAt = mach_absolute_time()
     }
 }
