@@ -19,6 +19,10 @@ A Roku remote that puts users first
         - DPadController
         - MediaController
         - App Links
+        - Vertical page style + navigation headers
+        - Scrollable app links last
+        - Tool bar buttons on top and bottom views
+        - Maybe gradient containerbackground?? (maybe for ios too)
     - StackView for
         - Settings (https://developer.apple.com/forums/thread/680053)
     - Add small circular widgets configurable for each button
