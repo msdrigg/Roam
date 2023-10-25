@@ -336,7 +336,7 @@ struct RemoteView: View {
                 }
 #endif
             }
-            .animation(.default, value: selectedDevice?.appsSorted)
+            .animation(.default, value: selectedDevice?.appsSorted?.count)
             .onAppear {
                 let modelContainer = modelContext.container
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)

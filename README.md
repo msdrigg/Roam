@@ -6,6 +6,7 @@ A Roku remote that puts users first
 
 - Prepare for AppStore
     - Get AppIcon from Maggie if she wants to
+    - Update color scheme after getting app icon
     - Get screenshots from multiple devices, widgets
     - Get presentation images from Fiverr (or procreate?)
 - Add watch-os support
@@ -25,7 +26,6 @@ A Roku remote that puts users first
         - Need an approach like this https://developer.apple.com/forums/thread/649183 to sync phone audio with device audio
     - Sometimes I get a big delay with sent keys and then they all queue up and blast through after they aren't relevant anymore
         - Either use ECPSession for button presses
-    - Make sure to handle sequence number wrapping in RTP stream
 
 ## License
 

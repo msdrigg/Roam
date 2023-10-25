@@ -9,14 +9,11 @@ class LatencyListener {
         category: String(describing: LatencyListener.self)
     )
     
-    var latencyChangeHandler: (() -> Void)? = nil
+    var latencyChangeHandler: ((Double) -> Void)? = nil
+    let audioSession = AVAudioSession.sharedInstance()
     
     @objc func handleRouteChange(notification: Notification) {
-        self.latencyChangeHandler?()
-    }
-    
-    enum Event: String {
-        case LatencyChanged
+        self.latencyChangeHandler?(audioSession.outputLatency)
     }
     
     func startListening() throws {
@@ -35,12 +32,12 @@ class LatencyListener {
         NotificationCenter.default.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
-    var events: AsyncStream<Event>? {
+    var events: AsyncStream<Double>? {
         return AsyncStream { continuation in
             do {
                 try startListening()
-                self.latencyChangeHandler = {
-                    continuation.yield(Event.LatencyChanged)
+                self.latencyChangeHandler = { newValue in
+                    continuation.yield(newValue)
                 }
                 continuation.onTermination = { @Sendable _ in
                     self.stopListening()
@@ -54,8 +51,9 @@ class LatencyListener {
 #endif
 
 #if os(macOS)
-import AppKit
 import CoreAudio
+import os.log
+import Foundation
 
 class LatencyListener {
     private static let logger = Logger(
@@ -63,57 +61,94 @@ class LatencyListener {
         category: String(describing: LatencyListener.self)
     )
     
-    var latencyChangeHandler: (() -> Void)?
-    
+    var latencyChangeHandler: ((Double) -> Void)?
     var audioDeviceChangeListener: AudioObjectPropertyListenerBlock?
     
-    enum Event: String {
-        case LatencyChanged
-    }
-    
-    func startListening() {
-        Self.logger.info("Starting Latency observations")
-        
-        var address = AudioObjectPropertyAddress(
+    var defaultDeviceAddress: AudioObjectPropertyAddress {
+         AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
+        )   
+    }
+    
+    func getDeviceLatency(deviceID: AudioDeviceID) -> Double? {
+        var latency: UInt32 = 0
+        var propSize = UInt32(MemoryLayout<UInt32>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyLatency,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
         )
+
+        let err = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &propSize, &latency)
+        if err != kAudioHardwareNoError {
+            Self.logger.error("Failed to get latency for device \(deviceID), error: \(err)")
+            return nil
+        }
+        
+        var sampleRate: Float64 = 0
+        var size = UInt32(MemoryLayout.size(ofValue: sampleRate))
+        var sampleRateAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyNominalSampleRate,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        let sampleRateErr = AudioObjectGetPropertyData(deviceID, &sampleRateAddress, 0, nil, &size, &sampleRate)
+        if sampleRateErr != kAudioHardwareNoError {
+            Self.logger.error("Failed to get sample rate for device \(deviceID), error: \(err). Defaulting to 48000")
+            sampleRate = 48000
+        }
+
+        return Double(latency) / sampleRate
+    }
+
+    
+    func startListening() {
+        Self.logger.info("Starting Latency observations")
+
+        
+        var defaultDeviceAddress = defaultDeviceAddress
         
         audioDeviceChangeListener = { _, _ in
-            DispatchQueue.global().asyncAfter(deadline: .now() + 1.2) { // 1200ms delay
+            DispatchQueue.main.async {
+                var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+                
+                // Listener for latency changes on the default output device
+                var listeningDeviceId: AudioDeviceID = 0
+                AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &defaultDeviceAddress, 0, nil, &size, &listeningDeviceId)
+                
                 DispatchQueue.main.async {
-                    self.latencyChangeHandler?()
+                    self.latencyChangeHandler?(self.getDeviceLatency(deviceID: listeningDeviceId) ?? 0)
                 }
             }
         }
         
-        let err = AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, nil, audioDeviceChangeListener!)
+        let err = AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &defaultDeviceAddress, nil, audioDeviceChangeListener!)
         
         if err != kAudioHardwareNoError {
-            Self.logger.error("Error adding audio property listener: \(err)")
+            Self.logger.error("Error adding audio property listener for default output device: \(err)")
         }
     }
     
     func stopListening() {
         Self.logger.info("Stopping Latency observations")
         
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        var defaultDeviceAddress = defaultDeviceAddress
         
-        if let listener = audioDeviceChangeListener {
-            AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, nil, listener)
+        DispatchQueue.main.async {
+            if let listener = self.audioDeviceChangeListener {
+                AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &defaultDeviceAddress, nil, listener)
+            }
         }
     }
     
-    var events: AsyncStream<Event>? {
+    var events: AsyncStream<Double>? {
         return AsyncStream { continuation in
             startListening()
-            latencyChangeHandler = {
-                continuation.yield(Event.LatencyChanged)
+            latencyChangeHandler = { newValue in
+                continuation.yield(newValue)
             }
             continuation.onTermination = { @Sendable _ in
                 self.stopListening()

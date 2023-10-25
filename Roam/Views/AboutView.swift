@@ -19,14 +19,10 @@ let LICENSES: [Dependency] = [
     Dependency(name: "Swift-Async-Algorithms", link: "https://github.com/apple/swift-async-algorithms", licenseType: "Apache-2.0"),
     Dependency(name: "SSDPClient", link: "https://github.com/pierrickrouxel/SSDPClient", licenseType: "MIT"),
     Dependency(name: "XMLCoder", link: "https://github.com/CoreOffice/XMLCoder", licenseType: "MIT"),
+    Dependency(name: "CachedAsyncImage", link: "https://github.com/lorenzofiamingo/swiftui-cached-async-image", licenseType: "MIT")
 ]
 
 struct AboutView: View {
-    private static let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier!,
-        category: String(describing: AboutView.self)
-    )
-    
     var body: some View {
         List {
             Section {
@@ -35,20 +31,18 @@ struct AboutView: View {
                 }
             }
             
-            if !LICENSES.isEmpty {
-                Section("Dependencies") {
-                    ForEach(LICENSES) { license in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(license.name)
-                                Spacer()
-                                Text(license.licenseType)
-                            }
-                            Link(license.link, destination: URL(string: license.link)!)
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+            Section("Dependencies") {
+                ForEach(LICENSES) { license in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(license.name)
+                            Spacer()
+                            Text(license.licenseType)
                         }
+                        Link(license.link, destination: URL(string: license.link)!)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
             }

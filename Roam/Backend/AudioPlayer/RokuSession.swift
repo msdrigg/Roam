@@ -17,6 +17,7 @@ let HOST_RTCP_PORT: UInt16 = 31695
 let DEFAULT_REMOTE_RTCP_PORT: UInt16 = 5150
 let RTP_PAYLOAD_TYPE = 97
 let CLOCK_RATE = 48000
+let PACKET_SIZE_MS: Int64 = 10
 
 enum PrivateListeningError: Error, LocalizedError {
     case BadURL
@@ -214,7 +215,6 @@ actor RTPSession {
                 }
                 do {
                     let packet = try RtpPacket(data: data)
-//                    Self.logger.info("Sending rtp packet to stream \(String(describing: packet)) with stream \(String(describing: rtpStream.state.withCriticalRegion{ $0 }))")
 
                     rtpStream.send(packet)
                 } catch {
@@ -388,23 +388,27 @@ actor RTPSession {
         try await withThrowingDiscardingTaskGroup { taskGroup in
             let rtpAudioPlayer = AudioPlayer()
             
-            let latency = await rtpAudioPlayer.getOutputLatency()
-            Self.logger.info("Starting with latency \(latency)")
+            Self.logger.info("Starting receiving rtp packets")
             let decoder: OpusDecoderWithJitterBuffer = try OpusDecoderWithJitterBuffer(audioBuffer: Double(videoBufferMs) / 1000)
             taskGroup.addTask {
                 var count = 0
-                var lsqNo: UInt16 = 0
+                var lsqNo: Int64 = 0
+                var rollingSequenceNumber: Int64? = nil
+
                 do {
-                    for try await rtpPacket in self.rtpStream {
-//                        Self.logger.debug("Getting packet from stream \(String(describing: rtpPacket)) at count \(count)")
+                    for try await var rtpPacket in self.rtpStream {
+                        // Drop first 5 packets because we want to have a reasonable sync packet and sometimes the first packet or two isn't valid
+                        // Self.logger.debug("Getting packet from stream \(String(describing: rtpPacket)) at count \(count)")
                         count += 1
                         if count < 5 {
                             continue
                         }
-                        if lsqNo != rtpPacket.packet.sequenceNumber - 1 {
-                            Self.logger.info("Packet with seqno received \(rtpPacket.packet.sequenceNumber) when expecting \(lsqNo + 1)")
+                        rollingSequenceNumber = rtpPacket.updateWithRollingSequenceNumber(rollingSequenceNumber)
+                        
+                        if lsqNo != Int64(rtpPacket.sequenceNumber) - 1 {
+                            Self.logger.info("Packet with seqno received \(rtpPacket.sequenceNumber) when expecting \(lsqNo + 1)")
                         }
-                        lsqNo = rtpPacket.packet.sequenceNumber
+                        lsqNo = Int64(rtpPacket.sequenceNumber)
                         
                         await decoder.addPacket(packet: rtpPacket)
                     }
@@ -444,12 +448,10 @@ actor RTPSession {
                 }
                 
                 if let stream = LatencyListener().events {
-                    for await event in stream {
-                        let latency = await rtpAudioPlayer.getOutputLatency()
-                        Self.logger.error("New latency event \(event.rawValue) with latency \(latency)")
+                    for await latency in stream {
+                        Self.logger.error("New latency event \(latency)")
                         for await _ in AsyncTimerSequence.repeating(every: .milliseconds(200)) {
                             if let lrt = await rtpAudioPlayer.lastRender() {
-                                let latency = await rtpAudioPlayer.getOutputLatency()
                                 if await decoder.syncAudio(time: lrt, additionalAudioDelay: Double(self.HUGE_FIXED_VDLY_MS - self.softwareAudioDelayMs) / 1000 - latency) {
                                     break
                                 }

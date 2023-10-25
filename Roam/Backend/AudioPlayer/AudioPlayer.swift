@@ -18,16 +18,16 @@ actor OpusDecoderWithJitterBuffer {
     
     var jitterBuffer = MaxHeap<RtpPacket>()
     let opusDecoder: Opus.RoamDecoder
-    // Delay (in realtime)
-    let sampleRate: Double = 48000
-    // Assuming stereo, with 48000 Hz and 10 ms frames = (48000 / 100 * 2)
+    var packetsPerSec: Int64 {
+        1000 / PACKET_SIZE_MS
+    }
     var lastPacketNumber: Int64 = 0
     var syncPacket: RtpPacket? = nil
     var lastSampleTime: AVAudioTime? = nil
     let audioBuffer: TimeInterval
     
     init(audioBuffer: TimeInterval) throws {
-        guard let opusFormat = AVAudioFormat(opusPCMFormat: .float32, sampleRate: sampleRate, channels: 2) else {
+        guard let opusFormat = AVAudioFormat(opusPCMFormat: .float32, sampleRate: Double(CLOCK_RATE), channels: 2) else {
             fatalError("Error initializing opus av format. This is a bug")
         }
         do {
@@ -46,14 +46,11 @@ actor OpusDecoderWithJitterBuffer {
         }
         Self.logger.info("Syncing time with additional audio delay \(additionalAudioDelay) buffer \(self.audioBuffer)")
         
-        // 1. Need to delay mach time by 3/4 video delay (go 3/4 video delay into the past)
-        //  Set latest packet number to be the time between that delayed time and time 10 ms in the past
-        //  Last packet number can be negative
-        // Video is in seconds, and we assume 10s per packet
-        let packetsSubtracted = Int64(audioBuffer * 100)
+        let packetsSubtracted = Int64(audioBuffer * Double(packetsPerSec))
         
-        let currentEstimatedPacketNumber = Int64((machTimeToSeconds(time.hostTime) - machTimeToSeconds(syncPacket.receivedAt)) * 100) + Int64(syncPacket.packet.sequenceNumber)
-        lastPacketNumber = currentEstimatedPacketNumber - packetsSubtracted
+        // Estimating getting 100 packets per second
+        let currentEstimatedPacketNumber = Int64((machTimeToSeconds(time.hostTime) - machTimeToSeconds(syncPacket.receivedAt)) * Double(packetsPerSec)) + Int64(syncPacket.sequenceNumber)
+        lastPacketNumber = (currentEstimatedPacketNumber - packetsSubtracted + Int64(UInt16.max)) % Int64(UInt16.max)
         lastSampleTime = AVAudioTime(hostTime: time.hostTime + secondsToMachTime(additionalAudioDelay), sampleTime: time.sampleTime + Int64(time.sampleRate * additionalAudioDelay), atRate: time.sampleRate)
         
         return true
@@ -65,21 +62,21 @@ actor OpusDecoderWithJitterBuffer {
         }
         
         // Check payload type
-        if packet.packet.payloadType != PayloadType(97) || packet.packet.ssrc != 0 {
+        if packet.payloadType != PayloadType(97) || packet.ssrc != 0 {
             // Invalid payload
-            Self.logger.error("Error bad packet ssrc (\(packet.packet.ssrc) or payload type (\(packet.packet.payloadType.rawValue))")
+            Self.logger.error("Error bad packet ssrc (\(packet.ssrc) or payload type (\(packet.payloadType.rawValue))")
         }
-        if lastPacketNumber < packet.packet.sequenceNumber {
+        if lastPacketNumber < packet.sequenceNumber {
 //            Self.logger.trace("Adding packet with seqNo \(packet.packet.sequenceNumber) when current seqNo is \(self.lastPacketNumber)")
             self.jitterBuffer.insert(packet)
         } else {
-            Self.logger.error("Error bad packet with seqNo \(packet.packet.timestamp) when current seqNo is \(self.lastPacketNumber)")
+            Self.logger.error("Error bad packet with seqNo \(packet.unwrappedSequenceNumber) when current seqNo is \(self.lastPacketNumber)")
         }
     }
     
     func nextPacket(atTime: AVAudioTime) -> (AVAudioPCMBuffer, AVAudioTime)? {
         guard let lastSampleTime = lastSampleTime else {
-            Self.logger.info("Not synced yet")
+            Self.logger.info("Not returning packet because not synced yet")
             return nil
         }
         
@@ -87,9 +84,9 @@ actor OpusDecoderWithJitterBuffer {
         var nextPacket: RtpPacket? = nil
         while true {
             if let np = jitterBuffer.peek(),
-                np.packet.sequenceNumber <= lastPacketNumber + 1 {
+                np.sequenceNumber <= lastPacketNumber + 1 {
                 if let destroyed = nextPacket {
-                    Self.logger.error("Destroying packet \(destroyed.packet.sequenceNumber) when lastPacket \(self.lastPacketNumber) next paacket \(np.packet.sequenceNumber)")
+                    Self.logger.error("Destroying packet \(destroyed.sequenceNumber) when lastPacket \(self.lastPacketNumber) next paacket \(np.sequenceNumber)")
                 }
                 nextPacket = jitterBuffer.remove()
             } else {
@@ -102,7 +99,7 @@ actor OpusDecoderWithJitterBuffer {
         }
                 
         // Need to get schedule time for when to schedule the packet
-        let sampleTime = AVAudioTime(hostTime: secondsToMachTime(0.01) + lastSampleTime.hostTime, sampleTime: lastSampleTime.sampleTime + Int64(lastSampleTime.sampleRate) / 100, atRate: lastSampleTime.sampleRate)
+        let sampleTime = AVAudioTime(hostTime: secondsToMachTime(0.01) + lastSampleTime.hostTime, sampleTime: lastSampleTime.sampleTime + Int64(lastSampleTime.sampleRate) / packetsPerSec, atRate: lastSampleTime.sampleRate)
         
         self.lastSampleTime = sampleTime
         self.lastPacketNumber = lastPacketNumber + 1
@@ -113,7 +110,7 @@ actor OpusDecoderWithJitterBuffer {
                 nextPcm = try opusDecoder.decode(np.payload)
 //                Self.logger.info("Getting decoded packet \(nextPcm.frameLength) \(nextPcm)")
             } else {
-                nextPcm = try opusDecoder.decode_loss_concealment(sampleCount: Int64(sampleRate) / 100)
+                nextPcm = try opusDecoder.decode_loss_concealment(sampleCount: Int64(CLOCK_RATE) / packetsPerSec)
                 Self.logger.error("Getting loss concealment packet for sqNo \(self.lastPacketNumber)")
             }
         } catch {
@@ -166,10 +163,7 @@ actor AudioPlayer {
     #endif
 
     public func scheduleAudioBytes(buffer: AVAudioPCMBuffer, atTime: AVAudioTime) async {
-//        Self.logger.info("Scheduling with latency \(self.getOutputLatency())")
-        // Prepare input and output buffer
         let outputBuffer = AVAudioPCMBuffer(pcmFormat: convertor.outputFormat, frameCapacity: AVAudioFrameCount(convertor.outputFormat.sampleRate) * buffer.frameLength / AVAudioFrameCount(buffer.format.sampleRate))!
-        // When you fill your Int16 buffer with data, send it to converter
         var error: NSError? = nil
         self.convertor.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
             outStatus.pointee = .haveData

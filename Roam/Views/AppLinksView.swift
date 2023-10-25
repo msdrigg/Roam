@@ -4,6 +4,18 @@ struct AppLinksView: View {
     var appLinks: [AppLinkAppEntity]
     var handleOpenApp: (AppLinkAppEntity) -> Void
     let rows: Int
+    @State var cachedAppLinks: [AppLinkAppEntity]
+    
+    var appIdsIconsHashed: Int {
+        var appLinkPairs: Set<String>  = Set()
+        self.appLinks.forEach {
+            appLinkPairs.insert("\($0.id);\($0.icon != nil)")
+        }
+        
+        var hasher = Hasher()
+        hasher.combine(appLinkPairs)
+        return hasher.finalize()
+    }
     
     @Namespace var linkAnimation
     
@@ -11,6 +23,8 @@ struct AppLinksView: View {
         self.appLinks = appLinks
         self.handleOpenApp = handleOpenApp
         self.rows = rows
+        
+        cachedAppLinks = appLinks
     }
     
     var body: some View {
@@ -18,7 +32,7 @@ struct AppLinksView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 Spacer()
                 LazyHGrid(rows: Array(repeating: GridItem(.fixed(60)), count: rows), spacing: 10) {
-                    ForEach(Array(appLinks.enumerated()), id: \.element.id) { index, app in
+                    ForEach(Array(cachedAppLinks.enumerated()), id: \.element.id) { index, app in
                         AppLinkButton(app: app, action: handleOpenApp)
                             .matchedGeometryEffect(id: app.id, in: linkAnimation)
                     }
@@ -33,7 +47,10 @@ struct AppLinksView: View {
             .scrollTargetBehavior(.viewAligned)
             .safeAreaPadding(.horizontal, 4)
         }.frame(height: 80 * CGFloat(rows))
-            .animation(.interpolatingSpring, value: appLinks)
+            .animation(.interpolatingSpring, value: cachedAppLinks)
+            .onChange(of: appIdsIconsHashed) {
+                cachedAppLinks = appLinks
+            }
     }
 }
 
