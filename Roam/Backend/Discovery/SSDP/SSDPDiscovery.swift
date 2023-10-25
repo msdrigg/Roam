@@ -130,7 +130,7 @@ func scanDevicesContinuallyNetwork() throws -> AsyncThrowingStream<SSDPService, 
                     if let error = error {
                         logger.warning("Error sending SSDP request: \(error)")
                     }
-                    logger.debug("Sent SSDP request successfully")
+//                    logger.debug("Sent SSDP request successfully")
                 }
             }
         }

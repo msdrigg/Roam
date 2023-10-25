@@ -84,7 +84,7 @@ public actor DeviceControllerActor {
     }
 
     public func openApp(location: String, app: String) {
-        guard let url = URL(string: "\(location)/launch/\(app)") else { return }
+        guard let url = URL(string: "\(location)launch/\(app)") else { return }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -94,7 +94,7 @@ public actor DeviceControllerActor {
                 if httpResponse.statusCode == 200 {
                     Self.logger.info("Opened app \(app) to with location \(location)")
                 } else {
-                    Self.logger.error("Error opening app \(app) at \(location)/launch/\(app): \(httpResponse.statusCode)")
+                    Self.logger.error("Error opening app \(app) at \(location)launch/\(app): \(httpResponse.statusCode)")
                 }
             }
         }
@@ -122,7 +122,7 @@ public actor DeviceControllerActor {
         await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!)
     }
     
-    public func sendKeyPressTodevice(location: String, key: KeyPress) async {
+    public func sendKeyPressTodevice(location: String, key: KeyEquivalent) async {
         await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
     }
     
@@ -168,13 +168,13 @@ public actor DeviceControllerActor {
     }
 }
 
-private func getKeypressForKey(key: KeyPress) -> String {
+private func getKeypressForKey(key: KeyEquivalent) -> String {
     // All of these keys are gauranteed to have api values
     let keyMap: [Character: String] = [
-        KeyEquivalent.delete.character: RemoteButton.back.apiValue!,
-        KeyEquivalent.deleteForward.character: RemoteButton.back.apiValue!,
-        "\u{7F}": RemoteButton.back.apiValue!,
-        KeyEquivalent.escape.character: RemoteButton.back.apiValue!,
+        KeyEquivalent.delete.character: RemoteButton.backspace.apiValue!,
+        KeyEquivalent.deleteForward.character: RemoteButton.backspace.apiValue!,
+        "\u{7F}": RemoteButton.backspace.apiValue!,
+        KeyEquivalent.escape.character: RemoteButton.backspace.apiValue!,
         KeyEquivalent.space.character: "LIT_ ",
         KeyEquivalent.downArrow.character: RemoteButton.down.apiValue!,
         KeyEquivalent.upArrow.character: RemoteButton.up.apiValue!,
@@ -184,9 +184,9 @@ private func getKeypressForKey(key: KeyPress) -> String {
         KeyEquivalent.return.character: RemoteButton.select.apiValue!,
     ]
     
-    if let mappedString = keyMap[key.key.character] {
+    if let mappedString = keyMap[key.character] {
         return mappedString
     }
     
-    return "LIT_\(key.characters)"
+    return "LIT_\(key.character)"
 }

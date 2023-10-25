@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
+		AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */; };
+		AF15C2532AE8672800B79FD9 /* RoamWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF15C2462AE8672700B79FD9 /* RoamWatch.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF19CA142AE4471200A42DFF /* AsyncHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */; };
 		AF19CA152AE4471200A42DFF /* AsyncHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */; };
 		AF19CA1B2AE4510900A42DFF /* RTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA1A2AE4510900A42DFF /* RTP.swift */; };
@@ -67,8 +69,15 @@
 		AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */; };
 		AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */; };
 		AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
+		AFA165C02AE92F92003F45ED /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA165BF2AE92F92003F45ED /* AboutView.swift */; };
 		AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */; };
 		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
+		AFC4A6582AE867A3005DAC6C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
+		AFC4A65A2AE88411005DAC6C /* LatencyListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A6592AE88411005DAC6C /* LatencyListener.swift */; };
+		AFC4A65C2AE8AABA005DAC6C /* AppLinkWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65B2AE8AABA005DAC6C /* AppLinkWidget.swift */; };
+		AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
+		AFC4A65F2AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
+		AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
 		AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE192AE184FE003F6676 /* XMLCoder */; };
 		AFECDE1D2AE18511003F6676 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1C2AE18511003F6676 /* Opus */; };
 		AFECDE202AE18519003F6676 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1F2AE18519003F6676 /* RTP */; };
@@ -81,6 +90,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		AF15C2512AE8672800B79FD9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF15C2452AE8672700B79FD9;
+			remoteInfo = "RoamWatch Watch App";
+		};
 		AF2740192AE02C26007C6208 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
@@ -91,6 +107,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		AF15C2572AE8672800B79FD9 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				AF15C2532AE8672800B79FD9 /* RoamWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AF95B7302ADF3F5A005FC338 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,6 +155,8 @@
 		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
 		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AF15C2462AE8672700B79FD9 /* RoamWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoamWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWatchApp.swift; sourceTree = "<group>"; };
 		AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncHelpers.swift; sourceTree = "<group>"; };
 		AF19CA1A2AE4510900A42DFF /* RTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTP.swift; sourceTree = "<group>"; };
 		AF19CA1D2AE4517600A42DFF /* RTCP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTCP.swift; sourceTree = "<group>"; };
@@ -169,10 +198,17 @@
 		AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediumRemoteWidget.swift; sourceTree = "<group>"; };
 		AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkHelpers.swift; sourceTree = "<group>"; };
 		AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryActor.swift; sourceTree = "<group>"; };
+		AFA165BF2AE92F92003F45ED /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		AFA165C12AE933D7003F45ED /* LICENSE-APACHE */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-APACHE"; sourceTree = "<group>"; };
+		AFA165C22AE93401003F45ED /* LICENSE-MIT */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-MIT"; sourceTree = "<group>"; };
+		AFA165C32AE93FE1003F45ED /* AppIcons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppIcons; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* Roam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamApp.swift; sourceTree = "<group>"; };
 		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AFC24F092AD0E5A2002AB66C /* Roam.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Roam.entitlements; sourceTree = "<group>"; };
+		AFC4A6592AE88411005DAC6C /* LatencyListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyListener.swift; sourceTree = "<group>"; };
+		AFC4A65B2AE8AABA005DAC6C /* AppLinkWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinkWidget.swift; sourceTree = "<group>"; };
+		AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataImage.swift; sourceTree = "<group>"; };
 		AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
 		AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonPressIntents.swift; sourceTree = "<group>"; };
@@ -190,6 +226,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AF15C2432AE8672700B79FD9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AF2740082AE02C25007C6208 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -214,6 +257,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AF15C2472AE8672700B79FD9 /* RoamWatch */ = {
+			isa = PBXGroup;
+			children = (
+				AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */,
+			);
+			path = RoamWatch;
+			sourceTree = "<group>";
+		};
 		AF19CA252AE54AA800A42DFF /* Discovery */ = {
 			isa = PBXGroup;
 			children = (
@@ -248,6 +299,7 @@
 			children = (
 				AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */,
 				AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */,
+				AFC4A65B2AE8AABA005DAC6C /* AppLinkWidget.swift */,
 				AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */,
 				AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */,
 				AF2740152AE02C26007C6208 /* Assets.xcassets */,
@@ -291,6 +343,8 @@
 				AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */,
 				AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */,
 				AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */,
+				AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */,
+				AFA165BF2AE92F92003F45ED /* AboutView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -342,10 +396,14 @@
 		AFC24EF22AD0E5A1002AB66C = {
 			isa = PBXGroup;
 			children = (
+				AFA165C32AE93FE1003F45ED /* AppIcons */,
 				AF95B6F62ADF2F9F005FC338 /* README.md */,
+				AFA165C22AE93401003F45ED /* LICENSE-MIT */,
+				AFA165C12AE933D7003F45ED /* LICENSE-APACHE */,
 				AFC24EFD2AD0E5A1002AB66C /* Roam */,
 				AF95B7372ADF3F9E005FC338 /* Shared */,
 				AF27400E2AE02C25007C6208 /* RoamWidgets */,
+				AF15C2472AE8672700B79FD9 /* RoamWatch */,
 				AFC24EFC2AD0E5A1002AB66C /* Products */,
 				AF4D5F322AD4355E0055AF35 /* Frameworks */,
 			);
@@ -356,6 +414,7 @@
 			children = (
 				AFC24EFB2AD0E5A1002AB66C /* Roam.app */,
 				AF27400B2AE02C25007C6208 /* RoamWidgets.appex */,
+				AF15C2462AE8672700B79FD9 /* RoamWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -391,6 +450,7 @@
 				AF19CA252AE54AA800A42DFF /* Discovery */,
 				AF95B74D2ADF43A4005FC338 /* AudioPlayer */,
 				AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */,
+				AFC4A6592AE88411005DAC6C /* LatencyListener.swift */,
 				AF19CA3B2AE6BFC300A42DFF /* DeviceApi.swift */,
 			);
 			path = Backend;
@@ -413,6 +473,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AF15C2452AE8672700B79FD9 /* RoamWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF15C2542AE8672800B79FD9 /* Build configuration list for PBXNativeTarget "RoamWatch" */;
+			buildPhases = (
+				AF15C2422AE8672700B79FD9 /* Sources */,
+				AF15C2432AE8672700B79FD9 /* Frameworks */,
+				AF15C2442AE8672700B79FD9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RoamWatch;
+			productName = "RoamWatch Watch App";
+			productReference = AF15C2462AE8672700B79FD9 /* RoamWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		AF27400A2AE02C25007C6208 /* RoamWidgets */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "RoamWidgets" */;
@@ -443,11 +520,13 @@
 				AFC6E6B62ADDF6BC0036EC90 /* Embed Foundation Extensions */,
 				AF95B7302ADF3F5A005FC338 /* Embed Frameworks */,
 				AFA079CE2AE02352003E2754 /* Embed ExtensionKit Extensions */,
+				AF15C2572AE8672800B79FD9 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				AF27401A2AE02C26007C6208 /* PBXTargetDependency */,
+				AF15C2522AE8672800B79FD9 /* PBXTargetDependency */,
 			);
 			name = Roam;
 			packageProductDependencies = (
@@ -470,6 +549,9 @@
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
+					AF15C2452AE8672700B79FD9 = {
+						CreatedOnToolsVersion = 15.0.1;
+					};
 					AF27400A2AE02C25007C6208 = {
 						CreatedOnToolsVersion = 15.0;
 					};
@@ -498,12 +580,21 @@
 			projectRoot = "";
 			targets = (
 				AFC24EFA2AD0E5A1002AB66C /* Roam */,
+				AF15C2452AE8672700B79FD9 /* RoamWatch */,
 				AF27400A2AE02C25007C6208 /* RoamWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		AF15C2442AE8672700B79FD9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFC4A6582AE867A3005DAC6C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AF2740092AE02C25007C6208 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -523,6 +614,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AF15C2422AE8672700B79FD9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AF2740072AE02C25007C6208 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -537,13 +636,16 @@
 				AF205B212AE02CAF00041CDF /* SmallRemoteWidget.swift in Sources */,
 				AF205B2C2AE02D1C00041CDF /* WidgetIntents.swift in Sources */,
 				AF19CA242AE455B400A42DFF /* DataHelpers.swift in Sources */,
+				AFC4A65C2AE8AABA005DAC6C /* AppLinkWidget.swift in Sources */,
 				AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */,
 				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
 				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
 				AF205B252AE02D0100041CDF /* DeviceControllerActor.swift in Sources */,
+				AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */,
 				AF205B242AE02D0100041CDF /* RemoteButton.swift in Sources */,
 				AF205B292AE02D1C00041CDF /* LaunchAppIntent.swift in Sources */,
 				AF205B2E2AE02D1C00041CDF /* AppLinkAppEntity.swift in Sources */,
+				AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */,
 				AF19CA152AE4471200A42DFF /* AsyncHelpers.swift in Sources */,
 				AF19CA2C2AE54AD100A42DFF /* SSDPDiscovery.swift in Sources */,
 				AF205B262AE02D0100041CDF /* Device.swift in Sources */,
@@ -568,6 +670,7 @@
 				AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */,
 				AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */,
 				AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */,
+				AFC4A65A2AE88411005DAC6C /* LatencyListener.swift in Sources */,
 				AF20AD132AE01ED100D371C7 /* DeviceControllerActor.swift in Sources */,
 				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
 				AF19CA312AE6947600A42DFF /* ManagedCriticalState.swift in Sources */,
@@ -577,6 +680,7 @@
 				AFF607812ADFACBA00A7D657 /* DiscoveryActor.swift in Sources */,
 				AF19CA142AE4471200A42DFF /* AsyncHelpers.swift in Sources */,
 				AFF6077D2ADFAC4900A7D657 /* VolumeListener.swift in Sources */,
+				AFA165C02AE92F92003F45ED /* AboutView.swift in Sources */,
 				AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */,
 				AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */,
 				AF19CA1E2AE4517600A42DFF /* RTCP.swift in Sources */,
@@ -584,6 +688,7 @@
 				AF19CA282AE54ABC00A42DFF /* SSDPService.swift in Sources */,
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
 				AFA079DC2AE02561003E2754 /* RemoteButtonAppEnum.swift in Sources */,
+				AFC4A65F2AE8AF3F005DAC6C /* DataImage.swift in Sources */,
 				AF19CA352AE694E500A42DFF /* AsyncThrowingBufferedChannel.swift in Sources */,
 				AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */,
 				AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */,
@@ -601,6 +706,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		AF15C2522AE8672800B79FD9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = AF15C2452AE8672700B79FD9 /* RoamWatch */;
+			targetProxy = AF15C2512AE8672800B79FD9 /* PBXContainerItemProxy */;
+		};
 		AF27401A2AE02C26007C6208 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = AF27400A2AE02C25007C6208 /* RoamWidgets */;
@@ -609,6 +720,69 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		AF15C2552AE8672800B79FD9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = RoamWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.msdrigg.roam;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		AF15C2562AE8672800B79FD9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = RoamWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.msdrigg.roam;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 		AF27401C2AE02C27007C6208 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -890,6 +1064,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AF15C2542AE8672800B79FD9 /* Build configuration list for PBXNativeTarget "RoamWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF15C2552AE8672800B79FD9 /* Debug */,
+				AF15C2562AE8672800B79FD9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		AF27401E2AE02C27007C6208 /* Build configuration list for PBXNativeTarget "RoamWidgets" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

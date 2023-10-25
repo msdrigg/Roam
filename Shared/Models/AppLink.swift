@@ -7,6 +7,7 @@ public final class AppLink: Identifiable, Decodable, Encodable {
     public let id: String
     public let type: String
     public let name: String
+    public var lastSelected: Date? = nil
     @Attribute(.externalStorage) public var icon: Data?
     @Relationship(inverse: \Device.apps) public var devices: [Device]
     

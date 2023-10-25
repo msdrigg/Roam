@@ -129,9 +129,9 @@ func fetchDeviceInfo(location: String) async -> DeviceInfo? {
             let decoder = XMLDecoder()
             decoder.keyDecodingStrategy = .convertFromKebabCase
             do {
-                logger.debug("Trying to decode DeviceInfo from:\n\(xmlString.prefix(20))...")
+//                logger.debug("Trying to decode DeviceInfo from:\n\(xmlString.prefix(20))...")
                 let info = try decoder.decode(DeviceInfo.self, from: Data(xmlString.utf8))
-                logger.debug("Decoded DeviceInfo from: \(String(describing: info).prefix(20))...")
+//                logger.debug("Decoded DeviceInfo from: \(String(describing: info).prefix(20))...")
                 return info
             } catch {
                 logger.error("Error decoding DeviceInfo response \(error)")

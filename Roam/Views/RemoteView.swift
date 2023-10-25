@@ -135,73 +135,75 @@ struct RemoteView: View {
     }
     
     var body: some View {
-        SettingsNavigationWrapper(path: $navigationPath) {
-            if runningInPreview {
+        if runningInPreview {
+            SettingsNavigationWrapper(path: $navigationPath) {
                 remotePage
-            } else {
-                remotePage
-                    .task(priority: .background) {
-                        await withDiscardingTaskGroup { taskGroup in
-                            taskGroup.addTask {
-                                await self.scanningActor.scanSSDPContinually()
-                            }
-                            
-                            if scanIpAutomatically {
-                                taskGroup.addTask {
-                                    await self.scanningActor.scanIPV4Once()
-                                }
-                            }
-                        }
-                    }
-                    .task(id: selectedDevice?.id, priority: .medium) {
-                        if let devId = selectedDevice?.id {
-                            await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
-                        }
-                    }
-                    .task(id: privateListeningEnabled) {
-                        if !privateListeningEnabled {
-                            return
-                        }
-                        defer {
-                            privateListeningEnabled = false
-                        }
-                        
-                        if let device = selectedDevice {
-                            do {
-                                try await listenContinually(location: device.location, rtcpPort: device.rtcpPort)
-                                Self.logger.info("Listencontinually returned")
-                            } catch {
-                                Self.logger.warning("Catching error in pl handler \(error)")
-                                // Increment errorTrigger if the error is anything but a cancellation error
-                                if !(error is CancellationError) {
-                                    Self.logger.debug("Non-cancellation error in PL")
-                                    errorTrigger += 1
-                                }
-                            }
-                        }
-                    }
-#if os(iOS)
-                    .task(id: inBackground || !controlVolumeWithHWButtons) {
-                        if inBackground || !controlVolumeWithHWButtons {
-                            return
-                        }
-                        if let stream = await VolumeListener(session: AVAudioSession.sharedInstance()).events {
-                            for await volumeEvent in stream {
-                                let key: RemoteButton
-                                switch volumeEvent.direction {
-                                case .Up:
-                                    key = .volumeUp
-                                case .Down:
-                                    key = .volumeDown
-                                }
-                                pressButton(key)
-                            }
-                        } else {
-                            Self.logger.error("Unable to get volume events stream")
-                        }
-                    }
-#endif
             }
+        } else {
+            SettingsNavigationWrapper(path: $navigationPath) {
+                remotePage
+            }
+            .task(priority: .background) {
+                await withDiscardingTaskGroup { taskGroup in
+                    taskGroup.addTask {
+                        await self.scanningActor.scanSSDPContinually()
+                    }
+                    
+                    if scanIpAutomatically {
+                        taskGroup.addTask {
+                            await self.scanningActor.scanIPV4Once()
+                        }
+                    }
+                }
+            }
+            .task(id: selectedDevice?.id, priority: .medium) {
+                if let devId = selectedDevice?.id {
+                    await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
+                }
+            }
+            .task(id: privateListeningEnabled) {
+                if !privateListeningEnabled {
+                    return
+                }
+                defer {
+                    privateListeningEnabled = false
+                }
+                
+                if let device = selectedDevice {
+                    do {
+                        try await listenContinually(location: device.location, rtcpPort: device.rtcpPort)
+                        Self.logger.info("Listencontinually returned")
+                    } catch {
+                        Self.logger.warning("Catching error in pl handler \(error)")
+                        // Increment errorTrigger if the error is anything but a cancellation error
+                        if !(error is CancellationError) {
+                            Self.logger.debug("Non-cancellation error in PL")
+                            errorTrigger += 1
+                        }
+                    }
+                }
+            }
+#if os(iOS)
+            .task(id: inBackground || !controlVolumeWithHWButtons) {
+                if inBackground || !controlVolumeWithHWButtons {
+                    return
+                }
+                if let stream = await VolumeListener(session: AVAudioSession.sharedInstance()).events {
+                    for await volumeEvent in stream {
+                        let key: RemoteButton
+                        switch volumeEvent.direction {
+                        case .Up:
+                            key = .volumeUp
+                        case .Down:
+                            key = .volumeDown
+                        }
+                        pressButton(key)
+                    }
+                } else {
+                    Self.logger.error("Unable to get volume events stream")
+                }
+            }
+#endif
         }
     }
     
@@ -279,8 +281,10 @@ struct RemoteView: View {
                     
 #if os(iOS)
                     if showKeyboardEntry {
-                        KeyboardEntry(str: $keyboardEntryText, onKeyPress: pressKey, leaving: keyboardLeaving)
-                            .zIndex(1)
+                        KeyboardEntry(str: $keyboardEntryText, onKeyPress: {char in
+                            let _ = self.pressKey(char)
+                        }, leaving: keyboardLeaving)
+                        .zIndex(1)
                     }
 #endif
                     
@@ -386,7 +390,7 @@ struct RemoteView: View {
             
             if !showKeyboardEntry && (selectedDevice?.appsSorted?.count ?? 0) > 0 {
                 Spacer()
-                AppLinksView(appLinks: selectedDevice?.appsSorted ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
+                AppLinksView(appLinks: selectedDevice?.appsSorted?.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                 
             }
@@ -423,7 +427,7 @@ struct RemoteView: View {
             
             if !showKeyboardEntry && (selectedDevice?.appsSorted?.count ?? 0) > 0 {
                 Spacer()
-                AppLinksView(appLinks: selectedDevice?.appsSorted ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
+                AppLinksView(appLinks: selectedDevice?.appsSorted?.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                 
             }
@@ -432,13 +436,22 @@ struct RemoteView: View {
     }
     
     
-    func launchApp(_ app: AppLink) {
-        donateAppLaunchIntent(app)
-        incrementButtonPressCount(.inputAV1)
-        let appId = app.id
-        if let location = selectedDevice?.location {
-            Task {
+    func launchApp(_ app: AppLinkAppEntity) {
+        if let app = selectedDevice?.appsSorted?.first(where: { $0.id == app.id}) {
+            
+            donateAppLaunchIntent(app)
+            incrementButtonPressCount(.inputAV1)
+            app.lastSelected = Date.now
+            let appId = app.id
+            if let location = selectedDevice?.location {
+                Task {
                     await controllerActor.openApp(location: location, app: appId)
+                }
+            }
+            do {
+                try modelContext.save()
+            } catch {
+                Self.logger.error("Error saving app link \(error)")
             }
         }
     }
@@ -457,8 +470,8 @@ struct RemoteView: View {
         }
     }
     
-    func pressKey(key: KeyPress) -> KeyPress.Result {
-        let _ = Self.logger.trace("Getting keyboard press \(key.key.character)")
+    func pressKey(_ key: KeyEquivalent) -> KeyPress.Result {
+        let _ = Self.logger.trace("Getting keyboard press \(key.character)")
         if let device = selectedDevice {
             let location = device.location
             Task {

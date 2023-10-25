@@ -33,15 +33,18 @@ public struct DeviceAppEntity: AppEntity {
     public var id: String
     public var mac: String?
     
+    public var apps: [AppLinkAppEntity]?
+    
     public var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
 
-    init(name: String, location: String, id: String, mac: String?) {
+    init(name: String, location: String, id: String, mac: String?, apps: [AppLinkAppEntity]?) {
         self.name = name
         self.location = location
         self.id = id
         self.mac = mac
+        self.apps = apps
     }
     
     
@@ -49,7 +52,7 @@ public struct DeviceAppEntity: AppEntity {
 
 public extension Device {
     func toAppEntity() -> DeviceAppEntity {
-        return DeviceAppEntity(name: self.name, location: self.location, id: self.id, mac: self.usingMac())
+        return DeviceAppEntity(name: self.name, location: self.location, id: self.id, mac: self.usingMac(), apps: self.appsSorted?.map{$0.toAppEntity()})
     }
 }
 

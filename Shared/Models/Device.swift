@@ -28,15 +28,10 @@ public final class Device: Identifiable, Hashable {
     
     public var appsSorted: [AppLink]? {
        apps?.sorted(by: {
-            switch ($0.type, $1.type) {
-            case ("appl", "appl"): return Int($0.id) ?? 99999999 < Int($1.id) ?? 99999999
-            case ("tvin", "tvin"): return $0.name < $1.name
-            case ("appl", _): return true
-            case (_, "appl"): return false
-            case ("tvin", _): return false
-            case (_, "tvin"): return true
-            default: return false
-            }
+           if $0.lastSelected ?? .distantPast == $1.lastSelected ?? .distantPast {
+               return $0.name < $1.name
+           }
+          return ($0.lastSelected ?? Date.distantPast) > ($1.lastSelected ?? Date.distantPast)
         })
     }
     

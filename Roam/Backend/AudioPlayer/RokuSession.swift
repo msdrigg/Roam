@@ -82,10 +82,11 @@ actor RTPSession {
     )
     
     let videoBufferMs: UInt32 = 400
-    let baseAudioTransitTime: UInt32 = 100
+    let baseAudioTransitMs: UInt32 = 0
+    let HUGE_FIXED_VDLY_MS: UInt32 = 1200
     
-    var overallAudioDelay: UInt32 {
-        videoBufferMs + baseAudioTransitTime + UInt32(AVAudioSession.sharedInstance().outputLatency * 1000)
+    var softwareAudioDelayMs: UInt32 {
+        videoBufferMs + baseAudioTransitMs
     }
     
     let rtcpStream: AsyncThrowingBufferedChannel<RtcpPacket, any Error>
@@ -265,7 +266,7 @@ actor RTPSession {
         // Send VDLY rtcp packet using rtcpConnection
         // Wait for response XDLY using rtcpStream
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(), Error>) -> Void in
-            remoteRtcpConnection.send(content: RtcpPacket.vdly(delayMs: overallAudioDelay).packet(), completion: .contentProcessed({ error in
+            remoteRtcpConnection.send(content: RtcpPacket.vdly(delayMs: HUGE_FIXED_VDLY_MS).packet(), completion: .contentProcessed({ error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
@@ -278,11 +279,11 @@ actor RTPSession {
         for try await packet in rtcpStream {
             switch packet {
             case .appSpecific(.xdly(let xdly)):
-                if xdly.delayMicroseconds == overallAudioDelay * 1000 {
+                if xdly.delayMicroseconds == HUGE_FIXED_VDLY_MS * 1000 {
                     Self.logger.info("Got good xdly packet from rtcp as expected")
                     return
                 }
-                Self.logger.warning("Got bad xdly microseconds. Expecting \(self.overallAudioDelay * 1000)")
+                Self.logger.warning("Got bad xdly microseconds. Expecting \(self.HUGE_FIXED_VDLY_MS * 1000)")
             default:
                 Self.logger.warning("Got bad packet from rtcp. Expecting App.XDLY. Got \(String(describing: packet))")
             }
@@ -386,6 +387,9 @@ actor RTPSession {
         
         try await withThrowingDiscardingTaskGroup { taskGroup in
             let rtpAudioPlayer = AudioPlayer()
+            
+            let latency = await rtpAudioPlayer.getOutputLatency()
+            Self.logger.info("Starting with latency \(latency)")
             let decoder: OpusDecoderWithJitterBuffer = try OpusDecoderWithJitterBuffer(audioBuffer: Double(videoBufferMs) / 1000)
             taskGroup.addTask {
                 var count = 0
@@ -410,7 +414,7 @@ actor RTPSession {
             }
             
             taskGroup.addTask {
-                await rtpAudioPlayer.start()
+                try await rtpAudioPlayer.start()
                 defer {
                     Task {
                         await rtpAudioPlayer.stop()
@@ -421,9 +425,7 @@ actor RTPSession {
                 for await _ in AsyncTimerSequence.repeating(every: .milliseconds(10), tolerance: .microseconds(10)) {
                     Task {
                         if let lrt = await rtpAudioPlayer.lastRender() {
-                            await decoder.syncAudio(time: lrt)
                             if let (pcmBuffer, audioTime) = await decoder.nextPacket(atTime: lrt) {
-                                Self.logger.info("Scheduling at time \(lrt.sampleTime), valid: \(lrt.isSampleTimeValid), lrt \(lrt)")
                                 await rtpAudioPlayer.scheduleAudioBytes(buffer: pcmBuffer, atTime: audioTime)
                             }
                         }
@@ -432,10 +434,28 @@ actor RTPSession {
             }
             
             taskGroup.addTask {
-                if let stream = LatencyListener(session: AVAudioSession.sharedInstance()).events {
-                    for await latency in stream {
-                        Self.logger.error("New latency event \(latency)")
-                        try await self.performVDLYHandshake()
+                for await _ in AsyncTimerSequence.repeating(every: .milliseconds(200)) {
+                    if let lrt = await rtpAudioPlayer.lastRender() {
+                        let latency = await rtpAudioPlayer.getOutputLatency()
+                        if await decoder.syncAudio(time: lrt, additionalAudioDelay: Double(self.HUGE_FIXED_VDLY_MS - self.softwareAudioDelayMs) / 1000 - latency) {
+                            break
+                        }
+                    }
+                }
+                
+                if let stream = LatencyListener().events {
+                    for await event in stream {
+                        let latency = await rtpAudioPlayer.getOutputLatency()
+                        Self.logger.error("New latency event \(event.rawValue) with latency \(latency)")
+                        for await _ in AsyncTimerSequence.repeating(every: .milliseconds(200)) {
+                            if let lrt = await rtpAudioPlayer.lastRender() {
+                                let latency = await rtpAudioPlayer.getOutputLatency()
+                                if await decoder.syncAudio(time: lrt, additionalAudioDelay: Double(self.HUGE_FIXED_VDLY_MS - self.softwareAudioDelayMs) / 1000 - latency) {
+                                    break
+                                }
+                            }
+                        }
+                        Self.logger.info("Synced audio!")
                     }
                 } else {
                     Self.logger.error("Unable to get latency events stream")

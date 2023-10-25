@@ -22,7 +22,7 @@ actor DeviceDiscoveryActor {
     }
     
     func addDevice(location: String) async {
-        Self.logger.debug("Adding device at \(location)")
+//        Self.logger.debug("Adding device at \(location)")
         
         guard let deviceInfo = await fetchDeviceInfo(location: location) else {
             Self.logger.error("Error getting device info for found device \(location)")
@@ -30,7 +30,7 @@ actor DeviceDiscoveryActor {
         }
         
         if await deviceActor.deviceExists(id: deviceInfo.udn) {
-            Self.logger.info("Trying to add device that already exists with UDN \(deviceInfo.udn)")
+//            Self.logger.info("Trying to add device that already exists with UDN \(deviceInfo.udn)")
             return
         }
         

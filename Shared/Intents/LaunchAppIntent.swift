@@ -8,8 +8,6 @@ public struct LaunchAppIntent: AppIntent, WidgetConfigurationIntent, CustomInten
 
     public static var title: LocalizedStringResource = "Launch App"
     static var description = IntentDescription("Launch app on the device")
-    
-    public init() {}
 
     @Parameter(title: "Device")
     public var device: DeviceAppEntity?
@@ -49,6 +47,13 @@ public struct LaunchAppIntent: AppIntent, WidgetConfigurationIntent, CustomInten
         }
         
         return .result()
+    }
+    
+    public init() {}
+    
+    public init(_ app: AppLinkAppEntity, device: DeviceAppEntity?) {
+        self.app = app
+        self.device = device
     }
 }
 

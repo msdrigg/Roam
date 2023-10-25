@@ -11,7 +11,7 @@ import SwiftUI
 struct TopBar: View {
     let pressCounter: (RemoteButton) -> Int
     let action: (RemoteButton) -> Void
-    let onKeyPress: (KeyPress) -> KeyPress.Result
+    let onKeyPress: (KeyEquivalent) -> KeyPress.Result
 
     
     var body: some View {
@@ -20,16 +20,17 @@ struct TopBar: View {
                 Label("Back", systemImage: "arrow.left")
                     .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
             }
+            .keyboardShortcut(.leftArrow)
             .sensoryFeedback(.impact, trigger: pressCounter(.back))
             .symbolEffect(.bounce, value: pressCounter(.back))
             
 #if os(macOS)
-            KeyboardMonitor(onKeyPress: onKeyPress)
+            KeyboardMonitor(onKeyPress: {key in onKeyPress(key.key)})
             // Do this so the focus outline on macOS matches
                 .offset(y: 7)
             
 #elseif os(iOS)
-            Button("Power On/Off", systemImage: "power", role: .destructive, action: {action(.home)})
+            Button("Power On/Off", systemImage: "power", role: .destructive, action: {action(.power)})
             .font(.title)
             .foregroundStyle(.red)
             .buttonStyle(.plain)

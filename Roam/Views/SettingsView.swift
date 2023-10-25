@@ -40,7 +40,6 @@ struct SettingsView: View {
                     scanDevicesButton
                 }
 #endif
-                
             }
             
             Section("Behavior") {
@@ -50,6 +49,8 @@ struct SettingsView: View {
                 
                 Toggle("Scan for devices automatically", isOn: $scanIpAutomatically)
             }
+            
+            NavigationLink("About", value: AboutDestination.Global)
         }
         .refreshable {
             isScanning = true
@@ -123,26 +124,6 @@ struct SettingsView: View {
     }
 }
 
-func DataImage(from data: Data?, fallback: String) -> Image {
-    if let data = data {
-#if os(macOS)
-        if let nsImage = NSImage(data: data) {
-            Image(nsImage: nsImage)
-        } else {
-            Image(systemName: fallback)
-        }
-#else
-        if let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-        } else {
-            Image(systemName: fallback)
-        }
-#endif
-    } else {
-        Image(systemName: fallback)
-    }
-}
-
 struct DeviceListItem: View {
     @Bindable var device: Device
     
@@ -184,6 +165,9 @@ struct SettingsNavigationWrapper<Content>: View where Content : View {
             
                 .navigationDestination(for: SettingsDestination.self) { _ in
                     SettingsView(path: $path)
+                }
+                .navigationDestination(for: AboutDestination.self) { _ in
+                    AboutView()
                 }
                 .navigationDestination(for: DeviceSettingsDestination.self) { destination in
                     DeviceDetailView(device: destination.device) {
