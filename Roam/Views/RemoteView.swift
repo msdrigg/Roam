@@ -475,29 +475,11 @@ struct RemoteView: View {
         if let device = selectedDevice {
             let location = device.location
             Task {
-                await self.controllerActor.sendKeyPressTodevice(location: location, key: key)
+                await self.controllerActor.sendKeyPressTodevice(location: location, key: key.character)
             }
             return .handled
         }
         return .ignored
-    }
-}
-
-extension Binding {
-    func withDefault<T>(_ defaultValue: Optional<T>) -> Binding<Optional<T>> where Value == Optional<T> {
-        return Binding<Optional<T>>(get: {
-            self.wrappedValue ?? defaultValue
-        }, set: { newValue in
-            self.wrappedValue = newValue
-        })
-    }
-    
-    func withDefault<T>(_ defaultValue: T) -> Binding<T> where Value == Optional<T> {
-        return Binding<T>(get: {
-            self.wrappedValue ?? defaultValue
-        }, set: { newValue in
-            self.wrappedValue = newValue
-        })
     }
 }
 

@@ -1,10 +1,3 @@
-//
-//  DevicePicker.swift
-//  Roam
-//
-//  Created by Scott Driggers on 10/20/23.
-//
-
 import Foundation
 import SwiftUI
 import os

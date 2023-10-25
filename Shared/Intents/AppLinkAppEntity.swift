@@ -54,3 +54,19 @@ public extension AppLink {
         return AppLinkAppEntity(name: self.name, id: self.id, type: self.type, icon: self.icon)
     }
 }
+
+public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async throws {
+    let modelContainer = try getSharedModelContainer()
+    let deviceController = DeviceControllerActor()
+    
+    var targetDevice = device
+    if targetDevice == nil {
+        targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
+    }
+    
+    if let targetDevice = targetDevice {
+        await deviceController.openApp(location: targetDevice.location, app: app.id)
+    }
+    
+    return
+}

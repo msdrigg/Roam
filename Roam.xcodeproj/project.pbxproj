@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */; };
-		AF15C2532AE8672800B79FD9 /* RoamWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF15C2462AE8672700B79FD9 /* RoamWatch.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF15C2532AE8672800B79FD9 /* Roam.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF15C2462AE8672700B79FD9 /* Roam.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF19CA142AE4471200A42DFF /* AsyncHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */; };
 		AF19CA152AE4471200A42DFF /* AsyncHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */; };
 		AF19CA1B2AE4510900A42DFF /* RTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA1A2AE4510900A42DFF /* RTP.swift */; };
@@ -49,7 +49,7 @@
 		AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */; };
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
 		AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */; };
-		AF2740162AE02C26007C6208 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF2740152AE02C26007C6208 /* Assets.xcassets */; };
+		AF2740162AE02C26007C6208 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF2740152AE02C26007C6208 /* AccentColor.xcassets */; };
 		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */; };
 		AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5542AE2910B00E2D780 /* CenterController.swift */; };
@@ -61,6 +61,12 @@
 		AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
 		AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
 		AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
+		AF5ED8D52AE984E9007DB2B8 /* WidgetColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */; };
+		AF5ED8DE2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */; };
+		AF5ED8DF2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */; };
+		AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */; };
+		AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */; };
+		AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */; };
 		AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
 		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
@@ -71,13 +77,40 @@
 		AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
 		AFA165C02AE92F92003F45ED /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA165BF2AE92F92003F45ED /* AboutView.swift */; };
 		AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */; };
-		AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
-		AFC4A6582AE867A3005DAC6C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* Assets.xcassets */; };
+		AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */; };
+		AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */; };
 		AFC4A65A2AE88411005DAC6C /* LatencyListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A6592AE88411005DAC6C /* LatencyListener.swift */; };
-		AFC4A65C2AE8AABA005DAC6C /* AppLinkWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65B2AE8AABA005DAC6C /* AppLinkWidget.swift */; };
+		AFC4A65C2AE8AABA005DAC6C /* AppWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65B2AE8AABA005DAC6C /* AppWidget.swift */; };
 		AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFC4A65F2AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
 		AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
+		AFD9C4D92AE97FA600C4079C /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36C2AD2D41100527AF6 /* Device.swift */; };
+		AFD9C4DA2AE97FDA00C4079C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
+		AFD9C4DB2AE97FE100C4079C /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA165BF2AE92F92003F45ED /* AboutView.swift */; };
+		AFD9C4DF2AE9801400C4079C /* SmallAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */; };
+		AFD9C4E32AE9808E00C4079C /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
+		AFD9C4E42AE9809900C4079C /* AppLinkAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68D2ADDE2BC0036EC90 /* AppLinkAppEntity.swift */; };
+		AFD9C4E52AE980A000C4079C /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
+		AFD9C4E62AE980A500C4079C /* ButtonPressIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */; };
+		AFD9C4E72AE980A800C4079C /* LaunchAppIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */; };
+		AFD9C4E82AE980AA00C4079C /* RemoteButtonAppEnum.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */; };
+		AFD9C4E92AE980B200C4079C /* RemoteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */; };
+		AFD9C4EA2AE980B500C4079C /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */; };
+		AFD9C4EB2AE980BD00C4079C /* AsyncHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */; };
+		AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */; };
+		AFD9C4ED2AE980C300C4079C /* DataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA222AE455B400A42DFF /* DataHelpers.swift */; };
+		AFD9C4EE2AE980C600C4079C /* DeviceControllerActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */; };
+		AFD9C4EF2AE9817800C4079C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
+		AFD9C4F22AE9828600C4079C /* SmallRemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */; };
+		AFD9C4F32AE982E400C4079C /* DiscoveryActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */; };
+		AFD9C4F52AE9830100C4079C /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFD9C4F42AE9830100C4079C /* XMLCoder */; };
+		AFD9C4F62AE9837F00C4079C /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF2740152AE02C26007C6208 /* AccentColor.xcassets */; };
+		AFD9C4F72AE9837F00C4079C /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF2740152AE02C26007C6208 /* AccentColor.xcassets */; };
+		AFD9C4F82AE983A800C4079C /* Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */; };
+		AFD9C4F92AE983AE00C4079C /* SSDPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA272AE54ABC00A42DFF /* SSDPService.swift */; };
+		AFD9C4FA2AE983B300C4079C /* SSDPDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA2A2AE54AD100A42DFF /* SSDPDiscovery.swift */; };
+		AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA3B2AE6BFC300A42DFF /* DeviceApi.swift */; };
+		AFD9C4FC2AE983C700C4079C /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
 		AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE192AE184FE003F6676 /* XMLCoder */; };
 		AFECDE1D2AE18511003F6676 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1C2AE18511003F6676 /* Opus */; };
 		AFECDE202AE18519003F6676 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1F2AE18519003F6676 /* RTP */; };
@@ -113,7 +146,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
-				AF15C2532AE8672800B79FD9 /* RoamWatch.app in Embed Watch Content */,
+				AF15C2532AE8672800B79FD9 /* Roam.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -155,7 +188,7 @@
 		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
 		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		AF15C2462AE8672700B79FD9 /* RoamWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoamWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF15C2462AE8672700B79FD9 /* Roam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWatchApp.swift; sourceTree = "<group>"; };
 		AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncHelpers.swift; sourceTree = "<group>"; };
 		AF19CA1A2AE4510900A42DFF /* RTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTP.swift; sourceTree = "<group>"; };
@@ -170,7 +203,7 @@
 		AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteButtonAppEnum.swift; sourceTree = "<group>"; };
 		AF27400B2AE02C25007C6208 /* RoamWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoamWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWidgetsBundle.swift; sourceTree = "<group>"; };
-		AF2740152AE02C26007C6208 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AF2740152AE02C26007C6208 /* AccentColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = AccentColor.xcassets; path = Backend/Discovery/SSDP/AccentColor.xcassets; sourceTree = "<group>"; };
 		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWidgets.entitlements; sourceTree = "<group>"; };
 		AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonGrid.swift; sourceTree = "<group>"; };
@@ -188,6 +221,12 @@
 		AF56E3B42AD9814100F5E6E0 /* disney.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disney.png; sourceTree = "<group>"; };
 		AF56E3B52AD9814100F5E6E0 /* netflix.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = netflix.png; sourceTree = "<group>"; };
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
+		AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WidgetColor.xcassets; sourceTree = "<group>"; };
+		AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppListView.swift; sourceTree = "<group>"; };
+		AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonGridView.swift; sourceTree = "<group>"; };
+		AF5ED8DB2AE987A3007DB2B8 /* RoamWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWatch.entitlements; sourceTree = "<group>"; };
+		AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingExtensions.swift; sourceTree = "<group>"; };
+		AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF5FDAD52ADB3C4B006CDEB3 /* Discovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery.swift; sourceTree = "<group>"; };
 		AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuSession.swift; sourceTree = "<group>"; };
 		AF95B6F62ADF2F9F005FC338 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.crashreport; };
@@ -204,10 +243,10 @@
 		AFA165C32AE93FE1003F45ED /* AppIcons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppIcons; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* Roam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamApp.swift; sourceTree = "<group>"; };
-		AFC24F042AD0E5A2002AB66C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AppIcon.xcassets; sourceTree = "<group>"; };
 		AFC24F092AD0E5A2002AB66C /* Roam.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Roam.entitlements; sourceTree = "<group>"; };
 		AFC4A6592AE88411005DAC6C /* LatencyListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyListener.swift; sourceTree = "<group>"; };
-		AFC4A65B2AE8AABA005DAC6C /* AppLinkWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinkWidget.swift; sourceTree = "<group>"; };
+		AFC4A65B2AE8AABA005DAC6C /* AppWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWidget.swift; sourceTree = "<group>"; };
 		AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataImage.swift; sourceTree = "<group>"; };
 		AFC6E67C2ADCC4D50036EC90 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
@@ -219,6 +258,8 @@
 		AFC6E6962ADDF6BB0036EC90 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		AFC6E6A12ADDF6BC0036EC90 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
 		AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
+		AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallAppView.swift; sourceTree = "<group>"; };
+		AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallRemoteView.swift; sourceTree = "<group>"; };
 		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
 		AFFC71E72AD1F5BA00EE8EA0 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
@@ -230,6 +271,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AFD9C4F52AE9830100C4079C /* XMLCoder in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,7 +302,11 @@
 		AF15C2472AE8672700B79FD9 /* RoamWatch */ = {
 			isa = PBXGroup;
 			children = (
+				AF5ED8DB2AE987A3007DB2B8 /* RoamWatch.entitlements */,
 				AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */,
+				AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */,
+				AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */,
+				AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */,
 			);
 			path = RoamWatch;
 			sourceTree = "<group>";
@@ -299,10 +345,9 @@
 			children = (
 				AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */,
 				AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */,
-				AFC4A65B2AE8AABA005DAC6C /* AppLinkWidget.swift */,
+				AFC4A65B2AE8AABA005DAC6C /* AppWidget.swift */,
 				AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */,
 				AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */,
-				AF2740152AE02C26007C6208 /* Assets.xcassets */,
 				AF2740172AE02C26007C6208 /* Info.plist */,
 				AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */,
 			);
@@ -345,6 +390,9 @@
 				AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */,
 				AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */,
 				AFA165BF2AE92F92003F45ED /* AboutView.swift */,
+				AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */,
+				AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */,
+				AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -414,7 +462,7 @@
 			children = (
 				AFC24EFB2AD0E5A1002AB66C /* Roam.app */,
 				AF27400B2AE02C25007C6208 /* RoamWidgets.appex */,
-				AF15C2462AE8672700B79FD9 /* RoamWatch.app */,
+				AF15C2462AE8672700B79FD9 /* Roam.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -423,7 +471,9 @@
 			isa = PBXGroup;
 			children = (
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
-				AFC24F042AD0E5A2002AB66C /* Assets.xcassets */,
+				AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */,
+				AF2740152AE02C26007C6208 /* AccentColor.xcassets */,
+				AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */,
 				AF4829722AD4C83D008E05FA /* Info.plist */,
 				AFC24F092AD0E5A2002AB66C /* Roam.entitlements */,
 				AFF6077E2ADFAC4F00A7D657 /* Backend */,
@@ -486,8 +536,11 @@
 			dependencies = (
 			);
 			name = RoamWatch;
+			packageProductDependencies = (
+				AFD9C4F42AE9830100C4079C /* XMLCoder */,
+			);
 			productName = "RoamWatch Watch App";
-			productReference = AF15C2462AE8672700B79FD9 /* RoamWatch.app */;
+			productReference = AF15C2462AE8672700B79FD9 /* Roam.app */;
 			productType = "com.apple.product-type.application";
 		};
 		AF27400A2AE02C25007C6208 /* RoamWidgets */ = {
@@ -591,7 +644,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AFC4A6582AE867A3005DAC6C /* Assets.xcassets in Resources */,
+				AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */,
+				AFD9C4F62AE9837F00C4079C /* AccentColor.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -599,7 +653,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AF2740162AE02C26007C6208 /* Assets.xcassets in Resources */,
+				AF2740162AE02C26007C6208 /* AccentColor.xcassets in Resources */,
+				AF5ED8D52AE984E9007DB2B8 /* WidgetColor.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -607,7 +662,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AFC24F052AD0E5A2002AB66C /* Assets.xcassets in Resources */,
+				AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */,
+				AFD9C4F72AE9837F00C4079C /* AccentColor.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -618,7 +674,33 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AFD9C4FA2AE983B300C4079C /* SSDPDiscovery.swift in Sources */,
+				AF5ED8DF2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */,
+				AFD9C4E72AE980A800C4079C /* LaunchAppIntent.swift in Sources */,
+				AFD9C4E92AE980B200C4079C /* RemoteButton.swift in Sources */,
+				AFD9C4DB2AE97FE100C4079C /* AboutView.swift in Sources */,
+				AFD9C4EF2AE9817800C4079C /* DataImage.swift in Sources */,
+				AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */,
+				AFD9C4F32AE982E400C4079C /* DiscoveryActor.swift in Sources */,
+				AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */,
+				AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */,
+				AFD9C4F82AE983A800C4079C /* Discovery.swift in Sources */,
+				AFD9C4DA2AE97FDA00C4079C /* SettingsView.swift in Sources */,
+				AFD9C4E42AE9809900C4079C /* AppLinkAppEntity.swift in Sources */,
+				AFD9C4F92AE983AE00C4079C /* SSDPService.swift in Sources */,
 				AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */,
+				AFD9C4D92AE97FA600C4079C /* Device.swift in Sources */,
+				AFD9C4EA2AE980B500C4079C /* AppLink.swift in Sources */,
+				AFD9C4ED2AE980C300C4079C /* DataHelpers.swift in Sources */,
+				AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */,
+				AFD9C4EB2AE980BD00C4079C /* AsyncHelpers.swift in Sources */,
+				AFD9C4FC2AE983C700C4079C /* AsyncSemaphore.swift in Sources */,
+				AFD9C4E32AE9808E00C4079C /* DeviceAppEntity.swift in Sources */,
+				AFD9C4E82AE980AA00C4079C /* RemoteButtonAppEnum.swift in Sources */,
+				AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */,
+				AFD9C4E62AE980A500C4079C /* ButtonPressIntents.swift in Sources */,
+				AFD9C4E52AE980A000C4079C /* WidgetIntents.swift in Sources */,
+				AFD9C4EE2AE980C600C4079C /* DeviceControllerActor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -626,8 +708,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AFD9C4F22AE9828600C4079C /* SmallRemoteView.swift in Sources */,
 				AF205B272AE02D0100041CDF /* NetworkHelpers.swift in Sources */,
 				AF205B2B2AE02D1C00041CDF /* ButtonPressIntents.swift in Sources */,
+				AFD9C4DF2AE9801400C4079C /* SmallAppView.swift in Sources */,
 				AF205B1F2AE02CAF00041CDF /* MediumRemoteWidget.swift in Sources */,
 				AF19CA292AE54ABC00A42DFF /* SSDPService.swift in Sources */,
 				AF19CA3D2AE6BFDF00A42DFF /* DeviceApi.swift in Sources */,
@@ -636,7 +720,7 @@
 				AF205B212AE02CAF00041CDF /* SmallRemoteWidget.swift in Sources */,
 				AF205B2C2AE02D1C00041CDF /* WidgetIntents.swift in Sources */,
 				AF19CA242AE455B400A42DFF /* DataHelpers.swift in Sources */,
-				AFC4A65C2AE8AABA005DAC6C /* AppLinkWidget.swift in Sources */,
+				AFC4A65C2AE8AABA005DAC6C /* AppWidget.swift in Sources */,
 				AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */,
 				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
 				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
@@ -675,6 +759,7 @@
 				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
 				AF19CA312AE6947600A42DFF /* ManagedCriticalState.swift in Sources */,
 				AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */,
+				AF5ED8DE2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */,
 				AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */,
 				AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */,
 				AFF607812ADFACBA00A7D657 /* DiscoveryActor.swift in Sources */,
@@ -725,6 +810,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RoamWatch/RoamWatch.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -732,16 +818,16 @@
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = RoamWatch;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.msdrigg.roam;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = Roam;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -756,6 +842,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RoamWatch/RoamWatch.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -763,16 +850,16 @@
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = RoamWatch;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.msdrigg.roam;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.watchkitapp;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = Roam;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1144,6 +1231,11 @@
 			productName = AsyncAlgorithms;
 		};
 		AF19CA392AE6BF9D00A42DFF /* XMLCoder */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AFECDE182AE184FE003F6676 /* XCRemoteSwiftPackageReference "XMLCoder" */;
+			productName = XMLCoder;
+		};
+		AFD9C4F42AE9830100C4079C /* XMLCoder */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AFECDE182AE184FE003F6676 /* XCRemoteSwiftPackageReference "XMLCoder" */;
 			productName = XMLCoder;

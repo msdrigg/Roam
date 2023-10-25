@@ -122,7 +122,7 @@ public actor DeviceControllerActor {
         await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!)
     }
     
-    public func sendKeyPressTodevice(location: String, key: KeyEquivalent) async {
+    public func sendKeyPressTodevice(location: String, key: Character) async {
         await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
     }
     
@@ -168,12 +168,13 @@ public actor DeviceControllerActor {
     }
 }
 
-private func getKeypressForKey(key: KeyEquivalent) -> String {
+private func getKeypressForKey(key: Character) -> String {
     // All of these keys are gauranteed to have api values
+    #if !os(watchOS)
     let keyMap: [Character: String] = [
+        "\u{7F}": RemoteButton.backspace.apiValue!,
         KeyEquivalent.delete.character: RemoteButton.backspace.apiValue!,
         KeyEquivalent.deleteForward.character: RemoteButton.backspace.apiValue!,
-        "\u{7F}": RemoteButton.backspace.apiValue!,
         KeyEquivalent.escape.character: RemoteButton.backspace.apiValue!,
         KeyEquivalent.space.character: "LIT_ ",
         KeyEquivalent.downArrow.character: RemoteButton.down.apiValue!,
@@ -183,10 +184,15 @@ private func getKeypressForKey(key: KeyEquivalent) -> String {
         KeyEquivalent.home.character: RemoteButton.home.apiValue!,
         KeyEquivalent.return.character: RemoteButton.select.apiValue!,
     ]
+    #else
+    let keyMap: [Character: String] = [
+        "\u{7F}": RemoteButton.backspace.apiValue!,
+    ]
+    #endif
     
-    if let mappedString = keyMap[key.character] {
+    if let mappedString = keyMap[key] {
         return mappedString
     }
     
-    return "LIT_\(key.character)"
+    return "LIT_\(key)"
 }

@@ -70,8 +70,19 @@ struct SettingsView: View {
                 addDeviceButton
             }
         }
+        #elseif os(watchOS)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                addDeviceButton
+            }
+            ToolbarItem {
+                scanDevicesButton
+            }
+        }
         #endif
+        #if !os(watchOS)
         .navigationTitle("Settings")
+        #endif
         .formStyle(.grouped)
         .onAppear {
             let modelContainer = modelContext.container
@@ -109,7 +120,7 @@ struct SettingsView: View {
     
     @ViewBuilder
     var scanDevicesButton: some View {
-        Button(isScanning ? "Scanning for devices..." : "Scan for devices", systemImage: "rays") {
+        Button(isScanning ? "Scanning for devices..." : "Scan for devices", systemImage: isScanning ? "rays" : "arrow.clockwise") {
             Task {
                 isScanning = true
                 defer {

@@ -34,17 +34,7 @@ public struct LaunchAppIntent: AppIntent, WidgetConfigurationIntent, CustomInten
     }
     
     public func perform() async throws -> some IntentResult {
-        let modelContainer = try getSharedModelContainer()
-        let deviceController = DeviceControllerActor()
-        
-        var targetDevice = device
-        if targetDevice == nil {
-             targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
-        }
-        
-        if let targetDevice = targetDevice {
-            await deviceController.openApp(location: targetDevice.location, app: app.id)
-        }
+        try await  launchApp(app: app, device: device)
         
         return .result()
     }

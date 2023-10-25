@@ -56,8 +56,6 @@ public extension Device {
     }
 }
 
-
-
 public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async throws {
     let modelContainer = try getSharedModelContainer()
     let deviceController = DeviceControllerActor()
