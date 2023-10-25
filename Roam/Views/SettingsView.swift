@@ -17,8 +17,8 @@ struct SettingsView: View {
     
     @State private var tabSelection = 0
     
-    @AppStorage("scanIPAutomatically") private var scanIpAutomatically: Bool = true
-    @AppStorage("controlVolumeWithHWButtons") private var controlVolumeWithHWButtons: Bool = true
+    @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
+    @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
     
     var body: some View {
         Form {

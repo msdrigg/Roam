@@ -6,6 +6,7 @@ struct ButtonGrid: View  {
     let pressCounter: (RemoteButton) -> Int
     let action: (RemoteButton) -> Void
     let enabled: Set<RemoteButton>
+    let disabled: Set<RemoteButton>
     
     var body: some View {
         let buttonRows: [[(String, String, RemoteButton, KeyEquivalent?)]] = [
@@ -28,6 +29,7 @@ struct ButtonGrid: View  {
                                 .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
 
                         }
+                            .disabled(disabled.contains(button.2))
                             .symbolEffect(.pulse, isActive: enabled.contains(button.2))
                             .sensoryFeedback(.impact, trigger: pressCounter(button.2))
                             .symbolEffect(.bounce, value: pressCounter(button.2))

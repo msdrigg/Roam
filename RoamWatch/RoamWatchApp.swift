@@ -51,7 +51,7 @@ struct WatchAppView: View {
     @Environment(\.modelContext) private var modelContext
 
     
-    @AppStorage("scanIPAutomatically") private var scanIpAutomatically: Bool = true
+    @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     
     private var runningInPreview: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"

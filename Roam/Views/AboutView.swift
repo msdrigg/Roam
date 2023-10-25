@@ -13,14 +13,16 @@ struct Dependency: Identifiable {
 }
 
 let LICENSES: [Dependency] = [
-    Dependency(name: "Opus", link: "https://github.com/xiph/opus/tree/master", licenseType: "BSD 3-Clause"),
-    Dependency(name: "Swift-Opus", link: "https://github.com/alta/swift-opus", licenseType: "BSD 3-Clause"),
+    Dependency(name: "Opus", link: "https://github.com/xiph/opus/tree/master", licenseType: "BSD-3-Clause"),
+    Dependency(name: "Swift-Opus", link: "https://github.com/alta/swift-opus", licenseType: "BSD-3-Clause"),
     Dependency(name: "Swift-RTP", link: "https://github.com/alta/swift-rtp", licenseType: "MIT"),
     Dependency(name: "Swift-Async-Algorithms", link: "https://github.com/apple/swift-async-algorithms", licenseType: "Apache-2.0"),
     Dependency(name: "SSDPClient", link: "https://github.com/pierrickrouxel/SSDPClient", licenseType: "MIT"),
     Dependency(name: "XMLCoder", link: "https://github.com/CoreOffice/XMLCoder", licenseType: "MIT"),
     Dependency(name: "CachedAsyncImage", link: "https://github.com/lorenzofiamingo/swiftui-cached-async-image", licenseType: "MIT"),
-    Dependency(name: "AsyncSemaphore", link: "https://github.com/groue/Semaphore", licenseType: "MIT")
+    Dependency(name: "AsyncSemaphore", link: "https://github.com/groue/Semaphore", licenseType: "MIT"),
+    Dependency(name: "Swift Collections", link: "https://github.com/apple/swift-collections", licenseType: "Apache-2.0")
+    
 ]
 
 struct AboutView: View {

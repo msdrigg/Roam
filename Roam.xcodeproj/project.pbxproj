@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AF0042752AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */; };
+		AF0042762AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */; };
+		AF0042772AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */; };
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */; };
 		AF15C2532AE8672800B79FD9 /* Roam.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF15C2462AE8672700B79FD9 /* Roam.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -185,6 +188,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultKeys.swift; sourceTree = "<group>"; };
 		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
 		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -405,6 +409,7 @@
 				AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */,
 				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
 				AF19CA222AE455B400A42DFF /* DataHelpers.swift */,
+				AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -686,6 +691,7 @@
 				AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */,
 				AFD9C4F82AE983A800C4079C /* Discovery.swift in Sources */,
 				AFD9C4DA2AE97FDA00C4079C /* SettingsView.swift in Sources */,
+				AF0042762AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
 				AFD9C4E42AE9809900C4079C /* AppLinkAppEntity.swift in Sources */,
 				AFD9C4F92AE983AE00C4079C /* SSDPService.swift in Sources */,
 				AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */,
@@ -724,6 +730,7 @@
 				AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */,
 				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
 				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
+				AF0042772AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
 				AF205B252AE02D0100041CDF /* DeviceControllerActor.swift in Sources */,
 				AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */,
 				AF205B242AE02D0100041CDF /* RemoteButton.swift in Sources */,
@@ -752,6 +759,7 @@
 				AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */,
 				AF19CA232AE455B400A42DFF /* DataHelpers.swift in Sources */,
 				AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */,
+				AF0042752AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
 				AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */,
 				AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */,
 				AFC4A65A2AE88411005DAC6C /* LatencyListener.swift in Sources */,

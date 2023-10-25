@@ -4,6 +4,7 @@ import SwiftData
 import os
 import AVFoundation
 import AppIntents
+import StoreKit
 
 #if os(macOS)
 let BUTTON_WIDTH: CGFloat = 44
@@ -12,6 +13,8 @@ let BUTTON_HEIGHT: CGFloat = 36
 let BUTTON_WIDTH: CGFloat = 28
 let BUTTON_HEIGHT: CGFloat = 20
 #endif
+
+let MAJOR_ACTIONS: [RemoteButton] = [.power, .playPause, .mute, .privateListening]
 
 struct RemoteView: View {
     private static let logger = Logger(
@@ -36,13 +39,17 @@ struct RemoteView: View {
     @State private var privateListeningEnabled: Bool = false
     @State private var errorTrigger: Int = 0
     
-    @AppStorage("scanIPAutomatically") private var scanIpAutomatically: Bool = true
-    @AppStorage("controlVolumeWithHWButtons") private var controlVolumeWithHWButtons: Bool = true
+    @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
+    @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
     
     enum FocusField: Hashable {
         case field
     }
     @FocusState private var focused: Bool
+    
+    #if os(iOS)
+    @State var windowScene: UIWindowScene? = nil
+    #endif
     
     private var selectedDevice: Device? {
         return manuallySelectedDevice ?? devices.min { d1, d2 in
@@ -379,7 +386,7 @@ struct RemoteView: View {
                         Spacer().frame(maxHeight: 60)
                         
                         // Grid of 9 buttons
-                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]))
+                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: selectedDevice?.supportsDatagram == true ? Set([]) : Set([.privateListening]) )
                             .transition(.scale.combined(with: .opacity))
                             .matchedGeometryEffect(id: "buttonGrid", in: animation)
                     }
@@ -398,6 +405,56 @@ struct RemoteView: View {
         }
     }
     
+    func shouldRequestReview() -> Bool {
+        let userActionCount = UserDefaults.standard.integer(forKey: UserDefaultKeys.userMajorActionCount)
+        let lastVersionAsked = UserDefaults.standard.string(forKey: UserDefaultKeys.appVersionAtLastReviewRequest)
+        let lastDateAsked = UserDefaults.standard.object(forKey: UserDefaultKeys.dateOfLastReviewRequest) as? Date
+        
+        guard let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else {
+            return false
+        }
+        
+        if userActionCount < 10 {
+            return false
+        }
+        
+        if currentVersion == lastVersionAsked {
+            return false
+        }
+        
+        if let lastDate = lastDateAsked, Calendar.current.date(byAdding: .month, value: 1, to: lastDate)! > Date() {
+            return false
+        }
+        
+        return true
+    }
+
+    func handleMajorUserAction() {
+        // Increment user action count
+        var count = UserDefaults.standard.integer(forKey: UserDefaultKeys.userMajorActionCount)
+        count += 1
+        UserDefaults.standard.set(count, forKey: UserDefaultKeys.userMajorActionCount)
+        
+        if shouldRequestReview() {
+            #if os(iOS)
+            guard let windowScene =  UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+                return
+            }
+            #endif
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                #if os(iOS)
+                SKStoreReviewController.requestReview(in: windowScene)
+                #else
+                SKStoreReviewController.requestReview()
+                #endif
+            }
+
+            UserDefaults.standard.set(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString"), forKey: UserDefaultKeys.appVersionAtLastReviewRequest)
+            UserDefaults.standard.set(Date(), forKey: UserDefaultKeys.dateOfLastReviewRequest)
+        }
+    }
+
     func verticalBody(isSmallHeight: Bool) -> some View {
         VStack(alignment: .center, spacing: 10) {
             // Row with Back and Home buttons
@@ -418,7 +475,7 @@ struct RemoteView: View {
                 
                 Spacer()
                 // Grid of 9 buttons
-                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]))
+                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: selectedDevice?.supportsDatagram == true ? Set([]) : Set([.privateListening]) )
                     .transition(.scale.combined(with: .opacity))
                     .matchedGeometryEffect(id: "buttonGrid", in: animation)
                 
@@ -458,6 +515,9 @@ struct RemoteView: View {
     
     func pressButton(_ button: RemoteButton) {
         incrementButtonPressCount(button)
+        if MAJOR_ACTIONS.contains(button) {
+            handleMajorUserAction()
+        }
         donateButtonIntent(button)
         if button == .privateListening {
             privateListeningEnabled.toggle()
