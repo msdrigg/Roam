@@ -23,6 +23,8 @@ struct DevicePicker: View {
     @State var showingPicker: Bool = false
     @State var navPath = NavigationPath()
     
+    @State var deviceActor: DeviceActor!
+    
     
     var deviceStatusColor: Color {
         device?.isOnline() ?? false ? Color.green : Color.secondary
@@ -58,6 +60,33 @@ struct DevicePicker: View {
                                     Label(listItemDevice.name, systemImage: "").tag(listItemDevice as Device?)
                                 }
                             }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    Task {
+                                        do {
+                                            try await deviceActor.delete(listItemDevice.persistentModelID)
+                                        } catch {
+                                             Self.logger.error("Error deleting device \(error)")
+                                        }
+                                    }
+                                    
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                        .onDelete { indexSet in
+                            Task {
+                                do {
+                                    for index in indexSet {
+                                        if let model = devices[safe: index] {
+                                            try await deviceActor.delete(model.persistentModelID)
+                                        }
+                                    }
+                                } catch {
+                                     Self.logger.error("Error deleting device \(error)")
+                                }
+                            }
                         }
                         
                         if devices.isEmpty {
@@ -72,6 +101,10 @@ struct DevicePicker: View {
                     .labelStyle(.titleAndIcon)
                 }
             }
+        }
+        .onAppear {
+            let modelContainer = modelContext.container
+            self.deviceActor = DeviceActor(modelContainer: modelContainer)
         }
     }
 }

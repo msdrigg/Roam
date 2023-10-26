@@ -50,11 +50,11 @@ func tryFetchDeviceIcon(location: String) async throws -> Data {
     
     // Fetch device icon data
     if let iconURL = root.device.iconList.icon.first?.url {
-        guard let fullIconURL = URL(string: "\(location)/\(iconURL)") else {
-            throw FetchDeviceIconError.badIconURL("\(location)/\(iconURL)")
+        guard let fullIconURL = URL(string: "\(location)\(iconURL)") else {
+            throw FetchDeviceIconError.badIconURL("\(location)\(iconURL)")
         }
-        let (iconData, _) = try await URLSession.shared.data(from: fullIconURL)
-        return iconData
+        return try await fetchURLIcon(url: fullIconURL)
+
     } else {
         throw FetchDeviceIconError.noIconsListed
     }
@@ -92,7 +92,7 @@ struct DeviceCapabilities {
 }
 
 func fetchDeviceCapabilities(location: String) async throws -> DeviceCapabilities {
-    let url = URL(string: "\(location)/query/audio-device")!
+    let url = URL(string: "\(location)query/audio-device")!
     let (data, _) = try await URLSession.shared.data(from: url)
     
     let decoder = XMLDecoder()
@@ -143,8 +143,14 @@ func fetchDeviceInfo(location: String) async -> DeviceInfo? {
     return nil
 }
 
+public enum APIError: Error, LocalizedError {
+    case badURLError(_ url: String)
+}
+
 func fetchDeviceApps(location: String) async throws -> [AppLinkAppEntity] {
-    let url = URL(string: "\(location)/query/apps")!
+    guard let url = URL(string: "\(location)query/apps") else {
+        throw APIError.badURLError("\(location)query/apps")
+    }
     let (data, _) = try await URLSession.shared.data(from: url)
     
     let decoder = XMLDecoder()
@@ -154,7 +160,133 @@ func fetchDeviceApps(location: String) async throws -> [AppLinkAppEntity] {
 }
 
 func fetchAppIcon(location: String, appId: String) async throws -> Data {
-    let url = URL(string: "\(location)/query/icon/\(appId)")!
+    guard let url = URL(string: "\(location)query/icon/\(appId)") else {
+        throw APIError.badURLError("\(location)query/icon/\(appId)")
+    }
+    return try await fetchURLIcon(url: url)
+}
+
+
+#if os(watchOS)
+import libwebp
+import UIKit
+import CoreGraphics
+
+public enum WebPError: Error {
+    case unexpectedPointerError // Something related pointer operation's error
+    case unexpectedError(withMessage: String) // Something happened
+    case unknownDecodingError
+    case decodingError
+    case decoderConfigError
+}
+
+private func inspect(_ webPData: Data) throws -> WebPBitstreamFeatures {
+    let cFeature = UnsafeMutablePointer<WebPBitstreamFeatures>.allocate(capacity: 1)
+    defer { cFeature.deallocate() }
+
+    let status = try webPData.withUnsafeBytes { rawPtr -> VP8StatusCode in
+        guard let bindedBasePtr = rawPtr.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
+            throw WebPError.unexpectedPointerError
+        }
+        
+        return WebPGetFeatures(bindedBasePtr, webPData.count, &cFeature.pointee)
+    }
+
+    guard status == VP8_STATUS_OK else {
+        throw WebPError.unexpectedError(withMessage: "Error VP8StatusCode=\(status.rawValue)")
+    }
+
+    return cFeature.pointee
+}
+
+private func decode(_ webPData: Data, config: inout WebPDecoderConfig) throws {
+    var mutableWebPData = webPData
+
+    try mutableWebPData.withUnsafeMutableBytes { rawPtr in
+
+        guard let bindedBasePtr = rawPtr.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
+            throw WebPError.unknownDecodingError
+        }
+
+        let status = WebPDecode(bindedBasePtr, webPData.count, &config)
+        if status != VP8_STATUS_OK {
+            throw WebPError.decodingError
+        }
+    }
+}
+
+private  func decode(_ webPData: Data) throws -> CGImage {
+    let feature = try inspect(webPData)
+    let height: Int = Int(feature.height)
+    let width: Int = Int(feature.width)
+    var config = WebPDecoderConfig()
+    if WebPInitDecoderConfig(&config) == 0 {
+        throw WebPError.decoderConfigError
+    }
+    config.options = WebPDecoderOptions()
+    config.output.colorspace = MODE_RGBA
+
+    try decode(webPData, config: &config)
+
+    let decodedData: CFData = Data(bytesNoCopy: config.output.u.RGBA.rgba,
+                count: config.output.u.RGBA.size,
+                deallocator: .free) as CFData
+
+    guard let provider = CGDataProvider(data: decodedData) else {
+        throw WebPError.unexpectedError(withMessage: "Couldn't initialize CGDataProvider")
+    }
+
+    let bitmapInfo = CGBitmapInfo(rawValue: CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue)
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let renderingIntent = CGColorRenderingIntent.defaultIntent
+    let bytesPerPixel = 4
+
+    if let cgImage = CGImage(width: width,
+                             height: height,
+                             bitsPerComponent: 8,
+                             bitsPerPixel: 8 * bytesPerPixel,
+                             bytesPerRow: bytesPerPixel * width,
+                             space: colorSpace,
+                             bitmapInfo: bitmapInfo,
+                             provider: provider,
+                             decode: nil,
+                             shouldInterpolate: false,
+                             intent: renderingIntent) {
+        return cgImage
+    }
+
+    throw WebPError.unexpectedError(withMessage: "Couldn't initialize CGImage")
+}
+
+func fetchURLIcon(url: URL) async throws -> Data {
+    let (data, response) = try await URLSession.shared.data(from: url)
+    let isWebP = (response as? HTTPURLResponse)?.allHeaderFields["Content-Type"] as? String == "image/webp"
+    
+    if isWebP {
+        return try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global().async {
+                do {
+                    let cgImage = try decode(data)
+                    let webpImage = UIImage(cgImage: cgImage)
+                    if let pngData = webpImage.pngData() {
+                        continuation.resume(returning: pngData)
+                    } else {
+                        continuation.resume(throwing: NSError(domain: "AppIconError", code: 1, userInfo: nil))
+                    }
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
+    return data
+
+}
+#else
+func fetchURLIcon(url: URL) async throws -> Data {
     let (data, _) = try await URLSession.shared.data(from: url)
     return data
 }
+#endif
+

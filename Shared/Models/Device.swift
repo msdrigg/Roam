@@ -24,10 +24,10 @@ public final class Device: Identifiable, Hashable {
     @Attribute(.externalStorage) public var deviceIcon: Data?
     // Associate 0..n Apps with Device
     @Relationship(deleteRule: .nullify)
-    public var apps: [AppLink]? = []
+    public var apps: [AppLink] = [AppLink]()
     
-    public var appsSorted: [AppLink]? {
-       apps?.sorted(by: {
+    public var appsSorted: [AppLink] {
+       apps.sorted(by: {
            if $0.lastSelected ?? .distantPast == $1.lastSelected ?? .distantPast {
                return $0.name < $1.name
            }
@@ -125,16 +125,17 @@ actor DeviceActor {
     private let MIN_RESCAN_INTERVAL: TimeInterval = 3600
 
     
-    public func entities(for identifiers: [DeviceAppEntity.ID]) async throws -> [DeviceAppEntity] {
+    public func entities(for identifiers: [DeviceAppEntity.ID]) throws -> [DeviceAppEntity] {
         let links = try modelContext.fetch(
             FetchDescriptor<Device>(predicate: #Predicate {
                 identifiers.contains($0.id)
             })
         )
+        
         return links.map {$0.toAppEntity()}
     }
     
-    public func entities(matching string: String) async throws -> [DeviceAppEntity] {
+    public func entities(matching string: String) throws -> [DeviceAppEntity] {
         let links = try modelContext.fetch(
             FetchDescriptor<Device>(predicate: #Predicate {
                 $0.name.contains(string)
@@ -143,7 +144,7 @@ actor DeviceActor {
         return links.map {$0.toAppEntity()}
     }
     
-    public func suggestedEntities() async throws -> [DeviceAppEntity] {
+    public func suggestedEntities() throws -> [DeviceAppEntity] {
         var descriptor = FetchDescriptor<Device>()
         descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
         let links = try modelContext.fetch(
@@ -182,23 +183,22 @@ actor DeviceActor {
     
     func deviceExists(id: String) -> Bool {
         var matchingIds = FetchDescriptor<Device>(
-            predicate: #Predicate { $0.id == id }
+            predicate: #Predicate<Device> { $0.id == id }
         )
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
         
-        let existingDevices: [Device]? = try? modelContext.fetch(matchingIds)
-        
-        return existingDevices?.first != nil
+        return (try? modelContext.fetchCount(matchingIds)) ?? 0 >= 1
     }
 
     
     func findDeviceById(id: String) -> DeviceAppEntity? {
         var matchingIds = FetchDescriptor<Device>(
-            predicate: #Predicate { $0.id == id }
+            predicate: #Predicate<Device> { $0.id == id }
         )
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
+        matchingIds.relationshipKeyPathsForPrefetching = [\.apps]
         
         let existingDevices: [Device]? = try? modelContext.fetch(matchingIds)
         
@@ -208,6 +208,7 @@ actor DeviceActor {
     func fetchSelectedDeviceAppEntity() -> DeviceAppEntity? {
         var descriptor = FetchDescriptor<Device>()
         descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
+        descriptor.relationshipKeyPathsForPrefetching = [\.apps]
         descriptor.fetchLimit = 1
         
         let selectedDevice: Device? = try? modelContext.fetch(descriptor).first
@@ -221,6 +222,7 @@ actor DeviceActor {
         )
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
+        matchingIds.relationshipKeyPathsForPrefetching = [\.apps]
         
         let existingDevice: Device? = try? modelContext.fetch(matchingIds).first
         
@@ -235,7 +237,7 @@ actor DeviceActor {
             
             device.lastOnlineAt = Date.now
             
-            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_INTERVAL && (device.apps?.allSatisfy { $0.icon != nil} ?? true) {
+            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_INTERVAL && (device.apps.allSatisfy { $0.icon != nil}) {
                 try? modelContext.save()
                 return
             }
@@ -264,12 +266,12 @@ actor DeviceActor {
                 let apps = try await fetchDeviceApps(location: device.location)
                 
                 // Remove apps from device that aren't in fetchedApps
-                device.apps = device.apps?.filter { app in
+                device.apps = device.apps.filter { app in
                     apps.contains { $0.id == app.id }
                 }
                 
                 // Add new apps to device
-                var deviceApps = device.apps ?? []
+                var deviceApps = device.apps
                 for app in apps {
                     if !deviceApps.contains(where: { $0.id == app.id }) {
                         deviceApps.append(AppLink(id: app.id, type: app.type, name: app.name))
@@ -279,11 +281,15 @@ actor DeviceActor {
                 for (index, app) in deviceApps.enumerated() {
                     if app.icon == nil {
                         do {
+                            Self.logger.error("getting device app icon ")
                             let iconData = try await fetchAppIcon(location: device.location, appId: app.id)
                             deviceApps[index].icon = iconData
                         } catch {
                             Self.logger.error("Error getting device app icon \(error)")
                         }
+                    } else {
+                        
+                        Self.logger.error("Not getting icon for app \(app.id) because icon exists \(String(describing: app.icon))")
                     }
                 }
                 
@@ -295,12 +301,13 @@ actor DeviceActor {
                 Self.logger.info("Getting icon for device \(device.id)")
                 do {
                     let iconData = try await tryFetchDeviceIcon(location: device.location)
-                    Self.logger.debug("Got icon!")
                     device.deviceIcon = iconData
                 } catch {
                     Self.logger.warning("Error getting device icon \(error)")
                 }
             }
+        } else {
+            Self.logger.error("Trying to refresh device that doeesn't exist \(id)")
         }
     }
 }

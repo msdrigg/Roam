@@ -71,7 +71,7 @@ struct WatchAppView: View {
                 
                 ButtonGridView(device: selectedDevice?.toAppEntity(), controls: CONTROLS)
                 
-                AppListView(device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted?.map{$0.toAppEntity()} ?? [])
+                AppListView(device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [])
             }
                 .navigationTitle(selectedDevice?.name ?? "No device")
             .toolbar {

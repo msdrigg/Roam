@@ -52,7 +52,7 @@ public struct DeviceAppEntity: AppEntity {
 
 public extension Device {
     func toAppEntity() -> DeviceAppEntity {
-        return DeviceAppEntity(name: self.name, location: self.location, id: self.id, mac: self.usingMac(), apps: self.appsSorted?.map{$0.toAppEntity()})
+        return DeviceAppEntity(name: self.name, location: self.location, id: self.id, mac: self.usingMac(), apps: self.appsSorted.map{$0.toAppEntity()})
     }
 }
 

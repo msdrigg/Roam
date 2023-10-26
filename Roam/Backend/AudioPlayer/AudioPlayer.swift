@@ -25,6 +25,8 @@ actor OpusDecoderWithJitterBuffer {
     var syncPacket: RtpPacket? = nil
     var lastSampleTime: AVAudioTime? = nil
     let audioBuffer: TimeInterval
+    var rollingSequenceNumber: Int64? = nil
+
     
     init(audioBuffer: TimeInterval) throws {
         guard let opusFormat = AVAudioFormat(opusPCMFormat: .float32, sampleRate: Double(CLOCK_RATE), channels: 2) else {
@@ -52,6 +54,7 @@ actor OpusDecoderWithJitterBuffer {
         let currentEstimatedPacketNumber = Int64((machTimeToSeconds(time.hostTime) - machTimeToSeconds(syncPacket.receivedAt)) * Double(packetsPerSec)) + Int64(syncPacket.sequenceNumber)
         lastPacketNumber = (currentEstimatedPacketNumber - packetsSubtracted + Int64(UInt16.max)) % Int64(UInt16.max)
         lastSampleTime = AVAudioTime(hostTime: time.hostTime + secondsToMachTime(additionalAudioDelay), sampleTime: time.sampleTime + Int64(time.sampleRate * additionalAudioDelay), atRate: time.sampleRate)
+        rollingSequenceNumber = lastPacketNumber + packetsSubtracted
         
         return true
     }
@@ -60,6 +63,9 @@ actor OpusDecoderWithJitterBuffer {
         if syncPacket == nil {
             syncPacket = packet
         }
+        var packet = packet
+        rollingSequenceNumber = packet.updateWithRollingSequenceNumber(rollingSequenceNumber)
+
         
         // Check payload type
         if packet.payloadType != PayloadType(97) || packet.ssrc != 0 {
@@ -70,7 +76,7 @@ actor OpusDecoderWithJitterBuffer {
 //            Self.logger.trace("Adding packet with seqNo \(packet.packet.sequenceNumber) when current seqNo is \(self.lastPacketNumber)")
             self.jitterBuffer.insert(packet)
         } else {
-            Self.logger.error("Error bad packet with seqNo \(packet.unwrappedSequenceNumber) when current seqNo is \(self.lastPacketNumber)")
+            Self.logger.error("Error bad packet with seqNo \(packet.unwrappedSequenceNumber) when current seqNo is \(self.lastPacketNumber) rollingSeqNo \(self.rollingSequenceNumber ?? 0)")
         }
     }
     

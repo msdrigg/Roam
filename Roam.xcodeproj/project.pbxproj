@@ -10,6 +10,11 @@
 		AF0042752AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */; };
 		AF0042762AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */; };
 		AF0042772AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */; };
+		AF00427D2AEA95D90051BB1E /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
+		AF0042832AEAA3ED0051BB1E /* libwebp in Frameworks */ = {isa = PBXBuildFile; productRef = AF0042822AEAA3ED0051BB1E /* libwebp */; };
+		AF0042852AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
+		AF0042862AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
+		AF0042872AEABA9F0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */; };
 		AF15C2532AE8672800B79FD9 /* Roam.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF15C2462AE8672700B79FD9 /* Roam.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -103,7 +108,6 @@
 		AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */; };
 		AFD9C4ED2AE980C300C4079C /* DataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA222AE455B400A42DFF /* DataHelpers.swift */; };
 		AFD9C4EE2AE980C600C4079C /* DeviceControllerActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */; };
-		AFD9C4EF2AE9817800C4079C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
 		AFD9C4F22AE9828600C4079C /* SmallRemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */; };
 		AFD9C4F32AE982E400C4079C /* DiscoveryActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */; };
 		AFD9C4F52AE9830100C4079C /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFD9C4F42AE9830100C4079C /* XMLCoder */; };
@@ -189,6 +193,7 @@
 
 /* Begin PBXFileReference section */
 		AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultKeys.swift; sourceTree = "<group>"; };
+		AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionHelpers.swift; sourceTree = "<group>"; };
 		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
 		AF11D36C2AD2D41100527AF6 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		AF11D36E2AD35D2800527AF6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -220,10 +225,6 @@
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControllerActor.swift; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
-		AF56E3B22AD9814100F5E6E0 /* spotify.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = spotify.png; sourceTree = "<group>"; };
-		AF56E3B32AD9814100F5E6E0 /* hulu.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = hulu.png; sourceTree = "<group>"; };
-		AF56E3B42AD9814100F5E6E0 /* disney.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disney.png; sourceTree = "<group>"; };
-		AF56E3B52AD9814100F5E6E0 /* netflix.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = netflix.png; sourceTree = "<group>"; };
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WidgetColor.xcassets; sourceTree = "<group>"; };
 		AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppListView.swift; sourceTree = "<group>"; };
@@ -275,6 +276,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF0042832AEAA3ED0051BB1E /* libwebp in Frameworks */,
 				AFD9C4F52AE9830100C4079C /* XMLCoder in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -410,6 +412,7 @@
 				AF4D5F302AD435060055AF35 /* DeviceControllerActor.swift */,
 				AF19CA222AE455B400A42DFF /* DataHelpers.swift */,
 				AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */,
+				AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -483,20 +486,8 @@
 				AFC24F092AD0E5A2002AB66C /* Roam.entitlements */,
 				AFF6077E2ADFAC4F00A7D657 /* Backend */,
 				AF56E3BA2AD9863100F5E6E0 /* Views */,
-				AFC24F062AD0E5A2002AB66C /* PreviewContent */,
 			);
 			path = Roam;
-			sourceTree = "<group>";
-		};
-		AFC24F062AD0E5A2002AB66C /* PreviewContent */ = {
-			isa = PBXGroup;
-			children = (
-				AF56E3B42AD9814100F5E6E0 /* disney.png */,
-				AF56E3B32AD9814100F5E6E0 /* hulu.png */,
-				AF56E3B52AD9814100F5E6E0 /* netflix.png */,
-				AF56E3B22AD9814100F5E6E0 /* spotify.png */,
-			);
-			path = PreviewContent;
 			sourceTree = "<group>";
 		};
 		AFF6077E2ADFAC4F00A7D657 /* Backend */ = {
@@ -543,6 +534,7 @@
 			name = RoamWatch;
 			packageProductDependencies = (
 				AFD9C4F42AE9830100C4079C /* XMLCoder */,
+				AF0042822AEAA3ED0051BB1E /* libwebp */,
 			);
 			productName = "RoamWatch Watch App";
 			productReference = AF15C2462AE8672700B79FD9 /* Roam.app */;
@@ -632,6 +624,7 @@
 				AFECDE1B2AE18511003F6676 /* XCRemoteSwiftPackageReference "swift-opus" */,
 				AFECDE1E2AE18519003F6676 /* XCRemoteSwiftPackageReference "swift-rtp" */,
 				AF19CA192AE44B1900A42DFF /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
+				AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */,
 			);
 			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
 			projectDirPath = "";
@@ -680,11 +673,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				AFD9C4FA2AE983B300C4079C /* SSDPDiscovery.swift in Sources */,
+				AF0042862AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */,
 				AF5ED8DF2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */,
 				AFD9C4E72AE980A800C4079C /* LaunchAppIntent.swift in Sources */,
 				AFD9C4E92AE980B200C4079C /* RemoteButton.swift in Sources */,
 				AFD9C4DB2AE97FE100C4079C /* AboutView.swift in Sources */,
-				AFD9C4EF2AE9817800C4079C /* DataImage.swift in Sources */,
 				AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */,
 				AFD9C4F32AE982E400C4079C /* DiscoveryActor.swift in Sources */,
 				AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */,
@@ -707,6 +700,7 @@
 				AFD9C4E62AE980A500C4079C /* ButtonPressIntents.swift in Sources */,
 				AFD9C4E52AE980A000C4079C /* WidgetIntents.swift in Sources */,
 				AFD9C4EE2AE980C600C4079C /* DeviceControllerActor.swift in Sources */,
+				AF00427D2AEA95D90051BB1E /* DataImage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -731,6 +725,7 @@
 				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
 				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
 				AF0042772AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
+				AF0042872AEABA9F0051BB1E /* CollectionHelpers.swift in Sources */,
 				AF205B252AE02D0100041CDF /* DeviceControllerActor.swift in Sources */,
 				AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */,
 				AF205B242AE02D0100041CDF /* RemoteButton.swift in Sources */,
@@ -782,6 +777,7 @@
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
 				AFA079DC2AE02561003E2754 /* RemoteButtonAppEnum.swift in Sources */,
 				AFC4A65F2AE8AF3F005DAC6C /* DataImage.swift in Sources */,
+				AF0042852AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */,
 				AF19CA352AE694E500A42DFF /* AsyncThrowingBufferedChannel.swift in Sources */,
 				AFFC71E82AD1F5BA00EE8EA0 /* CachedAsyncImage.swift in Sources */,
 				AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */,
@@ -822,7 +818,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -854,7 +850,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1088,7 +1084,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1127,7 +1123,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_ASSET_PATHS = Roam/PreviewContent;
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1198,6 +1194,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/libwebp-Xcode";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.2;
+			};
+		};
 		AF19CA192AE44B1900A42DFF /* XCRemoteSwiftPackageReference "swift-async-algorithms" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-async-algorithms.git";
@@ -1233,6 +1237,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AF0042822AEAA3ED0051BB1E /* libwebp */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */;
+			productName = libwebp;
+		};
 		AF19CA202AE4536700A42DFF /* AsyncAlgorithms */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AF19CA192AE44B1900A42DFF /* XCRemoteSwiftPackageReference "swift-async-algorithms" */;

@@ -12,7 +12,15 @@ struct Dependency: Identifiable {
     }
 }
 
-let LICENSES: [Dependency] = [
+#if os(watchOS)
+let WATCHOS_LICENSES = [
+    Dependency(name: "libwebp", link: "https://chromium.googlesource.com/webm/libwebp", licenseType: "BSD-3-Clause"),
+    Dependency(name: "libwebp-Xcode", link: "https://github.com/SDWebImage/libwebp-Xcode", licenseType: "BSD-3-Clause")
+]
+#endif
+    
+
+let MAIN_LICENSES: [Dependency] = [
     Dependency(name: "Opus", link: "https://github.com/xiph/opus/tree/master", licenseType: "BSD-3-Clause"),
     Dependency(name: "Swift-Opus", link: "https://github.com/alta/swift-opus", licenseType: "BSD-3-Clause"),
     Dependency(name: "Swift-RTP", link: "https://github.com/alta/swift-rtp", licenseType: "MIT"),
@@ -22,8 +30,13 @@ let LICENSES: [Dependency] = [
     Dependency(name: "CachedAsyncImage", link: "https://github.com/lorenzofiamingo/swiftui-cached-async-image", licenseType: "MIT"),
     Dependency(name: "AsyncSemaphore", link: "https://github.com/groue/Semaphore", licenseType: "MIT"),
     Dependency(name: "Swift Collections", link: "https://github.com/apple/swift-collections", licenseType: "Apache-2.0")
-    
 ]
+
+#if os(watchOS)
+let LICENSES = MAIN_LICENSES + WATCHOS_LICENSES
+#else
+let LICENSES = MAIN_LICENSES
+#endif
 
 struct AboutView: View {
     var body: some View {

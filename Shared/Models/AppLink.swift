@@ -9,7 +9,7 @@ public final class AppLink: Identifiable, Decodable, Encodable {
     public let name: String
     public var lastSelected: Date? = nil
     @Attribute(.externalStorage) public var icon: Data?
-    @Relationship(inverse: \Device.apps) public var devices: [Device]
+    @Relationship(inverse: \Device.apps) public var devices: [Device] = [Device]()
     
     init(id: String, type: String, name: String, icon: Data? = nil, devices: [Device] = []) {
         self.id = id
@@ -45,10 +45,6 @@ public final class AppLink: Identifiable, Decodable, Encodable {
 }
 
 public func getTestingAppLinks() -> [AppLink] {
-//    let netflixIcon = loadPreviewAsset("netflix.png")
-//    let huluIcon = loadPreviewAsset("hulu.png")
-//    let spotifyIcon = loadPreviewAsset("spotify.png")
-//    let disneyIcon = loadPreviewAsset("disney.png")
     return [
         AppLink(id: "1", type: "appl", name: "Netflix", icon: nil),
         AppLink(id: "5", type: "appl", name: "Hulu", icon: nil),
@@ -90,7 +86,7 @@ actor AppLinkActor {
         category: String(describing: AppLinkActor.self)
     )
     
-    public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
+    public func entities(for identifiers: [AppLinkAppEntity.ID]) throws -> [AppLinkAppEntity] {
         let links = try modelContext.fetch(
             FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
                 identifiers.contains(appLink.id)
@@ -99,19 +95,18 @@ actor AppLinkActor {
         return links.map {$0.toAppEntity()}
     }
     
-    public func entities(matching string: String) async throws -> [AppLinkAppEntity] {
+    public func entities(matching string: String) throws -> [AppLinkAppEntity] {
         let links = try modelContext.fetch(
-            FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
+            FetchDescriptor<AppLink>(predicate: #Predicate<AppLink> { appLink in
                 appLink.name.contains(string)
             })
         )
         return links.map {$0.toAppEntity()}
     }
     
-    public func suggestedEntities() async throws -> [AppLinkAppEntity] {
-        let descriptor = FetchDescriptor<AppLink>()
+    public func suggestedEntities() throws -> [AppLinkAppEntity] {
         let links = try modelContext.fetch(
-            descriptor
+            FetchDescriptor<AppLink>()
         )
         return links.map {$0.toAppEntity()}
     }

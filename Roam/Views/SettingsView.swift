@@ -15,6 +15,9 @@ struct SettingsView: View {
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var isScanning: Bool = false
     
+    @State private var deviceActor: DeviceActor!
+
+    
     @State private var tabSelection = 0
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
@@ -29,6 +32,52 @@ struct SettingsView: View {
                 } else {
                     ForEach(devices) { device in
                         DeviceListItem(device: device)
+                        #if !os(watchOS)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    Task {
+                                        do {
+                                            try await deviceActor.delete(device.persistentModelID)
+                                        } catch {
+                                             Self.logger.error("Error deleting device \(error)")
+                                        }
+                                    }
+                                    
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                NavigationLink(value: DeviceSettingsDestination(device)) {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                            }
+                        #endif
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    Task {
+                                        do {
+                                            try await deviceActor.delete(device.persistentModelID)
+                                        } catch {
+                                             Self.logger.error("Error deleting device \(error)")
+                                        }
+                                    }
+                                    
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { indexSet in
+                        Task {
+                            do {
+                                for index in indexSet {
+                                    if let model = devices[safe: index] {
+                                        try await deviceActor.delete(model.persistentModelID)
+                                    }
+                                }
+                            } catch {
+                                 Self.logger.error("Error deleting device \(error)")
+                            }
+                        }
                     }
                 }
 #if os(macOS)
@@ -87,6 +136,7 @@ struct SettingsView: View {
         .onAppear {
             let modelContainer = modelContext.container
             self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
+            self.deviceActor = DeviceActor(modelContainer: modelContainer)
         }
         .task(priority: .background) {
             if !scanIpAutomatically {

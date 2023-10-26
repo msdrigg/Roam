@@ -343,7 +343,7 @@ struct RemoteView: View {
                 }
 #endif
             }
-            .animation(.default, value: selectedDevice?.appsSorted?.count)
+            .animation(.default, value: selectedDevice?.appsSorted.count)
             .onAppear {
                 let modelContainer = modelContext.container
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
@@ -395,9 +395,9 @@ struct RemoteView: View {
             }
             .frame(maxWidth: 600)
             
-            if !showKeyboardEntry && (selectedDevice?.appsSorted?.count ?? 0) > 0 {
+            if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
                 Spacer()
-                AppLinksView(appLinks: selectedDevice?.appsSorted?.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
+                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                 
             }
@@ -482,9 +482,9 @@ struct RemoteView: View {
             }
             
             
-            if !showKeyboardEntry && (selectedDevice?.appsSorted?.count ?? 0) > 0 {
+            if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
                 Spacer()
-                AppLinksView(appLinks: selectedDevice?.appsSorted?.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
+                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                 
             }
@@ -494,7 +494,7 @@ struct RemoteView: View {
     
     
     func launchApp(_ app: AppLinkAppEntity) {
-        if let app = selectedDevice?.appsSorted?.first(where: { $0.id == app.id}) {
+        if let app = selectedDevice?.appsSorted.first(where: { $0.id == app.id}) {
             
             donateAppLaunchIntent(app)
             incrementButtonPressCount(.inputAV1)

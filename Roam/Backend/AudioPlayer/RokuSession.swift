@@ -393,17 +393,14 @@ actor RTPSession {
             taskGroup.addTask {
                 var count = 0
                 var lsqNo: Int64 = 0
-                var rollingSequenceNumber: Int64? = nil
 
                 do {
-                    for try await var rtpPacket in self.rtpStream {
+                    for try await rtpPacket in self.rtpStream {
                         // Drop first 5 packets because we want to have a reasonable sync packet and sometimes the first packet or two isn't valid
-                        // Self.logger.debug("Getting packet from stream \(String(describing: rtpPacket)) at count \(count)")
                         count += 1
                         if count < 5 {
                             continue
                         }
-                        rollingSequenceNumber = rtpPacket.updateWithRollingSequenceNumber(rollingSequenceNumber)
                         
                         if lsqNo != Int64(rtpPacket.sequenceNumber) - 1 {
                             Self.logger.info("Packet with seqno received \(rtpPacket.sequenceNumber) when expecting \(lsqNo + 1)")
