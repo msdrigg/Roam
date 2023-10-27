@@ -63,3 +63,18 @@ public struct ButtonPressIntent: AppIntent, CustomIntentMigratedAppIntent, Predi
         return .result()
     }
 }
+
+public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async throws {
+    let modelContainer = try getSharedModelContainer()
+    
+    var targetDevice = device
+    if targetDevice == nil {
+        targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
+    }
+    
+    if let deviceKey = button.apiValue, let targetDevice = targetDevice {
+        await sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.mac)
+    }
+    
+    return
+}

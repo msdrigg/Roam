@@ -57,7 +57,6 @@ public extension AppLink {
 
 public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async throws {
     let modelContainer = try getSharedModelContainer()
-    let deviceController = DeviceControllerActor()
     
     var targetDevice = device
     if targetDevice == nil {
@@ -65,7 +64,7 @@ public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async thr
     }
     
     if let targetDevice = targetDevice {
-        await deviceController.openApp(location: targetDevice.location, app: app.id)
+        try await openApp(location: targetDevice.location, app: app.id)
     }
     
     return

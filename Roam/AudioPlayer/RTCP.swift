@@ -1,10 +1,3 @@
-//
-//  Rtcp.swift
-//  Roam
-//
-//  Created by Scott Driggers on 10/21/23.
-//
-
 import Foundation
 import os
 

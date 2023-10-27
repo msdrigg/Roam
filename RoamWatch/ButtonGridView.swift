@@ -1,7 +1,15 @@
 import SwiftUI
 import Foundation
+import os.log
 
 struct ButtonGridView: View {
+    static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: ButtonGridView.self)
+    )
+    
+    let ecpSession: ECPSession?
+    
     let device: DeviceAppEntity?
     let controls: [[RemoteButton?]]
     
@@ -25,7 +33,11 @@ struct ButtonGridView: View {
                                 Button(action: {
                                     incrementButtonPressCount(button)
                                     Task {
-                                        try? await clickButton(button: button, device: device)
+                                        do {
+                                            try await ecpSession?.pressButton(button)
+                                        } catch {
+                                            Self.logger.error("Error pressing button \(String(describing: button)): \(error)")
+                                        }
                                     }
                                 }) {
                                     button.label

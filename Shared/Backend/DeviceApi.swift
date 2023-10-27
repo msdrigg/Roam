@@ -1,6 +1,6 @@
 import Foundation
 import XMLCoder
-import os
+import os.log
 
 struct DeviceInfo: Codable {
     let powerMode: String?
@@ -62,11 +62,25 @@ func tryFetchDeviceIcon(location: String) async throws -> Data {
 
 struct AudioDevice: Codable {
     let capabilities: Capabilities
+    let globalInfo: GlobalInfo
     let rtpInfo: RtpInfo?
     
     enum CodingKeys: String, CodingKey {
         case capabilities
         case rtpInfo = "rtp-info"
+        case globalInfo = "global"
+    }
+}
+
+struct GlobalInfo: Codable {
+    let muted: Bool
+    let volume: UInt8
+    let destinationList: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case muted
+        case volume
+        case destinationList = "destination-list"
     }
 }
 
@@ -90,6 +104,7 @@ struct DeviceCapabilities {
     let supportsDatagram: Bool
     let rtcpPort: UInt16?
 }
+
 
 func fetchDeviceCapabilities(location: String) async throws -> DeviceCapabilities {
     let url = URL(string: "\(location)query/audio-device")!
@@ -129,10 +144,7 @@ func fetchDeviceInfo(location: String) async -> DeviceInfo? {
             let decoder = XMLDecoder()
             decoder.keyDecodingStrategy = .convertFromKebabCase
             do {
-//                logger.debug("Trying to decode DeviceInfo from:\n\(xmlString.prefix(20))...")
-                let info = try decoder.decode(DeviceInfo.self, from: Data(xmlString.utf8))
-//                logger.debug("Decoded DeviceInfo from: \(String(describing: info).prefix(20))...")
-                return info
+                return try decoder.decode(DeviceInfo.self, from: Data(xmlString.utf8))
             } catch {
                 logger.error("Error decoding DeviceInfo response \(error)")
             }

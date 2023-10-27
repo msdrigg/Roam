@@ -1,9 +1,10 @@
-import Foundation
+
+#if os(iOS)
 import AVFoundation
+import Foundation
 import os
 
 
-#if os(iOS)
 enum VolumeClicked: String, CaseIterable {
     case Up
     case Down
@@ -13,6 +14,7 @@ struct VolumeEvent {
     let direction: VolumeClicked
     let volume: Float
 }
+
 
 actor VolumeListener {
     private static let logger = Logger(
@@ -85,4 +87,3 @@ actor VolumeListener {
     }
 }
 #endif
-

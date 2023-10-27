@@ -55,19 +55,3 @@ public extension Device {
         return DeviceAppEntity(name: self.name, location: self.location, id: self.id, mac: self.usingMac(), apps: self.appsSorted.map{$0.toAppEntity()})
     }
 }
-
-public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async throws {
-    let modelContainer = try getSharedModelContainer()
-    let deviceController = DeviceControllerActor()
-    
-    var targetDevice = device
-    if targetDevice == nil {
-        targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
-    }
-    
-    if let deviceKey = button.apiValue, let targetDevice = targetDevice {
-        await deviceController.sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.mac)
-    }
-    
-    return
-}

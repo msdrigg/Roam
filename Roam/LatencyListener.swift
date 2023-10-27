@@ -1,9 +1,11 @@
 import Foundation
-import AVFoundation
-import os
+import os.log
 
 #if os(iOS)
+import AVFoundation
+
 class LatencyListener {
+    
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: LatencyListener.self)
@@ -52,8 +54,6 @@ class LatencyListener {
 
 #if os(macOS)
 import CoreAudio
-import os.log
-import Foundation
 
 class LatencyListener {
     private static let logger = Logger(

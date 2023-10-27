@@ -17,40 +17,35 @@ actor DeviceDiscoveryActor {
         deviceActor = DeviceActor(modelContainer: modelContainer)
     }
     
-    func refreshDevice(id: String) async {
+    func refreshDevice(id: PersistentIdentifier) async {
         await deviceActor.refreshDevice(id) 
     }
     
     func addDevice(location: String) async {
-//        Self.logger.debug("Adding device at \(location)")
-        
         guard let deviceInfo = await fetchDeviceInfo(location: location) else {
             Self.logger.error("Error getting device info for found device \(location)")
             return
         }
         
         if await deviceActor.deviceExists(id: deviceInfo.udn) {
-//            Self.logger.info("Trying to add device that already exists with UDN \(deviceInfo.udn)")
             return
         }
         
-        
-        
         do {
-            try await deviceActor.addDevice(location: location, friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device", id: deviceInfo.udn)
+            let pid = try await deviceActor.addDevice(location: location, friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device", id: deviceInfo.udn)
             Self.logger.info("Saved new device \(deviceInfo.udn), \(location)")
-            await self.refreshDevice(id: deviceInfo.udn)
+            await self.refreshDevice(id: pid)
         } catch {
             Self.logger.error("Error saving device with id \(deviceInfo.udn) \(location): \(error)")
         }
     }
     
-    func refreshSelectedDeviceContinually(id: String) async {
+    func refreshSelectedDeviceContinually(id: PersistentIdentifier) async {
         // Refresh every 30 seconds
-        Self.logger.debug("Refreshing device \(id)")
+        Self.logger.debug("Refreshing device \(String(describing: id))")
         await self.refreshDevice(id: id)
         for await _ in interval(time: 30) {
-            Self.logger.debug("Refreshing device \(id)")
+            Self.logger.debug("Refreshing device \(String(describing: id))")
             await self.refreshDevice(id: id)
         }
     }
@@ -60,7 +55,6 @@ actor DeviceDiscoveryActor {
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             return
         }
-        
         
         let MAX_CONCURRENT_SCANNED = 37
         

@@ -16,6 +16,7 @@ let BUTTON_HEIGHT: CGFloat = 20
 
 let MAJOR_ACTIONS: [RemoteButton] = [.power, .playPause, .mute, .privateListening]
 
+
 struct RemoteView: View {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -28,7 +29,6 @@ struct RemoteView: View {
     @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
     
     @State private var scanningActor: DeviceDiscoveryActor!
-    @State private var controllerActor: DeviceControllerActor!
     @State private var manuallySelectedDevice: Device?
     @State private var showKeyboardEntry: Bool = false
     @State private var keyboardLeaving: Bool = false
@@ -38,6 +38,7 @@ struct RemoteView: View {
     @State private var navigationPath: NavigationPath = NavigationPath()
     @State private var privateListeningEnabled: Bool = false
     @State private var errorTrigger: Int = 0
+    @State private var ecpSession: ECPSession? = nil
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
@@ -47,9 +48,9 @@ struct RemoteView: View {
     }
     @FocusState private var focused: Bool
     
-    #if os(iOS)
+#if os(iOS)
     @State var windowScene: UIWindowScene? = nil
-    #endif
+#endif
     
     private var selectedDevice: Device? {
         return manuallySelectedDevice ?? devices.min { d1, d2 in
@@ -64,6 +65,9 @@ struct RemoteView: View {
     @State var isHorizontal: Bool = false
     @State var isSmallWidth: Bool = true
     @State var isSmallHeight: Bool = false
+    
+    @State var volume: Float = 0
+    @State var lastVolumeChangeFromTv: Bool = false
     
     private struct IsHorizontalKey: PreferenceKey {
         static var defaultValue: Bool = false
@@ -164,7 +168,25 @@ struct RemoteView: View {
                 }
             }
             .task(id: selectedDevice?.id, priority: .medium) {
-                if let devId = selectedDevice?.id {
+                Self.logger.info("Creating ecp session \(String(describing: selectedDevice))")
+                let oldECP = self.ecpSession
+                Task.detached {
+                    await oldECP?.close()
+                }
+                self.ecpSession = nil
+                if let device = selectedDevice?.toAppEntity() {
+                    do {
+                        ecpSession = try ECPSession(device: device)
+                        try await ecpSession?.configure()
+                    } catch {
+                        Self.logger.error("Error creating ECPSession: \(error)")
+                    }
+                } else {
+                    ecpSession = nil
+                }
+            }
+            .task(id: selectedDevice?.id, priority: .medium) {
+                if let devId = selectedDevice?.persistentModelID {
                     await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                 }
             }
@@ -176,9 +198,9 @@ struct RemoteView: View {
                     privateListeningEnabled = false
                 }
                 
-                if let device = selectedDevice {
+                if let device = selectedDevice, let ecpSession = ecpSession {
                     do {
-                        try await listenContinually(location: device.location, rtcpPort: device.rtcpPort)
+                        try await listenContinually(ecpSession: ecpSession, location: device.location, rtcpPort: device.rtcpPort)
                         Self.logger.info("Listencontinually returned")
                     } catch {
                         Self.logger.warning("Catching error in pl handler \(error)")
@@ -190,27 +212,6 @@ struct RemoteView: View {
                     }
                 }
             }
-#if os(iOS)
-            .task(id: inBackground || !controlVolumeWithHWButtons) {
-                if inBackground || !controlVolumeWithHWButtons {
-                    return
-                }
-                if let stream = await VolumeListener(session: AVAudioSession.sharedInstance()).events {
-                    for await volumeEvent in stream {
-                        let key: RemoteButton
-                        switch volumeEvent.direction {
-                        case .Up:
-                            key = .volumeUp
-                        case .Down:
-                            key = .volumeDown
-                        }
-                        pressButton(key)
-                    }
-                } else {
-                    Self.logger.error("Unable to get volume events stream")
-                }
-            }
-#endif
         }
     }
     
@@ -272,6 +273,19 @@ struct RemoteView: View {
                                     showKeyboardEntry = false
                                 }
                             })
+                            .overlay {
+                                CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
+                                    let key: RemoteButton
+                                        switch volumeEvent.direction {
+                                        case .Up:
+                                            key = .volumeUp
+                                        case .Down:
+                                            key = .volumeDown
+                                    }
+                                    pressButton(key)
+                                }
+                            }
+                        
 #endif
                     } else {
                         verticalBody(isSmallHeight: isSmallHeight)
@@ -283,6 +297,18 @@ struct RemoteView: View {
                                     showKeyboardEntry = false
                                 }
                             })
+                            .overlay {
+                                CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
+                                    let key: RemoteButton
+                                        switch volumeEvent.direction {
+                                        case .Up:
+                                            key = .volumeUp
+                                        case .Down:
+                                            key = .volumeDown
+                                    }
+                                    pressButton(key)
+                                }
+                            }
 #endif
                     }
                     
@@ -347,7 +373,6 @@ struct RemoteView: View {
             .onAppear {
                 let modelContainer = modelContext.container
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
-                self.controllerActor = DeviceControllerActor()
             }
             .sensoryFeedback(.error, trigger: errorTrigger)
             .onChange(of: scenePhase) { _oldPhase, newPhase in
@@ -428,7 +453,7 @@ struct RemoteView: View {
         
         return true
     }
-
+    
     func handleMajorUserAction() {
         // Increment user action count
         var count = UserDefaults.standard.integer(forKey: UserDefaultKeys.userMajorActionCount)
@@ -436,25 +461,25 @@ struct RemoteView: View {
         UserDefaults.standard.set(count, forKey: UserDefaultKeys.userMajorActionCount)
         
         if shouldRequestReview() {
-            #if os(iOS)
+#if os(iOS)
             guard let windowScene =  UIApplication.shared.connectedScenes.first as? UIWindowScene else {
                 return
             }
-            #endif
+#endif
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                #if os(iOS)
+#if os(iOS)
                 SKStoreReviewController.requestReview(in: windowScene)
-                #else
+#else
                 SKStoreReviewController.requestReview()
-                #endif
+#endif
             }
-
+            
             UserDefaults.standard.set(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString"), forKey: UserDefaultKeys.appVersionAtLastReviewRequest)
             UserDefaults.standard.set(Date(), forKey: UserDefaultKeys.dateOfLastReviewRequest)
         }
     }
-
+    
     func verticalBody(isSmallHeight: Bool) -> some View {
         VStack(alignment: .center, spacing: 10) {
             // Row with Back and Home buttons
@@ -499,10 +524,12 @@ struct RemoteView: View {
             donateAppLaunchIntent(app)
             incrementButtonPressCount(.inputAV1)
             app.lastSelected = Date.now
-            let appId = app.id
-            if let location = selectedDevice?.location {
-                Task {
-                    await controllerActor.openApp(location: location, app: appId)
+            let appEntity = app.toAppEntity()
+            Task {
+                do {
+                    try await ecpSession?.openApp(appEntity)
+                } catch {
+                    Self.logger.error("Error opening app \(appEntity.id): \(error)")
                 }
             }
             do {
@@ -523,19 +550,26 @@ struct RemoteView: View {
             privateListeningEnabled.toggle()
             return
         }
+        
         Task {
-            if let device = selectedDevice {
-                await controllerActor.sendKeyToDevice(location: device.location, mac: device.usingMac(), key: button)
+            do {
+                try await ecpSession?.pressButton(button)
+            } catch {
+                Self.logger.info("Error sending button to device via ecp: \(error)")
             }
         }
     }
     
     func pressKey(_ key: KeyEquivalent) -> KeyPress.Result {
-        let _ = Self.logger.trace("Getting keyboard press \(key.character)")
-        if let device = selectedDevice {
-            let location = device.location
+        Self.logger.trace("Getting keyboard press \(key.character)")
+        if let ecpSession = ecpSession {
+            Self.logger.info("Getting ecp session to send data to")
             Task {
-                await self.controllerActor.sendKeyPressTodevice(location: location, key: key.character)
+                do {
+                    try await ecpSession.pressCharacter(key.character)
+                } catch {
+                    Self.logger.error("Error pressing character \(key.character) on device \(error)")
+                }
             }
             return .handled
         }

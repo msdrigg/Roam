@@ -1,10 +1,3 @@
-//
-//  RTP.swift
-//  Roam
-//
-//  Created by Scott Driggers on 10/21/23.
-//
-
 import Foundation
 import RTP
 import Opus
@@ -69,6 +62,4 @@ struct RtpPacket: Comparable {
         receivedAt = mach_absolute_time()
         sequenceNumber = Int64(packet.sequenceNumber)
     }
-    
-    
 }

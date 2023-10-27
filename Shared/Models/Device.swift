@@ -154,15 +154,18 @@ actor DeviceActor {
     }
 
 
-    func addDevice(location: String, friendlyDeviceName: String, id: String) throws {
-        modelContext.insert(Device(
+    func addDevice(location: String, friendlyDeviceName: String, id: String) throws -> PersistentIdentifier {
+        let device = Device(
             name: friendlyDeviceName,
             location: location,
             lastOnlineAt: Date.now,
             id: id
-        ))
+        )
+        modelContext.insert(device)
 
         try modelContext.save()
+        
+        return device.persistentModelID
     }
     
     func updateDevice(_ id: PersistentIdentifier, name: String, location: String) throws {
@@ -182,28 +185,15 @@ actor DeviceActor {
     
     
     func deviceExists(id: String) -> Bool {
-        var matchingIds = FetchDescriptor<Device>(
-            predicate: #Predicate<Device> { $0.id == id }
-        )
+        var matchingIds = FetchDescriptor<Device>()
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
         
-        return (try? modelContext.fetchCount(matchingIds)) ?? 0 >= 1
+        return ((try? modelContext.fetch(matchingIds)) ?? []).contains {
+            $0.id == id
+        }
     }
 
-    
-    func findDeviceById(id: String) -> DeviceAppEntity? {
-        var matchingIds = FetchDescriptor<Device>(
-            predicate: #Predicate<Device> { $0.id == id }
-        )
-        matchingIds.fetchLimit = 1
-        matchingIds.includePendingChanges = true
-        matchingIds.relationshipKeyPathsForPrefetching = [\.apps]
-        
-        let existingDevices: [Device]? = try? modelContext.fetch(matchingIds)
-        
-        return existingDevices?.first?.toAppEntity()
-    }
     
     func fetchSelectedDeviceAppEntity() -> DeviceAppEntity? {
         var descriptor = FetchDescriptor<Device>()
@@ -216,22 +206,15 @@ actor DeviceActor {
         return selectedDevice?.toAppEntity()
     }
     
-    func refreshDevice(_ id: String) async {
-        var matchingIds = FetchDescriptor<Device>(
-            predicate: #Predicate { $0.id == id }
-        )
-        matchingIds.fetchLimit = 1
-        matchingIds.includePendingChanges = true
-        matchingIds.relationshipKeyPathsForPrefetching = [\.apps]
-        
-        let existingDevice: Device? = try? modelContext.fetch(matchingIds).first
+    func refreshDevice(_ id: PersistentIdentifier) async {
+        let existingDevice = modelContext.model(for: id) as? Device
         
         if let device = existingDevice {
             guard let deviceInfo = await fetchDeviceInfo(location: device.location) else {
                 Self.logger.info("Failed to get device info \(device.location)")
                 return
             }
-            if deviceInfo.udn != id {
+            if deviceInfo.udn != device.id {
                 return
             }
             
@@ -307,7 +290,7 @@ actor DeviceActor {
                 }
             }
         } else {
-            Self.logger.error("Trying to refresh device that doeesn't exist \(id)")
+            Self.logger.error("Trying to refresh device that doeesn't exist \(String(describing: id))")
         }
     }
 }

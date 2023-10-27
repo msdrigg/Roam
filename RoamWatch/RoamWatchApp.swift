@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import os.log
 
 @main
 struct RoamWatch: App {
@@ -45,11 +46,18 @@ let CONTROLS: [[RemoteButton?]] = [
 ]
 
 struct WatchAppView: View {
+    static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: WatchAppView.self)
+    )
+    
+    @State private var scanningActor: DeviceDiscoveryActor!
+    @State private var ecpSession: ECPSession!
+    
     @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
     @State private var manuallySelectedDevice: Device?
-    @State private var scanningActor: DeviceDiscoveryActor!
+    
     @Environment(\.modelContext) private var modelContext
-
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     
@@ -67,11 +75,11 @@ struct WatchAppView: View {
         NavigationStack {
             TabView {
                 
-                ButtonGridView(device: selectedDevice?.toAppEntity(), controls: DPAD)
+                ButtonGridView(ecpSession: ecpSession, device: selectedDevice?.toAppEntity(), controls: DPAD)
                 
-                ButtonGridView(device: selectedDevice?.toAppEntity(), controls: CONTROLS)
+                ButtonGridView(ecpSession: ecpSession, device: selectedDevice?.toAppEntity(), controls: CONTROLS)
                 
-                AppListView(device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [])
+                AppListView(ecpSession: ecpSession, device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [])
             }
                 .navigationTitle(selectedDevice?.name ?? "No device")
             .toolbar {
@@ -97,6 +105,27 @@ struct WatchAppView: View {
             mainBody
         } else {
             mainBody
+                .task(id: selectedDevice?.id, priority: .medium) {
+                    let oldECP = self.ecpSession
+                    Task.detached {
+                        await oldECP?.close()
+                    }
+                    self.ecpSession = nil
+                    
+                    if let device = selectedDevice?.toAppEntity() {
+                        let ecpSession: ECPSession
+                        do {
+                            ecpSession = try ECPSession(device: device)
+                            try await ecpSession.configure()
+                            
+                            self.ecpSession = ecpSession
+                        } catch {
+                            Self.logger.error("Error creating ECPSession: \(error)")
+                        }
+                    } else {
+                        ecpSession = nil
+                    }
+                }
                 .task(priority: .background) {
                     await withDiscardingTaskGroup { taskGroup in
                         taskGroup.addTask {
@@ -111,7 +140,7 @@ struct WatchAppView: View {
                     }
                 }
                 .task(id: selectedDevice?.id, priority: .medium) {
-                    if let devId = selectedDevice?.id {
+                    if let devId = selectedDevice?.persistentModelID {
                         await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                     }
                 }

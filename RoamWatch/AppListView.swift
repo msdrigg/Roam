@@ -1,7 +1,15 @@
 import SwiftUI
 import Foundation
+import os.log
 
 struct AppListView: View {
+    static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: AppListView.self)
+    )
+    
+    let ecpSession: ECPSession?
+    
     let device: DeviceAppEntity?
     let apps: [AppLinkAppEntity]
     
@@ -20,7 +28,11 @@ struct AppListView: View {
                 Button(action: {
                     incrementAppPressCount(app.id)
                     Task {
-                        try? await launchApp(app: app, device: device)
+                        do {
+                            try await ecpSession?.openApp(app)
+                        } catch {
+                            Self.logger.error("Error opening app \(app.id): \(error)")
+                        }
                     }
                 }) {
                     Label {

@@ -339,7 +339,7 @@ struct DeviceDetailView: View {
                         
                         if let id = deviceInfo?.udn, id != device.id {
                             do {
-                                try await deviceActor.addDevice(
+                                let _ = try await deviceActor.addDevice(
                                     location: deviceLocation, friendlyDeviceName: deviceName, id: id
                                 )
                                 try await deviceActor.delete(device.persistentModelID)

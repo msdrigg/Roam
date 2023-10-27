@@ -17,10 +17,10 @@ struct RoamApp: App {
         WindowGroup {
             RemoteView()
         }
+        .modelContainer(sharedModelContainer)
         #if os(macOS)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         #endif
-        .modelContainer(sharedModelContainer)
         
         #if os(macOS)
         Settings {

@@ -2,18 +2,26 @@
 
 A Roku remote that puts users first
 
-## TODO
+## TODO: Get 
 
-- Prepare for AppStore
-    - Get AppIcon from Maggie if she wants to
-    - Update color scheme after getting app icon
-    - Get screenshots from multiple devices, widgets
-    - Get presentation images from Fiverr (or procreate?)
-- Bugs
-    - On iOS, when volume zero, volume down press doesn't work to change roku volume
-        - Need an approach like this https://developer.apple.com/forums/thread/649183 to sync phone audio with device audio
-    - Sometimes I get a big delay with sent keys and then they all queue up and blast through after they aren't relevant anymore
-        - Either use ECPSession for button presses
+## Features
+
+- Runs on Mac, iPhone, iPad, and apple watch!
+- Smart platform integration with keyboard shortcuts on Mac, using hardware volume buttons to control TV Volume on iOS
+- Use shortcuts and widgets to control your TV without ever opening the app!
+- Private listening support on Mac and iOS (play the audio from your TV through your headphones)
+- Discovers devices on your local network as soon as you open the app
+- Intuitive design with apple's native SwiftUI design system
+- Fast and lightweight -- less than 6 MB on iOS and opens in less than half a second!
+
+## How to Use
+
+- Open in xcode 15
+- Run in iOS, macOS, or watchOS
+
+--- or ---
+
+- Download on the app store [here](https://apps.apple.com/us/app/roam/6469834197)
 
 ## License
 
