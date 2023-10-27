@@ -21,22 +21,25 @@ actor DeviceDiscoveryActor {
         await deviceActor.refreshDevice(id) 
     }
     
-    func addDevice(location: String) async {
+    @discardableResult
+    func addDevice(location: String) async -> Bool {
         guard let deviceInfo = await fetchDeviceInfo(location: location) else {
             Self.logger.error("Error getting device info for found device \(location)")
-            return
+            return false
         }
         
         if await deviceActor.deviceExists(id: deviceInfo.udn) {
-            return
+            return false
         }
         
         do {
             let pid = try await deviceActor.addDevice(location: location, friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device", id: deviceInfo.udn)
             Self.logger.info("Saved new device \(deviceInfo.udn), \(location)")
             await self.refreshDevice(id: pid)
+            return true
         } catch {
             Self.logger.error("Error saving device with id \(deviceInfo.udn) \(location): \(error)")
+            return false
         }
     }
     
@@ -50,6 +53,7 @@ actor DeviceDiscoveryActor {
         }
     }
     
+    #if !os(watchOS)
     func scanIPV4Once() async {
         // Don't scan IPV4 in previews
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
@@ -119,6 +123,7 @@ actor DeviceDiscoveryActor {
             }
         }
     }
+    #endif
 }
 
 

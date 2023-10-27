@@ -23,7 +23,7 @@ public struct DeviceAppEntity: AppEntity {
         
         public func suggestedEntities() async throws -> [DeviceAppEntity] {
             let deviceActor = try DeviceActor(modelContainer: getSharedModelContainer())
-            return try await deviceActor.suggestedEntities()
+            return try await deviceActor.allDeviceEntities()
         }
     }
     public static var defaultQuery = DeviceAppEntityQuery()
