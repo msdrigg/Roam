@@ -5,7 +5,6 @@ import os.log
 import AVFoundation
 
 class LatencyListener {
-    
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: LatencyListener.self)
@@ -22,10 +21,10 @@ class LatencyListener {
         Self.logger.info("Starting Latency observations")
         // Get the default notification center instance.
         NotificationCenter.default.addObserver(
-           self,
-           selector: #selector(handleRouteChange),
-           name: AVAudioSession.routeChangeNotification,
-           object: nil
+            self,
+            selector: #selector(handleRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
         )
     }
     
@@ -65,11 +64,11 @@ class LatencyListener {
     var audioDeviceChangeListener: AudioObjectPropertyListenerBlock?
     
     var defaultDeviceAddress: AudioObjectPropertyAddress {
-         AudioObjectPropertyAddress(
+        AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
-        )   
+        )
     }
     
     func getDeviceLatency(deviceID: AudioDeviceID) -> Double? {
@@ -80,7 +79,7 @@ class LatencyListener {
             mScope: kAudioDevicePropertyScopeOutput,
             mElement: kAudioObjectPropertyElementMain
         )
-
+        
         let err = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &propSize, &latency)
         if err != kAudioHardwareNoError {
             Self.logger.error("Failed to get latency for device \(deviceID), error: \(err)")
@@ -94,20 +93,20 @@ class LatencyListener {
             mScope: kAudioDevicePropertyScopeOutput,
             mElement: kAudioObjectPropertyElementMain
         )
-
+        
         let sampleRateErr = AudioObjectGetPropertyData(deviceID, &sampleRateAddress, 0, nil, &size, &sampleRate)
         if sampleRateErr != kAudioHardwareNoError {
             Self.logger.error("Failed to get sample rate for device \(deviceID), error: \(err). Defaulting to 48000")
             sampleRate = 48000
         }
-
+        
         return Double(latency) / sampleRate
     }
-
+    
     
     func startListening() {
         Self.logger.info("Starting Latency observations")
-
+        
         
         var defaultDeviceAddress = defaultDeviceAddress
         

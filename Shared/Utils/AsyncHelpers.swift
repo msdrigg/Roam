@@ -98,6 +98,7 @@ public func withTimeout<T>(
     return try await Task.race(firstResolved: [
         .init {
             try await Task.sleep(duration: delay)
+            print("Timed out!")
             throw TimeoutError()
         },
         .init(priority: priority) {

@@ -2,7 +2,7 @@ import os.log
 import Foundation
 import CommonCrypto
 
-    
+
 
 actor ECPSession {
     private static let logger = Logger(
@@ -26,6 +26,7 @@ actor ECPSession {
         case BadInterfaceIP
         case PLStartFailed
         case BadKepress
+        case ResponseRejection(code: String)
     }
     
     public init(device: DeviceAppEntity) throws {
@@ -85,9 +86,9 @@ actor ECPSession {
         // SAFETY: Power has apiValue
         try await sendKeypress(RemoteButton.power.apiValue!)
     }
-
     
-    #if os(iOS) || os (macOS)
+    
+#if os(iOS) || os (macOS)
     public func requestPrivateListening() async throws {
         guard let connectingInterface = await tryConnectTCP(location: self.url.absoluteString, timeout: 3.0) else {
             Self.logger.error("Unable to connect tcp to \(self.url.absoluteString) to request private listening")
@@ -102,7 +103,7 @@ actor ECPSession {
         let localAddress = localNWInterface.address.addressString
         Self.logger.debug("Got local address \(localAddress)")
         
-        let requestData = String(data: try JSONEncoder().encode(ConfigureAudioRequest.privateListening(hostIp: localAddress, requestId: self.getAndUpdateRequestId())), encoding: .utf8)!
+        let requestData = String(data: try encoder.encode(ConfigureAudioRequest.privateListening(hostIp: localAddress, requestId: self.getAndUpdateRequestId())), encoding: .utf8)!
         
         try await preInitWebsocket()
         
@@ -125,23 +126,23 @@ actor ECPSession {
             throw ECPError.BadWebsocketMessage
         }
         
-        let authResponse = try JSONDecoder().decode(BaseResponse.self, from: plResponseData)
+        let authResponse = try decoder.decode(BaseResponse.self, from: plResponseData)
         if !authResponse.isSuccess {
             Self.logger.error("Unable to start private listening on roku with response \(String(describing: authResponse))")
             throw ECPError.PLStartFailed
         } else {
             Self.logger.info("Started private listening successfully")
         }
-
+        
     }
-    #endif
+#endif
     
     public func pressButton(_ key: RemoteButton) async throws {
         if key == .power {
             try await powerToggleDevice()
             return
         }
-
+        
         
         guard let keypress = key.apiValue else {
             Self.logger.fault("Bad key with no api value \(String(describing: key))")
@@ -155,7 +156,7 @@ actor ECPSession {
         let keypress = getKeypressForKey(key: character)
         try await sendKeypress(keypress)
     }
-
+    
     public func openApp(_ app: AppLinkAppEntity) async throws {
         Self.logger.info("Opening app \(app.id)")
         // Before we send anything, make sure the websocket is up and running
@@ -164,6 +165,8 @@ actor ECPSession {
         // SAFETY: We can unwrap because json encoder always encodes to string
         let requestData = String(data: try encoder.encode(AppLaunchRequest(paramChannelId: app.id, requestId: String(self.getAndUpdateRequestId()))), encoding: .utf8)!
         try await webSocketTask.send(.string(requestData))
+        
+        try await consumeResponse()
         
         Self.logger.info("Opened app \(app.id) successfully")
     }
@@ -176,24 +179,21 @@ actor ECPSession {
         // SAFETY: We can unwrap because json encoder always encodes to string
         let requestData = String(data: try encoder.encode(KeyPressRequest(paramKey: data, requestId: String(self.getAndUpdateRequestId()))), encoding: .utf8)!
         try await webSocketTask.send(.string(requestData))
+        try await consumeResponse()
         Self.logger.info("Sent key \(data) successfully")
-
+        
     }
-
-
+    
+    
     // MARK: Helper methods
     
     private func preInitWebsocket() async throws {
         Self.logger.info("Trying to pre-init ws with current state \(String(describing: self.webSocketTask.state))")
-
+        
         if self.webSocketTask.state != .running {
             Self.logger.info("WS not running, re-configuring")
             try await self.configure()
         }
-        
-        Self.logger.info("Consuming messages")
-        try await self.consumeMessages()
-        Self.logger.info("Pre-init succeeded")
     }
     
     private func getAndUpdateRequestId() -> Int {
@@ -203,29 +203,46 @@ actor ECPSession {
         return reqid
     }
     
-    private func consumeMessages() async throws {
+    private func consumeResponse() async throws {
         // Receive all messages in the buffer before sending (to clear out old msgsa)
-        while true {
-            do {
-                let _ = try await withTimeout(delay: 0.1) {
-                    try await self.webSocketTask.receive()
-                }
-            } catch {
-                // If cancellation error igonre
-                if error is CancellationError {
-                    return
-                }
-                Self.logger.error("Error consuming all ECP messages")
-                throw error
+        do {
+            let resultMessage = try await withTimeout(delay: 2) {
+                try await self.webSocketTask.receive()
             }
+            // Try to process as a typical response
+            let responseMessageData = switch resultMessage {
+            case .data(let data):
+                data
+            case .string(let str):
+                if let data = str.data(using: .utf8) {
+                    data
+                } else {
+                    Self.logger.error("Unknown message type received: \(String(describing: resultMessage))")
+                    throw ECPError.BadWebsocketMessage
+                }
+            @unknown default:
+                Self.logger.error("Unknown message type received: \(String(describing: resultMessage))")
+                throw ECPError.BadWebsocketMessage
+            }
+            
+            let response = try decoder.decode(BaseResponse.self, from: responseMessageData)
+            if !response.isSuccess {
+                Self.logger.error("Bad response for \(response.response): \(String(describing: response))")
+                throw ECPError.ResponseRejection(code: response.status)
+            }
+            Self.logger.info("Received successful ecp response \(String(describing: response.statusMsg)) for command \(response.response)")
+        } catch {
+            // If cancellation error igonre
+            if error is TimeoutError {
+                return
+            }
+            Self.logger.error("Error consuming all ECP messages \(error)")
+            throw error
         }
-
     }
     
     private func establishConnectionAndAuthenticate() async throws {
         do {
-            let decoder = JSONDecoder()
-            let encoder = JSONEncoder()
             
             let authMessage = try await webSocketTask.receive()
             let authMessageData = switch authMessage {
@@ -249,28 +266,23 @@ actor ECPSession {
             // We can unwrap here because data always encodes to string
             try await webSocketTask.send(.string(String(data: responseData, encoding: .utf8)!))
             
-            let authResponseMessage = try await webSocketTask.receive()
-            let authResponseMessageData = switch authResponseMessage {
-            case .data(let data):
-                data
-            case .string(let str):
-                if let data = str.data(using: .utf8) {
-                    data
-                } else {
-                    Self.logger.error("Unknown message type received: \(String(describing: authResponseMessage))")
-                    throw ECPError.BadWebsocketMessage
+            do {
+                try await consumeResponse()
+                Self.logger.info("Authenticated to roku successfully")
+            } catch {
+                Self.logger.info("Auth challenge failed with error \(error)")
+                
+                if let error = error as? ECPError {
+                    switch error {
+                    case .ResponseRejection(code: _):
+                        throw ECPError.AuthDenied
+                    default:
+                        throw error
+                    }
                 }
-            @unknown default:
-                Self.logger.error("Unknown message type received: \(String(describing: authResponseMessage))")
-                throw ECPError.BadWebsocketMessage
+                
+                throw error
             }
-            
-            let authResponse = try decoder.decode(BaseResponse.self, from: authResponseMessageData)
-            if !authResponse.isSuccess {
-                Self.logger.error("Unable to authenticate to roku with response \(String(describing: authResponse))")
-                throw ECPError.AuthDenied
-            }
-            Self.logger.info("Authenticated to roku successfully")
         } catch {
             Self.logger.error("WebSocket connection failed: \(error)")
             throw error
@@ -353,11 +365,11 @@ actor ECPSession {
         let request: String = "set-audio-output"
         let requestId: String
         
-        #if os(iOS) || os(macOS)
+#if os(iOS) || os(macOS)
         static func privateListening(hostIp: String, requestId: Int) -> Self {
             Self(paramDevname: "\(hostIp):\(HOST_RTP_PORT):\(RTP_PAYLOAD_TYPE):\(CLOCK_RATE / 50)", paramAudioOutput: "datagram", requestId: String(requestId))
         }
-        #endif
+#endif
         
         private enum CodingKeys: String, CodingKey {
             case paramDevname = "param-devname"
@@ -378,8 +390,8 @@ actor ECPSession {
             case request
         }
     }
-
-
+    
+    
     private struct KeyPressRequest: Codable {
         let request: String = "key-press"
         let paramKey: String

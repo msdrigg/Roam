@@ -52,7 +52,6 @@ struct WatchAppView: View {
     )
     
     @State private var scanningActor: DeviceDiscoveryActor!
-    @State private var ecpSession: ECPSession!
     
     @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
     @State private var manuallySelectedDevice: Device?
@@ -75,11 +74,11 @@ struct WatchAppView: View {
         NavigationStack {
             TabView {
                 
-                ButtonGridView(ecpSession: ecpSession, device: selectedDevice?.toAppEntity(), controls: DPAD)
+                ButtonGridView(device: selectedDevice?.toAppEntity(), controls: DPAD)
                 
-                ButtonGridView(ecpSession: ecpSession, device: selectedDevice?.toAppEntity(), controls: CONTROLS)
+                ButtonGridView(device: selectedDevice?.toAppEntity(), controls: CONTROLS)
                 
-                AppListView(ecpSession: ecpSession, device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [])
+                AppListView(device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [])
             }
                 .navigationTitle(selectedDevice?.name ?? "No device")
             .toolbar {
@@ -105,40 +104,6 @@ struct WatchAppView: View {
             mainBody
         } else {
             mainBody
-                .task(id: selectedDevice?.id, priority: .medium) {
-                    let oldECP = self.ecpSession
-                    Task.detached {
-                        await oldECP?.close()
-                    }
-                    self.ecpSession = nil
-                    
-                    if let device = selectedDevice?.toAppEntity() {
-                        let ecpSession: ECPSession
-                        do {
-                            ecpSession = try ECPSession(device: device)
-                            try await ecpSession.configure()
-                            
-                            self.ecpSession = ecpSession
-                        } catch {
-                            Self.logger.error("Error creating ECPSession: \(error)")
-                        }
-                    } else {
-                        ecpSession = nil
-                    }
-                }
-                .task(priority: .background) {
-                    await withDiscardingTaskGroup { taskGroup in
-                        taskGroup.addTask {
-                            await self.scanningActor.scanSSDPContinually()
-                        }
-                        
-                        if scanIpAutomatically {
-                            taskGroup.addTask {
-                                await self.scanningActor.scanIPV4Once()
-                            }
-                        }
-                    }
-                }
                 .task(id: selectedDevice?.id, priority: .medium) {
                     if let devId = selectedDevice?.persistentModelID {
                         await self.scanningActor.refreshSelectedDeviceContinually(id: devId)

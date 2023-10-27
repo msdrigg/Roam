@@ -19,6 +19,7 @@ struct SettingsView: View {
 
     
     @State private var tabSelection = 0
+    @State private var showWatchOSNote = false
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
@@ -91,6 +92,22 @@ struct SettingsView: View {
 #endif
             }
             
+            #if os(watchOS)
+            Button("WatchOS Note", systemImage: "info.circle.fill", action: {showWatchOSNote = true})
+                .sheet(isPresented: $showWatchOSNote) {
+                    NavigationStack {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Unfortunately, WatchOS prevents us from discovering TV's on the local network.").font(.caption).foregroundStyle(.secondary)
+                                Text("To work around this limitation, first discover devices on the iPhone app and then the devices will be transfered in the background from the iPhone to the watch (or you can manually add the TV if you can get it's IP address).").font(.caption).foregroundStyle(.secondary)
+                                Text("Please be patient, because I don't have an apple watch so I can't test how effective this is. Please reach out if you aren't able to get this to work :). You can email me at scott@msd3.io").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            #endif
+            
+                #if !os(watchOS)
             Section("Behavior") {
 #if os(iOS)
                 Toggle("Use volume buttons to control TV volume", isOn: $controlVolumeWithHWButtons)
@@ -98,9 +115,11 @@ struct SettingsView: View {
                 
                 Toggle("Scan for devices automatically", isOn: $scanIpAutomatically)
             }
+                #endif
             
             NavigationLink("About", value: AboutDestination.Global)
         }
+        #if os(iOS)
         .refreshable {
             isScanning = true
             defer {
@@ -109,7 +128,6 @@ struct SettingsView: View {
             
             await scanningActor.scanIPV4Once()
         }
-        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .status) {
                 scanDevicesButton
@@ -124,9 +142,6 @@ struct SettingsView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 addDeviceButton
             }
-            ToolbarItem {
-                scanDevicesButton
-            }
         }
         #endif
         #if !os(watchOS)
@@ -138,6 +153,7 @@ struct SettingsView: View {
             self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
             self.deviceActor = DeviceActor(modelContainer: modelContainer)
         }
+        #if !os(watchOS)
         .task(priority: .background) {
             if !scanIpAutomatically {
                 return
@@ -150,12 +166,13 @@ struct SettingsView: View {
             isScanning = true
             await self.scanningActor.scanIPV4Once()
         }
+        #endif
     }
     
     @ViewBuilder
     var addDeviceButton: some View {
         Button("Add device", systemImage: "plus") {
-            let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, id: UUID().uuidString)
+            let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, id: "roam:newdevice-\(UUID().uuidString)")
             do {
                 modelContext.insert(newDevice)
                 try modelContext.save()
@@ -163,11 +180,11 @@ struct SettingsView: View {
             } catch {
                 Self.logger.error("Error inserting new device \(error)")
             }
-            
         }
         
     }
     
+    #if !os(watchOS)
     @ViewBuilder
     var scanDevicesButton: some View {
         Button(isScanning ? "Scanning for devices..." : "Scan for devices", systemImage: isScanning ? "rays" : "arrow.clockwise") {
@@ -181,8 +198,8 @@ struct SettingsView: View {
             }
         }
         .symbolEffect(.variableColor, isActive: isScanning)
-        
-    }
+    }   
+    #endif
 }
 
 struct DeviceListItem: View {

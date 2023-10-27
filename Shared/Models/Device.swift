@@ -144,7 +144,7 @@ actor DeviceActor {
         return links.map {$0.toAppEntity()}
     }
     
-    public func suggestedEntities() throws -> [DeviceAppEntity] {
+    public func allDeviceEntities() throws -> [DeviceAppEntity] {
         var descriptor = FetchDescriptor<Device>()
         descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
         let links = try modelContext.fetch(
@@ -214,7 +214,9 @@ actor DeviceActor {
                 Self.logger.info("Failed to get device info \(device.location)")
                 return
             }
-            if deviceInfo.udn != device.id {
+            if device.id.starts(with: "roam:newdevice-") {
+                device.id = deviceInfo.udn
+            } else if deviceInfo.udn != device.id {
                 return
             }
             

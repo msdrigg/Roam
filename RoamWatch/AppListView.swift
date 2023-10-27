@@ -8,8 +8,6 @@ struct AppListView: View {
         category: String(describing: AppListView.self)
     )
     
-    let ecpSession: ECPSession?
-    
     let device: DeviceAppEntity?
     let apps: [AppLinkAppEntity]
     
@@ -29,7 +27,7 @@ struct AppListView: View {
                     incrementAppPressCount(app.id)
                     Task {
                         do {
-                            try await ecpSession?.openApp(app)
+                            try await launchApp(app: app, device: device)
                         } catch {
                             Self.logger.error("Error opening app \(app.id): \(error)")
                         }

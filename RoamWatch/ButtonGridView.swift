@@ -8,8 +8,6 @@ struct ButtonGridView: View {
         category: String(describing: ButtonGridView.self)
     )
     
-    let ecpSession: ECPSession?
-    
     let device: DeviceAppEntity?
     let controls: [[RemoteButton?]]
     
@@ -34,7 +32,7 @@ struct ButtonGridView: View {
                                     incrementButtonPressCount(button)
                                     Task {
                                         do {
-                                            try await ecpSession?.pressButton(button)
+                                            try await clickButton(button: button, device: device)
                                         } catch {
                                             Self.logger.error("Error pressing button \(String(describing: button)): \(error)")
                                         }

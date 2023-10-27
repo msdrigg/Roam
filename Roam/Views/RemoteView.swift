@@ -1,4 +1,5 @@
 import SwiftUI
+import AsyncAlgorithms
 import Intents
 import SwiftData
 import os
@@ -154,6 +155,16 @@ struct RemoteView: View {
             SettingsNavigationWrapper(path: $navigationPath) {
                 remotePage
             }
+            #if os(iOS)
+            .task(id: devices.count, priority: .background) {
+                // Send devices to connected watch
+                DeviceTransferManager.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
+
+                for await _ in AsyncTimerSequence.repeating(every: .seconds(60 * 10)) {
+                    DeviceTransferManager.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
+                }
+            }
+            #endif
             .task(priority: .background) {
                 await withDiscardingTaskGroup { taskGroup in
                     taskGroup.addTask {
@@ -266,21 +277,14 @@ struct RemoteView: View {
                     if isHorizontal {
                         horizontalBody(isSmallHeight: isSmallHeight)
 #if os(iOS)
-                            .contentShape(Rectangle())
-                            .simultaneousGesture(TapGesture().onEnded {
-                                keyboardLeaving = true
-                                withAnimation {
-                                    showKeyboardEntry = false
-                                }
-                            })
                             .overlay {
                                 CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
                                     let key: RemoteButton
-                                        switch volumeEvent.direction {
-                                        case .Up:
-                                            key = .volumeUp
-                                        case .Down:
-                                            key = .volumeDown
+                                    switch volumeEvent.direction {
+                                    case .Up:
+                                        key = .volumeUp
+                                    case .Down:
+                                        key = .volumeDown
                                     }
                                     pressButton(key)
                                 }
@@ -290,21 +294,14 @@ struct RemoteView: View {
                     } else {
                         verticalBody(isSmallHeight: isSmallHeight)
 #if os(iOS)
-                            .contentShape(Rectangle())
-                            .simultaneousGesture(TapGesture().onEnded {
-                                keyboardLeaving = true
-                                withAnimation {
-                                    showKeyboardEntry = false
-                                }
-                            })
                             .overlay {
                                 CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
                                     let key: RemoteButton
-                                        switch volumeEvent.direction {
-                                        case .Up:
-                                            key = .volumeUp
-                                        case .Down:
-                                            key = .volumeDown
+                                    switch volumeEvent.direction {
+                                    case .Up:
+                                        key = .volumeUp
+                                    case .Down:
+                                        key = .volumeDown
                                     }
                                     pressButton(key)
                                 }
@@ -312,18 +309,48 @@ struct RemoteView: View {
 #endif
                     }
                     
-#if os(iOS)
                     if showKeyboardEntry {
-                        KeyboardEntry(str: $keyboardEntryText, onKeyPress: {char in
-                            let _ = self.pressKey(char)
-                        }, leaving: keyboardLeaving)
-                        .zIndex(1)
+                        Spacer()
                     }
-#endif
-                    
                 }
                 Spacer()
             }
+#if os(iOS)
+            .overlay {
+                if showKeyboardEntry {
+                    GeometryReader { proxy in
+                        ScrollView {
+                            VStack {
+                                Button(action: {
+                                    print("Tapping!!")
+                                    keyboardLeaving = true
+                                    withAnimation {
+                                        showKeyboardEntry = false
+                                    }
+                                    
+                                }) {
+                                    ZStack {
+                                        Rectangle() .foregroundColor(.clear)
+                                        VStack {
+                                            Spacer()
+                                        }
+                                    }            .contentShape(Rectangle())
+                                }
+                                .frame(maxHeight: .infinity)
+                                .buttonStyle(.plain)
+                                
+                                KeyboardEntry(str: $keyboardEntryText, showing: $showKeyboardEntry, onKeyPress: {char in
+                                    let _ = self.pressKey(char)
+                                }, leaving: keyboardLeaving)
+                                .zIndex(1)
+                            }.frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                        }
+                        .scrollIndicators(.never)
+                        .scrollDismissesKeyboard(.interactively)
+                    }
+                }
+            }
+#endif
             .disabled(selectedDevice == nil)
             .padding(.horizontal, 20)
             .padding(.top, 20)

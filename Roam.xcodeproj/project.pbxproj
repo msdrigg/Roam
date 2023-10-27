@@ -21,7 +21,6 @@
 		AF0C828C2AEB494D00CBE7F8 /* VolumeSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */; };
 		AF0C828E2AEBE50800CBE7F8 /* VolumeListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C828D2AEBE50800CBE7F8 /* VolumeListener.swift */; };
 		AF0C82902AEBF2A200CBE7F8 /* ECPSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C828F2AEBF2A200CBE7F8 /* ECPSession.swift */; };
-		AF0C82912AEBF99400CBE7F8 /* ECPSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C828F2AEBF2A200CBE7F8 /* ECPSession.swift */; };
 		AF0C82932AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */; };
 		AF0C82952AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */; };
 		AF0C82962AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */; };
@@ -101,6 +100,8 @@
 		AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFC4A65F2AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
 		AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
+		AFD590D02AEC673C00189620 /* WatchConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590CF2AEC673C00189620 /* WatchConnector.swift */; };
+		AFD590D22AEC692700189620 /* IPhoneConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590D12AEC692700189620 /* IPhoneConnector.swift */; };
 		AFD9C4D92AE97FA600C4079C /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36C2AD2D41100527AF6 /* Device.swift */; };
 		AFD9C4DA2AE97FDA00C4079C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AFD9C4DB2AE97FE100C4079C /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA165BF2AE92F92003F45ED /* AboutView.swift */; };
@@ -270,6 +271,9 @@
 		AFC6E6962ADDF6BB0036EC90 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		AFC6E6A12ADDF6BC0036EC90 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
 		AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
+		AFD590CF2AEC673C00189620 /* WatchConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnector.swift; sourceTree = "<group>"; };
+		AFD590D12AEC692700189620 /* IPhoneConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPhoneConnector.swift; sourceTree = "<group>"; };
+		AFD590D32AEC6B4600189620 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS17.0.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
 		AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallAppView.swift; sourceTree = "<group>"; };
 		AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallRemoteView.swift; sourceTree = "<group>"; };
 		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
@@ -334,6 +338,7 @@
 				AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */,
 				AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */,
 				AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */,
+				AFD590D12AEC692700189620 /* IPhoneConnector.swift */,
 			);
 			path = RoamWatch;
 			sourceTree = "<group>";
@@ -387,6 +392,7 @@
 		AF4D5F322AD4355E0055AF35 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AFD590D32AEC6B4600189620 /* WatchConnectivity.framework */,
 				AFC6E6962ADDF6BB0036EC90 /* Intents.framework */,
 				AFC6E6A12ADDF6BC0036EC90 /* IntentsUI.framework */,
 				AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */,
@@ -497,6 +503,7 @@
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
 				AFC4A6592AE88411005DAC6C /* LatencyListener.swift */,
 				AF0C828D2AEBE50800CBE7F8 /* VolumeListener.swift */,
+				AFD590CF2AEC673C00189620 /* WatchConnector.swift */,
 				AF0C82862AEB3AA500CBE7F8 /* Views */,
 				AF95B74D2ADF43A4005FC338 /* AudioPlayer */,
 				AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */,
@@ -700,7 +707,6 @@
 				AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */,
 				AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */,
 				AFD9C4F82AE983A800C4079C /* Scanner.swift in Sources */,
-				AF0C82912AEBF99400CBE7F8 /* ECPSession.swift in Sources */,
 				AFD9C4DA2AE97FDA00C4079C /* SettingsView.swift in Sources */,
 				AF0042762AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
 				AFD9C4E42AE9809900C4079C /* AppLinkAppEntity.swift in Sources */,
@@ -719,6 +725,7 @@
 				AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */,
 				AFD9C4E62AE980A500C4079C /* ButtonPressIntents.swift in Sources */,
 				AFD9C4E52AE980A000C4079C /* WidgetIntents.swift in Sources */,
+				AFD590D22AEC692700189620 /* IPhoneConnector.swift in Sources */,
 				AF00427D2AEA95D90051BB1E /* DataImage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -801,6 +808,7 @@
 				AF0042852AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */,
 				AF19CA352AE694E500A42DFF /* AsyncThrowingBufferedChannel.swift in Sources */,
 				AFA079DD2AE02561003E2754 /* AppLinkAppEntity.swift in Sources */,
+				AFD590D02AEC673C00189620 /* WatchConnector.swift in Sources */,
 				AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */,
 				AF19CA1B2AE4510900A42DFF /* RTP.swift in Sources */,
 				AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */,
