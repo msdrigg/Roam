@@ -28,6 +28,7 @@
 		AF0C82972AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */; };
 		AF0C82982AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */; };
 		AF0C82992AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */; };
+		AF0C82A82AEC0C2C00CBE7F8 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
 		AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36E2AD35D2800527AF6 /* SettingsView.swift */; };
 		AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */; };
 		AF15C2532AE8672800B79FD9 /* Roam.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF15C2462AE8672700B79FD9 /* Roam.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -419,7 +420,6 @@
 		AF56E3BB2AD9865400F5E6E0 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				AF19CA332AE694CE00A42DFF /* BufferedChannel */,
 				AF19CA132AE4471200A42DFF /* AsyncHelpers.swift */,
 				AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */,
 				AF19CA222AE455B400A42DFF /* DataHelpers.swift */,
@@ -451,6 +451,7 @@
 				AF19CA1A2AE4510900A42DFF /* RTP.swift */,
 				AF19CA1D2AE4517600A42DFF /* RTCP.swift */,
 				AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */,
+				AF19CA332AE694CE00A42DFF /* BufferedChannel */,
 			);
 			path = AudioPlayer;
 			sourceTree = "<group>";
@@ -712,6 +713,7 @@
 				AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */,
 				AFD9C4EB2AE980BD00C4079C /* AsyncHelpers.swift in Sources */,
 				AFD9C4FC2AE983C700C4079C /* AsyncSemaphore.swift in Sources */,
+				AF0C82A82AEC0C2C00CBE7F8 /* Shortcuts.swift in Sources */,
 				AFD9C4E32AE9808E00C4079C /* DeviceAppEntity.swift in Sources */,
 				AFD9C4E82AE980AA00C4079C /* RemoteButtonAppEnum.swift in Sources */,
 				AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */,
