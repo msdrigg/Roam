@@ -19,7 +19,7 @@ A Roku remote that puts users first
 - Open in xcode 15
 - Run in iOS, macOS, or watchOS
 
---- or ---
+**_OR_**
 
 - Download on the app store [here](https://apps.apple.com/us/app/roam/6469834197)
 
