@@ -17,6 +17,18 @@ let BUTTON_HEIGHT: CGFloat = 20
 
 let MAJOR_ACTIONS: [RemoteButton] = [.power, .playPause, .mute, .privateListening]
 
+private let deviceFetchDescriptor: FetchDescriptor<Device> = {
+    var fd = FetchDescriptor(
+        predicate: #Predicate {
+            $0.deletedAt == nil
+        },
+        sortBy: [SortDescriptor(\Device.name, order: .reverse)]
+    )
+    fd.relationshipKeyPathsForPrefetching = [\.apps]
+    fd.propertiesToFetch = [\.id, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
+    
+    return fd
+}()
 
 struct RemoteView: View {
     private static let logger = Logger(
@@ -27,7 +39,7 @@ struct RemoteView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) var scenePhase
     
-    @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
+    @Query(deviceFetchDescriptor) private var devices: [Device]
     
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var manuallySelectedDevice: Device?
@@ -44,9 +56,6 @@ struct RemoteView: View {
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
     
-    enum FocusField: Hashable {
-        case field
-    }
     @FocusState private var focused: Bool
     
 #if os(iOS)
@@ -155,16 +164,16 @@ struct RemoteView: View {
             SettingsNavigationWrapper(path: $navigationPath) {
                 remotePage
             }
-            #if os(iOS)
+#if os(iOS)
             .task(id: devices.count, priority: .background) {
                 // Send devices to connected watch
                 DeviceTransferManager.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
-
+                
                 for await _ in AsyncTimerSequence.repeating(every: .seconds(60 * 10)) {
                     DeviceTransferManager.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
                 }
             }
-            #endif
+#endif
             .task(priority: .background) {
                 await withDiscardingTaskGroup { taskGroup in
                     taskGroup.addTask {
@@ -258,22 +267,6 @@ struct RemoteView: View {
             HStack {
                 Spacer()
                 VStack(alignment: .center) {
-                    if selectedDevice == nil {
-                        // Banner Content Here
-                        VStack(spacing: 2) {
-                            HStack {
-                                Label("Setup a device to get started :)", systemImage: "gear")
-                            }
-                            .padding(8)
-                            .background(Color("AccentColor"))
-                            .cornerRadius(6)
-                            .frame(maxWidth: .infinity)
-                            .font(.subheadline)
-                            .labelStyle(.titleAndIcon)
-                            Spacer().frame(maxHeight: 8)
-                        }
-                    }
-                    
                     if isHorizontal {
                         horizontalBody(isSmallHeight: isSmallHeight)
 #if os(iOS)
@@ -395,6 +388,46 @@ struct RemoteView: View {
                     .disabled(selectedDevice == nil)
                 }
 #endif
+            }
+            .overlay {
+                if selectedDevice == nil {
+                    VStack(spacing: 2) {
+                        Spacer().frame(maxHeight: 120)
+#if os(macOS)
+                            SettingsLink {
+                                Label("Setup a device to get started :)", systemImage: "gear")
+                                    .frame(maxWidth: .infinity)
+                                    .font(.subheadline)
+                                    .padding(8)
+                                    .background(Color("AccentColor"))
+                                    .cornerRadius(6)
+                                    .padding(.horizontal, 40)
+                            }
+                            .shadow(radius: 4)
+
+#else
+                            NavigationLink(value: SettingsDestination.Global) {
+                                Label("Setup a device to get started :)", systemImage: "gear")
+                                    .frame(maxWidth: .infinity)
+                                    .font(.subheadline)
+                                    .padding(8)
+                                    .background(Color("AccentColor"))
+                                    .cornerRadius(6)
+                                    .padding(.horizontal, 40)
+                            }
+                            .shadow(radius: 4)
+#endif
+
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                    }
+                    .buttonStyle(.plain)
+                    .labelStyle(.titleAndIcon)
+                }
+            }
+            .onAppear {
+                modelContext.processPendingChanges()
             }
             .animation(.default, value: selectedDevice?.appsSorted.count)
             .onAppear {

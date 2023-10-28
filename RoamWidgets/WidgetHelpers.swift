@@ -16,11 +16,7 @@ struct RemoteControlProvider: AppIntentTimelineProvider {
     private let modelContainer: ModelContainer
     
     init() {
-        do {
-            modelContainer = try getSharedModelContainer()
-        } catch {
-            fatalError("Failed to create the model container: \(error)")
-        }
+        modelContainer = getSharedModelContainer()
     }
     
     func snapshot(for configuration: DeviceChoiceIntent, in context: Context) async -> DeviceChoiceTimelineEntity {

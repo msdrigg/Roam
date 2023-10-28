@@ -24,23 +24,19 @@ class DeviceReceiverManager: NSObject, WCSessionDelegate {
         if let deviceMap = userInfo as? [String: String] {
             Self.logger.info("Trying to add devices \(deviceMap)")
             Task {
-                do {
-                    let modelContainer = try getSharedModelContainer()
-                    let deviceActor = DeviceActor(modelContainer: modelContainer)
-                    for device in deviceMap {
-                        if await deviceActor.deviceExists(id: device.key) {
-                            Self.logger.info("Device aleady exists \(device.key)")
-                            continue
-                        }
-                        do {
-                            let pid = try await deviceActor.addDevice(location: device.value, friendlyDeviceName: "New device", id: device.key)
-                            await deviceActor.refreshDevice(pid)
-                        } catch {
-                            Self.logger.error("Unable to add new device \(device.key), \(device.value) with error \(error)")
-                        }
+                let modelContainer = getSharedModelContainer()
+                let deviceActor = DeviceActor(modelContainer: modelContainer)
+                for device in deviceMap {
+                    if await deviceActor.deviceExists(id: device.key) {
+                        Self.logger.info("Device aleady exists \(device.key)")
+                        continue
                     }
-                } catch {
-                    Self.logger.error("Unable to add new devices with error \(error)")
+                    do {
+                        let pid = try await deviceActor.addDevice(location: device.value, friendlyDeviceName: "New device", id: device.key)
+                        await deviceActor.refreshDevice(pid)
+                    } catch {
+                        Self.logger.error("Unable to add new device \(device.key), \(device.value) with error \(error)")
+                    }
                 }
             }
         } else {

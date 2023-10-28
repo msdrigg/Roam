@@ -5,9 +5,10 @@ import os
 
 let CheckConnectLogger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
-    category: String(describing: canConnectTCP)
+    category: "TCPConnectionChecker"
 )
 
+#if !os(watchOS)
 public func tryConnectTCP(location: String, timeout: TimeInterval, interface: NWInterface? = nil) async -> NWInterface? {
     CheckConnectLogger.debug("Checking can connect to url \(location)")
     guard let url = URL(string: location),
@@ -27,7 +28,6 @@ public func tryConnectTCP(location: String, timeout: TimeInterval, interface: NW
         await withTaskCancellationHandler {
             let stream = AsyncStream { continuation in
                 connection.stateUpdateHandler = { state in
-                    CheckConnectLogger.debug("Received continuation for state \(String(describing: state))")
                     switch state {
                     case .ready:
                         CheckConnectLogger.debug("Ready with ifaces \(String(describing: connection.currentPath?.availableInterfaces))")
@@ -58,3 +58,27 @@ public func tryConnectTCP(location: String, timeout: TimeInterval, interface: NW
 public func canConnectTCP(location: String, timeout: TimeInterval, interface: NWInterface? = nil) async -> Bool {
     return await tryConnectTCP(location: location, timeout: timeout, interface: interface) != nil
 }
+#else
+public func canConnectHTTP(location: String, timeout: TimeInterval) async -> Bool {
+    let result = try? await withTimeout(delay: timeout) {
+        let url = URL(string: location)!
+        let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: timeout)
+        
+        let stream = AsyncStream<Bool> { continuation in
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
+                    continuation.yield(true)
+                } else {
+                    continuation.yield(false)
+                }
+            }
+            
+            task.resume()
+        }
+        
+        var iterator = stream.makeAsyncIterator()
+        return await iterator.next() ?? false
+    } ?? false
+    return result ?? false
+}
+#endif

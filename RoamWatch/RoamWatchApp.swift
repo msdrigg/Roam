@@ -6,11 +6,7 @@ import os.log
 struct RoamWatch: App {
     var sharedModelContainer: ModelContainer
     init() {
-        do {
-            sharedModelContainer = try getSharedModelContainer()
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
+        sharedModelContainer = getSharedModelContainer()
     }
     
     var body: some Scene {
@@ -45,6 +41,19 @@ let CONTROLS: [[RemoteButton?]] = [
     ]
 ]
 
+
+private let deviceFetchDescriptor: FetchDescriptor<Device> = {
+    var fd = FetchDescriptor(
+        predicate: #Predicate {
+            $0.deletedAt == nil
+        },
+        sortBy: [SortDescriptor(\Device.name, order: .reverse)])
+    fd.relationshipKeyPathsForPrefetching = [\.apps]
+    fd.propertiesToFetch = [\.id, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
+    
+    return fd
+}()
+
 struct WatchAppView: View {
     static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -53,8 +62,9 @@ struct WatchAppView: View {
     
     @State private var scanningActor: DeviceDiscoveryActor!
     
-    @Query(sort: \Device.name, order: .reverse) private var devices: [Device]
+    @Query(deviceFetchDescriptor) private var devices: [Device]
     @State private var manuallySelectedDevice: Device?
+    @State private var showDeviceList: Bool = false
     
     @Environment(\.modelContext) private var modelContext
     
@@ -70,6 +80,8 @@ struct WatchAppView: View {
         }
     }
     
+    @State var navPath = NavigationPath()
+    
     var mainBody: some View {
         NavigationStack {
             TabView {
@@ -80,12 +92,14 @@ struct WatchAppView: View {
                 
                 AppListView(device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [])
             }
+                .disabled(selectedDevice == nil)
                 .navigationTitle(selectedDevice?.name ?? "No device")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     DevicePicker(
                         devices: devices,
-                        device: $manuallySelectedDevice.withDefault(selectedDevice)
+                        device: $manuallySelectedDevice.withDefault(selectedDevice),
+                        showingPicker: $showDeviceList
                     )
                     .font(.body)
                 }
@@ -94,6 +108,26 @@ struct WatchAppView: View {
             .onAppear {
                 let modelContainer = modelContext.container
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
+                modelContext.processPendingChanges()
+            }
+            .overlay {
+                if selectedDevice == nil {
+                    VStack(spacing: 2) {
+                        Spacer().frame(maxHeight: 120)
+                        Button(action: {showDeviceList = true}) {
+                            Label("Setup a device to get started :)", systemImage: "gear")
+                                .frame(maxWidth: .infinity)
+                                .font(.subheadline)
+                                .padding(8)
+                                .background(Color("AccentColor"))
+                                .cornerRadius(6)
+                                .padding(.horizontal, 4)
+                        }
+                        .shadow(radius: 4)
+                    }
+                    .buttonStyle(.plain)
+                    .labelStyle(.titleAndIcon)
+                }
             }
         }
     }

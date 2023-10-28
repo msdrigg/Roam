@@ -20,7 +20,7 @@ struct DevicePicker: View {
     
     let devices: [Device]
     @Binding var device: Device?
-    @State var showingPicker: Bool = false
+    @Binding var showingPicker: Bool
     @State var navPath = NavigationPath()
     
     @State var deviceActor: DeviceActor!

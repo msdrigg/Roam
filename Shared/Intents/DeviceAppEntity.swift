@@ -11,18 +11,18 @@ public struct DeviceAppEntity: AppEntity {
         }
         
         public func entities(for identifiers: [DeviceAppEntity.ID]) async throws -> [DeviceAppEntity] {
-            let deviceActor = try DeviceActor(modelContainer: getSharedModelContainer())
+            let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
             
             return try await deviceActor.entities(for: identifiers)
         }
         
         public func entities(matching string: String) async throws -> [DeviceAppEntity] {
-            let deviceActor = try DeviceActor(modelContainer: getSharedModelContainer())
+            let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
             return try await deviceActor.entities(matching: string)
         }
         
         public func suggestedEntities() async throws -> [DeviceAppEntity] {
-            let deviceActor = try DeviceActor(modelContainer: getSharedModelContainer())
+            let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
             return try await deviceActor.allDeviceEntities()
         }
     }
