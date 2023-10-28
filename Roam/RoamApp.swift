@@ -5,11 +5,7 @@ import SwiftData
 struct RoamApp: App {
     var sharedModelContainer: ModelContainer
     init() {
-        do {
-            sharedModelContainer = try getSharedModelContainer()
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
+        sharedModelContainer = getSharedModelContainer()
     }
     
 
@@ -26,8 +22,8 @@ struct RoamApp: App {
         Settings {
             MacSettings()
         }
-        .windowToolbarStyle(.unified(showsTitle: true))
         .modelContainer(sharedModelContainer)
+        .windowToolbarStyle(.unified(showsTitle: true))
         #endif
 
     }

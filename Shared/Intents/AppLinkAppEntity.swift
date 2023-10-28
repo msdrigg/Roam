@@ -13,19 +13,19 @@ public struct AppLinkAppEntity: AppEntity, Identifiable, Equatable {
         
         public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
 //            let device = launchAppIntent?.device
-            let appLinkActor = try AppLinkActor(modelContainer: getSharedModelContainer())
+            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
             return try await appLinkActor.entities(for: identifiers)
         }
         
         func entities(matching string: String) async throws -> [AppLinkAppEntity] {
 //            let device = launchAppIntent?.device
    
-            let appLinkActor = try AppLinkActor(modelContainer: getSharedModelContainer())
+            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
             return try await appLinkActor.entities(matching: string)
         }
         
         public func suggestedEntities() async throws -> [AppLinkAppEntity] {
-            let appLinkActor = try AppLinkActor(modelContainer: getSharedModelContainer())
+            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
             return try await appLinkActor.suggestedEntities()
         }
     }
@@ -56,7 +56,7 @@ public extension AppLink {
 }
 
 public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async throws {
-    let modelContainer = try getSharedModelContainer()
+    let modelContainer = getSharedModelContainer()
     
     var targetDevice = device
     if targetDevice == nil {

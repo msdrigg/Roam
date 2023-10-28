@@ -9,14 +9,12 @@ public final class AppLink: Identifiable, Decodable, Encodable {
     public let name: String
     public var lastSelected: Date? = nil
     @Attribute(.externalStorage) public var icon: Data?
-    @Relationship(inverse: \Device.apps) public var devices: [Device] = [Device]()
     
     init(id: String, type: String, name: String, icon: Data? = nil, devices: [Device] = []) {
         self.id = id
         self.type = type
         self.name = name
         self.icon = icon
-        self.devices = devices
     }
     
     public init(from decoder: Decoder) throws {
@@ -26,8 +24,6 @@ public final class AppLink: Identifiable, Decodable, Encodable {
         
         let singleValueContainer = try decoder.singleValueContainer()
         name = try singleValueContainer.decode(String.self)
-        
-        devices = []
     }
     
     public func encode(to encoder: Encoder) throws {

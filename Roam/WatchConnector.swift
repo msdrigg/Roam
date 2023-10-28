@@ -50,7 +50,7 @@ class DeviceTransferManager: NSObject, WCSessionDelegate {
         Self.logger.error("WCSession activated with error: \(error)")
         Task {
             do {
-                let container = try getSharedModelContainer()
+                let container = getSharedModelContainer()
                 let devices = try await DeviceActor(modelContainer: container).allDeviceEntities()
                 DispatchQueue.main.async {
                     self.transferDevices(devices: devices)

@@ -103,7 +103,11 @@ public func openApp(location: String, app: String) async throws {
 public func powerToggleDevice(location: String, mac: String?) async {
     logger.debug("Toggling power for device \(location)")
     
+    #if !os(watchOS)
     let onlineAtFirst = await canConnectTCP(location: location, timeout: 0.5)
+    #else
+    let onlineAtFirst = await canConnectHTTP(location: location, timeout: 2)
+    #endif
     
     // Attempt WOL if not already connected
     if !onlineAtFirst {

@@ -2,6 +2,18 @@ import SwiftUI
 import SwiftData
 import os
 
+
+private let deviceFetchDescriptor: FetchDescriptor<Device> = {
+    var fd = FetchDescriptor(
+        predicate: #Predicate {
+            $0.deletedAt == nil
+        },
+        sortBy: [SortDescriptor(\Device.lastSelectedAt)])
+    fd.relationshipKeyPathsForPrefetching = [\.apps]
+    fd.propertiesToFetch = [\.id, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt, \.deviceIcon]
+    return fd
+}()
+
 struct SettingsView: View {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -9,14 +21,14 @@ struct SettingsView: View {
     )
     
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Device.lastSelectedAt) private var devices: [Device]
+    @Query(deviceFetchDescriptor) private var devices: [Device]
     @Binding var path: NavigationPath
     
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var isScanning: Bool = false
     
     @State private var deviceActor: DeviceActor!
-
+    
     
     @State private var tabSelection = 0
     @State private var showWatchOSNote = false
@@ -33,14 +45,15 @@ struct SettingsView: View {
                 } else {
                     ForEach(devices) { device in
                         DeviceListItem(device: device)
-                        #if !os(watchOS)
+                            .id("\(device.id),\(device.name),\(device.location),\(device.isOnline())")
+#if !os(watchOS)
                             .contextMenu {
                                 Button(role: .destructive) {
                                     Task {
                                         do {
                                             try await deviceActor.delete(device.persistentModelID)
                                         } catch {
-                                             Self.logger.error("Error deleting device \(error)")
+                                            Self.logger.error("Error deleting device \(error)")
                                         }
                                     }
                                     
@@ -51,14 +64,14 @@ struct SettingsView: View {
                                     Label("Edit", systemImage: "pencil")
                                 }
                             }
-                        #endif
+#endif
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     Task {
                                         do {
                                             try await deviceActor.delete(device.persistentModelID)
                                         } catch {
-                                             Self.logger.error("Error deleting device \(error)")
+                                            Self.logger.error("Error deleting device \(error)")
                                         }
                                     }
                                     
@@ -76,7 +89,7 @@ struct SettingsView: View {
                                     }
                                 }
                             } catch {
-                                 Self.logger.error("Error deleting device \(error)")
+                                Self.logger.error("Error deleting device \(error)")
                             }
                         }
                     }
@@ -92,7 +105,7 @@ struct SettingsView: View {
 #endif
             }
             
-            #if os(watchOS)
+#if os(watchOS)
             Button("WatchOS Note", systemImage: "info.circle.fill", action: {showWatchOSNote = true})
                 .sheet(isPresented: $showWatchOSNote) {
                     NavigationStack {
@@ -105,9 +118,9 @@ struct SettingsView: View {
                         }
                     }
                 }
-            #endif
+#endif
             
-                #if !os(watchOS)
+#if !os(watchOS)
             Section("Behavior") {
 #if os(iOS)
                 Toggle("Use volume buttons to control TV volume", isOn: $controlVolumeWithHWButtons)
@@ -115,11 +128,12 @@ struct SettingsView: View {
                 
                 Toggle("Scan for devices automatically", isOn: $scanIpAutomatically)
             }
-                #endif
+#endif
             
             NavigationLink("About", value: AboutDestination.Global)
         }
-        #if os(iOS)
+        
+#if os(iOS)
         .refreshable {
             isScanning = true
             defer {
@@ -137,23 +151,25 @@ struct SettingsView: View {
                 addDeviceButton
             }
         }
-        #elseif os(watchOS)
+#elseif os(watchOS)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 addDeviceButton
             }
         }
-        #endif
-        #if !os(watchOS)
+#endif
+#if !os(watchOS)
         .navigationTitle("Settings")
-        #endif
+#endif
         .formStyle(.grouped)
         .onAppear {
             let modelContainer = modelContext.container
             self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
             self.deviceActor = DeviceActor(modelContainer: modelContainer)
+            
+            modelContext.processPendingChanges()
         }
-        #if !os(watchOS)
+#if !os(watchOS)
         .task(priority: .background) {
             if !scanIpAutomatically {
                 return
@@ -166,7 +182,7 @@ struct SettingsView: View {
             isScanning = true
             await self.scanningActor.scanIPV4Once()
         }
-        #endif
+#endif
     }
     
     @ViewBuilder
@@ -184,7 +200,7 @@ struct SettingsView: View {
         
     }
     
-    #if !os(watchOS)
+#if !os(watchOS)
     @ViewBuilder
     var scanDevicesButton: some View {
         Button(isScanning ? "Scanning for devices..." : "Scan for devices", systemImage: isScanning ? "rays" : "arrow.clockwise") {
@@ -198,14 +214,15 @@ struct SettingsView: View {
             }
         }
         .symbolEffect(.variableColor, isActive: isScanning)
-    }   
-    #endif
+    }
+#endif
 }
 
 struct DeviceListItem: View {
     @Bindable var device: Device
     
     var body: some View {
+        let _ = print("Device \(device.name)")
         NavigationLink(value: DeviceSettingsDestination(device)) {
             HStack(alignment: .center) {
                 VStack(alignment: .center) {
@@ -317,7 +334,7 @@ struct DeviceDetailView: View {
                 }
                 
                 
-                LabeledContent("Supports datagram") {
+                LabeledContent("Supports private listening") {
                     if let supportsDatagram = device.supportsDatagram {
                         if supportsDatagram {
                             Text("Yes!")
@@ -342,59 +359,31 @@ struct DeviceDetailView: View {
             deviceName = device.name
             deviceLocation = device.location
         }
+        .onDisappear {
+            Task {
+                await saveDevice()
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Save", systemImage: "checkmark", action: {
-                    Task {
-                        // Try to get device id
-                        
-                        var deviceInfo: DeviceInfo? = nil
-                        
-                        if await canConnectTCP(location: deviceLocation, timeout: 1) {
-                            deviceInfo = await fetchDeviceInfo(location: deviceLocation)
-                        }
-                        
-                        if let id = deviceInfo?.udn, id != device.id {
-                            do {
-                                let _ = try await deviceActor.addDevice(
-                                    location: deviceLocation, friendlyDeviceName: deviceName, id: id
-                                )
-                                try await deviceActor.delete(device.persistentModelID)
-
-                            } catch {
-                                Self.logger.error("Error saving devic \(error)")
-                            }
-                            dismiss()
-                            return
-                        }
-                        
-                        do {
-                            try await deviceActor.updateDevice(
-                                device.persistentModelID,
-                                name: deviceName,
-                                location: deviceLocation
-                            )
-                        } catch {
-                            Self.logger.error("Error saving devic \(error)")
-                        }
-                    }
                     dismiss()
                 })
             }
             
             ToolbarItem(placement: .destructiveAction) {
                 Button("Delete", systemImage: "trash", role: .destructive, action: {
-                        // Don't block the dismiss waiting for save
-                        Task {
-                            do {
-                                try await deviceActor.delete(device.persistentModelID)
-                            } catch {
-                                 Self.logger.error("Error deleting device \(error)")
-       
-                            }
+                    // Don't block the dismiss waiting for save
+                    Task {
+                        do {
+                            try await deviceActor.delete(device.persistentModelID)
+                        } catch {
+                            Self.logger.error("Error deleting device \(error)")
+                            
                         }
-
-                        dismiss()
+                    }
+                    
+                    dismiss()
                 })
                 .foregroundStyle(Color.red)
             }
@@ -408,6 +397,43 @@ struct DeviceDetailView: View {
 #if os(macOS)
         .padding()
 #endif
+    }
+    
+    func saveDevice() async {
+        // Try to get device id
+#if os(watchOS)
+        // Watchos can't check tcp connection, so just do the request
+        let deviceInfo = await fetchDeviceInfo(location: deviceLocation)
+#else
+        var deviceInfo: DeviceInfo? = nil
+        if await canConnectTCP(location: deviceLocation, timeout: 1) {
+            deviceInfo = await fetchDeviceInfo(location: deviceLocation)
+        }
+#endif
+        
+        if let id = deviceInfo?.udn, id != device.id {
+            do {
+                let _ = try await deviceActor.addDevice(
+                    location: deviceLocation, friendlyDeviceName: deviceName, id: id
+                )
+                try await deviceActor.delete(device.persistentModelID)
+                
+            } catch {
+                Self.logger.error("Error saving device \(error)")
+            }
+            dismiss()
+            return
+        }
+        
+        do {
+            try await deviceActor.updateDevice(
+                device.persistentModelID,
+                name: deviceName,
+                location: deviceLocation
+            )
+        } catch {
+            Self.logger.error("Error saving device \(error)")
+        }
     }
 }
 

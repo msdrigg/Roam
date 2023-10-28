@@ -65,7 +65,7 @@ public struct ButtonPressIntent: AppIntent, CustomIntentMigratedAppIntent, Predi
 }
 
 public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async throws {
-    let modelContainer = try getSharedModelContainer()
+    let modelContainer = getSharedModelContainer()
     
     var targetDevice = device
     if targetDevice == nil {
