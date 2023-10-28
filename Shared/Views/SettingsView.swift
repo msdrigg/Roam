@@ -10,7 +10,7 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
         },
         sortBy: [SortDescriptor(\Device.lastSelectedAt)])
     fd.relationshipKeyPathsForPrefetching = [\.apps]
-    fd.propertiesToFetch = [\.id, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt, \.deviceIcon]
+    fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt, \.deviceIcon]
     return fd
 }()
 
@@ -45,7 +45,7 @@ struct SettingsView: View {
                 } else {
                     ForEach(devices) { device in
                         DeviceListItem(device: device)
-                            .id("\(device.id),\(device.name),\(device.location),\(device.isOnline())")
+                            .id("\(device.udn)\(device.isOnline())\(device.location)")
 #if !os(watchOS)
                             .contextMenu {
                                 Button(role: .destructive) {
@@ -188,7 +188,7 @@ struct SettingsView: View {
     @ViewBuilder
     var addDeviceButton: some View {
         Button("Add device", systemImage: "plus") {
-            let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, id: "roam:newdevice-\(UUID().uuidString)")
+            let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, udn: "roam:newdevice-\(UUID().uuidString)")
             do {
                 modelContext.insert(newDevice)
                 try modelContext.save()
@@ -222,7 +222,6 @@ struct DeviceListItem: View {
     @Bindable var device: Device
     
     var body: some View {
-        let _ = print("Device \(device.name)")
         NavigationLink(value: DeviceSettingsDestination(device)) {
             HStack(alignment: .center) {
                 VStack(alignment: .center) {
@@ -312,7 +311,7 @@ struct DeviceDetailView: View {
             
             Section("Info") {
                 LabeledContent("Id") {
-                    Text(device.id)
+                    Text(device.udn)
                 }
                 LabeledContent("Last Selected") {
                     Text(device.lastSelectedAt?.formatted() ?? "Never")
@@ -411,12 +410,12 @@ struct DeviceDetailView: View {
         }
 #endif
         
-        if let id = deviceInfo?.udn, id != device.id {
+        // If we get a device with a different UDN, replace the device
+        if let udn = deviceInfo?.udn, udn != device.udn {
             do {
-                let _ = try await deviceActor.addDevice(
-                    location: deviceLocation, friendlyDeviceName: deviceName, id: id
+                let _ = try await deviceActor.addOrReplaceDevice(
+                    location: deviceLocation, friendlyDeviceName: deviceName, udn: udn
                 )
-                try await deviceActor.delete(device.persistentModelID)
                 
             } catch {
                 Self.logger.error("Error saving device \(error)")
@@ -429,7 +428,8 @@ struct DeviceDetailView: View {
             try await deviceActor.updateDevice(
                 device.persistentModelID,
                 name: deviceName,
-                location: deviceLocation
+                location: deviceLocation,
+                udn: device.udn
             )
         } catch {
             Self.logger.error("Error saving device \(error)")

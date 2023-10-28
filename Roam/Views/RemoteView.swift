@@ -25,7 +25,7 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
         sortBy: [SortDescriptor(\Device.name, order: .reverse)]
     )
     fd.relationshipKeyPathsForPrefetching = [\.apps]
-    fd.propertiesToFetch = [\.id, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
+    fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
     
     return fd
 }()
@@ -187,7 +187,7 @@ struct RemoteView: View {
                     }
                 }
             }
-            .task(id: selectedDevice?.id, priority: .medium) {
+            .task(id: selectedDevice?.location, priority: .medium) {
                 Self.logger.info("Creating ecp session \(String(describing: selectedDevice))")
                 let oldECP = self.ecpSession
                 Task.detached {
@@ -205,12 +205,12 @@ struct RemoteView: View {
                     ecpSession = nil
                 }
             }
-            .task(id: selectedDevice?.id, priority: .medium) {
+            .task(id: selectedDevice?.persistentModelID, priority: .medium) {
                 if let devId = selectedDevice?.persistentModelID {
                     await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                 }
             }
-            .task(id: privateListeningEnabled) {
+            .task(id: "\(privateListeningEnabled),\(selectedDevice?.location ?? "--")") {
                 if !privateListeningEnabled {
                     return
                 }

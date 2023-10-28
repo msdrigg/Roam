@@ -33,7 +33,7 @@ actor DeviceDiscoveryActor {
         }
         
         do {
-            let pid = try await deviceActor.addDevice(location: location, friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device", id: deviceInfo.udn)
+            let pid = try await deviceActor.addOrReplaceDevice(location: location, friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device", udn: deviceInfo.udn)
             Self.logger.info("Saved new device \(deviceInfo.udn), \(location)")
             await self.refreshDevice(id: pid)
             return true
