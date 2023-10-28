@@ -4,7 +4,7 @@ import os
 
 @Model
 public final class Device: Identifiable, Hashable {
-    @Attribute(.unique) public var id: String
+    @Attribute(.unique, originalName: "id") public var udn: String
     public var name: String
     public var location: String
     
@@ -36,11 +36,15 @@ public final class Device: Identifiable, Hashable {
         }) ?? []
     }
     
-    public init(name: String, location: String, lastSelectedAt: Date? = nil, lastOnlineAt: Date? = nil, id: String, apps: [AppLink] = []) {
+    public var id: PersistentIdentifier {
+        self.persistentModelID
+    }
+    
+    public init(name: String, location: String, lastSelectedAt: Date? = nil, lastOnlineAt: Date? = nil, udn: String, apps: [AppLink] = []) {
         self.name = name
         self.lastSelectedAt = lastSelectedAt
         self.lastOnlineAt = lastOnlineAt
-        self.id = id
+        self.udn = udn
         self.location = location
         
         self.apps = apps
@@ -70,8 +74,8 @@ public func getTestingDevices() -> [Device] {
     let apps = getTestingAppLinks()
     
     return [
-        Device(name: "Living Room TV", location: "http://192.168.0.1:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), id: "TD1", apps: apps),
-        Device(name: "2nd Living Room", location: "http://192.168.0.2:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60), id: "TD2", apps: [])
+        Device(name: "Living Room TV", location: "http://192.168.0.1:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), udn: "TD1", apps: apps),
+        Device(name: "2nd Living Room", location: "http://192.168.0.2:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60), udn: "TD2", apps: [])
     ]
 }
 
@@ -118,7 +122,7 @@ actor DeviceActor {
     public func entities(for identifiers: [DeviceAppEntity.ID]) throws -> [DeviceAppEntity] {
         let links = try modelContext.fetch(
             FetchDescriptor<Device>(predicate: #Predicate {
-                identifiers.contains($0.id) && $0.deletedAt == nil
+                identifiers.contains($0.udn) && $0.deletedAt == nil
             })
         )
         
@@ -147,13 +151,23 @@ actor DeviceActor {
     }
     
     
-    func addDevice(location: String, friendlyDeviceName: String, id: String) throws -> PersistentIdentifier {
+    func updateDevice(_ id: PersistentIdentifier, name: String, location: String, udn: String) throws {
+        Self.logger.info("Updating device at \(location)")
+        if let device = try? modelContext.existingDevice(for: id) {
+            device.location = location
+            device.name = name
+            device.udn = udn
+            try modelContext.save()
+        }
+    }
+    
+    func addOrReplaceDevice(location: String, friendlyDeviceName: String, udn: String) throws -> PersistentIdentifier {
         Self.logger.info("Adding device at \(location)")
         let device = Device(
             name: friendlyDeviceName,
             location: location,
             lastOnlineAt: Date.now,
-            id: id
+            udn: udn
         )
         modelContext.insert(device)
         
@@ -164,14 +178,6 @@ actor DeviceActor {
         return device.persistentModelID
     }
     
-    func updateDevice(_ id: PersistentIdentifier, name: String, location: String) throws {
-        Self.logger.info("Updating device at \(location)")
-        if let device = try? modelContext.existingDevice(for: id) {
-            device.location = location
-            device.name = name
-            try modelContext.save()
-        }
-    }
     
     func deleteInPast() throws {
         Self.logger.info("Hard deleting devices")
@@ -205,7 +211,7 @@ actor DeviceActor {
         matchingIds.includePendingChanges = true
         
         return ((try? modelContext.fetch(matchingIds)) ?? []).contains {
-            $0.id == id
+            $0.udn == id
         }
     }
     
@@ -237,9 +243,9 @@ actor DeviceActor {
         }
         
         if let device = try? modelContext.existingDevice(for: id) {
-            if device.id.starts(with: "roam:newdevice-") {
-                device.id = deviceInfo.udn
-            } else if deviceInfo.udn != device.id {
+            if device.udn.starts(with: "roam:newdevice-") {
+                device.udn = deviceInfo.udn
+            } else if deviceInfo.udn != device.udn {
                 return
             }
             
@@ -365,7 +371,7 @@ private extension ModelContext {
                 $0.persistentModelID == objectID && $0.deletedAt == nil
             })
         fetchDescriptor.relationshipKeyPathsForPrefetching = [\.apps]
-        fetchDescriptor.propertiesToFetch = [\.id, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
+        fetchDescriptor.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
         
         return try fetch(fetchDescriptor).first
     }

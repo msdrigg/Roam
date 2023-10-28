@@ -49,7 +49,7 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
         },
         sortBy: [SortDescriptor(\Device.name, order: .reverse)])
     fd.relationshipKeyPathsForPrefetching = [\.apps]
-    fd.propertiesToFetch = [\.id, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
+    fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
     
     return fd
 }()
@@ -138,7 +138,7 @@ struct WatchAppView: View {
             mainBody
         } else {
             mainBody
-                .task(id: selectedDevice?.id, priority: .medium) {
+                .task(id: selectedDevice?.persistentModelID, priority: .medium) {
                     if let devId = selectedDevice?.persistentModelID {
                         await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                     }

@@ -32,7 +32,7 @@ class DeviceReceiverManager: NSObject, WCSessionDelegate {
                         continue
                     }
                     do {
-                        let pid = try await deviceActor.addDevice(location: device.value, friendlyDeviceName: "New device", id: device.key)
+                        let pid = try await deviceActor.addOrReplaceDevice(location: device.value, friendlyDeviceName: "New device", udn: device.key)
                         await deviceActor.refreshDevice(pid)
                     } catch {
                         Self.logger.error("Unable to add new device \(device.key), \(device.value) with error \(error)")
