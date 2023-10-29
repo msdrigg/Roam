@@ -8,7 +8,7 @@ private let logger = Logger(
     category: String(describing: "SSDPDiscovery")
 )
 
-enum SSDPError: Error, LocalizedError {
+enum SSDPError: Swift.Error, LocalizedError {
     case SocketCreationFailed
     case ConnectionGroupFailed
 }
@@ -20,7 +20,7 @@ func htons(_ value: CUnsignedShort) -> CUnsignedShort {
 /// SSDP discovery for UPnP devices on the LAN.
 /// Created using BSD sockets do to this bug: https://developer.apple.com/forums/thread/716339?page=1#769355022
 /// Code using Network framework shown below
-func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Error> {
+func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Swift.Error> {
     return AsyncThrowingStream { continuation in
         var group = sockaddr_in()
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: 16384)
@@ -96,7 +96,7 @@ func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Error> 
 
 
 
-func scanDevicesContinuallyNetwork() throws -> AsyncThrowingStream<SSDPService, any Error> {
+func scanDevicesContinuallyNetwork() throws -> AsyncThrowingStream<SSDPService, any Swift.Error> {
     let multicastGroup = try NWMulticastGroup(for: [.hostPort(host: "239.255.255.250", port: 1900)])
     
     return AsyncThrowingStream { continuation in

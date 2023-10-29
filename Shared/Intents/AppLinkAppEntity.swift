@@ -7,24 +7,31 @@ public struct AppLinkAppEntity: AppEntity, Identifiable, Equatable {
     public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "TV App")
 
     public struct AppLinkAppEntityQuery: EntityQuery {
-//        @IntentParameterDependency<LaunchAppIntent>(\.$device) var launchAppIntent
+        @IntentParameterDependency<LaunchAppIntent>(\.$device) var launchAppIntent
         
         public init() {}
         
         public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
-//            let device = launchAppIntent?.device
+            if let apps = launchAppIntent?.device.apps {
+                return apps
+            }
             let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
             return try await appLinkActor.entities(for: identifiers)
         }
         
         func entities(matching string: String) async throws -> [AppLinkAppEntity] {
-//            let device = launchAppIntent?.device
+            if let apps = launchAppIntent?.device.apps {
+                return apps.filter{$0.name.contains(string)}
+            }
    
             let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
             return try await appLinkActor.entities(matching: string)
         }
         
         public func suggestedEntities() async throws -> [AppLinkAppEntity] {
+            if let apps = launchAppIntent?.device.apps {
+                return apps
+            }
             let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
             return try await appLinkActor.suggestedEntities()
         }
@@ -64,8 +71,12 @@ public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async thr
     }
     
     if let targetDevice = targetDevice {
-        try await openApp(location: targetDevice.location, app: app.id)
+        do {
+            try await openApp(location: targetDevice.location, app: app.id)
+        } catch {
+            throw ApiError.deviceNotConnectable
+        }
+    } else {
+        throw ApiError.noSavedDevices
     }
-    
-    return
 }

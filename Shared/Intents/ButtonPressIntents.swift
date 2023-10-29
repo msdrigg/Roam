@@ -27,9 +27,9 @@ public struct PlayIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigr
         }
     }
 
-    public func perform() async throws -> some IntentResult {
-        try await clickButton(button: .power, device: device)
-        return .result()
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
+        try await clickButton(button: .playPause, device: device)
+        return .result(dialog: "Clicked play!")
     }
 }
 
@@ -58,14 +58,16 @@ public struct OkIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigrat
         }
     }
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         try await clickButton(button: .select, device: device)
-        return .result()
+        return .result(dialog: "Clicked Ok!")
     }
 }
 
 @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
 public struct MuteIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigratedAppIntent, PredictableIntent {
+    public var value: Never?
+    
     public static let intentClassName = "MuteIntent"
 
     public static var title: LocalizedStringResource = "Toggle Mute"
@@ -89,9 +91,9 @@ public struct MuteIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigr
         }
     }
 
-    public func perform() async throws -> some IntentResult {
-        try await clickButton(button: .select, device: device)
-        return .result()
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
+        try await clickButton(button: .mute, device: device)
+        return .result(dialog: "Pressed the mute button!")
     }
 }
 
@@ -120,9 +122,9 @@ public struct VolumeUpIntent: AppIntent, WidgetConfigurationIntent, CustomIntent
         }
     }
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         try await clickButton(button: .volumeUp, device: device)
-        return .result()
+        return .result(dialog: "Turned the volume up one!")
     }
 }
 
@@ -151,9 +153,9 @@ public struct VolumeDownIntent: AppIntent, WidgetConfigurationIntent, CustomInte
         }
     }
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         try await clickButton(button: .volumeDown, device: device)
-        return .result()
+        return .result(dialog: "Turned the volume down one!")
     }
 }
 
@@ -183,8 +185,8 @@ public struct PowerIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMig
         }
     }
 
-    public func perform() async throws -> some IntentResult {
-        try await clickButton(button: .playPause, device: device)
-        return .result()
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
+        try await clickButton(button: .power, device: device)
+        return .result(dialog: "Turned the TV on/off")
     }
 }

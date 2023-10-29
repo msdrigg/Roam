@@ -14,7 +14,7 @@ struct ButtonGrid: View  {
              ("Options", "asterisk", .options, nil),
              ("Private Listening", "headphones", .privateListening, nil)],
             [("Rewind", "backward", .rewind, nil),
-             ("Play/Pause", "playpause", .playPause, nil),
+             ("Play/Pause", "playpause", .playPause, "p"),
              ("Fast Forward", "forward", .fastForward, nil)],
             [("Volume Down", "speaker.minus", .volumeDown, .downArrow),
              ("Mute", "speaker.slash", .mute, "m"),

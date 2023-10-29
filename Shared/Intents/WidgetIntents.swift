@@ -55,12 +55,24 @@ public struct ButtonPressIntent: AppIntent, CustomIntentMigratedAppIntent, Predi
         self.device = device
     }
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         Self.logger.debug("Pressing widget button \(button.button.apiValue ?? "nil") on device \(device?.name ?? "nil")")
         
         try await clickButton(button: button.button, device: device)
         
-        return .result()
+        return .result(dialog: "Pressed \(button.localizedStringResource)!")
+    }
+}
+
+enum ApiError: Swift.Error, CustomLocalizedStringResourceConvertible {
+    case noSavedDevices
+    case deviceNotConnectable
+
+    var localizedStringResource: LocalizedStringResource {
+        switch self {
+            case .noSavedDevices: return "No saved devices"
+            case .deviceNotConnectable: return "Couldn't connect to the device"
+        }
     }
 }
 
@@ -72,9 +84,14 @@ public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async th
         targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
     }
     
-    if let deviceKey = button.apiValue, let targetDevice = targetDevice {
-        await sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.mac)
+    guard let targetDevice = targetDevice else {
+        throw ApiError.noSavedDevices
     }
     
-    return
+    if let deviceKey = button.apiValue {
+        let success = await sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.mac)
+        if !success {
+            throw ApiError.deviceNotConnectable
+        }
+    }
 }
