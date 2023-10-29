@@ -89,7 +89,7 @@ func wakeOnLAN(macAddress: String) async -> Bool {
 public func openApp(location: String, app: String) async throws {
     guard let url = URL(string: "\(location)launch/\(app)") else { return }
 
-    var request = URLRequest(url: url)
+    var request = URLRequest(url: url, timeoutInterval: 3)
     request.httpMethod = "POST"
 
     let (_, response) = try await URLSession.shared.data(for: request)
@@ -159,7 +159,7 @@ private func internalSendKeyToDevice(location: String, rawKey: String) async -> 
         logger.error("Unable to send key due to bad url url `\(keypressURL)`")
         return false
     }
-    var request = URLRequest(url: url)
+    var request = URLRequest(url: url, timeoutInterval: 3)
     request.httpMethod = "POST"
     
     do {
