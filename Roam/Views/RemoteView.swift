@@ -269,37 +269,8 @@ struct RemoteView: View {
                 VStack(alignment: .center) {
                     if isHorizontal {
                         horizontalBody(isSmallHeight: isSmallHeight)
-#if os(iOS)
-                            .overlay {
-                                CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
-                                    let key: RemoteButton
-                                    switch volumeEvent.direction {
-                                    case .Up:
-                                        key = .volumeUp
-                                    case .Down:
-                                        key = .volumeDown
-                                    }
-                                    pressButton(key)
-                                }
-                            }
-                        
-#endif
                     } else {
                         verticalBody(isSmallHeight: isSmallHeight)
-#if os(iOS)
-                            .overlay {
-                                CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
-                                    let key: RemoteButton
-                                    switch volumeEvent.direction {
-                                    case .Up:
-                                        key = .volumeUp
-                                    case .Down:
-                                        key = .volumeDown
-                                    }
-                                    pressButton(key)
-                                }
-                            }
-#endif
                     }
                     
                     if showKeyboardEntry {
@@ -310,12 +281,25 @@ struct RemoteView: View {
             }
 #if os(iOS)
             .overlay {
+                if controlVolumeWithHWButtons {
+                    CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
+                        let key: RemoteButton
+                        switch volumeEvent.direction {
+                        case .Up:
+                            key = .volumeUp
+                        case .Down:
+                            key = .volumeDown
+                        }
+                        Self.logger.info("Pressing button \(String(describing: key)) with volume \(volume) after volume event \(String(describing: volumeEvent))")
+                        pressButton(key)
+                    }.id("VolumeOverlay")
+                }
+
                 if showKeyboardEntry {
                     GeometryReader { proxy in
                         ScrollView {
                             VStack {
                                 Button(action: {
-                                    print("Tapping!!")
                                     keyboardLeaving = true
                                     withAnimation {
                                         showKeyboardEntry = false

@@ -188,8 +188,7 @@ actor ECPSession {
     // MARK: Helper methods
     
     private func preInitWebsocket() async throws {
-        Self.logger.info("Trying to pre-init ws with current state \(String(describing: self.webSocketTask.state))")
-        
+//        Self.logger.info("Trying to pre-init ws with current state \(String(describing: self.webSocketTask.state))")
         if self.webSocketTask.state != .running {
             Self.logger.info("WS not running, re-configuring")
             try await self.configure()
