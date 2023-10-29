@@ -33,9 +33,9 @@ public struct LaunchAppIntent: AppIntent, WidgetConfigurationIntent, CustomInten
         }
     }
     
-    public func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some IntentResult {
         try await  launchApp(app: app, device: device)
-        return .result(dialog: "Launched \(app.name)!")
+        return .result()
     }
 
     
