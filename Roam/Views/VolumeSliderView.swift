@@ -59,6 +59,8 @@ struct CustomVolumeSlider: UIViewRepresentable {
     }
 }
 
+let VOLUME_EPSILON: Float = 0.005
+
 struct CustomVolumeSliderOverlay: View {
     private let showSlider: Bool = false
     private let audioSession: AVAudioSession = AVAudioSession.sharedInstance()
@@ -78,30 +80,32 @@ struct CustomVolumeSliderOverlay: View {
             Spacer()
             HStack {
                 CustomVolumeSlider(volume: $volume, isTouched: $isTouched)
-                    .opacity(showSlider ? 1 : 0)
                     .frame(maxHeight: 150)
                 Spacer()
             }
+            .offset(x: -200)
             Spacer()
             Spacer()
             Spacer()
             Spacer()
         }
-        .transition(.move(edge: .leading))
         .onChange(of: volume) { oldVolume, newVolume in
             if targetVolume == 0 || targetVolume == nil {
+                logger.info("Changing empty target from \(String(describing: targetVolume)) to \(audioSession.outputVolume)")
                 targetVolume = newVolume
             }
             
+            if inBackground || !controlVolumeWithHWButtons {
+                return
+            }
+            
+            logger.info("Getting volume change \(volume) with target \(String(describing: targetVolume))")
             if let tv = targetVolume, volume != tv && !inBackground {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    logger.info("Setting volume to new value \(volume) with target \(tv)")
                     volume = tv
                 }
             }
-        }
-        .onChange(of: scenePhase) { _oldPhase, newPhase in
-            targetVolume = audioSession.outputVolume
-            inBackground = newPhase != .active
         }
         .task(id: inBackground || !controlVolumeWithHWButtons) {
             if inBackground || !controlVolumeWithHWButtons {
@@ -109,15 +113,29 @@ struct CustomVolumeSliderOverlay: View {
             }
             if let stream = await VolumeListener(session: AVAudioSession.sharedInstance()).events {
                 for await volumeEvent in stream {
-                    if volumeEvent.volume != targetVolume {
-                        changeVolume(volumeEvent)
+                    let volume = volumeEvent.volume
+                    if let tv = targetVolume {
+                        if abs(volume - tv) > VOLUME_EPSILON {
+                            if volume > tv {
+                                changeVolume(VolumeEvent(direction: .Up, volume: volume))
+                            } else {
+                                changeVolume(VolumeEvent(direction: .Down, volume: volume))
+                            }
+                        }
                     }
                 }
             } else {
                 logger.error("Unable to get volume events stream")
             }
         }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            inBackground = newPhase != .active
+            logger.info("New scene phase \(String(describing: newPhase))")
+            if oldPhase != .active && newPhase == .active {
+                logger.info("Changing target from \(String(describing: targetVolume)) to \(audioSession.outputVolume)")
+                targetVolume = audioSession.outputVolume
+            }
+        }
     }
 }
-
 #endif

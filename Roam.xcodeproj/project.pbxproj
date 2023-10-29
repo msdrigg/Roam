@@ -19,7 +19,6 @@
 		AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
 		AF0C828A2AEB463400CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
 		AF0C828C2AEB494D00CBE7F8 /* VolumeSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */; };
-		AF0C828E2AEBE50800CBE7F8 /* VolumeListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C828D2AEBE50800CBE7F8 /* VolumeListener.swift */; };
 		AF0C82902AEBF2A200CBE7F8 /* ECPSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C828F2AEBF2A200CBE7F8 /* ECPSession.swift */; };
 		AF0C82932AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */; };
 		AF0C82952AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */; };
@@ -131,6 +130,7 @@
 		AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE192AE184FE003F6676 /* XMLCoder */; };
 		AFECDE1D2AE18511003F6676 /* Opus in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1C2AE18511003F6676 /* Opus */; };
 		AFECDE202AE18519003F6676 /* RTP in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE1F2AE18519003F6676 /* RTP */; };
+		AFED424A2AEE8F3B0023D684 /* VolumeListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFED42492AEE8F3B0023D684 /* VolumeListener.swift */; };
 		AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
 		AFF607802ADFACBA00A7D657 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* Scanner.swift */; };
 		AFF607812ADFACBA00A7D657 /* DiscoveryActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */; };
@@ -204,7 +204,6 @@
 		AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionHelpers.swift; sourceTree = "<group>"; };
 		AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AccentColor.xcassets; sourceTree = "<group>"; };
 		AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeSliderView.swift; sourceTree = "<group>"; };
-		AF0C828D2AEBE50800CBE7F8 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AF0C828F2AEBF2A200CBE7F8 /* ECPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECPSession.swift; sourceTree = "<group>"; };
 		AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatelessDeviceAPI.swift; sourceTree = "<group>"; };
 		AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIHelpers.swift; sourceTree = "<group>"; };
@@ -280,6 +279,7 @@
 		AFD590D52AEC787700189620 /* ModelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContainer.swift; sourceTree = "<group>"; };
 		AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallAppView.swift; sourceTree = "<group>"; };
 		AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallRemoteView.swift; sourceTree = "<group>"; };
+		AFED42492AEE8F3B0023D684 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
 		AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryHeap.swift; sourceTree = "<group>"; };
@@ -507,7 +507,6 @@
 			children = (
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
 				AFC4A6592AE88411005DAC6C /* LatencyListener.swift */,
-				AF0C828D2AEBE50800CBE7F8 /* VolumeListener.swift */,
 				AFD590CF2AEC673C00189620 /* WatchConnector.swift */,
 				AF0C82862AEB3AA500CBE7F8 /* Views */,
 				AF95B74D2ADF43A4005FC338 /* AudioPlayer */,
@@ -516,6 +515,7 @@
 				AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */,
 				AF4829722AD4C83D008E05FA /* Info.plist */,
 				AFC24F092AD0E5A2002AB66C /* Roam.entitlements */,
+				AFED42492AEE8F3B0023D684 /* VolumeListener.swift */,
 			);
 			path = Roam;
 			sourceTree = "<group>";
@@ -783,6 +783,7 @@
 				AF19CA3C2AE6BFC400A42DFF /* DeviceApi.swift in Sources */,
 				AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */,
 				AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */,
+				AFED424A2AEE8F3B0023D684 /* VolumeListener.swift in Sources */,
 				AFF607802ADFACBA00A7D657 /* Scanner.swift in Sources */,
 				AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */,
 				AF0C82992AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
@@ -792,7 +793,6 @@
 				AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */,
 				AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */,
 				AFC4A65A2AE88411005DAC6C /* LatencyListener.swift in Sources */,
-				AF0C828E2AEBE50800CBE7F8 /* VolumeListener.swift in Sources */,
 				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
 				AF19CA312AE6947600A42DFF /* ManagedCriticalState.swift in Sources */,
 				AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */,
