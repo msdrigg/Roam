@@ -78,7 +78,7 @@ public extension Task where Success == Never, Failure == Never {
     }
 }
 
-public struct TimeoutError: Error, LocalizedError {
+public struct TimeoutError: Swift.Error, LocalizedError {
     /// When the timeout occurred.
     public let occurred: Date = Date()
     public var errorDescription: String? {

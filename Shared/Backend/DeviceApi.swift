@@ -31,7 +31,7 @@ struct Icon: Codable {
     let url: String
 }
 
-enum FetchDeviceIconError: Error {
+enum FetchDeviceIconError: Swift.Error, LocalizedError {
     case badURL(String)
     case badIconURL(String)
     case noIconsListed
@@ -155,7 +155,7 @@ func fetchDeviceInfo(location: String) async -> DeviceInfo? {
     return nil
 }
 
-public enum APIError: Error, LocalizedError {
+public enum APIError: Swift.Error, LocalizedError {
     case badURLError(_ url: String)
 }
 
@@ -184,7 +184,7 @@ import libwebp
 import UIKit
 import CoreGraphics
 
-public enum WebPError: Error {
+public enum WebPError: Swift.Error, LocalizedError {
     case unexpectedPointerError // Something related pointer operation's error
     case unexpectedError(withMessage: String) // Something happened
     case unknownDecodingError

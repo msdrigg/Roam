@@ -33,11 +33,11 @@ public struct LaunchAppIntent: AppIntent, WidgetConfigurationIntent, CustomInten
         }
     }
     
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
         try await  launchApp(app: app, device: device)
-        
-        return .result()
+        return .result(dialog: "Launched \(app.name)!")
     }
+
     
     public init() {}
     

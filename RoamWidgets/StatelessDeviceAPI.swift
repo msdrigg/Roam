@@ -13,7 +13,8 @@ private let logger = Logger(
     category: String(describing: "StatelessAPI")
 )
 
-func wakeOnLAN(macAddress: String) async {
+@discardableResult
+func wakeOnLAN(macAddress: String) async -> Bool {
     let host = NWEndpoint.Host("255.255.255.255")
     let port = NWEndpoint.Port(rawValue: 9)!
     let parameters = NWParameters.udp
@@ -40,7 +41,7 @@ func wakeOnLAN(macAddress: String) async {
     }()
     
     guard let packet = packet else {
-        return
+        return false
     }
     
     let timeout = DispatchTime.now() + .seconds(5) // Set a 5-second timeout
@@ -82,6 +83,7 @@ func wakeOnLAN(macAddress: String) async {
     if !canSendPacket {
         logger.error("Unable to send WOL packet within 5 sec")
     }
+    return canSendPacket
 }
 
 public func openApp(location: String, app: String) async throws {
@@ -100,7 +102,7 @@ public func openApp(location: String, app: String) async throws {
     }
 }
 
-public func powerToggleDevice(location: String, mac: String?) async {
+public func powerToggleDevice(location: String, mac: String?) async -> Bool {
     logger.debug("Toggling power for device \(location)")
     
     #if !os(watchOS)
@@ -113,45 +115,49 @@ public func powerToggleDevice(location: String, mac: String?) async {
     if !onlineAtFirst {
         if let mac = mac {
             logger.debug("Sending wol packet to \(mac)")
-            await wakeOnLAN(macAddress: mac)
+            return await wakeOnLAN(macAddress: mac)
         }
         logger.debug("Not online initially, so not continuing")
+        return false
     }
     
     // Attempt checking the device power mode
     logger.debug("Attempting to power toggle device with api")
     
     // SAFETY: Power has apiValue
-    await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!)
+    return await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!)
 }
 
-public func sendKeyPressTodevice(location: String, key: Character) async {
-    await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
+public func sendKeyPressTodevice(location: String, key: Character) async -> Bool {
+    return await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
 }
 
-public func sendKeyToDevice(location: String, mac: String?, key: RemoteButton) async {
+@discardableResult
+public func sendKeyToDevice(location: String, mac: String?, key: RemoteButton) async -> Bool {
     if key == .power {
-        await powerToggleDevice(location: location, mac: mac)
+        return await powerToggleDevice(location: location, mac: mac)
     } else {
         if let apiValue = key.apiValue {
-            await internalSendKeyToDevice(location: location, rawKey: apiValue)
+            return await internalSendKeyToDevice(location: location, rawKey: apiValue)
         }
     }
+    
+    return false
 }
 
-public func sendKeyToDeviceRawNotRecommended(location: String, key: String, mac: String?) async {
+public func sendKeyToDeviceRawNotRecommended(location: String, key: String, mac: String?) async -> Bool {
     if key == RemoteButton.power.apiValue {
-        await powerToggleDevice(location: location, mac: mac)
+        return await powerToggleDevice(location: location, mac: mac)
     } else {
-        await internalSendKeyToDevice(location: location, rawKey: key)
+        return await internalSendKeyToDevice(location: location, rawKey: key)
     }
 }
 
-private func internalSendKeyToDevice(location: String, rawKey: String) async {
+private func internalSendKeyToDevice(location: String, rawKey: String) async -> Bool {
     let keypressURL = "\(location)/keypress/\(rawKey)"
     guard let url = URL(string: keypressURL) else {
         logger.error("Unable to send key due to bad url url `\(keypressURL)`")
-        return
+        return false
     }
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
@@ -161,11 +167,16 @@ private func internalSendKeyToDevice(location: String, rawKey: String) async {
         if let httpResponse = response as? HTTPURLResponse {
             if httpResponse.statusCode == 200 {
                 logger.debug("Sent \(rawKey) to \(location)")
+                return true
             } else {
                 logger.error("Error sending \(rawKey) to \(location): \(httpResponse.statusCode)")
+                return false
             }
         }
+        
+        return false
     } catch {
         logger.error("Error sending \(rawKey) to \(location): \(error)")
+        return false
     }
 }

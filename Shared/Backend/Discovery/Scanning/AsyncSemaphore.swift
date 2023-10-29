@@ -55,7 +55,7 @@ public final class AsyncSemaphore: @unchecked Sendable {
             case pending
             
             /// Waiting for a signal, with support for cancellation.
-            case suspendedUnlessCancelled(UnsafeContinuation<Void, Error>)
+            case suspendedUnlessCancelled(UnsafeContinuation<Void, Swift.Error>)
             
             /// Waiting for a signal, with no support for cancellation.
             case suspended(UnsafeContinuation<Void, Never>)
@@ -171,7 +171,7 @@ public final class AsyncSemaphore: @unchecked Sendable {
         let suspension = Suspension(state: .pending)
         
         try await withTaskCancellationHandler {
-            try await withUnsafeThrowingContinuation { (continuation: UnsafeContinuation<Void, Error>) in
+            try await withUnsafeThrowingContinuation { (continuation: UnsafeContinuation<Void, Swift.Error>) in
                 if case .cancelled = suspension.state {
                     // Early cancellation: waitUnlessCancelled() is called from
                     // a cancelled task, and the `onCancel` closure below

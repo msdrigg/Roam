@@ -63,8 +63,8 @@ struct RoamAppShortcutsProvider: AppShortcutsProvider {
                 "Turn volume down with \(.applicationName)",
                 "Turn volume down on \(\.$device) with \(.applicationName)",
             ],
-            shortTitle: "Mute/Unmute",
-            systemImageName: "speaker.slash"
+            shortTitle: "Volume down",
+            systemImageName: "speaker.minus"
         )
         AppShortcut(
             intent: VolumeUpIntent(),
@@ -76,8 +76,8 @@ struct RoamAppShortcutsProvider: AppShortcutsProvider {
                 "Turn volume up with \(.applicationName)",
                 "Turn volume up on \(\.$device) with \(.applicationName)",
             ],
-            shortTitle: "Mute/Unmute",
-            systemImageName: "speaker.slash"
+            shortTitle: "Volume up",
+            systemImageName: "speaker.plus"
         )
         AppShortcut(
             intent: OkIntent(),
@@ -99,8 +99,8 @@ struct RoamAppShortcutsProvider: AppShortcutsProvider {
             phrases: [
                 "Press \(\.$button) with \(.applicationName)",
                 "Press \(\.$button) on \(\.$device) with \(.applicationName)",
-                "Launch \(\.$button) on TV with \(.applicationName)",
-                "Launch \(\.$button) on Roku \(.applicationName)",
+                "Press a button on TV with \(.applicationName)",
+                "Press a button on Roku with \(.applicationName)"
             ],
             shortTitle: "Press Any Button",
             systemImageName: "button.programmable"
