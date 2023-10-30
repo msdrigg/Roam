@@ -443,6 +443,9 @@
 		AF95B7372ADF3F9E005FC338 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */,
+				AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */,
+				AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */,
 				AF56E3BA2AD9863100F5E6E0 /* Views */,
 				AFF6077E2ADFAC4F00A7D657 /* Backend */,
 				AFF6078C2AE005E400A7D657 /* Intents */,
@@ -510,9 +513,6 @@
 				AFD590CF2AEC673C00189620 /* WatchConnector.swift */,
 				AF0C82862AEB3AA500CBE7F8 /* Views */,
 				AF95B74D2ADF43A4005FC338 /* AudioPlayer */,
-				AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */,
-				AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */,
-				AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */,
 				AF4829722AD4C83D008E05FA /* Info.plist */,
 				AFC24F092AD0E5A2002AB66C /* Roam.entitlements */,
 				AFED42492AEE8F3B0023D684 /* VolumeListener.swift */,
