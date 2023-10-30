@@ -94,6 +94,10 @@ struct SettingsView: View {
                         }
                     }
                 }
+#if os(watchOS)
+                addDeviceButton
+#endif
+                
 #if os(macOS)
                 HStack {
                     addDeviceButton
@@ -151,12 +155,6 @@ struct SettingsView: View {
                 addDeviceButton
             }
         }
-#elseif os(watchOS)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                addDeviceButton
-            }
-        }
 #endif
 #if !os(watchOS)
         .navigationTitle("Settings")
@@ -187,7 +185,7 @@ struct SettingsView: View {
     
     @ViewBuilder
     var addDeviceButton: some View {
-        Button("Add device", systemImage: "plus") {
+        Button("Add a device manually", systemImage: "plus") {
             let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, udn: "roam:newdevice-\(UUID().uuidString)")
             do {
                 modelContext.insert(newDevice)

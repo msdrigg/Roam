@@ -2,7 +2,8 @@
 
 A Roku remote that puts users first
 
-## TODO: Get 
+## TODO
+- Fix issue syncing with WatchConnectivity
 
 ## Features
 

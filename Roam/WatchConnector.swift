@@ -41,6 +41,18 @@ class DeviceTransferManager: NSObject, WCSessionDelegate {
                 self.session?.outstandingUserInfoTransfers.last?.cancel()
             }
             session.transferUserInfo(deviceMap)
+            
+            do {
+                try session.updateApplicationContext(deviceMap)
+            } catch {
+                Self.logger.error("Error transfering app context \(deviceMap)")
+            }
+            
+            session.sendMessage(deviceMap, replyHandler: { reply in
+                Self.logger.info("Got reply from sending devices \(reply)")
+            }, errorHandler: { error in
+                Self.logger.error("Error transfering app context \(deviceMap). \(error)")
+            })
         } else {
             Self.logger.info("Not transfering devices activation state not activated: \(String(describing: self.session?.activationState))")
         }
