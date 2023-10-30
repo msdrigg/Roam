@@ -20,8 +20,20 @@ class DeviceReceiverManager: NSObject, WCSessionDelegate {
         }
     }
     
+    func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+        handleAddDevices(applicationContext)
+    }
+    
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any] = [:]) {
+        handleAddDevices(message)
+    }
+    
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
-        if let deviceMap = userInfo as? [String: String] {
+        handleAddDevices(userInfo)
+    }
+    
+    func handleAddDevices(_ devices: [String: Any]) {
+        if let deviceMap = devices as? [String: String] {
             Self.logger.info("Trying to add devices \(deviceMap)")
             Task {
                 let modelContainer = getSharedModelContainer()
@@ -40,7 +52,7 @@ class DeviceReceiverManager: NSObject, WCSessionDelegate {
                 }
             }
         } else {
-            Self.logger.warning("Error parsing userInfo as [String: String]: \(String(describing: userInfo))")
+            Self.logger.warning("Error parsing userInfo as [String: String]: \(String(describing: devices))")
         }
     }
     
