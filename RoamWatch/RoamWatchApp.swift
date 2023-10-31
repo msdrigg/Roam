@@ -4,9 +4,14 @@ import os.log
 
 @main
 struct RoamWatch: App {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: RoamWatch.self)
+    )
     var sharedModelContainer: ModelContainer
     init() {
         sharedModelContainer = getSharedModelContainer()
+        Self.logger.info("Getting WatchConnectivity \(String(describing: WatchConnectivity.shared))")
     }
     
     var body: some Scene {

@@ -11,6 +11,7 @@ public final class Device: Identifiable, Hashable {
     public var lastSelectedAt: Date?
     public var lastOnlineAt: Date?
     public var lastScannedAt: Date?
+    public var lastSentToWatch: Date?
     public var deletedAt: Date?
     
     // DisplayOff or PowerOn or Suspend
@@ -46,7 +47,6 @@ public final class Device: Identifiable, Hashable {
         self.lastOnlineAt = lastOnlineAt
         self.udn = udn
         self.location = location
-        
         self.apps = apps
     }
     
@@ -157,6 +157,7 @@ actor DeviceActor {
             device.location = location
             device.name = name
             device.udn = udn
+            device.lastSentToWatch = nil
             try modelContext.save()
         }
     }
@@ -176,6 +177,31 @@ actor DeviceActor {
         Self.logger.info("Added device \(String(describing: device.persistentModelID))")
         
         return device.persistentModelID
+    }
+    
+    func sentToWatch(deviceId: PersistentIdentifier) {
+        do {
+            if let device = try modelContext.existingDevice(for: deviceId) {
+                device.lastSentToWatch = Date.now
+                try modelContext.save()
+            }
+        } catch {
+            Self.logger.warning("Error marking device \(String(describing: deviceId)) as sent to watch \(error)")
+        }
+    }
+    
+    func watchPossiblyDead() {
+        let entities = (try? self.allDeviceEntities()) ?? []
+        for entity in entities {
+            do {
+                if let device = try modelContext.existingDevice(for: entity.modelId) {
+                    device.lastSentToWatch = Date.now
+                    try modelContext.save()
+                }
+            } catch {
+                Self.logger.warning("Error marking device \(String(describing: entity.modelId)) as not sent to watch")
+            }
+        }
     }
     
     
@@ -200,6 +226,20 @@ actor DeviceActor {
         try deleteInPast()
     }
     
+    func existingDevice(id: String) -> DeviceAppEntity? {
+        var matchingIds = FetchDescriptor<Device>(
+            predicate: #Predicate {
+                 $0.deletedAt == nil
+            }
+        )
+        matchingIds.fetchLimit = 1
+        matchingIds.includePendingChanges = true
+        
+        return ((try? modelContext.fetch(matchingIds)) ?? []).first {
+            $0.udn == id
+        }?.toAppEntity()
+    }
+
     
     func deviceExists(id: String) -> Bool {
         var matchingIds = FetchDescriptor<Device>(

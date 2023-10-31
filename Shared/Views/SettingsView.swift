@@ -45,7 +45,7 @@ struct SettingsView: View {
                 } else {
                     ForEach(devices) { device in
                         DeviceListItem(device: device)
-                            .id("\(device.udn)\(device.isOnline())\(device.location)")
+                            .id("\(device.name)\(device.udn)\(device.isOnline())\(device.location)")
 #if !os(watchOS)
                             .contextMenu {
                                 Button(role: .destructive) {
