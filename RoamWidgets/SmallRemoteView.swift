@@ -7,10 +7,11 @@ struct SmallRemoteView: View {
     
     var body: some View {
         Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-            ForEach(controls, id: \.self) { row in
+            ForEach(0..<controls.count, id: \.self) { index in
+                let row = controls[index]
                 GridRow {
-                    ForEach(row, id: \.self) { button in
-                        if let button = button {
+                    ForEach(row.indices, id: \.self) { rowIndex in
+                        if let button = row[rowIndex] {
                             if button == .power {
                                 Button(intent: ButtonPressIntent(button, device: device)) {
                                     button.label
