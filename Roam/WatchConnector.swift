@@ -73,11 +73,6 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
             let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
             do {
                 try session.updateApplicationContext(deviceMap)
-                Task {
-                    for device in transferingDevices {
-                        await deviceActor.sentToWatch(deviceId: device)
-                    }
-                }
             } catch {
                 WatchConnectivity.logger.error("Error transfering app context \(deviceMap)")
             }
