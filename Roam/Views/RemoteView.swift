@@ -167,10 +167,10 @@ struct RemoteView: View {
 #if os(iOS)
             .task(id: devices.count, priority: .background) {
                 // Send devices to connected watch
-                DeviceTransferManager.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
+                WatchConnectivity.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
                 
                 for await _ in AsyncTimerSequence.repeating(every: .seconds(60 * 10)) {
-                    DeviceTransferManager.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
+                    WatchConnectivity.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
                 }
             }
 #endif
