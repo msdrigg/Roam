@@ -5,4 +5,5 @@ tagline: A user-focused Roku remote # it will display as the sub-title
 description: >- # used by seo meta and the atom feed
   A minimal, responsive, and featureful roku remote for macOS, iOS and watchOS
 
-theme: jekyll-theme-tactile
+# theme: jekyll-theme-tactile
+remote_theme: abhinavs/moonwalk
