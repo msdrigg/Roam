@@ -2,13 +2,6 @@
 
 A Roku remote that puts users first
 
-## TODO
-- Test that watchconnectivity works on maggie's apple watch (today)
-- Get screenshots for app store (today)
-- Get maggie to do app icon for app store (maybe on plane or smth)
-- Get promotional app store screenshots
-- Publish to app store
-
 ## Features
 
 - Runs on Mac, iPhone, iPad, and apple watch!
