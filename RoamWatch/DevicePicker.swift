@@ -74,6 +74,7 @@ struct DevicePicker: View {
                                     Label("Delete", systemImage: "trash")
                                 }
                             }
+                            .id("\(listItemDevice.name)\(listItemDevice.udn)\(listItemDevice.isOnline())\(listItemDevice.location)\(listItemDevice.lastSelectedAt ?? Date.distantPast)")
                         }
                         .onDelete { indexSet in
                             Task {
