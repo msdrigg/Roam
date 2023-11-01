@@ -7,3 +7,9 @@ description: >- # used by seo meta and the atom feed
 
 # theme: jekyll-theme-tactile
 remote_theme: abhinavs/moonwalk
+theme_config:
+  appearance: "auto" # can be "light", "dark" or "auto"
+  appearance_toggle: true # if appearance can be switched by user
+  show_description: true # show blog description
+  show_footer: false # show footer links in home page,add in _data/home.yml
+  show_copyright: true # show copyright notice in footer
