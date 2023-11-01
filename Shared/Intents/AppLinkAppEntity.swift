@@ -3,7 +3,7 @@ import AppIntents
 import SwiftData
 
 @available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
-public struct AppLinkAppEntity: AppEntity, Identifiable, Equatable {
+public struct AppLinkAppEntity: AppEntity, Identifiable, Equatable, Hashable {
     public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "TV App")
 
     public struct AppLinkAppEntityQuery: EntityQuery {

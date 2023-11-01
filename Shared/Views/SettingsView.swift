@@ -189,6 +189,7 @@ struct SettingsView: View {
             let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, udn: "roam:newdevice-\(UUID().uuidString)")
             do {
                 modelContext.insert(newDevice)
+                Self.logger.info("Added new empty device \(String(describing: newDevice.persistentModelID))")
                 try modelContext.save()
                 path.append(DeviceSettingsDestination(newDevice))
             } catch {
@@ -398,19 +399,13 @@ struct DeviceDetailView: View {
     
     func saveDevice() async {
         // Try to get device id
-#if os(watchOS)
         // Watchos can't check tcp connection, so just do the request
         let deviceInfo = await fetchDeviceInfo(location: deviceLocation)
-#else
-        var deviceInfo: DeviceInfo? = nil
-        if await canConnectTCP(location: deviceLocation, timeout: 1) {
-            deviceInfo = await fetchDeviceInfo(location: deviceLocation)
-        }
-#endif
         
         // If we get a device with a different UDN, replace the device
         if let udn = deviceInfo?.udn, udn != device.udn {
             do {
+                try await deviceActor.delete(device.persistentModelID)
                 let _ = try await deviceActor.addOrReplaceDevice(
                     location: deviceLocation, friendlyDeviceName: deviceName, udn: udn
                 )
@@ -418,7 +413,6 @@ struct DeviceDetailView: View {
             } catch {
                 Self.logger.error("Error saving device \(error)")
             }
-            dismiss()
             return
         }
         

@@ -241,7 +241,7 @@ struct RemoteView: View {
                 .overlay(
                     GeometryReader { proxy in
                         let isHorizontal = proxy.size.width > proxy.size.height
-                        let isSmallHeight = proxy.size.height <= 500
+                        let isSmallHeight = proxy.size.height <= 700
                         let isSmallWidth = proxy.size.width <= TOOLBAR_SHRINK_WIDTH
                         
                         Color.clear.preference(key: IsHorizontalKey.self, value: isHorizontal)

@@ -136,6 +136,7 @@ func fetchDeviceInfo(location: String) async -> DeviceInfo? {
         return nil
     }
     var request = URLRequest(url: url)
+    request.timeoutInterval = 1.5
     request.httpMethod = "GET"
     
     do {

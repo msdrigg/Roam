@@ -149,12 +149,13 @@ private func listInterfacesNW() async -> [NWInterface] {
     let monitor = NWPathMonitor()
     monitor.start(queue: DispatchQueue.global())
     
-    let matchedNWInterfaces = await withCheckedContinuation { continuation in
-        monitor.pathUpdateHandler = { path in     
-            continuation.resume(returning: path.availableInterfaces)
+    var matchedNWInterfacesStream = AsyncStream { continuation in
+        monitor.pathUpdateHandler = { path in
+            continuation.yield(path.availableInterfaces)
         }
-    }
+    }.makeAsyncIterator()
+    let matchedNWInterfaces = await matchedNWInterfacesStream.next()
     
     monitor.cancel()
-    return matchedNWInterfaces
+    return matchedNWInterfaces ?? []
 }

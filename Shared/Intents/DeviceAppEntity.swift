@@ -3,7 +3,7 @@ import AppIntents
 import SwiftData
 
 @available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
-public struct DeviceAppEntity: AppEntity {
+public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable {
     public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Device")
 
     public struct DeviceAppEntityQuery: EntityQuery {
@@ -63,3 +63,4 @@ public extension Device {
         return DeviceAppEntity(name: self.name, location: self.location, udn: self.udn, mac: self.usingMac(), lastSentToWatch: self.lastSentToWatch, modelId: self.persistentModelID, apps: self.appsSorted.map{$0.toAppEntity()})
     }
 }
+
