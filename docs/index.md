@@ -1,8 +1,6 @@
-# Welcome to Roam App Support
+# Roam App
 
 ## About Roam
-
-Why Choose Roam?
 
 Roam offers everything you want and nothing you don't
 
