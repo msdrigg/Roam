@@ -1,5 +1,3 @@
-# Roam App
-
 ## About Roam
 
 Roam offers everything you want and nothing you don't
