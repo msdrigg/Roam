@@ -26,7 +26,7 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
     }
     
     func sessionReachabilityDidChange(_ session: WCSession) {
-        WatchConnectivity.logger.error("WCSession reachability changed to \(session.isReachable)")
+        WatchConnectivity.logger.info("WCSession reachability changed to \(session.isReachable)")
         if self.session?.isReachable ?? false {
             Task {
                 do {
@@ -42,7 +42,23 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
         }
     }
     
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        WatchConnectivity.logger.info("WCSession got message from watch to \(message). Sending devices")
+        Task {
+            do {
+                let container = getSharedModelContainer()
+                let devices = try await DeviceActor(modelContainer: container).allDeviceEntities()
+                DispatchQueue.main.async {
+                    self.transferDevices(devices: devices)
+                }
+            } catch {
+                WatchConnectivity.logger.error("Error refreshing devices on session active: \(error)")
+            }
+        }
+    }
+    
     func transferDevices(devices: [DeviceAppEntity]) {
+        WatchConnectivity.logger.info("WCSession with activationState \(String(describing: self.session?.activationState.rawValue)) trying to send devices \(devices)")
         guard let session = session else {
             WatchConnectivity.logger.info("Not transfering devices because WCSession not initialized")
             return
@@ -90,7 +106,7 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
             
             session.transferUserInfo(deviceMap)
         } else {
-            WatchConnectivity.logger.info("Not transfering devices activation state not activated: \(String(describing: self.session?.activationState))")
+            WatchConnectivity.logger.info("Not transfering devices activation state not activated: \(String(describing: self.session?.activationState.rawValue))")
         }
     }
     
@@ -101,10 +117,12 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
                 await DeviceActor(modelContainer: getSharedModelContainer()).watchPossiblyDead()
             }
         } else {
+            WatchConnectivity.logger.info("WCSession activated no error")
             Task {
                 do {
                     let container = getSharedModelContainer()
                     let devices = try await DeviceActor(modelContainer: container).allDeviceEntities()
+                    
                     DispatchQueue.main.async {
                         self.transferDevices(devices: devices)
                     }
