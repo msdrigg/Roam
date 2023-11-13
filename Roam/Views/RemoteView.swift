@@ -293,6 +293,7 @@ struct RemoteView: View {
                         Self.logger.info("Pressing button \(String(describing: key)) with volume \(volume) after volume event \(String(describing: volumeEvent))")
                         pressButton(key)
                     }.id("VolumeOverlay")
+                        .frame(maxWidth: 1)
                 }
 
                 if showKeyboardEntry {

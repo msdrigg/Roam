@@ -83,12 +83,12 @@ struct CustomVolumeSliderOverlay: View {
                     .frame(maxHeight: 150)
                 Spacer()
             }
-            .offset(x: -200)
             Spacer()
             Spacer()
             Spacer()
             Spacer()
         }
+        .offset(x: -800)
         .onChange(of: volume) { oldVolume, newVolume in
             if targetVolume == 0 || targetVolume == nil {
                 logger.info("Changing empty target from \(String(describing: targetVolume)) to \(audioSession.outputVolume)")
