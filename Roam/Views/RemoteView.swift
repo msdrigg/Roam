@@ -469,6 +469,7 @@ struct RemoteView: View {
                 Spacer()
                 AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
+                    .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
             }
             Spacer()
@@ -556,6 +557,7 @@ struct RemoteView: View {
                 Spacer()
                 AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
+                    .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
             }
             Spacer()
