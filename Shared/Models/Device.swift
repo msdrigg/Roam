@@ -141,7 +141,7 @@ actor DeviceActor {
     public func allDeviceEntities() throws -> [DeviceAppEntity] {
         var descriptor = FetchDescriptor<Device>(
             predicate: #Predicate {
-                 $0.deletedAt == nil
+                $0.deletedAt == nil
             })
         descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
         let links = try modelContext.fetch(
@@ -229,37 +229,40 @@ actor DeviceActor {
     func existingDevice(id: String) -> DeviceAppEntity? {
         var matchingIds = FetchDescriptor<Device>(
             predicate: #Predicate {
-                 $0.deletedAt == nil
+                $0.deletedAt == nil
             }
         )
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
+        do {
+            let matchingIds = try self.modelContext.fetchIdentifiers(matchingIds)
+            
+            for pid in matchingIds {
+                if let device = try self.modelContext.existingDevice(for: pid) {
+                    if device.udn == id {
+                        return device.toAppEntity()
+                    }
+                }
+            }
+            
+            return nil
+        } catch {
+            Self.logger.error("Error checking if device exists \(id): \(error)")
+            return nil
+        }
         
-        return ((try? modelContext.fetch(matchingIds)) ?? []).first {
-            $0.udn == id
-        }?.toAppEntity()
     }
-
+    
     
     func deviceExists(id: String) -> Bool {
-        var matchingIds = FetchDescriptor<Device>(
-            predicate: #Predicate {
-                 $0.deletedAt == nil
-            }
-        )
-        matchingIds.fetchLimit = 1
-        matchingIds.includePendingChanges = true
-        
-        return ((try? modelContext.fetch(matchingIds)) ?? []).contains {
-            $0.udn == id
-        }
+        return self.existingDevice(id: id) != nil
     }
     
     
     func fetchSelectedDeviceAppEntity() -> DeviceAppEntity? {
         var descriptor = FetchDescriptor<Device>(
             predicate: #Predicate {
-                 $0.deletedAt == nil
+                $0.deletedAt == nil
             }
         )
         descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
