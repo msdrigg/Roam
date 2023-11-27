@@ -172,6 +172,17 @@ actor ECPSession {
     }
     
     private func sendKeypress(_ data: String) async throws {
+        // Try 2x with 0.1 sec delay between
+        do {
+            try await sendKeypressOnce(data)
+        } catch {
+            Self.logger.warning("Error sending keypress the first time--retrying: \(error)")
+            try await Task.sleep(duration: 0.1)
+            try await sendKeypressOnce(data)
+        }
+    }
+    
+    private func sendKeypressOnce(_ data: String) async throws {
         Self.logger.trace("Trying to send keypress \(data)")
         // Before we send anything, make sure the websocket is up and running
         try await preInitWebsocket()
@@ -188,7 +199,6 @@ actor ECPSession {
     // MARK: Helper methods
     
     private func preInitWebsocket() async throws {
-//        Self.logger.info("Trying to pre-init ws with current state \(String(describing: self.webSocketTask.state))")
         if self.webSocketTask.state != .running {
             Self.logger.info("WS not running, re-configuring")
             try await self.configure()
