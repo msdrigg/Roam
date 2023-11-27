@@ -281,7 +281,7 @@ struct RemoteView: View {
             }
 #if os(iOS)
             .overlay {
-                if controlVolumeWithHWButtons {
+                if controlVolumeWithHWButtons && !privateListeningEnabled {
                     CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
                         let key: RemoteButton
                         switch volumeEvent.direction {
