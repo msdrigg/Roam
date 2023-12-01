@@ -69,22 +69,7 @@ actor ECPSession {
     public func powerToggleDevice() async throws {
         Self.logger.debug("Toggling power for device \(self.device.location)")
         
-        let onlineAtFirst = await canConnectTCP(location: device.location, timeout: 0.5)
-        
-        // Attempt WOL if not already connected
-        if !onlineAtFirst {
-            if let mac = self.device.mac {
-                Self.logger.debug("Sending wol packet to \(mac)")
-                await wakeOnLAN(macAddress: mac)
-            }
-            Self.logger.debug("Not online initially, so not continuing")
-        }
-        
-        // Attempt checking the device power mode
-        Self.logger.debug("Attempting to power toggle device with api")
-        
-        // SAFETY: Power has apiValue
-        try await sendKeypress(RemoteButton.power.apiValue!)
+        await powerToggleDeviceStateless(location: self.device.location, mac: self.device.mac)
     }
     
     
