@@ -102,30 +102,24 @@ public func openApp(location: String, app: String) async throws {
     }
 }
 
-public func powerToggleDevice(location: String, mac: String?) async -> Bool {
+@discardableResult
+public func powerToggleDeviceStateless(location: String, mac: String?) async -> Bool {
     logger.debug("Toggling power for device \(location)")
-    
-    #if !os(watchOS)
-    let onlineAtFirst = await canConnectTCP(location: location, timeout: 0.5)
-    #else
-    let onlineAtFirst = await canConnectHTTP(location: location, timeout: 2)
-    #endif
-    
-    // Attempt WOL if not already connected
-    if !onlineAtFirst {
+        
+    // Attempt checking the device power mode
+    logger.debug("Attempting to power toggle device with api first")
+
+    let toggleResult = await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!, timeout: 1.1)
+    if !toggleResult {
+        logger.debug("API toggle failed, trying to WOL")
         if let mac = mac {
             logger.debug("Sending wol packet to \(mac)")
             return await wakeOnLAN(macAddress: mac)
         }
-        logger.debug("Not online initially, so not continuing")
-        return false
+    } else {
+        logger.debug("API toggle suceeded!")
     }
-    
-    // Attempt checking the device power mode
-    logger.debug("Attempting to power toggle device with api")
-    
-    // SAFETY: Power has apiValue
-    return await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!)
+    return false
 }
 
 public func sendKeyPressTodevice(location: String, key: Character) async -> Bool {
@@ -135,7 +129,7 @@ public func sendKeyPressTodevice(location: String, key: Character) async -> Bool
 @discardableResult
 public func sendKeyToDevice(location: String, mac: String?, key: RemoteButton) async -> Bool {
     if key == .power {
-        return await powerToggleDevice(location: location, mac: mac)
+        return await powerToggleDeviceStateless(location: location, mac: mac)
     } else {
         if let apiValue = key.apiValue {
             return await internalSendKeyToDevice(location: location, rawKey: apiValue)
@@ -147,19 +141,19 @@ public func sendKeyToDevice(location: String, mac: String?, key: RemoteButton) a
 
 public func sendKeyToDeviceRawNotRecommended(location: String, key: String, mac: String?) async -> Bool {
     if key == RemoteButton.power.apiValue {
-        return await powerToggleDevice(location: location, mac: mac)
+        return await powerToggleDeviceStateless(location: location, mac: mac)
     } else {
         return await internalSendKeyToDevice(location: location, rawKey: key)
     }
 }
 
-private func internalSendKeyToDevice(location: String, rawKey: String) async -> Bool {
+private func internalSendKeyToDevice(location: String, rawKey: String, timeout: TimeInterval? = nil) async -> Bool {
     let keypressURL = "\(location)/keypress/\(rawKey)"
     guard let url = URL(string: keypressURL) else {
         logger.error("Unable to send key due to bad url url `\(keypressURL)`")
         return false
     }
-    var request = URLRequest(url: url, timeoutInterval: 3)
+    var request = URLRequest(url: url, timeoutInterval: timeout ?? 3)
     request.httpMethod = "POST"
     
     do {
@@ -176,6 +170,7 @@ private func internalSendKeyToDevice(location: String, rawKey: String) async -> 
         
         return false
     } catch {
+        
         logger.error("Error sending \(rawKey) to \(location): \(error)")
         return false
     }
