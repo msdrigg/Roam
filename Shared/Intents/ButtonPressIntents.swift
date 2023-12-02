@@ -8,6 +8,7 @@ public struct PlayIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigr
 
     public static var title: LocalizedStringResource = "Press play"
     public static var description = IntentDescription("Play or pause the media on the connected device")
+
     
     public init() {}
 

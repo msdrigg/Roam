@@ -76,7 +76,14 @@ enum ApiError: Swift.Error, CustomLocalizedStringResourceConvertible {
     }
 }
 
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier!,
+    category: "SimpleClicker"
+)
+
 public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async throws {
+    
+    logger.debug("Pressing widget button \(button.apiValue ?? "nil") on device \(device?.name ?? "nil")")
     let modelContainer = getSharedModelContainer()
     
     var targetDevice = device
@@ -85,12 +92,14 @@ public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async th
     }
     
     guard let targetDevice = targetDevice else {
+        logger.warning("Trying to press button with no device available")
         throw ApiError.noSavedDevices
     }
     
     if let deviceKey = button.apiValue {
         let success = await sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.mac)
         if !success {
+            logger.warning("Error sending key to device")
             throw ApiError.deviceNotConnectable
         }
     }
