@@ -1,10 +1,3 @@
-//
-//  TopBar.swift
-//  Roam
-//
-//  Created by Scott Driggers on 10/20/23.
-//
-
 import Foundation
 import SwiftUI
     
@@ -43,6 +36,7 @@ struct TopBar: View {
                     .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
                 
             }
+            .keyboardShortcut("h")
             .sensoryFeedback(.impact, trigger: pressCounter(.home))
             .symbolEffect(.bounce, value: pressCounter(.home))
         }

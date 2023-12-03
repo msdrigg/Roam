@@ -41,6 +41,8 @@ struct RemoteView: View {
     
     @Query(deviceFetchDescriptor) private var devices: [Device]
     
+    @Binding var showKeyboardShortcuts: Bool
+    
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var manuallySelectedDevice: Device?
     @State private var showKeyboardEntry: Bool = false
@@ -424,6 +426,9 @@ struct RemoteView: View {
                 inBackground = newPhase != .active
             }
         }
+        .sheet(isPresented: $showKeyboardShortcuts) {
+            KeyboardShortcutPanel()
+        }
         .font(.title2)
         .fontDesign(.rounded)
         .controlSize(.extraLarge)
@@ -625,6 +630,6 @@ struct RemoteView: View {
 }
 
 #Preview("Remote horizontal") {
-    RemoteView()
+    RemoteView(showKeyboardShortcuts: Binding.constant(false))
         .modelContainer(devicePreviewContainer)
 }
