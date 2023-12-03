@@ -3,6 +3,8 @@ import SwiftData
 
 @main
 struct RoamApp: App {
+    @State var showKeyboardShortcuts: Bool = false
+    
     var sharedModelContainer: ModelContainer
     init() {
         sharedModelContainer = getSharedModelContainer()
@@ -11,11 +13,19 @@ struct RoamApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RemoteView()
+            RemoteView(showKeyboardShortcuts: $showKeyboardShortcuts)
         }
         .modelContainer(sharedModelContainer)
         #if os(macOS)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
+        .commands {
+            CommandGroup(after: .help) {
+                Button("Keyboard Shortcuts", systemImage: "keyboard") {
+                    showKeyboardShortcuts = !showKeyboardShortcuts
+                }
+                .keyboardShortcut("k")
+            }
+        }
         #endif
         
         #if os(macOS)

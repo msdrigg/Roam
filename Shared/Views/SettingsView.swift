@@ -36,6 +36,8 @@ struct SettingsView: View {
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
     
+    @State private var showKeyboardShortcuts: Bool = false
+    
     var body: some View {
         Form {
             Section("Devices") {
@@ -134,8 +136,26 @@ struct SettingsView: View {
             }
 #endif
             
+#if os(macOS)
+            Button(action: {showKeyboardShortcuts = true}) {
+                HStack {
+                    Label("Keyboard shortcuts", systemImage: "keyboard")
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut("k")
+#endif
+            
             NavigationLink("About", value: AboutDestination.Global)
         }
+#if os(macOS)
+        .sheet(isPresented: $showKeyboardShortcuts) {
+            KeyboardShortcutPanel()
+        }
+#endif
         
 #if os(iOS)
         .refreshable {

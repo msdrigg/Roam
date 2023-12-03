@@ -93,6 +93,7 @@
 		AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
 		AFA165C02AE92F92003F45ED /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA165BF2AE92F92003F45ED /* AboutView.swift */; };
 		AFA9F8972B1B878600829B7C /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */; };
+		AFA9F8992B1D29E000829B7C /* KeyboardShortcutPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */; };
 		AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */; };
 		AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */; };
 		AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */; };
@@ -259,6 +260,7 @@
 		AFA165C12AE933D7003F45ED /* LICENSE-APACHE */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-APACHE"; sourceTree = "<group>"; };
 		AFA165C22AE93401003F45ED /* LICENSE-MIT */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-MIT"; sourceTree = "<group>"; };
 		AFA165C32AE93FE1003F45ED /* AppIcons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppIcons; sourceTree = "<group>"; };
+		AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutPanel.swift; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* Roam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamApp.swift; sourceTree = "<group>"; };
 		AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AppIcon.xcassets; sourceTree = "<group>"; };
@@ -332,6 +334,7 @@
 				AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */,
 				AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */,
 				AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */,
+				AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -813,6 +816,7 @@
 				AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */,
 				AF19CA1E2AE4517600A42DFF /* RTCP.swift in Sources */,
 				AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */,
+				AFA9F8992B1D29E000829B7C /* KeyboardShortcutPanel.swift in Sources */,
 				AF19CA282AE54ABC00A42DFF /* SSDPService.swift in Sources */,
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
 				AFA079DC2AE02561003E2754 /* RemoteButtonAppEnum.swift in Sources */,
