@@ -11,8 +11,6 @@ private let logger = Logger(
     category: "PrivateListening"
 )
 
-//let HOST_RTP_PORT: UInt16 = 31694
-//let HOST_RTCP_PORT: UInt16 = 31695
 let HOST_RTP_PORT: UInt16 = 6970
 let HOST_RTCP_PORT: UInt16 = 6971
 let DEFAULT_REMOTE_RTCP_PORT: UInt16 = 5150
