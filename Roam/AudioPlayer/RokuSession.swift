@@ -11,8 +11,10 @@ private let logger = Logger(
     category: "PrivateListening"
 )
 
-let HOST_RTP_PORT: UInt16 = 31694
-let HOST_RTCP_PORT: UInt16 = 31695
+//let HOST_RTP_PORT: UInt16 = 31694
+//let HOST_RTCP_PORT: UInt16 = 31695
+let HOST_RTP_PORT: UInt16 = 6970
+let HOST_RTCP_PORT: UInt16 = 6971
 let DEFAULT_REMOTE_RTCP_PORT: UInt16 = 5150
 let RTP_PAYLOAD_TYPE = 97
 let CLOCK_RATE = 48000
@@ -52,12 +54,21 @@ func listenContinually(ecpSession: ECPSession, location: String, rtcpPort: UInt1
             }
             
             taskGroup.addTask {
-                try await withTimeout(delay: 6.0) {
-                    try await rtpSession.performRTCPHandshake()
+                do {
+                    try await withTimeout(delay: 6.0) {
+                        try await rtpSession.performRTCPHandshake()
+                    }
+                } catch {
+                    logger.error("Error performing handshake: \(error)")
+                    throw error
                 }
-                try await rtpSession.sendRTCPReceiverReports()
+                do {
+                    try await rtpSession.sendRTCPReceiverReports()
+                } catch {
+                    logger.error("Error sending receiver reports: \(error)")
+                    throw error
+                }
             }
-
         }
     } catch {
         logger.error("Error among private listening tasks \(error)")
@@ -124,6 +135,22 @@ actor RTPSession {
     }
     
     func startRtcpStream() {
+        self.rtcpListener.stateUpdateHandler = {[weak self] state in
+            switch state {
+            case .failed(let err):
+                Self.logger.info("rtcpConnection failed with error \(err)")
+                self?.rtcpStream.fail(err)
+            case .cancelled:
+                Self.logger.info("rtcpConnection cancelled")
+                self?.rtcpStream.finish()
+            case .ready:
+                Self.logger.info("rtcpConnection ready")
+            default:
+                Self.logger.info("Getting new rtcp state \(String(describing: state))")
+            }
+        }
+
+        
         rtcpListener.newConnectionHandler = { [weak self] rtcpConnection in
             guard let rtcpStream  = self?.rtcpStream else {
                 Self.logger.warning("No rtcp stream when getting new connection")
@@ -164,7 +191,7 @@ actor RTPSession {
                 case .ready:
                     Self.logger.info("rtcpConnection ready")
                 default:
-                    Self.logger.info("Getting new state \(String(describing: state))")
+                    Self.logger.info("Getting new rtcp state \(String(describing: state))")
                 }
             }
             
@@ -190,6 +217,22 @@ actor RTPSession {
     }
     
     func startRtpStream() {
+        self.rtpListener.stateUpdateHandler = {[weak self] state in
+            switch state {
+            case .failed(let err):
+                Self.logger.info("rtpConnection failed with error \(err)")
+                self?.rtpStream.fail(err)
+            case .cancelled:
+                Self.logger.info("rtpConnection cancelled")
+                self?.rtpStream.finish()
+            case .ready:
+                Self.logger.info("rtpConnection ready")
+            default:
+                Self.logger.info("Getting new rtp state \(String(describing: state))")
+            }
+        }
+
+        
         rtpListener.newConnectionHandler = { [weak self] rtpConnection in
             guard let rtpStream  = self?.rtpStream else {
                 Self.logger.warning("No rtp stream when getting new connection")
@@ -217,15 +260,15 @@ actor RTPSession {
             rtpConnection.stateUpdateHandler = { state in
                 switch state {
                 case .failed(let err):
-                    Self.logger.info("rtcpConnection connection failed with error \(err)")
+                    Self.logger.info("rtpConnection connection failed with error \(err)")
                     rtpStream.fail(err)
                 case .cancelled:
-                    Self.logger.info("rtcpConnection connection cancelled")
+                    Self.logger.info("rtpConnection connection cancelled")
                     rtpStream.finish()
                 case .ready:
-                    Self.logger.info("rtcpConnection connection ready")
+                    Self.logger.info("rtpConnection connection ready")
                 default:
-                    Self.logger.info("Getting new rtcpConnection connection state \(String(describing: state))")
+                    Self.logger.info("Getting new rtpConnection connection state \(String(describing: state))")
                 }
             }
             rtpConnection.start(queue: .global())
@@ -243,7 +286,7 @@ actor RTPSession {
                 case .ready:
                     Self.logger.info("rtpConnection ready")
                 default:
-                    Self.logger.info("Getting new state \(String(describing: state))")
+                    Self.logger.info("Getting new rtp state \(String(describing: state))")
                 }
             }
         }
@@ -254,9 +297,12 @@ actor RTPSession {
     func performVDLYHandshake() async throws {
         // Send VDLY rtcp packet using rtcpConnection
         // Wait for response XDLY using rtcpStream
+        Self.logger.info("Performing VDLY handshake")
+
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(), Error>) -> Void in
             remoteRtcpConnection.send(content: RtcpPacket.vdly(delayMs: HUGE_FIXED_VDLY_MS).packet(), completion: .contentProcessed({ error in
                 if let error = error {
+                    Self.logger.warning("Error sending VDLY packet \(error)")
                     continuation.resume(throwing: error)
                 } else {
                     Self.logger.debug("VDLY Sent")
@@ -282,12 +328,14 @@ actor RTPSession {
     func performNewClientHandshake() async throws {
         // Send CVER rtcp packet using rtcpConnection
         // Wait for response NCLI packet using rtcpStream
+        Self.logger.info("Performing NCLI handshake")
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(), Error>) -> Void in
             remoteRtcpConnection.send(content: RtcpPacket.cver(clientVersion: 2).packet(), completion: .contentProcessed({ error in
                 if let error = error {
+                    Self.logger.warning("Error sending CVER packet \(error)")
                     continuation.resume(throwing: error)
                 } else {
-                    Self.logger.debug("VDLY Sent")
+                    Self.logger.debug("CVER Sent")
                     continuation.resume(returning: ())
                 }
             }))
@@ -305,6 +353,7 @@ actor RTPSession {
     }
     
     func performRTCPHandshake() async throws {
+        Self.logger.info("Performing RTCP handshake")
         var timerStream = AsyncTimerSequence.repeating(every: .seconds(1)).makeAsyncIterator()
         while !Task.isCancelled {
             do {
@@ -328,6 +377,7 @@ actor RTPSession {
                 Self.logger.error("Error performing NCLI handshake \(error)")
             }
         }
+        Self.logger.info("Performed RTCP handshake successfully")
     }
     
     func sendRTCPReceiverReport() async throws {
@@ -385,16 +435,18 @@ actor RTPSession {
 
                 do {
                     for try await rtpPacket in self.rtpStream {
+                        let seqNo = rtpPacket.sequenceNumber
+                        Self.logger.debug("Received packet in stream: \(seqNo)")
                         // Drop first 5 packets because we want to have a reasonable sync packet and sometimes the first packet or two isn't valid
                         count += 1
                         if count < 5 {
                             continue
                         }
                         
-                        if lsqNo != Int64(rtpPacket.sequenceNumber) - 1 {
-                            Self.logger.info("Packet with seqno received \(rtpPacket.sequenceNumber) when expecting \(lsqNo + 1)")
+                        if lsqNo != Int64(seqNo) - 1 {
+                            Self.logger.info("Packet with seqno received \(seqNo) when expecting \(lsqNo + 1)")
                         }
-                        lsqNo = Int64(rtpPacket.sequenceNumber)
+                        lsqNo = Int64(seqNo)
                         
                         await decoder.addPacket(packet: rtpPacket)
                     }

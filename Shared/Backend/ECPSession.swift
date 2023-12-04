@@ -111,6 +111,9 @@ actor ECPSession {
             throw ECPError.BadWebsocketMessage
         }
         
+        let websocketStr = String(data: plResponseData, encoding: .utf8) ?? "--Bad data--";
+        Self.logger.info("Got PL start weboscket response: \(websocketStr, privacy: .public)")
+        
         let authResponse = try decoder.decode(BaseResponse.self, from: plResponseData)
         if !authResponse.isSuccess {
             Self.logger.error("Unable to start private listening on roku with response \(String(describing: authResponse))")
@@ -218,6 +221,10 @@ actor ECPSession {
                 Self.logger.error("Unknown message type received: \(String(describing: resultMessage))")
                 throw ECPError.BadWebsocketMessage
             }
+            let websocketStr = String(data: responseMessageData, encoding: .utf8) ?? "--Bad data--";
+            Self.logger.info("Got Roku weboscket response: \(websocketStr, privacy: .public)")
+            
+            
             
             let response = try decoder.decode(BaseResponse.self, from: responseMessageData)
             if !response.isSuccess {
@@ -253,6 +260,9 @@ actor ECPSession {
                 Self.logger.error("Unknown message type received: \(String(describing: authMessage))")
                 throw ECPError.BadWebsocketMessage
             }
+            
+            let websocketStr = String(data: authMessageData, encoding: .utf8) ?? "--Bad data--";
+            Self.logger.info("Got auth weboscket response: \(websocketStr, privacy: .public)")
             
             let challengeMessage = try decoder.decode(AuthChallenge.self, from: authMessageData)
             let responseMessage = AuthVerifyRequest(challenge: challengeMessage.paramChallenge, requestId: self.getAndUpdateRequestId())
