@@ -48,6 +48,9 @@ actor DeviceDiscoveryActor {
         Self.logger.debug("Refreshing device \(String(describing: id))")
         await self.refreshDevice(id: id)
         for await _ in interval(time: 30) {
+            if Task.isCancelled {
+                return
+            }
             Self.logger.debug("Refreshing device \(String(describing: id))")
             await self.refreshDevice(id: id)
         }
