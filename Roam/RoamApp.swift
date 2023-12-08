@@ -1,19 +1,32 @@
 import SwiftUI
 import SwiftData
 
+class GlobalViewSettings: ObservableObject {
+    @Published var showKeyboardShortcuts: Bool
+
+    init() {
+        self.showKeyboardShortcuts = false
+    }
+}
+
+
 @main
 struct RoamApp: App {
-    @State var showKeyboardShortcuts: Bool = false
+    private var globalViewSettings: GlobalViewSettings = GlobalViewSettings()
     
     var sharedModelContainer: ModelContainer
     init() {
         sharedModelContainer = getSharedModelContainer()
+        PushConfigurationManager.shared.initialize()
+        MessagingManager.shared.initialize()
+        MessagingManager.shared.requestNotificationPermission()
     }
     
 
     var body: some Scene {
         WindowGroup {
-            RemoteView(showKeyboardShortcuts: $showKeyboardShortcuts)
+            RemoteView()
+                .environmentObject(globalViewSettings)
         }
         .modelContainer(sharedModelContainer)
         #if os(macOS)
@@ -21,7 +34,7 @@ struct RoamApp: App {
         .commands {
             CommandGroup(after: .help) {
                 Button("Keyboard Shortcuts", systemImage: "keyboard") {
-                    showKeyboardShortcuts = !showKeyboardShortcuts
+                    globalViewSettings.showKeyboardShortcuts = !globalViewSettings.showKeyboardShortcuts
                 }
                 .keyboardShortcut("k")
             }

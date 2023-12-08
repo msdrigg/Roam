@@ -83,6 +83,12 @@
 		AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */; };
 		AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */; };
 		AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */; };
+		AF6148E82B2373C700536A6D /* MessagingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6148E72B2373C700536A6D /* MessagingManager.swift */; };
+		AF6148EA2B2373EC00536A6D /* PushManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6148E92B2373EC00536A6D /* PushManager.swift */; };
+		AF6148F32B23C65200536A6D /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF6148F22B23C65200536A6D /* NetworkExtension.framework */; };
+		AF6148F62B23C65200536A6D /* SimplePushProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6148F52B23C65200536A6D /* SimplePushProvider.swift */; };
+		AF6148FB2B23C65200536A6D /* SimplePushProvider.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF6148F12B23C65200536A6D /* SimplePushProvider.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF6149002B23CE9700536A6D /* UserDefaultsExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6148FF2B23CE9700536A6D /* UserDefaultsExtension.swift */; };
 		AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
 		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
@@ -155,6 +161,13 @@
 			remoteGlobalIDString = AF27400A2AE02C25007C6208;
 			remoteInfo = BetterRemoteWidgetsExtension;
 		};
+		AF6148F92B23C65200536A6D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF6148F02B23C65200536A6D;
+			remoteInfo = SimplePushProvider;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -196,6 +209,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */,
+				AF6148FB2B23C65200536A6D /* SimplePushProvider.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -247,6 +261,14 @@
 		AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingExtensions.swift; sourceTree = "<group>"; };
 		AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF5FDAD52ADB3C4B006CDEB3 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
+		AF6148E72B2373C700536A6D /* MessagingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingManager.swift; sourceTree = "<group>"; };
+		AF6148E92B2373EC00536A6D /* PushManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushManager.swift; sourceTree = "<group>"; };
+		AF6148F12B23C65200536A6D /* SimplePushProvider.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SimplePushProvider.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF6148F22B23C65200536A6D /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		AF6148F52B23C65200536A6D /* SimplePushProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePushProvider.swift; sourceTree = "<group>"; };
+		AF6148F72B23C65200536A6D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AF6148F82B23C65200536A6D /* SimplePushProvider.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimplePushProvider.entitlements; sourceTree = "<group>"; };
+		AF6148FF2B23CE9700536A6D /* UserDefaultsExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsExtension.swift; sourceTree = "<group>"; };
 		AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuSession.swift; sourceTree = "<group>"; };
 		AF95B6F62ADF2F9F005FC338 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.crashreport; };
 		AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
@@ -306,6 +328,14 @@
 				AF19CA3A2AE6BF9D00A42DFF /* XMLCoder in Frameworks */,
 				AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */,
 				AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF6148EE2B23C65200536A6D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF6148F32B23C65200536A6D /* NetworkExtension.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -406,6 +436,7 @@
 				AFC6E6A12ADDF6BC0036EC90 /* IntentsUI.framework */,
 				AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */,
 				AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */,
+				AF6148F22B23C65200536A6D /* NetworkExtension.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -445,6 +476,25 @@
 			path = Utils;
 			sourceTree = "<group>";
 		};
+		AF6148E62B2373B700536A6D /* LocalPush */ = {
+			isa = PBXGroup;
+			children = (
+				AF6148E72B2373C700536A6D /* MessagingManager.swift */,
+				AF6148E92B2373EC00536A6D /* PushManager.swift */,
+			);
+			path = LocalPush;
+			sourceTree = "<group>";
+		};
+		AF6148F42B23C65200536A6D /* SimplePushProvider */ = {
+			isa = PBXGroup;
+			children = (
+				AF6148F52B23C65200536A6D /* SimplePushProvider.swift */,
+				AF6148F72B23C65200536A6D /* Info.plist */,
+				AF6148F82B23C65200536A6D /* SimplePushProvider.entitlements */,
+			);
+			path = SimplePushProvider;
+			sourceTree = "<group>";
+		};
 		AF95B7372ADF3F9E005FC338 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
@@ -457,6 +507,7 @@
 				AF56E3AF2AD97AA300F5E6E0 /* Models */,
 				AF56E3BB2AD9865400F5E6E0 /* Utils */,
 				AFD590D52AEC787700189620 /* ModelContainer.swift */,
+				AF6148FF2B23CE9700536A6D /* UserDefaultsExtension.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -495,6 +546,7 @@
 				AF95B7372ADF3F9E005FC338 /* Shared */,
 				AF27400E2AE02C25007C6208 /* RoamWidgets */,
 				AF15C2472AE8672700B79FD9 /* RoamWatch */,
+				AF6148F42B23C65200536A6D /* SimplePushProvider */,
 				AFC24EFC2AD0E5A1002AB66C /* Products */,
 				AF4D5F322AD4355E0055AF35 /* Frameworks */,
 			);
@@ -506,6 +558,7 @@
 				AFC24EFB2AD0E5A1002AB66C /* Roam.app */,
 				AF27400B2AE02C25007C6208 /* RoamWidgets.appex */,
 				AF15C2462AE8672700B79FD9 /* Roam.app */,
+				AF6148F12B23C65200536A6D /* SimplePushProvider.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -515,12 +568,13 @@
 			children = (
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
 				AFC4A6592AE88411005DAC6C /* LatencyListener.swift */,
+				AFED42492AEE8F3B0023D684 /* VolumeListener.swift */,
 				AFD590CF2AEC673C00189620 /* WatchConnector.swift */,
+				AF6148E62B2373B700536A6D /* LocalPush */,
 				AF0C82862AEB3AA500CBE7F8 /* Views */,
 				AF95B74D2ADF43A4005FC338 /* AudioPlayer */,
 				AF4829722AD4C83D008E05FA /* Info.plist */,
 				AFC24F092AD0E5A2002AB66C /* Roam.entitlements */,
-				AFED42492AEE8F3B0023D684 /* VolumeListener.swift */,
 			);
 			path = Roam;
 			sourceTree = "<group>";
@@ -593,6 +647,23 @@
 			productReference = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		AF6148F02B23C65200536A6D /* SimplePushProvider */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF6148FC2B23C65200536A6D /* Build configuration list for PBXNativeTarget "SimplePushProvider" */;
+			buildPhases = (
+				AF6148ED2B23C65200536A6D /* Sources */,
+				AF6148EE2B23C65200536A6D /* Frameworks */,
+				AF6148EF2B23C65200536A6D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SimplePushProvider;
+			productName = SimplePushProvider;
+			productReference = AF6148F12B23C65200536A6D /* SimplePushProvider.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		AFC24EFA2AD0E5A1002AB66C /* Roam */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "Roam" */;
@@ -610,6 +681,7 @@
 			dependencies = (
 				AF27401A2AE02C26007C6208 /* PBXTargetDependency */,
 				AF15C2522AE8672800B79FD9 /* PBXTargetDependency */,
+				AF6148FA2B23C65200536A6D /* PBXTargetDependency */,
 			);
 			name = Roam;
 			packageProductDependencies = (
@@ -637,6 +709,9 @@
 					};
 					AF27400A2AE02C25007C6208 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					AF6148F02B23C65200536A6D = {
+						CreatedOnToolsVersion = 15.0.1;
 					};
 					AFC24EFA2AD0E5A1002AB66C = {
 						CreatedOnToolsVersion = 15.0;
@@ -666,6 +741,7 @@
 				AFC24EFA2AD0E5A1002AB66C /* Roam */,
 				AF15C2452AE8672700B79FD9 /* RoamWatch */,
 				AF27400A2AE02C25007C6208 /* RoamWidgets */,
+				AF6148F02B23C65200536A6D /* SimplePushProvider */,
 			);
 		};
 /* End PBXProject section */
@@ -686,6 +762,13 @@
 			files = (
 				AF5ED8D52AE984E9007DB2B8 /* WidgetColor.xcassets in Resources */,
 				AF0C828A2AEB463400CBE7F8 /* AccentColor.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF6148EF2B23C65200536A6D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -776,10 +859,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AF6148ED2B23C65200536A6D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF6148F62B23C65200536A6D /* SimplePushProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AFC24EF72AD0E5A1002AB66C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF6148EA2B2373EC00536A6D /* PushManager.swift in Sources */,
 				AF0C82952AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */,
 				AF19CA2B2AE54AD100A42DFF /* SSDPDiscovery.swift in Sources */,
 				AF20AD0C2AE01E9100D371C7 /* AppLink.swift in Sources */,
@@ -805,6 +897,7 @@
 				AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */,
 				AF5ED8DE2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */,
 				AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */,
+				AF6149002B23CE9700536A6D /* UserDefaultsExtension.swift in Sources */,
 				AF0C82902AEBF2A200CBE7F8 /* ECPSession.swift in Sources */,
 				AFD590D62AEC787700189620 /* ModelContainer.swift in Sources */,
 				AFA079DF2AE0263F003E2754 /* Shortcuts.swift in Sources */,
@@ -827,6 +920,7 @@
 				AFD590D02AEC673C00189620 /* WatchConnector.swift in Sources */,
 				AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */,
 				AF19CA1B2AE4510900A42DFF /* RTP.swift in Sources */,
+				AF6148E82B2373C700536A6D /* MessagingManager.swift in Sources */,
 				AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */,
 				AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */,
 				AF3AD5592AE2940A00E2D780 /* KeyboardMonitor.swift in Sources */,
@@ -849,6 +943,11 @@
 			isa = PBXTargetDependency;
 			target = AF27400A2AE02C25007C6208 /* RoamWidgets */;
 			targetProxy = AF2740192AE02C26007C6208 /* PBXContainerItemProxy */;
+		};
+		AF6148FA2B23C65200536A6D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AF6148F02B23C65200536A6D /* SimplePushProvider */;
+			targetProxy = AF6148F92B23C65200536A6D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -993,6 +1092,63 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AF6148FD2B23C65200536A6D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SimplePushProvider/SimplePushProvider.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SimplePushProvider/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SimplePushProvider;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.SimplePushProvider;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AF6148FE2B23C65200536A6D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SimplePushProvider/SimplePushProvider.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SimplePushProvider/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SimplePushProvider;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.SimplePushProvider;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -1223,6 +1379,15 @@
 			buildConfigurations = (
 				AF27401C2AE02C27007C6208 /* Debug */,
 				AF27401D2AE02C27007C6208 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AF6148FC2B23C65200536A6D /* Build configuration list for PBXNativeTarget "SimplePushProvider" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF6148FD2B23C65200536A6D /* Debug */,
+				AF6148FE2B23C65200536A6D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

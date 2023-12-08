@@ -10,9 +10,9 @@ struct KeyboardShortcut: Identifiable {
 }
 
 struct KeyboardShortcutPanel: View {
-    let columns: [GridItem] = Array(repeating: .init(.fixed(200)), count: 3) // Adjust the count as needed for columns
+    static let columns: [GridItem] = Array(repeating: .init(.fixed(200)), count: 3) // Adjust the count as needed for columns
     
-    let shortcuts: [KeyboardShortcut] = [
+    static let shortcuts: [KeyboardShortcut] = [
         KeyboardShortcut(title: "Back", keys: "⌘◀"),
         KeyboardShortcut(title: "Power", keys: "⌘⏎"),
         KeyboardShortcut(title: "Home", keys: "⌘H"),
@@ -32,8 +32,8 @@ struct KeyboardShortcutPanel: View {
     ]
     
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 20) {
-            ForEach(shortcuts) { shortcut in
+        LazyVGrid(columns: Self.columns, spacing: 20) {
+            ForEach(Self.shortcuts) { shortcut in
                 HStack {
                     Text(shortcut.title)
                         .font(.headline)

@@ -152,7 +152,9 @@ struct SettingsView: View {
             NavigationLink("About", value: AboutDestination.Global)
         }
 #if os(macOS)
-        .sheet(isPresented: $showKeyboardShortcuts) {
+        .sheet(isPresented: $showKeyboardShortcuts, onDismiss: {
+            showKeyboardShortcuts = false
+        }) {
             KeyboardShortcutPanel()
         }
 #endif

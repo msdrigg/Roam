@@ -38,10 +38,10 @@ struct RemoteView: View {
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) var scenePhase
+    @EnvironmentObject private var globalViewSettings: GlobalViewSettings
     
     @Query(deviceFetchDescriptor) private var devices: [Device]
     
-    @Binding var showKeyboardShortcuts: Bool
     
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var manuallySelectedDevice: Device?
@@ -54,6 +54,8 @@ struct RemoteView: View {
     @State private var privateListeningEnabled: Bool = false
     @State private var errorTrigger: Int = 0
     @State private var ecpSession: ECPSession? = nil
+    
+    @State private var notification: String? = nil
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
@@ -167,6 +169,11 @@ struct RemoteView: View {
                 remotePage
             }
 #if os(iOS)
+            .task {
+                for await message in MessagingManager.shared.channel {
+                    notification = message
+                }
+            }
             .task(id: devices.count, priority: .background) {
                 // Send devices to connected watch
                 WatchConnectivity.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
@@ -282,6 +289,9 @@ struct RemoteView: View {
                 Spacer()
             }
 #if os(iOS)
+            .overlay (
+                NotificationOverlay(text: $notification)
+            )
             .overlay {
                 if controlVolumeWithHWButtons && !privateListeningEnabled {
                     CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
@@ -426,7 +436,9 @@ struct RemoteView: View {
                 inBackground = newPhase != .active
             }
         }
-        .sheet(isPresented: $showKeyboardShortcuts) {
+        .sheet(isPresented: $globalViewSettings.showKeyboardShortcuts, onDismiss: {
+            globalViewSettings.showKeyboardShortcuts = false
+        }) {
             KeyboardShortcutPanel()
         }
         .font(.title2)
@@ -482,9 +494,9 @@ struct RemoteView: View {
     }
     
     func shouldRequestReview() -> Bool {
-        let userActionCount = UserDefaults.standard.integer(forKey: UserDefaultKeys.userMajorActionCount)
-        let lastVersionAsked = UserDefaults.standard.string(forKey: UserDefaultKeys.appVersionAtLastReviewRequest)
-        let lastDateAsked = UserDefaults.standard.object(forKey: UserDefaultKeys.dateOfLastReviewRequest) as? Date
+        let userActionCount = UserDefaults.roam.integer(forKey: UserDefaultKeys.userMajorActionCount)
+        let lastVersionAsked = UserDefaults.roam.string(forKey: UserDefaultKeys.appVersionAtLastReviewRequest)
+        let lastDateAsked = UserDefaults.roam.object(forKey: UserDefaultKeys.dateOfLastReviewRequest) as? Date
         
         guard let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String else {
             return false
@@ -507,9 +519,9 @@ struct RemoteView: View {
     
     func handleMajorUserAction() {
         // Increment user action count
-        var count = UserDefaults.standard.integer(forKey: UserDefaultKeys.userMajorActionCount)
+        var count = UserDefaults.roam.integer(forKey: UserDefaultKeys.userMajorActionCount)
         count += 1
-        UserDefaults.standard.set(count, forKey: UserDefaultKeys.userMajorActionCount)
+        UserDefaults.roam.set(count, forKey: UserDefaultKeys.userMajorActionCount)
         
         if shouldRequestReview() {
 #if os(iOS)
@@ -526,8 +538,8 @@ struct RemoteView: View {
 #endif
             }
             
-            UserDefaults.standard.set(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString"), forKey: UserDefaultKeys.appVersionAtLastReviewRequest)
-            UserDefaults.standard.set(Date(), forKey: UserDefaultKeys.dateOfLastReviewRequest)
+            UserDefaults.roam.set(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString"), forKey: UserDefaultKeys.appVersionAtLastReviewRequest)
+            UserDefaults.roam.set(Date(), forKey: UserDefaultKeys.dateOfLastReviewRequest)
         }
     }
     
@@ -629,7 +641,48 @@ struct RemoteView: View {
     }
 }
 
+struct NotificationOverlay: View {
+    @Binding var text: String?
+
+    var body: some View {
+        if let text = text {
+            VStack {
+                HStack {
+                    Text(text)
+                        .padding()
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .background(.regularMaterial)
+                        .cornerRadius(12)
+                        .overlay(
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    self.text = ""
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                        .padding(10)
+                                }
+                            }
+                        )
+
+                }
+                .shadow(color: .black.opacity(0.2), radius: 3)
+                .padding()
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+#Preview("Notification Overlay") {
+    NotificationOverlay(text: Binding.constant("Hi notification here!"))
+}
+
 #Preview("Remote horizontal") {
-    RemoteView(showKeyboardShortcuts: Binding.constant(false))
+    RemoteView()
         .modelContainer(devicePreviewContainer)
+        .environmentObject(GlobalViewSettings())
 }
