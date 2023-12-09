@@ -10,10 +10,18 @@ import StoreKit
 #if os(macOS)
 let BUTTON_WIDTH: CGFloat = 44
 let BUTTON_HEIGHT: CGFloat = 36
+let APP_LINK_SHRINK_WIDTH: CGFloat = 500
 #else
 let BUTTON_WIDTH: CGFloat = 28
 let BUTTON_HEIGHT: CGFloat = 20
+let APP_LINK_SHRINK_WIDTH = 700
 #endif
+
+let HORIZONTAL_MAX_HEIGHT: CGFloat = 400
+let HORIZONTAL_MIN_WIDTH: CGFloat = 400
+
+let TOOLBAR_SHRINK_WIDTH: CGFloat = 300
+
 
 let MAJOR_ACTIONS: [RemoteButton] = [.power, .playPause, .mute, .privateListening]
 
@@ -102,10 +110,6 @@ struct RemoteView: View {
         }
     }
     
-    let HORIZONTAL_MAX_HEIGHT: CGFloat = 400
-    let HORIZONTAL_MIN_WIDTH: CGFloat = 400
-    
-    let TOOLBAR_SHRINK_WIDTH: CGFloat = 300
     
     @Namespace var animation
     
@@ -250,7 +254,7 @@ struct RemoteView: View {
                 .overlay(
                     GeometryReader { proxy in
                         let isHorizontal = proxy.size.width > proxy.size.height
-                        let isSmallHeight = proxy.size.height <= 700
+                        let isSmallHeight = proxy.size.height <= APP_LINK_SHRINK_WIDTH
                         let isSmallWidth = proxy.size.width <= TOOLBAR_SHRINK_WIDTH
                         
                         Color.clear.preference(key: IsHorizontalKey.self, value: isHorizontal)
