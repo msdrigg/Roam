@@ -132,6 +132,10 @@ actor OpusDecoderWithJitterBuffer {
     }
 }
 
+enum AudioPlayerError: Error, LocalizedError {
+    case EngineNotRunningOnPlay
+}
+
 actor AudioPlayer {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -154,6 +158,9 @@ actor AudioPlayer {
 
     public func start() throws {
         try engine.start()
+        if (!engine.isRunning) {
+            throw AudioPlayerError.EngineNotRunningOnPlay
+        }
         streamAudioNode.play()
     }
     

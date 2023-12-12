@@ -17,6 +17,8 @@ struct AppLinksView: View {
         return hasher.finalize()
     }
     
+    
+    
     @Namespace var linkAnimation
     
     init(appLinks: [AppLinkAppEntity], rows: Int, handleOpenApp: @escaping (AppLinkAppEntity) -> Void) {
@@ -24,7 +26,12 @@ struct AppLinksView: View {
         self.handleOpenApp = handleOpenApp
         self.rows = rows
         
-        cachedAppLinks = appLinks
+        var seenIDs = Set<String>()
+        self.cachedAppLinks = appLinks.filter { appLink in
+            guard !seenIDs.contains(appLink.id) else { return false }
+            seenIDs.insert(appLink.id)
+            return true
+        }
     }
     
     var body: some View {
@@ -34,7 +41,6 @@ struct AppLinksView: View {
                 LazyHGrid(rows: Array(repeating: GridItem(.fixed(60)), count: rows), spacing: 10) {
                     ForEach(Array(cachedAppLinks.enumerated()), id: \.element.id) { index, app in
                         AppLinkButton(app: app, action: handleOpenApp)
-                            .matchedGeometryEffect(id: app.id, in: linkAnimation)
                     }
                 }
                 .scrollTargetLayout()

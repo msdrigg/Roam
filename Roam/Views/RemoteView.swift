@@ -66,6 +66,20 @@ struct RemoteView: View {
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
     
+    @Environment(\.verticalSizeClass) var verticalSizeClass
+    
+    private var appLinkRows: Int {
+        #if os(macOS)
+        return 2
+        #else
+        if verticalSizeClass == .compact {
+            return 1
+        } else {
+            return 2
+        }
+        #endif
+    }
+    
     @FocusState private var focused: Bool
     
 #if os(iOS)
@@ -84,18 +98,11 @@ struct RemoteView: View {
     
     @State var isHorizontal: Bool = false
     @State var isSmallWidth: Bool = true
-    @State var isSmallHeight: Bool = false
     
     @State var volume: Float = 0
     @State var lastVolumeChangeFromTv: Bool = false
     
     private struct IsHorizontalKey: PreferenceKey {
-        static var defaultValue: Bool = false
-        static func reduce(value: inout Bool, nextValue: () -> Bool) {
-            value = nextValue()
-        }
-    }
-    private struct IsSmallHeight: PreferenceKey {
         static var defaultValue: Bool = false
         static func reduce(value: inout Bool, nextValue: () -> Bool) {
             value = nextValue()
@@ -247,12 +254,10 @@ struct RemoteView: View {
                 .overlay(
                     GeometryReader { proxy in
                         let isHorizontal = proxy.size.width > proxy.size.height
-                        let isSmallHeight = proxy.size.height <= APP_LINK_SHRINK_WIDTH
                         let isSmallWidth = proxy.size.width <= TOOLBAR_SHRINK_WIDTH
                         
                         Color.clear.preference(key: IsHorizontalKey.self, value: isHorizontal)
                         Color.clear.preference(key: IsSmallWidth.self, value: isSmallWidth)
-                        Color.clear.preference(key: IsSmallHeight.self, value: isSmallHeight)
                     }
                 )
                 .onPreferenceChange(IsHorizontalKey.self) { value in
@@ -265,18 +270,13 @@ struct RemoteView: View {
                         isSmallWidth = value
                     }
                 }
-                .onPreferenceChange(IsSmallHeight.self) { value in
-                    withAnimation {
-                        isSmallHeight = value
-                    }
-                }
             HStack {
                 Spacer()
                 VStack(alignment: .center) {
                     if isHorizontal {
-                        horizontalBody(isSmallHeight: isSmallHeight)
+                        horizontalBody()
                     } else {
-                        verticalBody(isSmallHeight: isSmallHeight)
+                        verticalBody()
                     }
                     
                     if showKeyboardEntry {
@@ -441,7 +441,7 @@ struct RemoteView: View {
         .labelStyle(.iconOnly)
     }
     
-    func horizontalBody(isSmallHeight: Bool) -> some View {
+    func horizontalBody() -> some View {
         VStack(alignment: .center) {
             Spacer()
             HStack(alignment: .center, spacing: 20) {
@@ -476,7 +476,7 @@ struct RemoteView: View {
             
             if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
                 Spacer()
-                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
+                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
@@ -535,7 +535,7 @@ struct RemoteView: View {
         }
     }
     
-    func verticalBody(isSmallHeight: Bool) -> some View {
+    func verticalBody() -> some View {
         VStack(alignment: .center, spacing: 10) {
             // Row with Back and Home buttons
             TopBar(pressCounter: buttonPressCount, action: pressButton, onKeyPress: pressKey)
@@ -564,7 +564,7 @@ struct RemoteView: View {
             
             if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
                 Spacer()
-                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: isSmallHeight ? 1 : 2, handleOpenApp: launchApp)
+                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
