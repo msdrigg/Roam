@@ -49,6 +49,7 @@ public func getTestingAppLinks() -> [AppLink] {
         AppLink(id: "4", type: "appl", name: "Disney another sweet long name", icon: nil),
         AppLink(id: "6", type: "appl", name: "Disney another sweet long name", icon: nil),
         AppLink(id: "7", type: "appl", name: "Disney another sweet long name", icon: nil),
+        AppLink(id: "7", type: "appl2", name: "Disney another", icon: nil),
     ]
 }
 
