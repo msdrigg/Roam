@@ -62,6 +62,7 @@ struct RemoteView: View {
     @State private var privateListeningEnabled: Bool = false
     @State private var errorTrigger: Int = 0
     @State private var ecpSession: ECPSession? = nil
+    @StateObject private var networkMonitor = NetworkMonitor()
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
@@ -187,6 +188,12 @@ struct RemoteView: View {
                 }
             }
 #endif
+            .onAppear {
+                networkMonitor.startMonitoring()
+            }
+            .onDisappear {
+                networkMonitor.stopMonitoring()
+            }
             .task(priority: .background) {
                 await withDiscardingTaskGroup { taskGroup in
                     taskGroup.addTask {
@@ -273,6 +280,13 @@ struct RemoteView: View {
             HStack {
                 Spacer()
                 VStack(alignment: .center) {
+                    if verticalSizeClass == .compact && !showKeyboardEntry {
+                        networkConnectivityBanner
+                            .offset(y: -20)
+                            .padding(.bottom, -16)
+                    }
+
+                    
                     if isHorizontal {
                         horizontalBody()
                     } else {
@@ -281,6 +295,11 @@ struct RemoteView: View {
                     
                     if showKeyboardEntry {
                         Spacer()
+                    } else {
+                        if verticalSizeClass != .compact {
+                            networkConnectivityBanner
+                                .padding(.bottom, 12)
+                        }
                     }
                 }
                 Spacer()
@@ -439,6 +458,15 @@ struct RemoteView: View {
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle)
         .labelStyle(.iconOnly)
+    }
+    
+    @ViewBuilder
+    var networkConnectivityBanner: some View {
+        if networkMonitor.networkConnection == .none {
+            NotificationBanner(message: "No network connection")
+        } else if networkMonitor.networkConnection == .remote || networkMonitor.networkConnection == .other {
+            NotificationBanner(message: "No WiFi connection detected", level: .warning)
+        }
     }
     
     func horizontalBody() -> some View {
