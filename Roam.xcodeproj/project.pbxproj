@@ -102,6 +102,8 @@
 		AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFC4A65F2AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
 		AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC4A65E2AE8AF3F005DAC6C /* DataImage.swift */; };
+		AFCF22DE2B2A52190048FFD9 /* NotificationBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */; };
+		AFCF22E02B2A6A720048FFD9 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCF22DF2B2A6A720048FFD9 /* NetworkMonitor.swift */; };
 		AFD590D02AEC673C00189620 /* WatchConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590CF2AEC673C00189620 /* WatchConnector.swift */; };
 		AFD590D22AEC692700189620 /* IPhoneConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590D12AEC692700189620 /* IPhoneConnector.swift */; };
 		AFD590D62AEC787700189620 /* ModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590D52AEC787700189620 /* ModelContainer.swift */; };
@@ -277,6 +279,8 @@
 		AFC6E6962ADDF6BB0036EC90 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		AFC6E6A12ADDF6BC0036EC90 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
 		AFC6E6B72ADE28C80036EC90 /* Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
+		AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationBanner.swift; sourceTree = "<group>"; };
+		AFCF22DF2B2A6A720048FFD9 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		AFD590CF2AEC673C00189620 /* WatchConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnector.swift; sourceTree = "<group>"; };
 		AFD590D12AEC692700189620 /* IPhoneConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPhoneConnector.swift; sourceTree = "<group>"; };
 		AFD590D32AEC6B4600189620 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS17.0.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
@@ -335,6 +339,7 @@
 				AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */,
 				AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */,
 				AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */,
+				AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -441,6 +446,7 @@
 				AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */,
 				AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */,
 				AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */,
+				AFCF22DF2B2A6A720048FFD9 /* NetworkMonitor.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -630,7 +636,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 1510;
 				TargetAttributes = {
 					AF15C2452AE8672700B79FD9 = {
 						CreatedOnToolsVersion = 15.0.1;
@@ -786,6 +792,7 @@
 				AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */,
 				AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */,
 				AF3D62D72AE6F703006AB8E9 /* OpusDecoder.swift in Sources */,
+				AFCF22DE2B2A52190048FFD9 /* NotificationBanner.swift in Sources */,
 				AF19CA3C2AE6BFC400A42DFF /* DeviceApi.swift in Sources */,
 				AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */,
 				AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */,
@@ -816,6 +823,7 @@
 				AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */,
 				AF19CA1E2AE4517600A42DFF /* RTCP.swift in Sources */,
 				AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */,
+				AFCF22E02B2A6A720048FFD9 /* NetworkMonitor.swift in Sources */,
 				AFA9F8992B1D29E000829B7C /* KeyboardShortcutPanel.swift in Sources */,
 				AF19CA282AE54ABC00A42DFF /* SSDPService.swift in Sources */,
 				AF11D36F2AD35D2800527AF6 /* SettingsView.swift in Sources */,
@@ -927,6 +935,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -966,6 +975,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 2865NTZ7H3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1030,7 +1040,8 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2023.12.12;
+				CURRENT_PROJECT_VERSION = 2023.12.13;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1053,7 +1064,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.9;
+				MARKETING_VERSION = 1.10;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1097,7 +1108,8 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2023.12.12;
+				CURRENT_PROJECT_VERSION = 2023.12.13;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1114,7 +1126,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.9;
+				MARKETING_VERSION = 1.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
