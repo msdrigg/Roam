@@ -402,13 +402,13 @@ struct RemoteView: View {
             .overlay {
                 if selectedDevice == nil {
                     VStack(spacing: 2) {
-                        Spacer().frame(maxHeight: 120)
+                        Spacer()
 #if os(macOS)
                             SettingsLink {
                                 Label("Setup a device to get started :)", systemImage: "gear")
                                     .frame(maxWidth: .infinity)
-                                    .font(.subheadline)
-                                    .padding(8)
+                                    .font(.callout)
+                                    .padding(16)
                                     .background(Color("AccentColor"))
                                     .cornerRadius(6)
                                     .padding(.horizontal, 40)
@@ -419,8 +419,8 @@ struct RemoteView: View {
                             NavigationLink(value: SettingsDestination.Global) {
                                 Label("Setup a device to get started :)", systemImage: "gear")
                                     .frame(maxWidth: .infinity)
-                                    .font(.subheadline)
-                                    .padding(8)
+                                    .font(.callout)
+                                    .padding(16)
                                     .background(Color("AccentColor"))
                                     .cornerRadius(6)
                                     .padding(.horizontal, 40)
