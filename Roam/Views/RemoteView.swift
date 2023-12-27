@@ -14,7 +14,7 @@ let APP_LINK_SHRINK_WIDTH: CGFloat = 500
 #else
 let BUTTON_WIDTH: CGFloat = 28
 let BUTTON_HEIGHT: CGFloat = 20
-let APP_LINK_SHRINK_WIDTH = 700
+let APP_LINK_SHRINK_WIDTH: CGFloat = 700
 #endif
 
 let HORIZONTAL_MAX_HEIGHT: CGFloat = 400
@@ -114,7 +114,7 @@ struct RemoteView: View {
     @Namespace var animation
     
     var deviceStatusColor: Color {
-        selectedDevice?.isOnline() ?? false ? Color.green : Color.secondary
+        Color.secondary
     }
     
     func buttonPressCount(_ key: RemoteButton) -> Int {
@@ -393,13 +393,13 @@ struct RemoteView: View {
             .overlay {
                 if selectedDevice == nil {
                     VStack(spacing: 2) {
-                        Spacer().frame(maxHeight: 120)
+                        Spacer()
 #if os(macOS)
                             SettingsLink {
                                 Label("Setup a device to get started :)", systemImage: "gear")
                                     .frame(maxWidth: .infinity)
-                                    .font(.subheadline)
-                                    .padding(8)
+                                    .font(.callout)
+                                    .padding(16)
                                     .background(Color("AccentColor"))
                                     .cornerRadius(6)
                                     .padding(.horizontal, 40)
@@ -410,8 +410,8 @@ struct RemoteView: View {
                             NavigationLink(value: SettingsDestination.Global) {
                                 Label("Setup a device to get started :)", systemImage: "gear")
                                     .frame(maxWidth: .infinity)
-                                    .font(.subheadline)
-                                    .padding(8)
+                                    .font(.callout)
+                                    .padding(16)
                                     .background(Color("AccentColor"))
                                     .cornerRadius(6)
                                     .padding(.horizontal, 40)
@@ -477,7 +477,7 @@ struct RemoteView: View {
                         Spacer().frame(maxHeight: 60)
                         
                         // Grid of 9 buttons
-                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: selectedDevice?.supportsDatagram == true ? Set([]) : Set([.privateListening]) )
+                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled:  Set([])  )
                             .transition(.scale.combined(with: .opacity))
                             .matchedGeometryEffect(id: "buttonGrid", in: animation)
                     }
@@ -567,7 +567,7 @@ struct RemoteView: View {
                 
                 Spacer()
                 // Grid of 9 buttons
-                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: selectedDevice?.supportsDatagram == true ? Set([]) : Set([.privateListening]) )
+                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled:  Set([])  )
                     .transition(.scale.combined(with: .opacity))
                     .matchedGeometryEffect(id: "buttonGrid", in: animation)
                 
