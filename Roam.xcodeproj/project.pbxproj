@@ -87,7 +87,7 @@
 		AF6148EA2B2373EC00536A6D /* PushManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6148E92B2373EC00536A6D /* PushManager.swift */; };
 		AF6148F32B23C65200536A6D /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF6148F22B23C65200536A6D /* NetworkExtension.framework */; };
 		AF6148F62B23C65200536A6D /* SimplePushProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6148F52B23C65200536A6D /* SimplePushProvider.swift */; };
-		AF6148FB2B23C65200536A6D /* SimplePushProvider.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF6148F12B23C65200536A6D /* SimplePushProvider.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF6148FB2B23C65200536A6D /* SimplePushProvider.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF6148F12B23C65200536A6D /* SimplePushProvider.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF6149002B23CE9700536A6D /* UserDefaultsExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6148FF2B23CE9700536A6D /* UserDefaultsExtension.swift */; };
 		AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
 		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
@@ -946,6 +946,7 @@
 		};
 		AF6148FA2B23C65200536A6D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = AF6148F02B23C65200536A6D /* SimplePushProvider */;
 			targetProxy = AF6148F92B23C65200536A6D /* PBXContainerItemProxy */;
 		};
@@ -1102,9 +1103,11 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SimplePushProvider/SimplePushProvider.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 2865NTZ7H3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimplePushProvider/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SimplePushProvider;
@@ -1118,6 +1121,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.SimplePushProvider;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = RoamPushProviderEntitled;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1131,9 +1135,11 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = SimplePushProvider/SimplePushProvider.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 2865NTZ7H3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimplePushProvider/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SimplePushProvider;
@@ -1147,6 +1153,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.SimplePushProvider;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = RoamPushProviderEntitled;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1292,11 +1299,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 2865NTZ7H3;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = 2865NTZ7H3;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1316,6 +1327,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = RoamEntitled;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = RoamMacEntitled;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
@@ -1334,11 +1347,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 2865NTZ7H3;
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = 2865NTZ7H3;
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1358,6 +1375,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = RoamEntitled;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = RoamMacEntitled;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;

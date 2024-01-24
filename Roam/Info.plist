@@ -32,5 +32,16 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>OSLogPreferences</key>
+	<dict>
+		<key>com.msdrigg.roam</key>
+		<dict>
+			<key>PushConfigurationManager</key>
+			<dict>
+				<key>Enable-Private-Data</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>

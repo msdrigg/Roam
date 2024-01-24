@@ -58,7 +58,7 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
     }
     
     func transferDevices(devices: [DeviceAppEntity]) {
-        WatchConnectivity.logger.info("WCSession with activationState \(String(describing: self.session?.activationState.rawValue)) trying to send devices \(devices)")
+        WatchConnectivity.logger.trace("WCSession with activationState \(String(describing: self.session?.activationState.rawValue)) trying to send devices \(devices)")
         guard let session = session else {
             WatchConnectivity.logger.info("Not transfering devices because WCSession not initialized")
             return
@@ -80,7 +80,7 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
                 WatchConnectivity.logger.info("Not sending because all devices have been sent in the past day")
                 return
             }
-            Self.logger.info("Transferring devices \(String(describing: devices)) to watch")
+            Self.logger.trace("Transferring devices \(String(describing: devices)) to watch")
             WatchConnectivity.logger.info("Transfering devices \(deviceMap)")
             if session.outstandingUserInfoTransfers.count > 0 {
                 WatchConnectivity.logger.info("Cancelling ongoing transfer because we are creating a new one")

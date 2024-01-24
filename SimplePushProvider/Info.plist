@@ -9,5 +9,16 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).SimplePushProvider</string>
 	</dict>
+	<key>OSLogPreferences</key>
+	<dict>
+		<key>com.msdrigg.roam.SimplePushProvider</key>
+		<dict>
+			<key>SimplePushProvider</key>
+			<dict>
+				<key>Enable-Private-Data</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>
