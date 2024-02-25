@@ -16,12 +16,12 @@ Roam offers everything you want and nothing you don't
 - What can I do if Roam doesn't auto-discover my TV
     - [See here](/manually-add-tv)
 - Why doesn't private-listening work on my TV?
-    - Private listening currently isn't working on some TV's. If everything else is working, but private listening isn't, please share your Roku's model name and any other relevant information to [mailto:roam-support@msd3.io](roam-support@msd3.io). Any reports will help me figure out where to look when trying to fix this bug.
+    - Private listening currently isn't working on some TV's. If private listening doesn't work with Roam, but works with the official Roku app, please share your Roku's model name and any other relevant information in an email to [roam-support@msd3.io](mailto:roam-support@msd3.io).  Your report will help me figure out where to look when trying to fix this bug.
 
 
 ## Other Resources
 
-If you have any questions or issues, please contact us at: [mailto:roam-support@msd3.io](roam-support@msd3.io)
+If you have any questions or issues, please contact us at: [roam-support@msd3.io](mailto:roam-support@msd3.io)
 
 -   [Privacy Policy](/privacy)
 -   [Core Repository on GitHub](https://github.com/msdrigg/roam)
