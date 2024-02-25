@@ -259,7 +259,7 @@ struct DeviceListItem: View {
                             .frame(width: 10, height: 10)
                         Text(device.name).lineLimit(1)
                     }
-                    Text(device.location).foregroundStyle(Color.secondary).lineLimit(1)
+                    Text(getHost(from: device.location)).foregroundStyle(Color.secondary).lineLimit(1)
                 }
             }
         }
@@ -302,6 +302,28 @@ struct MacSettings: View {
     }
 }
 
+func getHost(from urlString: String) -> String {
+    guard let url = URL(string: urlString), let host = url.host else {
+        return urlString
+    }
+    return host
+}
+
+func addSchemeAndPort(to urlString: String, scheme: String = "http", port: Int = 8060) -> String {
+    guard let url = URL(string: urlString), var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+        return urlString
+    }
+    components.scheme = scheme
+    components.port = url.port ?? port // Replace the port only if it's not already specified
+    
+    var urlStringWithPort = components.string ?? urlString
+    if !urlStringWithPort.hasSuffix("/") {
+        urlStringWithPort += "/"
+    }
+
+    return urlStringWithPort
+}
+
 struct DeviceDetailView: View {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -315,7 +337,7 @@ struct DeviceDetailView: View {
     
     @Bindable var device: Device
     @State var deviceName: String = ""
-    @State var deviceLocation: String = ""
+    @State var deviceIP: String = ""
     
     var dismiss: () -> Void
     
@@ -324,7 +346,7 @@ struct DeviceDetailView: View {
             Section("Parameters") {
                 TextField("Name", text: $deviceName)
                     .frame(maxWidth: .infinity)
-                TextField("Location URL", text: $deviceLocation)
+                TextField("IP Address", text: $deviceIP)
                     .frame(maxWidth: .infinity)
             }
             
@@ -375,7 +397,7 @@ struct DeviceDetailView: View {
         .formStyle(.grouped)
         .onAppear {
             deviceName = device.name
-            deviceLocation = device.location
+            deviceIP = getHost(from: device.location)
         }
         .onDisappear {
             Task {
@@ -420,14 +442,16 @@ struct DeviceDetailView: View {
     func saveDevice() async {
         // Try to get device id
         // Watchos can't check tcp connection, so just do the request
-        let deviceInfo = await fetchDeviceInfo(location: deviceLocation)
+        let cleanedString = deviceIP.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "'", with: "")
+        let deviceUrl = addSchemeAndPort(to: cleanedString)
+        let deviceInfo = await fetchDeviceInfo(location: deviceUrl)
         
         // If we get a device with a different UDN, replace the device
         if let udn = deviceInfo?.udn, udn != device.udn {
             do {
                 try await deviceActor.delete(device.persistentModelID)
                 let _ = try await deviceActor.addOrReplaceDevice(
-                    location: deviceLocation, friendlyDeviceName: deviceName, udn: udn
+                    location: deviceUrl, friendlyDeviceName: deviceName, udn: udn
                 )
                 
             } catch {
@@ -440,7 +464,7 @@ struct DeviceDetailView: View {
             try await deviceActor.updateDevice(
                 device.persistentModelID,
                 name: deviceName,
-                location: deviceLocation,
+                location: deviceUrl,
                 udn: device.udn
             )
         } catch {
