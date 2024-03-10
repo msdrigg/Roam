@@ -30,7 +30,7 @@ actor ECPSession {
     }
     
     public init(device: DeviceAppEntity) throws {
-        Self.logger.info("Initing ECP Session")
+        Self.logger.info("Initing ECP Session with url \(device.location)")
         // SAFETY: "http" is always a valid regex
         guard let url = URL(string: "\(device.location.replacing(try! Regex("http"), with: "ws"))ecp-session") else {
             Self.logger.error("Bad url for location \(device.location)ecp-session")

@@ -22,8 +22,6 @@ func htons(_ value: CUnsignedShort) -> CUnsignedShort {
 /// Code using Network framework shown below
 func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Swift.Error> {
     return AsyncThrowingStream { continuation in
-        var group = sockaddr_in()
-        let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: 16384)
         let sockfd: Int32 = socket(AF_INET, SOCK_DGRAM, 0)
         
         if sockfd < 0 {
@@ -31,7 +29,6 @@ func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Swift.E
             logger.error("Error creating socket with message: \(errorString)")
             
             continuation.finish(throwing: SSDPError.SocketCreationFailed)
-            buffer.deallocate()
             return
         }
         
@@ -42,23 +39,24 @@ func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Swift.E
             continuation.finish(throwing: SSDPError.SocketCreationFailed)
             
             close(sockfd)
-            buffer.deallocate()
             return
         }
         
-        group.sin_family = sa_family_t(AF_INET)
-        group.sin_port = htons(1900)
-        group.sin_addr.s_addr = group_addr
         
         let message = "M-SEARCH * HTTP/1.1\r\nHost: 192.168.8.133:10505\r\nMan: \"ssdp:discover\"\r\nST: roku:ecp\r\n\r\n"
+
         
-        let sendingHandle = Task { [group] in
+        let sendingHandle = Task {
+            var group = sockaddr_in()
+            group.sin_family = sa_family_t(AF_INET)
+            group.sin_port = htons(1900)
+            group.sin_addr.s_addr = group_addr
+
             for await _ in exponentialBackoff(min: 2, max: 30) {
                 if Task.isCancelled {
                     return
                 }
-                var tmpGroup = group
-                withUnsafePointer(to: &tmpGroup) { groupPointer in
+                withUnsafePointer(to: &group) { groupPointer in
                     let sent = sendto(sockfd, message, message.utf8.count, 0, groupPointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { $0 }, socklen_t(MemoryLayout<sockaddr_in>.size))
                     if sent < 0 {
                         let errorString = String(cString: strerror(errno))
@@ -71,14 +69,17 @@ func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Swift.E
         }
         
         let receivingHandle = Task {
+            var buffer = [CChar](repeating: 0, count: 16384)
             while !Task.isCancelled {
-                let received = recv(sockfd, buffer, 16384, 0)
+                let received = buffer.withUnsafeMutableBufferPointer { ptr -> Int in
+                    recv(sockfd, ptr.baseAddress!, 16384, 0)
+                }
                 if received > 0 {
                     let dataCopy = Data(bytes: buffer, count: received)
                     if let response = String(data: dataCopy, encoding: .utf8) {
                         continuation.yield(SSDPService(host: "239.255.255.250", response: response))
                     }
-                } else {
+                } else if received < 0 {
                     let errorString = String(cString: strerror(errno))
                     logger.warning("Error receiving from socket with message: \(errorString)")
                 }
@@ -89,7 +90,6 @@ func scanDevicesContinually() throws -> AsyncThrowingStream<SSDPService, Swift.E
             receivingHandle.cancel()
             sendingHandle.cancel()
             close(sockfd)
-            buffer.deallocate()
         }
     }
 }

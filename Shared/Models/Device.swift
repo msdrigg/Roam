@@ -154,12 +154,14 @@ actor DeviceActor {
     func updateDevice(_ id: PersistentIdentifier, name: String, location: String, udn: String) throws {
         Self.logger.info("Updating device at \(location)")
         if let device = try? modelContext.existingDevice(for: id) {
+            Self.logger.info("Found device to pudate with id \(String(describing: id))")
             device.location = location
             device.name = name
             device.udn = udn
             device.lastSentToWatch = nil
             try modelContext.save()
         }
+        Self.logger.info("Updated device at \(location)")
     }
     
     func addOrReplaceDevice(location: String, friendlyDeviceName: String, udn: String) throws -> PersistentIdentifier {
