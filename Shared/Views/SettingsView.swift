@@ -53,7 +53,10 @@ struct SettingsView: View {
                                 Button(role: .destructive) {
                                     Task {
                                         do {
+                                            Self.logger.error("HI")
                                             try await deviceActor.delete(device.persistentModelID)
+                                            Self.logger.info("Deleted device with id \(String(describing: device.persistentModelID))")
+
                                         } catch {
                                             Self.logger.error("Error deleting device \(error)")
                                         }
@@ -303,25 +306,23 @@ struct MacSettings: View {
 }
 
 func getHost(from urlString: String) -> String {
-    guard let url = URL(string: urlString), let host = url.host else {
+    guard let url = URL(string: addSchemeAndPort(to: urlString)), let host = url.host else {
         return urlString
     }
+    print("Getting host \(host) from url \(urlString)")
     return host
 }
 
 func addSchemeAndPort(to urlString: String, scheme: String = "http", port: Int = 8060) -> String {
+    let urlString = "http://" + urlString.replacing(/^.*:\/\//, with: { _ in "" })
+    
     guard let url = URL(string: urlString), var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
         return urlString
     }
     components.scheme = scheme
     components.port = url.port ?? port // Replace the port only if it's not already specified
     
-    var urlStringWithPort = components.string ?? urlString
-    if !urlStringWithPort.hasSuffix("/") {
-        urlStringWithPort += "/"
-    }
-
-    return urlStringWithPort
+    return (components.string ?? urlString).replacing(/\/*$/, with: {_ in ""}) + "/"
 }
 
 struct DeviceDetailView: View {
@@ -395,9 +396,23 @@ struct DeviceDetailView: View {
             }
         }
         .formStyle(.grouped)
+        .onChange(of: device.name) { prev, new in
+            deviceName = new
+        }
+        .onChange(of: device.location) { prev, new in
+            let host = getHost(from: new)
+            Self.logger.info("Seeing host \(host) in change")
+            deviceIP = host
+        }
+        .onChange(of: deviceIP) { prev, new in
+            Self.logger.info("Changing from \(prev) to \(new)")
+        }
         .onAppear {
             deviceName = device.name
-            deviceIP = getHost(from: device.location)
+            let host = getHost(from: device.location)
+            Self.logger.info("Seeing host \(host) in appear")
+            
+            deviceIP = host
         }
         .onDisappear {
             Task {
@@ -414,12 +429,13 @@ struct DeviceDetailView: View {
             ToolbarItem(placement: .destructiveAction) {
                 Button("Delete", systemImage: "trash", role: .destructive, action: {
                     // Don't block the dismiss waiting for save
+                    Self.logger.info("Deleting device")
                     Task {
                         do {
                             try await deviceActor.delete(device.persistentModelID)
+                            Self.logger.info("Deleted device with id \(String(describing: device.persistentModelID))");
                         } catch {
                             Self.logger.error("Error deleting device \(error)")
-                            
                         }
                     }
                     
@@ -444,6 +460,7 @@ struct DeviceDetailView: View {
         // Watchos can't check tcp connection, so just do the request
         let cleanedString = deviceIP.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "'", with: "")
         let deviceUrl = addSchemeAndPort(to: cleanedString)
+        Self.logger.info("Getting device url \(deviceUrl)")
         let deviceInfo = await fetchDeviceInfo(location: deviceUrl)
         
         // If we get a device with a different UDN, replace the device
@@ -461,12 +478,14 @@ struct DeviceDetailView: View {
         }
         
         do {
+            Self.logger.info("Saving devicea abd \(deviceUrl) with da \(String(describing: deviceActor)) id \(String(describing: device.persistentModelID))")
             try await deviceActor.updateDevice(
                 device.persistentModelID,
                 name: deviceName,
                 location: deviceUrl,
                 udn: device.udn
             )
+            Self.logger.info("Saved device \(deviceUrl)")
         } catch {
             Self.logger.error("Error saving device \(error)")
         }

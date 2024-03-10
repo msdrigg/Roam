@@ -208,7 +208,7 @@ struct RemoteView: View {
                 }
             }
             .task(id: selectedDevice?.location, priority: .medium) {
-                Self.logger.info("Creating ecp session \(String(describing: selectedDevice))")
+                Self.logger.info("Creating ecp session with location \(String(describing: selectedDevice?.location))")
                 let oldECP = self.ecpSession
                 Task.detached {
                     await oldECP?.close()
