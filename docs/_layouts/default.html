@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: "en" }}" class="html" data-theme="{{ site.theme_config.appearance | default: "auto" }}">
+        {%- include head.html -%}
+  <body>
+    <main class="page-content" aria-label="Content">
+      <div class="w">
+        {{ content }}
+        {% if site.theme_config.appearance_toggle %}
+          {% include toggle_theme_button.html %}
+        {% endif %}
+      </div>
+    </main>
+  </body>
+</html>

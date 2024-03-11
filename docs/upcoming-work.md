@@ -46,7 +46,7 @@
             - Suggest manually adding a device
             - Link to this article to see more troubleshooting https://support.roku.com/article/115001480188
         - Dismiss when tv connects
-- Update keyboard handling
+- Update keyboard handling (iOS)
     - Show keyboard when textedit is opened
     - Hide keyboard when textedit closed
     - If ecp-textedit is supported, allow selecting, deleting text and moving cursor. Just re-send text each time it changes if this is supported.
