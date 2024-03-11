@@ -26,3 +26,4 @@ If you have any questions or issues, please contact us at: [roam-support@msd3.io
 -   [Privacy Policy](/privacy)
 -   [Core Repository on GitHub](https://github.com/msdrigg/roam)
 -   [Download on the app store](https://apps.apple.com/us/app/roam/6469834197)
+-   [Roadmap](/upcoming-work)

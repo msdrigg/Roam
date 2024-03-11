@@ -4,7 +4,7 @@ import SwiftUI
 struct TopBar: View {
     let pressCounter: (RemoteButton) -> Int
     let action: (RemoteButton) -> Void
-    let onKeyPress: (KeyEquivalent) -> KeyPress.Result
+    let onKeyPress: (KeyEquivalent) -> Void
 
     
     var body: some View {
@@ -18,7 +18,7 @@ struct TopBar: View {
             .symbolEffect(.bounce, value: pressCounter(.back))
             
 #if os(macOS)
-            KeyboardMonitor(onKeyPress: {key in onKeyPress(key.key)})
+            KeyboardMonitor(onKeyPress: {key in onKeyPress(key)})
             // Do this so the focus outline on macOS matches
                 .offset(y: 7)
             

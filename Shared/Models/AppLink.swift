@@ -3,7 +3,7 @@ import SwiftData
 import os
 
 @Model
-public final class AppLink: Identifiable, Decodable, Encodable {
+public final class AppLink: Identifiable, Decodable {
     public let id: String
     public let type: String
     public let name: String
@@ -24,15 +24,6 @@ public final class AppLink: Identifiable, Decodable, Encodable {
         
         let singleValueContainer = try decoder.singleValueContainer()
         name = try singleValueContainer.decode(String.self)
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encode(type, forKey: .type)
-        
-        var singleValueContainer = encoder.singleValueContainer()
-        try singleValueContainer.encode(name)
     }
     
     enum CodingKeys: String, CodingKey {
