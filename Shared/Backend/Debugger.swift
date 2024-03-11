@@ -110,6 +110,7 @@ func getDebugInfo(container: ModelContainer, message: String?) async -> DebugInf
             request.httpMethod = "GET"
             
             let (data, response) = try await URLSession.shared.data(for: request)
+            
             if let httpResponse = response as? HTTPURLResponse {
                 let statusCode = httpResponse.statusCode
                 let dataString = String(decoding: data, as: UTF8.self)
@@ -124,7 +125,7 @@ func getDebugInfo(container: ModelContainer, message: String?) async -> DebugInf
                 let responseData = ResponseData(headers: headers, statusCode: statusCode, data: dataString)
                 deviceDebugInfos.append(DeviceDebugInfo(device: device, successResponse: responseData, errorResponse: nil))
             } else {
-                throw BadResponseError(message: "Bad response???")
+                throw BadResponseError(message: "Got non-http response trying to query device info \(String(describing: response))")
             }
         } catch {
             deviceDebugInfos.append(DeviceDebugInfo(device: device, successResponse: nil, errorResponse: "\(error)"))
