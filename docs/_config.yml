@@ -3,7 +3,7 @@ title: Roam App # the main title
 tagline: A user-first Roku remote # it will display as the sub-title
 author: Scott Driggers
 url: https://roam.msd3.io # root address of the site
-favicon: "https://is1-ssl.mzstatic.com/image/thumb/Purple116/v4/8e/fa/c0/8efac00a-f256-6cb8-d272-5745039dd1d9/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/246x0w.webp" # relative path to site's favico
+favicon: "/favicon.ico" # relative path to site's favico
 description: >- # used by seo meta and the atom feed
   A minimal, responsive, and featureful roku remote for macOS, iOS and watchOS
 
