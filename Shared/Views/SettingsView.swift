@@ -204,6 +204,9 @@ struct SettingsView: View {
             .buttonStyle(.plain)
             .keyboardShortcut("k")
 #endif
+            
+            NavigationLink("About", value: AboutDestination.Global)
+            
             Button(action: { reportDebugLogs() }) {
                 HStack {
                     Label("Report Debug Logs", systemImage: "gear")
@@ -220,9 +223,9 @@ struct SettingsView: View {
                 set: { if !$0 { self.debugLogsReportId = nil } }
             )) {
                 VStack {
-                    Text("Log Report ID")
+                    Text("Log Report ID:")
                         .font(.headline)
-                        .padding(.bottom, 2)
+                        .padding(.bottom, 1)
                     Text(debugLogsReportId ?? "unknown")
                         .font(.title)
                         .fontWeight(.semibold)
@@ -241,8 +244,7 @@ struct SettingsView: View {
                 }
                 .padding()
             }
-            
-            NavigationLink("About", value: AboutDestination.Global)
+
         }
 #if os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
