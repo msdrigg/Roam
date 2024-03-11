@@ -7,6 +7,7 @@ import AVFoundation
 import AppIntents
 import StoreKit
 
+
 #if os(macOS)
 let BUTTON_WIDTH: CGFloat = 44
 let BUTTON_HEIGHT: CGFloat = 36
@@ -644,7 +645,7 @@ struct RemoteView: View {
         }
     }
     
-    func pressKey(_ key: KeyEquivalent) -> KeyPress.Result {
+    func pressKey(_ key: KeyEquivalent) -> Void {
         Self.logger.trace("Getting keyboard press \(key.character)")
         if let ecpSession = ecpSession {
             Self.logger.info("Getting ecp session to send data to")
@@ -655,11 +656,12 @@ struct RemoteView: View {
                     Self.logger.error("Error pressing character \(key.character) on device \(error)")
                 }
             }
-            return .handled
+            return
         }
-        return .ignored
+        return
     }
 }
+
 
 #Preview("Remote horizontal") {
     RemoteView(showKeyboardShortcuts: Binding.constant(false))

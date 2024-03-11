@@ -118,6 +118,18 @@ actor DeviceActor {
     // Only refresh every 1 hour
     private let MIN_RESCAN_INTERVAL: TimeInterval = 3600
     
+    public func allDevices() throws -> [Device] {
+        var descriptor = FetchDescriptor<Device>(
+            predicate: #Predicate {
+                $0.deletedAt == nil
+            })
+        descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
+        let links = try modelContext.fetch(
+            descriptor
+        )
+        return links
+    }
+
     
     public func entities(for identifiers: [DeviceAppEntity.ID]) throws -> [DeviceAppEntity] {
         let links = try modelContext.fetch(
@@ -137,6 +149,19 @@ actor DeviceActor {
         )
         return links.map {$0.toAppEntity()}
     }
+    
+    public func allDeviceEntitiesIncludingDeleted() throws -> [DeviceAppEntity] {
+        var descriptor = FetchDescriptor<Device>(
+            predicate: #Predicate { _ in 
+                true
+            })
+        descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
+        let links = try modelContext.fetch(
+            descriptor
+        )
+        return links.map {$0.toAppEntity()}
+    }
+
     
     public func allDeviceEntities() throws -> [DeviceAppEntity] {
         var descriptor = FetchDescriptor<Device>(

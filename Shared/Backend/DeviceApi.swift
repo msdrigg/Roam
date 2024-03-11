@@ -119,7 +119,7 @@ func fetchDeviceCapabilities(location: String) async throws -> DeviceCapabilitie
     return DeviceCapabilities(supportsDatagram: isDatagramSupported ?? false, rtcpPort: rtcpPort)
 }
 
-struct Apps: Codable {
+struct Apps: Decodable {
     let app: [AppLink]
 }
 

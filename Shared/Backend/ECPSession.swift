@@ -69,7 +69,7 @@ actor ECPSession {
     public func powerToggleDevice() async throws {
         Self.logger.debug("Toggling power for device \(self.device.location)")
         
-        await powerToggleDeviceStateless(location: self.device.location, mac: self.device.mac)
+        await powerToggleDeviceStateless(location: self.device.location, mac: self.device.usingMac())
     }
     
     

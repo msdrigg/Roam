@@ -97,7 +97,7 @@ public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async th
     }
     
     if let deviceKey = button.apiValue {
-        let success = await sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.mac)
+        let success = await sendKeyToDeviceRawNotRecommended(location: targetDevice.location, key: deviceKey, mac: targetDevice.usingMac())
         if !success {
             logger.warning("Error sending key to device")
             throw ApiError.deviceNotConnectable

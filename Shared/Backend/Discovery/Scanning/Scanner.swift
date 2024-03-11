@@ -2,7 +2,7 @@ import Network
 import Darwin
 import Foundation
 
-struct IP4Address: Comparable, Equatable, Strideable {
+struct IP4Address: Comparable, Equatable, Strideable, Encodable {
     func distance(to other: IP4Address) -> Int {
         Int(other.address) - Int(self.address)
     }
@@ -37,9 +37,14 @@ struct IP4Address: Comparable, Equatable, Strideable {
         
         return IP4Address(address: networkAddressInt)..<IP4Address(address: broadcastAddressInt)
     }
+    
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(addressString)
+    }
 }
 
-struct Addressed4NetworkInterface {
+struct Addressed4NetworkInterface: Encodable {
     let name: String
     let family: Int32
     let address: IP4Address
@@ -55,12 +60,45 @@ struct Addressed4NetworkInterface {
         family == AF_INET
     }
     
+    var isRunning: Bool {
+        return (flags & UInt32(IFF_RUNNING)) != 0
+    }
+
+    var isLoopback: Bool {
+        return (flags & UInt32(IFF_LOOPBACK)) != 0
+    }
+    
     var scannableIPV4NetworkRange: Range<IP4Address> {
         address.localNetworkRange(subnetMask: netmask)
     }
     
     func withNWInterface(_ iface: NWInterface?) -> Addressed4NetworkInterface {
         return Addressed4NetworkInterface(name: name, family: family, address: address, netmask: netmask, flags: flags, nwInterface: iface)
+    }
+    
+    // Custom encoding
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(family, forKey: .family)
+        try container.encode(address, forKey: .address)
+        try container.encode(netmask, forKey: .netmask)
+        try container.encode(flags, forKey: .flags)
+        try container.encode(isRunning, forKey: .isRunning)
+        try container.encode(isLoopback, forKey: .isLoopback)
+        try container.encode(isIPV4, forKey: .isIPv4)
+    }
+
+    // Custom coding keys
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case family
+        case address
+        case netmask
+        case flags
+        case isRunning
+        case isLoopback
+        case isIPv4
     }
 }
 

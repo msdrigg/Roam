@@ -37,6 +37,59 @@ struct SettingsView: View {
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
     
     @State private var showKeyboardShortcuts: Bool = false
+    @State private var reportingDebugLogs: Bool = false
+    @State private var debugLogsReportId: String? = nil
+    
+    func reportDebugLogs() {
+        Task {
+            reportingDebugLogs = true
+            debugLogsReportId = "Error uploading"
+            defer { reportingDebugLogs = false }
+            Self.logger.info("Starting to send logs")
+            let logs = await getDebugInfo(container: getSharedModelContainer(), message: "Requested from settings")
+            Self.logger.info("Sending logs \(logs.id)")
+
+            let bucketName = "roam-logs-eyebrows"
+            let objectKey = logs.id
+            let region = "us-east-1"
+            
+            do {
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601 // Or .formatted(DateFormatter) if you want a custom format
+
+                let jsonData = try encoder.encode(logs)
+
+                guard let url = URL(string: "https://\(bucketName).s3.\(region).amazonaws.com/\(objectKey)") else {
+                    Self.logger.error("Error uploading to S3: BadURL")
+                    return
+                }
+                Self.logger.info("Encoded logs into json data \(jsonData.count). Uploading to \(url)")
+
+                var request = URLRequest(url: url)
+                request.httpMethod = "PUT"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+                request.httpBody = jsonData
+
+                let (_, response) = try await URLSession.shared.data(for: request)
+                
+                // Log the upload result
+                Self.logger.info("Getting upload result")
+                
+                guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                    Self.logger.error("Server error")
+                    return
+                }
+                
+                // Successfully uploaded to S3
+                Self.logger.info("Upload successful")
+                debugLogsReportId = logs.id
+            } catch {
+                Self.logger.error("Failed to upload logs to s3: \(error)")
+            }
+        }
+        
+    }
     
     var body: some View {
         Form {
@@ -151,6 +204,43 @@ struct SettingsView: View {
             .buttonStyle(.plain)
             .keyboardShortcut("k")
 #endif
+            Button(action: { reportDebugLogs() }) {
+                HStack {
+                    Label("Report Debug Logs", systemImage: "gear")
+                    Spacer()
+                    if (reportingDebugLogs) {
+                        Image(systemName: "rays")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+            }
+            .sheet(isPresented: Binding<Bool>(
+                get: { self.debugLogsReportId != nil && !reportingDebugLogs },
+                set: { if !$0 { self.debugLogsReportId = nil } }
+            )) {
+                VStack {
+                    Text("Log Report ID")
+                        .font(.headline)
+                        .padding(.bottom, 2)
+                    Text(debugLogsReportId ?? "unknown")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                        .padding(.bottom, 5)
+                    Text("If you are submitting a bug report, include this ID in your message")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 2)
+#if os(macOS)
+                    Text("Press [esc] to close")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+#endif
+                }
+                .padding()
+            }
             
             NavigationLink("About", value: AboutDestination.Global)
         }
@@ -309,7 +399,6 @@ func getHost(from urlString: String) -> String {
     guard let url = URL(string: addSchemeAndPort(to: urlString)), let host = url.host else {
         return urlString
     }
-    print("Getting host \(host) from url \(urlString)")
     return host
 }
 
