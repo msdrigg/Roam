@@ -1,6 +1,34 @@
 <!DOCTYPE html>
 <html lang="{{ page.lang | default: "en" }}" class="html" data-theme="{{ site.theme_config.appearance | default: "auto" }}">
-        {%- include head.html -%}
+    <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>
+        {% if page.title %}
+        {{ page.title }}
+        {% else %}
+        {{ site.title }}
+        {% endif %}
+    </title>
+
+    {% seo title=false %}
+    {% feed_meta %}
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.ico">
+    <meta name="msapplication-TileColor" content="#00aba9">
+    <meta name="theme-color" content="#ffffff">
+    <!-- Favicon -->
+
+    <link rel="stylesheet" href="{{ "/assets/css/main.css" | relative_url }}" />
+    {% if site.theme_config.appearance_toggle %}
+        {% include toggle_theme_js.html %}
+    {% endif %}
+
+    {%- include custom_head.html -%}
+    </head>
   <body>
     <main class="page-content" aria-label="Content">
       <div class="w">
