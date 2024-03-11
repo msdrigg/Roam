@@ -1,6 +1,11 @@
 import SwiftUI
 import SwiftData
 import os
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 
 private let deviceFetchDescriptor: FetchDescriptor<Device> = {
@@ -38,20 +43,19 @@ struct SettingsView: View {
     
     @State private var showKeyboardShortcuts: Bool = false
     @State private var reportingDebugLogs: Bool = false
-    @State private var debugLogsReportId: String? = nil
+    @State private var debugLogReportID: String? = nil
+    
+    @State private var variableColor: CGFloat = 0.0
     
     func reportDebugLogs() {
         Task {
             reportingDebugLogs = true
-            debugLogsReportId = "Error uploading"
             defer { reportingDebugLogs = false }
             Self.logger.info("Starting to send logs")
             let logs = await getDebugInfo(container: getSharedModelContainer(), message: "Requested from settings")
             Self.logger.info("Sending logs \(logs.id)")
 
-            let bucketName = "roam-logs-eyebrows"
             let objectKey = logs.id
-            let region = "us-east-1"
             
             do {
                 let encoder = JSONEncoder()
@@ -59,7 +63,7 @@ struct SettingsView: View {
 
                 let jsonData = try encoder.encode(logs)
 
-                guard let url = URL(string: "https://\(bucketName).s3.\(region).amazonaws.com/\(objectKey)") else {
+                guard let url = URL(string: "https://roam-logs-eyebrows.s3.us-east-1.amazonaws.com/\(objectKey)") else {
                     Self.logger.error("Error uploading to S3: BadURL")
                     return
                 }
@@ -83,7 +87,7 @@ struct SettingsView: View {
                 
                 // Successfully uploaded to S3
                 Self.logger.info("Upload successful")
-                debugLogsReportId = logs.id
+                debugLogReportID = logs.id
             } catch {
                 Self.logger.error("Failed to upload logs to s3: \(error)")
             }
@@ -192,59 +196,74 @@ struct SettingsView: View {
             }
 #endif
             
+            Section("Other") {
 #if os(macOS)
-            Button(action: {showKeyboardShortcuts = true}) {
-                HStack {
-                    Label("Keyboard shortcuts", systemImage: "keyboard")
-                    Spacer()
+                Button(action: {showKeyboardShortcuts = true}) {
+                    HStack {
+                        Label("Keyboard shortcuts", systemImage: "keyboard")
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut("k")
+                .buttonStyle(.plain)
+                .keyboardShortcut("k")
 #endif
-            
-            NavigationLink("About", value: AboutDestination.Global)
-            
-            Button(action: { reportDebugLogs() }) {
-                HStack {
-                    Label("Report Debug Logs", systemImage: "gear")
-                    Spacer()
-                    if (reportingDebugLogs) {
-                        Image(systemName: "rays")
+                
+                
+                Button(action: { reportDebugLogs() }) {
+                    HStack {
+                        Label(reportingDebugLogs ? "Saving Diagnostics..." : "Send Feedback", systemImage: "square.and.arrow.up")
+                        Spacer()
+                        if (reportingDebugLogs) {
+                            Image(systemName: "rays")
+                                .symbolEffect(.variableColor, isActive: true)
+                        }
                     }
                 }
+#if os(macOS)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
-            }
-            .sheet(isPresented: Binding<Bool>(
-                get: { self.debugLogsReportId != nil && !reportingDebugLogs },
-                set: { if !$0 { self.debugLogsReportId = nil } }
-            )) {
-                VStack {
-                    Text("Log Report ID:")
-                        .font(.headline)
-                        .padding(.bottom, 1)
-                    Text(debugLogsReportId ?? "unknown")
-                        .font(.title)
-                        .fontWeight(.semibold)
-                        .padding(.bottom, 5)
-                    Text("If you are submitting a bug report, include this ID in your message")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.bottom, 2)
-#if os(macOS)
-                    Text("Press [esc] to close")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                .buttonStyle(.plain)
 #endif
+                .sheet(isPresented: Binding<Bool>(
+                    get: { self.debugLogReportID != nil && !reportingDebugLogs },
+                    set: { if !$0 { self.debugLogReportID = nil } }
+                )) {
+                    VStack {
+                        Text("Your diagnostic report is ready to share.")
+                            .font(.headline)
+                            .padding(.bottom, 2)
+                        Text("Please click the share button below and email to roam-support@msd3.io along with any feeback")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.bottom, 2)
+                        ShareLink(item: """
+    Hi Roam Support (roam-support@msd3.io),
+    
+    <Add Feedback Here>
+    
+    ---
+    Debug Info Link: https://roam-logs-eyebrows.s3.us-east-1.amazonaws.com/\(debugLogReportID ?? "unknown")
+    """, subject: Text("Roam Feedback")) {
+                            Label("Send Feedback", systemImage: "square.and.arrow.up")
+                        }
+                        
+#if os(macOS)
+                        Text("Press [esc] to close")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+#endif
+                    }
+                    .padding()
                 }
-                .padding()
             }
-
+            
+            Section {
+                NavigationLink("About", value: AboutDestination.Global)
+            }
         }
 #if os(macOS)
         .sheet(isPresented: $showKeyboardShortcuts) {
