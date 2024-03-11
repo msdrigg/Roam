@@ -121,7 +121,7 @@ private func getLogEntries(limit: Int = 100000) throws -> [LogEntry] {
             }
         }
     } catch {
-        os_log("Error fetching log entries: \(error)")
+        os_log(.error, "Error fetching log entries: \(error)")
     }
     
     return logEntries
