@@ -20,7 +20,44 @@ struct BadResponseError: Error {
 
 struct LogEntry: Encodable {
     let message: String
-    let timestamp: String
+    let timestamp: Date
+    let level: String?
+    let category: String?
+    let subsystem: String?
+
+    init(entry: OSLogEntry) {
+        self.message = entry.composedMessage
+        self.timestamp = entry.date
+
+        if let logEntry = entry as? OSLogEntryLog {
+            switch logEntry.level {
+            case .info:
+                self.level = "Info"
+            case .debug:
+                self.level = "Debug"
+            case .error:
+                self.level = "Error"
+            case .fault:
+                self.level = "Fault"
+            case .notice:
+                self.level = "Notice"
+            case .undefined:
+                self.level = "Undefined"
+            default:
+                self.level = "Unknown"
+            }
+        } else {
+            self.level = nil
+        }
+
+        if let payloadEntry = entry as? OSLogEntryWithPayload {
+            self.category = payloadEntry.category
+            self.subsystem = payloadEntry.subsystem
+        } else {
+            self.category = nil
+            self.subsystem = nil
+        }
+    }
 }
 
 struct ResponseData: Encodable {
@@ -38,7 +75,7 @@ struct DeviceDebugInfo: Encodable {
 struct DebugInfo: Encodable {
     let message: String?
     let id: String
-    let date: String
+    let date: Date
     let logs: [LogEntry]
     let devices: [DeviceDebugInfo]
     let debugErrors: [String]
@@ -102,7 +139,7 @@ func getDebugInfo(container: ModelContainer, message: String?) async -> DebugInf
     }
     
     
-    return DebugInfo(message: message, id: ids.joined(separator: "-"), date: Date.now.ISO8601Format(), logs: entries, devices: deviceDebugInfos, debugErrors: debugErrors, interfaces: localInterfaces)
+    return DebugInfo(message: message, id: ids.joined(separator: "-"), date: Date.now, logs: entries, devices: deviceDebugInfos, debugErrors: debugErrors, interfaces: localInterfaces)
     
 }
 
@@ -117,7 +154,7 @@ private func getLogEntries(limit: Int = 100000) throws -> [LogEntry] {
         let sequence = try logStore.getEntries(at: position);
         for entry in sequence.prefix(limit) {
             if let logEntry = entry as? OSLogEntryLog, logEntries.count < limit {
-                logEntries.append(LogEntry(message: logEntry.composedMessage, timestamp: logEntry.date.ISO8601Format()))
+                logEntries.append(LogEntry(entry: logEntry))
             }
         }
     } catch {
