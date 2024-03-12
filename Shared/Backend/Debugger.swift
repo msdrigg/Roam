@@ -76,6 +76,7 @@ struct DebugInfo: Encodable {
     let message: String?
     let id: String
     let date: Date
+    let buildVersion: String?
     let logs: [LogEntry]
     let devices: [DeviceDebugInfo]
     let debugErrors: [String]
@@ -139,8 +140,16 @@ func getDebugInfo(container: ModelContainer, message: String?) async -> DebugInf
         ids.append(words.randomElement()!)
     }
     
+    var buildVersion: String? = nil
+    if let infoPlist = Bundle.main.infoDictionary,
+       let currentProjectVersion = infoPlist["CURRENT_PROJECT_VERSION"] as? String {
+        buildVersion = currentProjectVersion
+    } else {
+        debugErrors.append("AppVersion not found")
+    }
     
-    return DebugInfo(message: message, id: ids.joined(separator: "-"), date: Date.now, logs: entries, devices: deviceDebugInfos, debugErrors: debugErrors, interfaces: localInterfaces)
+    
+    return DebugInfo(message: message, id: ids.joined(separator: "-"), date: Date.now, buildVersion: buildVersion, logs: entries, devices: deviceDebugInfos, debugErrors: debugErrors, interfaces: localInterfaces)
     
 }
 
