@@ -11,17 +11,11 @@ import SwiftUI
 import AppKit
 
 struct KeyboardMonitor: View {
-    @FocusState private var keyboardMonitorFocused: Bool
     let onKeyPress: (KeyEquivalent) -> Void
 
     var body: some View {
-        Spacer().frame(maxWidth: 20)
+        Spacer().frame(maxWidth: 20, maxHeight: 20)
         .background(KeyHandlingViewRepresentable(onKeyPress: onKeyPress))
-        .focusable()
-        .focused($keyboardMonitorFocused)
-        .onAppear {
-            keyboardMonitorFocused = true
-        }
     }
 }
 
