@@ -384,21 +384,6 @@ struct RemoteView: View {
                     )
                     .font(.body)
                 }
-                
-#if os(macOS)
-                ToolbarItem(placement: .primaryAction) {
-                    Button(role: .destructive, action: {pressButton(.power)}) {
-                        Label("Power Off/On", systemImage: "power")
-                            .foregroundStyle(Color.red, Color.red)
-                            .labelStyle(.iconOnly)
-                            .font(.headline)
-                    }
-                    .keyboardShortcut(.return)
-                    .sensoryFeedback(.impact, trigger: buttonPressCount(.power))
-                    .symbolEffect(.bounce, value: buttonPressCount(.power))
-                    .disabled(selectedDevice == nil)
-                }
-#endif
             }
             .overlay {
                 if selectedDevice == nil {

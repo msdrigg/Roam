@@ -8,37 +8,36 @@ struct TopBar: View {
 
     
     var body: some View {
-        HStack(spacing: 20) {
-            Button(action: {action(.back)}) {
-                Label("Back", systemImage: "arrow.left")
-                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
-            }
-            .keyboardShortcut(.leftArrow)
-            .sensoryFeedback(.impact, trigger: pressCounter(.back))
-            .symbolEffect(.bounce, value: pressCounter(.back))
-            
-#if os(macOS)
+        ZStack {
             KeyboardMonitor(onKeyPress: {key in onKeyPress(key)})
-            // Do this so the focus outline on macOS matches
-                .offset(y: 7)
-            
-#elseif os(iOS)
-            Button("Power On/Off", systemImage: "power", role: .destructive, action: {action(.power)})
-            .font(.title)
-            .foregroundStyle(.red)
-            .buttonStyle(.plain)
-            .sensoryFeedback(.impact, trigger: pressCounter(.power))
-            .symbolEffect(.bounce, value: pressCounter(.power))
-#endif
-            
-            Button(action: {action(.home)}) {
-                Label("Home", systemImage: "house")
-                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+
+            HStack(spacing: 20) {
+                Button(action: {action(.back)}) {
+                    Label("Back", systemImage: "arrow.left")
+                        .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+                }
+                .keyboardShortcut(.leftArrow)
+                .sensoryFeedback(.impact, trigger: pressCounter(.back))
+                .symbolEffect(.bounce, value: pressCounter(.back))
                 
+                Button("Power On/Off", systemImage: "power", role: .destructive, action: {action(.power)})
+                    .font(.title)
+                    .foregroundStyle(.red)
+                    .buttonStyle(.plain)
+                    .sensoryFeedback(.impact, trigger: pressCounter(.power))
+                    .symbolEffect(.bounce, value: pressCounter(.power))
+                    .keyboardShortcut(.return)
+                
+                
+                Button(action: {action(.home)}) {
+                    Label("Home", systemImage: "house")
+                        .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
+                    
+                }
+                .keyboardShortcut("h")
+                .sensoryFeedback(.impact, trigger: pressCounter(.home))
+                .symbolEffect(.bounce, value: pressCounter(.home))
             }
-            .keyboardShortcut("h")
-            .sensoryFeedback(.impact, trigger: pressCounter(.home))
-            .symbolEffect(.bounce, value: pressCounter(.home))
         }
     }
 }
