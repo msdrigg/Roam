@@ -104,6 +104,7 @@ actor RTPSession {
         
         let rtcpParameters = NWParameters.udp
         let localEndpoint = NWEndpoint.hostPort(host: NWEndpoint.Host("0.0.0.0"), port: NWEndpoint.Port(rawValue: localRTPPort)!)
+        Self.logger.info("Starting rtcp with local port \(localRTPPort), remote address \(remoteRTCPAddress), endpoint \(String(describing: localEndpoint))")
         rtcpParameters.requiredLocalEndpoint = localEndpoint
         rtcpParameters.allowLocalEndpointReuse = true
         
@@ -303,7 +304,7 @@ actor RTPSession {
                     Self.logger.warning("Error sending VDLY packet \(error)")
                     continuation.resume(throwing: error)
                 } else {
-                    Self.logger.debug("VDLY Sent")
+                    Self.logger.debug("VDLY Sent \(self.HUGE_FIXED_VDLY_MS)")
                     continuation.resume(returning: ())
                 }
             }))

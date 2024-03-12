@@ -2,6 +2,7 @@ import Foundation
 import AppIntents
 import SwiftData
 
+#if !os(tvOS)
 @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
 public struct PlayIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigratedAppIntent, PredictableIntent {
     public static let intentClassName = "PlayIntent"
@@ -191,3 +192,4 @@ public struct PowerIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMig
         return .result()
     }
 }
+#endif

@@ -2,6 +2,7 @@ import Foundation
 import AppIntents
 import os
 
+#if !os(tvOS)
 @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
 public struct DeviceChoiceIntent: AppIntent, WidgetConfigurationIntent {
     public static var title: LocalizedStringResource = "Choose a device"
@@ -64,18 +65,6 @@ public struct ButtonPressIntent: AppIntent, CustomIntentMigratedAppIntent, Predi
     }
 }
 
-enum ApiError: Swift.Error, CustomLocalizedStringResourceConvertible {
-    case noSavedDevices
-    case deviceNotConnectable
-
-    var localizedStringResource: LocalizedStringResource {
-        switch self {
-            case .noSavedDevices: return "No saved devices"
-            case .deviceNotConnectable: return "Couldn't connect to the device"
-        }
-    }
-}
-
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
     category: "SimpleClicker"
@@ -104,3 +93,4 @@ public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async th
         }
     }
 }
+#endif

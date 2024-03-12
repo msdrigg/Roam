@@ -3,49 +3,11 @@ import AppIntents
 import SwiftData
 
 @available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
-public struct AppLinkAppEntity: AppEntity, Identifiable, Equatable, Hashable, Encodable {
-    public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "TV App")
-
-    public struct AppLinkAppEntityQuery: EntityQuery {
-        @IntentParameterDependency<LaunchAppIntent>(\.$device) var launchAppIntent
-        
-        public init() {}
-        
-        public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
-            if let apps = launchAppIntent?.device.apps {
-                return apps
-            }
-            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-            return try await appLinkActor.entities(for: identifiers)
-        }
-        
-        func entities(matching string: String) async throws -> [AppLinkAppEntity] {
-            if let apps = launchAppIntent?.device.apps {
-                return apps.filter{$0.name.contains(string)}
-            }
-   
-            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-            return try await appLinkActor.entities(matching: string)
-        }
-        
-        public func suggestedEntities() async throws -> [AppLinkAppEntity] {
-            if let apps = launchAppIntent?.device.apps {
-                return apps
-            }
-            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-            return try await appLinkActor.suggestedEntities()
-        }
-    }
-    public static var defaultQuery = AppLinkAppEntityQuery()
-
+public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Sendable {
     var name: String
     public var id: String
     public var type: String
     public var icon: Data?
-    
-    public  var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: "\(name)")
-    }
 
     init(name: String, id: String, type: String, icon: Data?) {
         self.name = name
@@ -53,12 +15,11 @@ public struct AppLinkAppEntity: AppEntity, Identifiable, Equatable, Hashable, En
         self.type = type
         self.icon = icon
     }
-        
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(type, forKey: .type)
-        
         try container.encode(name, forKey: .name)
         
         let iconHash = icon?.hashValue
@@ -68,8 +29,48 @@ public struct AppLinkAppEntity: AppEntity, Identifiable, Equatable, Hashable, En
     enum CodingKeys: String, CodingKey {
         case id, type, name, iconHash
     }
-
 }
+
+#if !os(tvOS)
+extension AppLinkAppEntity: AppEntity {
+    public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "TV App")
+    public static var defaultQuery = AppLinkAppEntityQuery()
+
+    public struct AppLinkAppEntityQuery: EntityQuery {
+        @IntentParameterDependency<LaunchAppIntent>(\.$device) var launchAppIntent
+
+        public init() {}
+
+        public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
+            if let apps = launchAppIntent?.device.apps {
+                return apps
+            }
+            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
+            return try await appLinkActor.entities(for: identifiers)
+        }
+
+        func entities(matching string: String) async throws -> [AppLinkAppEntity] {
+            if let apps = launchAppIntent?.device.apps {
+                return apps.filter{$0.name.contains(string)}
+            }
+            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
+            return try await appLinkActor.entities(matching: string)
+        }
+
+        public func suggestedEntities() async throws -> [AppLinkAppEntity] {
+            if let apps = launchAppIntent?.device.apps {
+                return apps
+            }
+            let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
+            return try await appLinkActor.suggestedEntities()
+        }
+    }
+
+    public var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)")
+    }
+}
+#endif
 
 
 public extension AppLink {
@@ -96,3 +97,16 @@ public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async thr
         throw ApiError.noSavedDevices
     }
 }
+
+enum ApiError: Swift.Error, CustomLocalizedStringResourceConvertible {
+    case noSavedDevices
+    case deviceNotConnectable
+
+    var localizedStringResource: LocalizedStringResource {
+        switch self {
+            case .noSavedDevices: return "No saved devices"
+            case .deviceNotConnectable: return "Couldn't connect to the device"
+        }
+    }
+}
+

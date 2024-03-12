@@ -37,7 +37,9 @@ struct CenterController: View {
                                     }
                                 }
                                 .buttonStyle(.borderedProminent)
+#if !os(visionOS)
                                 .sensoryFeedback(.impact, trigger: pressCounter(button.1))
+#endif
                                 .symbolEffect(.bounce, value: pressCounter(button.1))
                             } else {
                                 Spacer()

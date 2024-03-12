@@ -24,6 +24,7 @@ struct RoamApp: App {
                     showKeyboardShortcuts = !showKeyboardShortcuts
                 }
                 .keyboardShortcut("k")
+                
             }
         }
         #endif

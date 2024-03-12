@@ -64,6 +64,13 @@ struct RemoteView: View {
     @State private var errorTrigger: Int = 0
     @State private var ecpSession: ECPSession? = nil
     @StateObject private var networkMonitor = NetworkMonitor()
+    var privateListeningDisabled: Bool {
+        #if os(visionOS)
+        return true
+        #else
+        return selectedDevice?.supportsDatagram == true
+        #endif
+    }
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
@@ -71,15 +78,15 @@ struct RemoteView: View {
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
     private var appLinkRows: Int {
-        #if os(macOS)
+#if os(macOS)
         return 2
-        #else
+#else
         if verticalSizeClass == .compact {
             return 1
         } else {
             return 2
         }
-        #endif
+#endif
     }
     
     @FocusState private var focused: Bool
@@ -132,6 +139,7 @@ struct RemoteView: View {
         buttonPresses[key] = (buttonPresses[key] ?? 0) + 1
     }
     
+#if !os(tvOS)
     func donateButtonIntent(_ key: RemoteButton) {
         switch key {
         case .power:
@@ -169,6 +177,7 @@ struct RemoteView: View {
         intent.device = selectedDevice?.toAppEntity()
         intent.donate()
     }
+#endif
     
     var body: some View {
         if runningInPreview {
@@ -286,7 +295,7 @@ struct RemoteView: View {
                             .offset(y: -20)
                             .padding(.bottom, -16)
                     }
-
+                    
                     
                     if isHorizontal {
                         horizontalBody()
@@ -321,7 +330,7 @@ struct RemoteView: View {
                     }.id("VolumeOverlay")
                         .frame(maxWidth: 1)
                 }
-
+                
                 if showKeyboardEntry {
                     GeometryReader { proxy in
                         ScrollView {
@@ -390,30 +399,30 @@ struct RemoteView: View {
                     VStack(spacing: 2) {
                         Spacer()
 #if os(macOS)
-                            SettingsLink {
-                                Label("Setup a device to get started :)", systemImage: "gear")
-                                    .frame(maxWidth: .infinity)
-                                    .font(.callout)
-                                    .padding(16)
-                                    .background(Color("AccentColor"))
-                                    .cornerRadius(6)
-                                    .padding(.horizontal, 40)
-                            }
-                            .shadow(radius: 4)
-
+                        SettingsLink {
+                            Label("Setup a device to get started :)", systemImage: "gear")
+                                .frame(maxWidth: .infinity)
+                                .font(.callout)
+                                .padding(16)
+                                .background(Color("AccentColor"))
+                                .cornerRadius(6)
+                                .padding(.horizontal, 40)
+                        }
+                        .shadow(radius: 4)
+                        
 #else
-                            NavigationLink(value: SettingsDestination.Global) {
-                                Label("Setup a device to get started :)", systemImage: "gear")
-                                    .frame(maxWidth: .infinity)
-                                    .font(.callout)
-                                    .padding(16)
-                                    .background(Color("AccentColor"))
-                                    .cornerRadius(6)
-                                    .padding(.horizontal, 40)
-                            }
-                            .shadow(radius: 4)
+                        NavigationLink(value: SettingsDestination.Global) {
+                            Label("Setup a device to get started :)", systemImage: "gear")
+                                .frame(maxWidth: .infinity)
+                                .font(.callout)
+                                .padding(16)
+                                .background(Color("AccentColor"))
+                                .cornerRadius(6)
+                                .padding(.horizontal, 40)
+                        }
+                        .shadow(radius: 4)
 #endif
-
+                        
                         Spacer()
                         Spacer()
                         Spacer()
@@ -430,7 +439,9 @@ struct RemoteView: View {
                 let modelContainer = modelContext.container
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
             }
+#if !os(visionOS)
             .sensoryFeedback(.error, trigger: errorTrigger)
+#endif
             .onChange(of: scenePhase) { _oldPhase, newPhase in
                 inBackground = newPhase != .active
             }
@@ -440,7 +451,9 @@ struct RemoteView: View {
         }
         .font(.title2)
         .fontDesign(.rounded)
+#if !os(tvOS)
         .controlSize(.extraLarge)
+#endif
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle)
         .labelStyle(.iconOnly)
@@ -479,7 +492,7 @@ struct RemoteView: View {
                         Spacer().frame(maxHeight: 60)
                         
                         // Grid of 9 buttons
-                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: selectedDevice?.supportsDatagram == true ? Set([]) : Set([.privateListening]) )
+                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: privateListeningDisabled ? Set([]) : Set([.privateListening]) )
                             .transition(.scale.combined(with: .opacity))
                             .matchedGeometryEffect(id: "buttonGrid", in: animation)
                     }
@@ -491,7 +504,9 @@ struct RemoteView: View {
             if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
                 Spacer()
                 AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
+#if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
+#endif
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
             }
@@ -539,7 +554,7 @@ struct RemoteView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
 #if os(iOS)
                 SKStoreReviewController.requestReview(in: windowScene)
-#else
+#elseif !os(tvOS) && !os(visionOS)
                 SKStoreReviewController.requestReview()
 #endif
             }
@@ -569,7 +584,7 @@ struct RemoteView: View {
                 
                 Spacer()
                 // Grid of 9 buttons
-                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: selectedDevice?.supportsDatagram == true ? Set([]) : Set([.privateListening]) )
+                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: privateListeningDisabled ? Set([]) : Set([.privateListening]) )
                     .transition(.scale.combined(with: .opacity))
                     .matchedGeometryEffect(id: "buttonGrid", in: animation)
                 
@@ -579,7 +594,9 @@ struct RemoteView: View {
             if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
                 Spacer()
                 AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
+#if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
+#endif
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
             }
@@ -591,7 +608,9 @@ struct RemoteView: View {
     func launchApp(_ app: AppLinkAppEntity) {
         if let app = selectedDevice?.appsSorted.first(where: { $0.id == app.id}) {
             
+#if !os(tvOS)
             donateAppLaunchIntent(app)
+#endif
             incrementButtonPressCount(.inputAV1)
             app.lastSelected = Date.now
             let appEntity = app.toAppEntity()
@@ -615,7 +634,9 @@ struct RemoteView: View {
         if MAJOR_ACTIONS.contains(button) {
             handleMajorUserAction()
         }
+#if !os(tvOS)
         donateButtonIntent(button)
+#endif
         if button == .privateListening {
             privateListeningEnabled.toggle()
             return

@@ -2,6 +2,7 @@ import Foundation
 import AppIntents
 import Intents
 
+#if !os(tvOS)
 @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
 public struct LaunchAppIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigratedAppIntent, PredictableIntent {
     public static let intentClassName = "LaunchAppIntent"
@@ -46,5 +47,4 @@ public struct LaunchAppIntent: AppIntent, WidgetConfigurationIntent, CustomInten
         self.device = device
     }
 }
-
-
+#endif

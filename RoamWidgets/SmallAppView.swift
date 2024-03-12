@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 
+#if !os(tvOS)
 struct SmallAppView: View {
     let device: DeviceAppEntity?
     let apps: [AppLinkAppEntity]
@@ -82,3 +83,5 @@ struct SmallAppView: View {
     SmallAppView(device: nil, apps: [])
         .frame(width: 200, height: 200)
 }
+
+#endif

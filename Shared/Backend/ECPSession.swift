@@ -73,7 +73,7 @@ actor ECPSession {
     }
     
     
-#if os(iOS) || os (macOS)
+#if !os(watchOS)
     public func requestPrivateListening() async throws {
         guard let connectingInterface = await tryConnectTCP(location: self.url.absoluteString, timeout: 3.0) else {
             Self.logger.error("Unable to connect tcp to \(self.url.absoluteString) to request private listening")
@@ -146,6 +146,17 @@ actor ECPSession {
     }
     
     public func openApp(_ app: AppLinkAppEntity) async throws {
+        // Try 2x with 0.1 sec delay between
+        do {
+            try await openAppOnce(app)
+        } catch {
+            Self.logger.warning("Error opening app the first time--retrying: \(error)")
+            try await Task.sleep(duration: 0.1)
+            try await openAppOnce(app)
+        }
+    }
+
+    public func openAppOnce(_ app: AppLinkAppEntity) async throws {
         Self.logger.info("Opening app \(app.id)")
         // Before we send anything, make sure the websocket is up and running
         try await preInitWebsocket()
@@ -180,7 +191,6 @@ actor ECPSession {
         try await webSocketTask.send(.string(requestData))
         try await consumeResponse()
         Self.logger.info("Sent key \(data) successfully")
-        
     }
     
     
@@ -369,7 +379,7 @@ actor ECPSession {
         let request: String = "set-audio-output"
         let requestId: String
         
-#if os(iOS) || os(macOS)
+#if !os(watchOS)
         static func privateListening(hostIp: String, requestId: Int) -> Self {
             Self(paramDevname: "\(hostIp):\(HOST_RTP_PORT):\(RTP_PAYLOAD_TYPE):\(CLOCK_RATE / 50)", paramAudioOutput: "datagram", requestId: String(requestId))
         }
