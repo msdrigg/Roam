@@ -3,11 +3,13 @@ import subprocess
 from datetime import datetime
 import argparse
 
-# 1. Before running, make sure you create an API key from App Store Connect (App Store Connect -> Users and Access -> Integrations -> App Store Connect API) and store the downloaded key in ~/.private_keys
+# 1. Before running, make sure you create an API key from App Store Connect
+#     (App Store Connect -> Users and Access -> Integrations -> App Store Connect API) and store the downloaded key in ~/.private_keys
 # 2. Then set the following environment variables:
-# XCODE_API_KEY="API_KEY_ID"
-# XCODE_API_ISSUER="API_ISSUER_ID"
-# Find both of these values in App Store Connect web after creating the API key
+#     XCODE_API_KEY="API_KEY_ID"
+#     XCODE_API_ISSUER="API_ISSUER_ID"
+#     
+#     Find both of these values in App Store Connect web after creating the API key
 
 
 def bump_versions():
@@ -99,7 +101,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.bump_version:
+    if args.bump_versions:
         bump_versions()
 
     archive_application("Roam", "macOS")
