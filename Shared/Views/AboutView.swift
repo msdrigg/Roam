@@ -42,7 +42,7 @@ struct AboutView: View {
         List {
             Section {
                 LabeledContent("App Version") {
-                    Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "--")
+                    Text(Bundle.main.infoDictionary?["CURRENT_PROJECT_VERSION"] as? String ?? "--")
                 }
             }
             
@@ -52,12 +52,15 @@ struct AboutView: View {
                         HStack {
                             Text(license.name)
                             Spacer()
-                            Text(license.licenseType)
-                        }
-                        Link(license.link, destination: URL(string: license.link)!)
+                            Link(license.link, destination: URL(string: license.link)!)
                             .font(.body)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+
+                        }
+                        Text(license.licenseType)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
