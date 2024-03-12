@@ -23,9 +23,11 @@ struct DevicePicker: View {
             if !devices.isEmpty {
                 Picker("Device", selection: $device) {
                     ForEach(devices) { device in
-                        Text(device.name).tag(device as Device?)
+                        Text(device.name)
+                            .lineLimit(1)
+                            .tag(device as Device?)
                     }
-                }.pickerStyle(.inline).onChange(of: device) { _oldSelected, selected in
+                }.onChange(of: device) { _oldSelected, selected in
                     if let chosenDevice = devices.first(where: { d in
                         d.id == selected?.id
                     }) {
@@ -60,14 +62,19 @@ struct DevicePicker: View {
                     Text(Image(systemName: "circle.fill") ).font(.system(size: 8))
                         .foregroundColor(deviceStatusColor)
                         .baselineOffset(2) +
-                    Text(" ") +
-                    Text(device.name)
+                    Text(" ").font(.body)
+                        .foregroundColor(.secondary)
+                    +
+                    Text(device.name).font(.body)
+                        .foregroundColor(.secondary)
                 }.multilineTextAlignment(.center)
+                    .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: 180)
             } else {
                 Text("No devices")
                     .multilineTextAlignment(.center)
+                    .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: 180)
             }

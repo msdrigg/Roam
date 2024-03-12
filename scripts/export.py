@@ -105,8 +105,9 @@ if __name__ == "__main__":
         bump_versions()
 
     archive_application("Roam", "macOS")
-
     archive_application("Roam", "iOS")
+    archive_application("Roam", "visionOS")
 
     publish_to_app_store("iOS", "ipa")
+    publish_to_app_store("visionOS", "ipa")
     publish_to_app_store("macOS", "pkg")

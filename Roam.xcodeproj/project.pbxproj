@@ -66,7 +66,7 @@
 		AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */; };
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
 		AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */; };
-		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; platformFilters = (ios, macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */; };
 		AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5542AE2910B00E2D780 /* CenterController.swift */; };
 		AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5562AE2928600E2D780 /* TopBar.swift */; };
@@ -865,6 +865,10 @@
 		};
 		AF27401A2AE02C26007C6208 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				macos,
+			);
 			target = AF27400A2AE02C25007C6208 /* RoamWidgets */;
 			targetProxy = AF2740192AE02C26007C6208 /* PBXContainerItemProxy */;
 		};
@@ -970,6 +974,7 @@
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1010,6 +1015,7 @@
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1050,7 +1056,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2024.3.14;
+				CURRENT_PROJECT_VERSION = 2024.3.15;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1074,13 +1080,16 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.15;
+				MARKETING_VERSION = 1.16;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TVOS_DEPLOYMENT_TARGET = 17.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 			};
 			name = Debug;
 		};
@@ -1118,7 +1127,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2024.3.14;
+				CURRENT_PROJECT_VERSION = 2024.3.15;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1136,11 +1145,14 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.15;
+				MARKETING_VERSION = 1.16;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				TVOS_DEPLOYMENT_TARGET = 17.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 			};
 			name = Release;
 		};
@@ -1177,12 +1189,13 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 			};
 			name = Debug;
 		};
@@ -1219,12 +1232,13 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx xros xrsimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3,7";
 			};
 			name = Release;
 		};

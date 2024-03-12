@@ -127,6 +127,7 @@ struct SettingsView: View {
                                 }
                             }
 #endif
+#if !os(tvOS)
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
                                     Task {
@@ -141,6 +142,7 @@ struct SettingsView: View {
                                     Label("Delete", systemImage: "trash")
                                 }
                             }
+#endif
                     }
                     .onDelete { indexSet in
                         Task {
@@ -197,7 +199,7 @@ struct SettingsView: View {
 #endif
             
             Section("Other") {
-#if os(macOS)
+#if os(macOS) || os(iOS)
                 Button(action: {showKeyboardShortcuts = true}) {
                     HStack {
                         Label("Keyboard shortcuts", systemImage: "keyboard")
@@ -213,7 +215,7 @@ struct SettingsView: View {
                 
                 Button(action: { reportDebugLogs() }) {
                     HStack {
-                        Label(reportingDebugLogs ? "Saving Diagnostics..." : "Send Feedback", systemImage: "square.and.arrow.up")
+                        Label(reportingDebugLogs ? "Collecting Diagnostics..." : "Send Feedback", systemImage: "square.and.arrow.up")
                         Spacer()
                         if (reportingDebugLogs) {
                             Image(systemName: "rays")
@@ -231,25 +233,30 @@ struct SettingsView: View {
                     set: { if !$0 { self.debugLogReportID = nil } }
                 )) {
                     VStack {
-                        Text("Your diagnostic report is ready to share.")
+                        Text("Your diagnostic report has been created with ID  \"\(debugLogReportID ?? "unknown")\"")
                             .font(.headline)
                             .padding(.bottom, 2)
-                        Text("Please click the share button below and email to roam-support@msd3.io along with any feeback")
+                        Text("Please send an email to roam-support@msd3.io including the report ID any other feedback")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.bottom, 2)
-                        ShareLink(item: """
-    Hi Roam Support (roam-support@msd3.io),
-    
-    <Add Feedback Here>
-    
-    ---
-    Debug Info Link: https://roam-logs-eyebrows.s3.us-east-1.amazonaws.com/\(debugLogReportID ?? "unknown")
-    """, subject: Text("Roam Feedback")) {
-                            Label("Send Feedback", systemImage: "square.and.arrow.up")
+                        HStack {
+#if !os(tvOS)
+                            ShareLink(item: """
+        Hi Roam Support (roam-support@msd3.io),
+        
+        <Add Feedback Here>
+        
+        ---
+        Debug Info Link: https://roam-logs-eyebrows.s3.us-east-1.amazonaws.com/\(debugLogReportID ?? "unknown")
+        """, subject: Text("Roam Feedback")) {
+                                Label("Open Email Template", systemImage: "square.and.arrow.up")
+                            }
+                            Button("Close", systemImage: "xmark", role: .destructive) {debugLogReportID = nil}
+#endif
                         }
-                        
+
 #if os(macOS)
                         Text("Press [esc] to close")
                             .font(.footnote)
@@ -360,7 +367,9 @@ struct DeviceListItem: View {
                 VStack(alignment: .center) {
                     DataImage(from: device.deviceIcon, fallback: "tv")
                         .resizable()
+#if !os(tvOS)
                         .controlSize(.extraLarge)
+#endif
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 24.0, height: 24.0)
                         .padding(4)

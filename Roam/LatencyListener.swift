@@ -1,7 +1,7 @@
 import Foundation
 import os.log
 
-#if os(iOS)
+#if os(iOS) || os(tvOS) || os(visionOS)
 import AVFoundation
 
 class LatencyListener {
