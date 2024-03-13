@@ -21,15 +21,13 @@ def archive_application(platform: str, render_github_actions: bool = False):
     archive_path = f"{project_path}/Archives/XCArchives/{platform}.xcarchive"
     print(f"Archiving application for platform {platform}")
     subprocess.run(
-        f"xcodebuild archive -project {project_path}/Roam.xcodeproj -scheme {scheme} -archivePath {archive_path} -destination 'generic/platform={platform}' | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}",
+        f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}' | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}""",
         shell=True,
     )
     print(f"Archive succeeded for platform {platform}")
 
 
-def publish_to_app_store(
-    platform: str, extension: str, render_github_actions: bool = False
-):
+def publish_to_app_store(platform: str, render_github_actions: bool = False):
     extensions = {
         "ios": "ipa",
         "tvos": "ipa",
@@ -40,16 +38,16 @@ def publish_to_app_store(
     extension = extensions[platform.lower()]
     print(f"Publishing for platform {platform} with extension {extension}")
     subprocess.run(
-        f"xcodebuild -exportArchive -archivePath ./Archives/XCArchives/{platform}.xcarchive -exportPath ./Archives/Exports/{platform} -exportOptionsPlist ./Scripts/options.plist | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}",
+        f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./Scripts/options.plist | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}""",
         shell=True,
     )
 
     subprocess.run(
-        f"xcrun altool --validate-app -f ./Archives/Exports/{platform}/Roam.{extension} -t {platform.lower()} --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER",
+        f"""xcrun altool --validate-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
         shell=True,
     )
     subprocess.run(
-        f"xcrun altool --upload-app -f ./Archives/Exports/{platform}/Roam.{extension} -t {platform.lower()} --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER",
+        f"""xcrun altool --upload-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
         shell=True,
     )
     print(f"Publish succeeded for platform {platform}")
