@@ -9,11 +9,7 @@ name: Deploy to Firebase Hosting on new Tag
 
 jobs:
     archive_and_publish:
-        strategy:
-            matrix:
-                platform: ["iOS", "macOS", "visionOS"]
-            max-parallel: 3
-        runs-on: macos-14-large
+        runs-on: macos-14
         steps:
             - uses: actions/checkout@v4
 
@@ -23,7 +19,7 @@ jobs:
 
             - name: Archive
               run: |
-                  ./scripts/export.py --archive --publish --platform ${{ matrix.platform }}
+                  ./scripts/export.py --archive --publish --platform iOS macOS visionOS --github-actions
               env:
                   XCODE_API_KEY: "${{ secrets.XCODE_API_KEY }}"
                   XCODE_API_ISSUER: "${{ secrets.XCODE_API_ISSUER }}"

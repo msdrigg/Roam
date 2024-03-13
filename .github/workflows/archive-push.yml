@@ -6,12 +6,7 @@ name: Archive Xcode Build on Push
 
 jobs:
     archive:
-        strategy:
-            matrix:
-                platform: ["iOS", "macOS", "visionOS"]
-            max-parallel: 3
-
-        runs-on: macos-14-large
+        runs-on: macos-14
         steps:
             - uses: actions/checkout@v4
 
@@ -22,7 +17,7 @@ jobs:
 
             - name: Archive
               run: |
-                  ./scripts/export.py --archive --platform ${{ matrix.platform }}
+                  ./scripts/export.py --archive --platform iOS macOS visionOS --github-actions
               env:
                   XCODE_API_KEY: "${{ secrets.XCODE_API_KEY }}"
                   XCODE_API_ISSUER: "${{ secrets.XCODE_API_ISSUER }}"
