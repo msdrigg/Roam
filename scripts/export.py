@@ -99,13 +99,25 @@ def get_marketing_version():
     return git_tag.strip("v")
 
 
-def get_build_version():
-    date_str = datetime.now().strftime("%Y%m%d")
-    git_commit = (
+def get_git_build_number():
+    commit_count = (
+        subprocess.check_output(["git", "rev-list", "HEAD", "--count"])
+        .decode("utf-8")
+        .strip()
+    )
+    last_commit_sha = (
         subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
         .decode("utf-8")
         .strip()
     )
+    decimal_sha = int(last_commit_sha, 16)
+    return f"{commit_count}{decimal_sha}"
+
+
+def get_build_version():
+    date_str = datetime.now().strftime("%Y%m%d")
+    git_commit = get_git_build_number()
+
     _, build_version = get_current_versions()
     patch_version = 0
     if build_version.startswith(f"{date_str}.{git_commit}"):
