@@ -65,11 +65,7 @@ struct RemoteView: View {
     @State private var ecpSession: ECPSession? = nil
     @StateObject private var networkMonitor = NetworkMonitor()
     var privateListeningDisabled: Bool {
-        #if os(visionOS)
-        return true
-        #else
         return selectedDevice?.supportsDatagram == true
-        #endif
     }
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true

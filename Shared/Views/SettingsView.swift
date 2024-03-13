@@ -278,7 +278,7 @@ struct SettingsView: View {
         }
 #endif
         
-#if os(iOS)
+#if os(iOS) || os(visionOS)
         .refreshable {
             isScanning = true
             defer {
