@@ -18,7 +18,7 @@ jobs:
 
             - name: Fetch Tags
               run: |
-                  git fetch --depth=1 --tags && \
+                  git fetch --tags origin && \
                   git describe --tags
 
             - name: Archive
