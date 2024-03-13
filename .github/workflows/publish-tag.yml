@@ -9,6 +9,7 @@ name: Deploy to Firebase Hosting on new Tag
 
 jobs:
     archive_and_publish:
+        name: Archive and Publish
         runs-on: macos-14
         steps:
             - uses: actions/checkout@v4
@@ -17,7 +18,12 @@ jobs:
               run: |
                   echo "${{ secrets.XCODE_API_SECRET }}" > ./.private_keys/AuthKey_${{secrets.XCODE_API_KEY}}.p8
 
-            - name: Archive
+            - name: Fetch Tags
+              run: |
+                  git fetch --depth=1 --tags && \
+                  git describe --tags
+
+            - name: Archive and Publish
               run: |
                   ./scripts/export.py --archive --publish --platform iOS macOS visionOS --github-actions
               env:
