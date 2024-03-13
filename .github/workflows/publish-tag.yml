@@ -16,6 +16,7 @@ jobs:
 
             - name: Install Secret
               run: |
+                  mkdir -p "./.private_keys" && \
                   echo "${{ secrets.XCODE_API_SECRET }}" > ./.private_keys/AuthKey_${{secrets.XCODE_API_KEY}}.p8
 
             - name: Fetch Tags
