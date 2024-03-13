@@ -100,18 +100,14 @@ def get_marketing_version():
 
 
 def get_git_build_number():
-    commit_count = (
-        subprocess.check_output(["git", "rev-list", "HEAD", "--count"])
-        .decode("utf-8")
-        .strip()
-    )
     last_commit_sha = (
         subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
         .decode("utf-8")
         .strip()
     )
     decimal_sha = int(last_commit_sha, 16)
-    return f"{commit_count}{decimal_sha}"
+    # Last 8 characters of the SHA
+    return f"{decimal_sha}"[-7:]
 
 
 def get_build_version():
