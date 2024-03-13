@@ -162,8 +162,8 @@ if __name__ == "__main__":
 
     if args.archive:
         for platform in args.platform:
-            archive_application(platform, render_github_actions=parser.github_actions)
+            archive_application(platform, render_github_actions=args.github_actions)
 
     if args.publish:
         for platform in args.platform:
-            publish_to_app_store(platform, render_github_actions=parser.github_actions)
+            publish_to_app_store(platform, render_github_actions=args.github_actions)
