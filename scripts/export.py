@@ -88,7 +88,9 @@ def get_current_versions() -> Tuple[str, str]:
 
 def get_marketing_version():
     git_tag = (
-        subprocess.check_output(["git", "describe", "--tags"]).decode("utf-8").strip()
+        subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"])
+        .decode("utf-8")
+        .strip()
     )
     return git_tag.strip("v")
 
