@@ -21,7 +21,7 @@ def archive_application(platform: str, render_github_actions: bool = False):
     archive_path = f"{project_path}/Archives/XCArchives/{platform}.xcarchive"
     print(f"Archiving application for platform {platform}")
     subprocess.run(
-        f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}' | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}""",
+        f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}' | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
         shell=True,
     )
     print(f"Archive succeeded for platform {platform}")
@@ -38,7 +38,7 @@ def publish_to_app_store(platform: str, render_github_actions: bool = False):
     extension = extensions[platform.lower()]
     print(f"Exporting for platform {platform}")
     subprocess.run(
-        f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./scripts/options.plist | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}""",
+        f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./scripts/options.plist | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
         shell=True,
     )
 
