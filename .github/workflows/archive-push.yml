@@ -9,11 +9,16 @@ jobs:
         runs-on: macos-14
         steps:
             - uses: actions/checkout@v4
+              with:
+                  fetch-tags: "true"
 
             - name: Install Secret
               run: |
                   mkdir -p "./.private_keys" && \
                   echo "${{ secrets.XCODE_API_SECRET }}" > ./.private_keys/AuthKey_${{secrets.XCODE_API_KEY}}.p8
+            - name: Check Tags
+              run: |
+                  git describe --tags
 
             - name: Archive
               run: |
