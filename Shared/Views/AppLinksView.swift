@@ -130,9 +130,9 @@ struct CaptureVerticalScrollWheelModifier: ViewModifier {
             }
             if event.phase == .began || event.phase == .changed || event.phase.rawValue == 0 {
                 // Directly handle scrolling
-                handleScroll(with: scrollDist, precise: event.hasPreciseScrollingDeltas)
+                handleScroll(with: scrollDist)
                 
-                scrollVelocity = scrollDelta
+                scrollVelocity = scrollDelta / 8
             } else if event.phase == .ended {
                 // Begin decelerating
                 decelerationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] timer in
@@ -146,11 +146,9 @@ struct CaptureVerticalScrollWheelModifier: ViewModifier {
             }
         }
 
-        private func handleScroll(with delta: CGFloat, precise: Bool) {
+        private func handleScroll(with delta: CGFloat) {
             var scrollDist = delta
-            if !precise {
-                scrollDist *= 2
-            }
+            scrollDist *= 4
 
             guard let scrollView = self.enclosingScrollView else { return }
             let contentView = scrollView.contentView
@@ -172,14 +170,14 @@ struct CaptureVerticalScrollWheelModifier: ViewModifier {
         }
 
         private func decelerateScroll() {
-            if abs(scrollVelocity) < 0.8 {
+            if abs(scrollVelocity) < 0.3 {
                 decelerationTimer?.invalidate()
                 decelerationTimer = nil
                 return
             }
 
-            handleScroll(with: scrollVelocity, precise: true)
-            scrollVelocity *= 0.95
+            handleScroll(with: scrollVelocity)
+            scrollVelocity *= 0.9
         }
     }
 }

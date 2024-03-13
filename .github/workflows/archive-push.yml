@@ -1,0 +1,28 @@
+name: Archive Xcode Build on Push
+"on":
+    push:
+        branches:
+            - main
+
+jobs:
+    archive:
+        strategy:
+            matrix:
+                platform: ["iOS", "macOS", "visionOS"]
+            max-parallel: 3
+
+        runs-on: macos-14-large
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install Secret
+              run: |
+                  mkdir -p "./.private_keys" && \
+                  echo "${{ secrets.XCODE_API_SECRET }}" > ./.private_keys/AuthKey_${{secrets.XCODE_API_KEY}}.p8
+
+            - name: Archive
+              run: |
+                  ./scripts/export.py --archive --platform ${{ matrix.platform }}
+              env:
+                  XCODE_API_KEY: "${{ secrets.XCODE_API_KEY }}"
+                  XCODE_API_ISSUER: "${{ secrets.XCODE_API_ISSUER }}"

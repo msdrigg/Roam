@@ -50,9 +50,6 @@
     - Show keyboard when textedit is opened
     - Hide keyboard when textedit closed
     - If ecp-textedit is supported, allow selecting, deleting text and moving cursor. Just re-send text each time it changes if this is supported.
-- Fix private listening on visionOS
-    - Currently waiting on a fix to https://forums.developer.apple.com/forums/thread/748281
-- Publish a visionOS version
 - Make the tvOS version usable
     - Make buttons style correctly in tvOS
     - Figure out how to make them more navigable in tvOS (maybe change positioning of certain things/get its own view?)
