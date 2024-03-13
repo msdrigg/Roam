@@ -23,6 +23,7 @@ def archive_application(platform: str, render_github_actions: bool = False):
     subprocess.run(
         f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}' | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
         shell=True,
+        check=True,
     )
     print(f"Archive succeeded for platform {platform}")
 
@@ -40,17 +41,20 @@ def publish_to_app_store(platform: str, render_github_actions: bool = False):
     subprocess.run(
         f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./scripts/options.plist | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
         shell=True,
+        check=True,
     )
 
     print(f"Validating application for platform {platform} with extension {extension}")
     subprocess.run(
         f"""xcrun altool --validate-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
         shell=True,
+        check=True,
     )
     print(f"Uploading application for platform {platform} with extension {extension}")
     subprocess.run(
         f"""xcrun altool --upload-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
         shell=True,
+        check=True,
     )
     print(f"Publish succeeded for platform {platform}")
 
@@ -120,10 +124,10 @@ def bump_versions():
     )
 
     sed_cmd_marketing_version = f"sed -i '' 's/MARKETING_VERSION = {current_marketing_version};/MARKETING_VERSION = {new_marketing_version};/g' {project_file_path}"
-    subprocess.run(sed_cmd_marketing_version, shell=True)
+    subprocess.run(sed_cmd_marketing_version, shell=True, check=True)
 
     sed_cmd_build_version = f"sed -i '' 's/CURRENT_PROJECT_VERSION = {current_build_version};/CURRENT_PROJECT_VERSION = {new_build_version};/g' {project_file_path}"
-    subprocess.run(sed_cmd_build_version, shell=True)
+    subprocess.run(sed_cmd_build_version, shell=True, check=True)
 
 
 if __name__ == "__main__":
