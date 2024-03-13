@@ -36,16 +36,18 @@ def publish_to_app_store(platform: str, render_github_actions: bool = False):
         "visionos": "ipa",
     }
     extension = extensions[platform.lower()]
-    print(f"Publishing for platform {platform} with extension {extension}")
+    print(f"Exporting for platform {platform}")
     subprocess.run(
-        f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./Scripts/options.plist | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}""",
+        f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./scripts/options.plist | xcbeautify{'' if render_github_actions else ' --renderer github-actions'}""",
         shell=True,
     )
 
+    print(f"Validating application for platform {platform} with extension {extension}")
     subprocess.run(
         f"""xcrun altool --validate-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
         shell=True,
     )
+    print(f"Uploading application for platform {platform} with extension {extension}")
     subprocess.run(
         f"""xcrun altool --upload-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
         shell=True,
