@@ -12,13 +12,13 @@ struct Dependency: Identifiable {
     }
 }
 
-#if os(watchOS)
-let WATCHOS_LICENSES = [
+#if os(watchOS) || os(tvOS)
+let WEBP_LICENSES = [
     Dependency(name: "libwebp", link: "https://chromium.googlesource.com/webm/libwebp", licenseType: "BSD-3-Clause"),
     Dependency(name: "libwebp-Xcode", link: "https://github.com/SDWebImage/libwebp-Xcode", licenseType: "BSD-3-Clause")
 ]
 #endif
-    
+
 
 let MAIN_LICENSES: [Dependency] = [
     Dependency(name: "Opus", link: "https://github.com/xiph/opus/tree/master", licenseType: "BSD-3-Clause"),
@@ -31,8 +31,8 @@ let MAIN_LICENSES: [Dependency] = [
     Dependency(name: "Swift Collections", link: "https://github.com/apple/swift-collections", licenseType: "Apache-2.0")
 ]
 
-#if os(watchOS)
-let LICENSES = MAIN_LICENSES + WATCHOS_LICENSES
+#if os(watchOS) || os(tvOS)
+let LICENSES = MAIN_LICENSES + WEBP_LICENSES
 #else
 let LICENSES = MAIN_LICENSES
 #endif
@@ -44,28 +44,51 @@ struct AboutView: View {
                 LabeledContent("App Version") {
                     Text(Bundle.main.infoDictionary?["CURRENT_PROJECT_VERSION"] as? String ?? "--")
                 }
+                .focusable()
             }
             
             Section("Dependencies") {
-                ForEach(LICENSES) { license in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(license.name)
-                            Spacer()
-                            Link(license.link, destination: URL(string: license.link)!)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-
-                        }
-                        Text(license.licenseType)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                licenseIterator
             }
         }
         .navigationTitle("About")
+    }
+    
+    @ViewBuilder
+    var licenseIterator: some View {
+        ForEach(Array(zip(LICENSES.indices, LICENSES)), id: \.0) { idx, license in
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    if idx % 8 == 7 {
+                        Text(license.name)
+                            .foregroundStyle(.primary, .primary)
+                        #if os(tvOS)
+                            .focusable()
+                        #endif
+                    } else {
+                        Text(license.name)
+                            .foregroundStyle(.primary, .primary)
+                    }
+                    
+                    Spacer()
+                    
+                    #if os(tvOS)
+                    Text(license.link)
+                        .font(.body)
+                        .foregroundStyle(.secondary, .secondary)
+                        .lineLimit(1)
+                    #else
+                    Link(license.link, destination: URL(string: license.link)!)
+                        .font(.body)
+                        .foregroundStyle(.secondary, .secondary)
+                        .lineLimit(1)
+                    #endif
+                }
+                Text(license.licenseType)
+                    .font(.body)
+                    .foregroundStyle(.secondary, .secondary)
+            }
+        }
     }
 }
 
@@ -73,7 +96,6 @@ struct AboutView: View {
 enum AboutDestination{
     case Global
 }
-
 
 #Preview("About") {
     AboutView()

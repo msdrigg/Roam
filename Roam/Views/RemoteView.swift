@@ -8,11 +8,18 @@ import AppIntents
 import StoreKit
 
 
-#if os(macOS)
+#if os(macOS) || os(visionOS)
 let BUTTON_WIDTH: CGFloat = 44
 let BUTTON_HEIGHT: CGFloat = 36
+let BUTTON_SPACING: CGFloat = 10
 let APP_LINK_SHRINK_WIDTH: CGFloat = 500
+#elseif os(tvOS)
+let BUTTON_WIDTH: CGFloat = 60
+let BUTTON_SPACING: CGFloat = 30
+let BUTTON_HEIGHT: CGFloat = 50
+let APP_LINK_SHRINK_WIDTH: CGFloat = 600
 #else
+let BUTTON_SPACING: CGFloat = 10
 let BUTTON_WIDTH: CGFloat = 28
 let BUTTON_HEIGHT: CGFloat = 20
 let APP_LINK_SHRINK_WIDTH = 700
@@ -67,6 +74,13 @@ struct RemoteView: View {
     var privateListeningDisabled: Bool {
         return selectedDevice?.supportsDatagram == true
     }
+    var hideUIForKeyboardEntry: Bool {
+#if os(iOS)
+        return showKeyboardEntry
+#else
+        return false
+#endif
+    }
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
@@ -74,7 +88,7 @@ struct RemoteView: View {
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
     private var appLinkRows: Int {
-#if os(macOS)
+#if os(macOS) || os(tvOS)
         return 2
 #else
         if verticalSizeClass == .compact {
@@ -286,7 +300,38 @@ struct RemoteView: View {
             HStack {
                 Spacer()
                 VStack(alignment: .center) {
-                    if verticalSizeClass == .compact && !showKeyboardEntry {
+#if os(tvOS)
+                    HStack{
+                        HStack {
+                            Button(action: {
+                                keyboardLeaving = showKeyboardEntry
+                                withAnimation {
+                                    showKeyboardEntry = !showKeyboardEntry
+                                }
+                            }) {
+                                Label("", systemImage: "keyboard")
+                            }
+                            .labelStyle(.iconOnly)
+                            .disabled(selectedDevice == nil)
+                            .font(.headline)
+                            Spacer()
+                        }
+                        .focusSection()
+                        HStack {
+                            Spacer()
+                            DevicePicker(
+                                devices: devices,
+                                device: $manuallySelectedDevice.withDefault(selectedDevice)
+                            )
+                            .font(.body)
+                        }
+                        .focusSection()
+                    }
+                    
+#endif
+                    
+                    
+                    if verticalSizeClass == .compact && !hideUIForKeyboardEntry {
                         networkConnectivityBanner
                             .offset(y: -20)
                             .padding(.bottom, -16)
@@ -299,7 +344,7 @@ struct RemoteView: View {
                         verticalBody()
                     }
                     
-                    if showKeyboardEntry {
+                    if hideUIForKeyboardEntry {
                         Spacer()
                     } else {
                         if verticalSizeClass != .compact {
@@ -310,8 +355,9 @@ struct RemoteView: View {
                 }
                 Spacer()
             }
-#if os(iOS)
+#if !os(macOS)
             .overlay {
+#if os(iOS)
                 if controlVolumeWithHWButtons && !privateListeningEnabled {
                     CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
                         let key: RemoteButton
@@ -326,6 +372,7 @@ struct RemoteView: View {
                     }.id("VolumeOverlay")
                         .frame(maxWidth: 1)
                 }
+#endif
                 
                 if showKeyboardEntry {
                     GeometryReader { proxy in
@@ -351,11 +398,15 @@ struct RemoteView: View {
                                 KeyboardEntry(str: $keyboardEntryText, showing: $showKeyboardEntry, onKeyPress: {char in
                                     let _ = self.pressKey(char)
                                 }, leaving: keyboardLeaving)
+                                .padding(.bottom, 10)
+                                .padding(.horizontal, 10)
                                 .zIndex(1)
                             }.frame(maxWidth: .infinity, minHeight: proxy.size.height)
                         }
                         .scrollIndicators(.never)
-                        .scrollDismissesKeyboard(.interactively)
+#if !os(visionOS)
+                        .scrollDismissesKeyboard(.immediately)
+#endif
                     }
                 }
             }
@@ -364,8 +415,9 @@ struct RemoteView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, 10)
+#if !os(tvOS)
             .toolbar {
-#if os(iOS)
+#if !os(macOS)
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
                         keyboardLeaving = showKeyboardEntry
@@ -375,21 +427,32 @@ struct RemoteView: View {
                     }) {
                         Label("Keyboard", systemImage: "keyboard")
                             .controlSize(.large)
-                            .labelStyle(.iconOnly)
                     }
+                    .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
                     .disabled(selectedDevice == nil)
                     .font(.headline)
                 }
 #endif
-                ToolbarItem(placement: .automatic) {
+                #if os(macOS)
+                ToolbarItem(placement: .navigation) {
                     DevicePicker(
                         devices: devices,
                         device: $manuallySelectedDevice.withDefault(selectedDevice)
                     )
                     .font(.body)
                 }
+                #else
+                ToolbarItem(placement: .topBarTrailing) {
+                    DevicePicker(
+                        devices: devices,
+                        device: $manuallySelectedDevice.withDefault(selectedDevice)
+                    )
+                    .font(.body)
+                }
+                #endif
             }
+#endif
             .overlay {
                 if selectedDevice == nil {
                     VStack(spacing: 2) {
@@ -467,44 +530,68 @@ struct RemoteView: View {
     func horizontalBody() -> some View {
         VStack(alignment: .center) {
             Spacer()
-            HStack(alignment: .center, spacing: 20) {
-                if !showKeyboardEntry {
+            HStack(alignment: .center, spacing: BUTTON_SPACING * 2) {
+                if !hideUIForKeyboardEntry {
                     Spacer()
-                    // Center Controller with directional buttons
-                    CenterController(pressCounter: buttonPressCount, action: pressButton)
-                        .transition(.scale.combined(with: .opacity))
-                        .matchedGeometryEffect(id: "centerController", in: animation)
-                    
+                    VStack {
+                        Spacer()
+                        // Center Controller with directional buttons
+                        CenterController(pressCounter: buttonPressCount, action: pressButton)
+                            .transition(.scale.combined(with: .opacity))
+                            .matchedGeometryEffect(id: "centerController", in: animation)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+#if os(macOS) || os(tvOS)
+                    .focusSection()
+#endif
                 }
                 Spacer()
                 
                 VStack(alignment: .center) {
                     // Row with Back and Home buttons
                     TopBar(pressCounter: buttonPressCount, action: pressButton, onKeyPress: pressKey)
+#if os(macOS) || os(tvOS)
+                        .focusSection()
+#endif
                         .matchedGeometryEffect(id: "topBar", in: animation)
                     
                     
-                    if !showKeyboardEntry {
+                    if !hideUIForKeyboardEntry {
                         Spacer().frame(maxHeight: 60)
                         
                         // Grid of 9 buttons
                         ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: privateListeningDisabled ? Set([]) : Set([.privateListening]) )
+#if os(macOS) || os(tvOS)
+                            .focusSection()
+#endif
                             .transition(.scale.combined(with: .opacity))
                             .matchedGeometryEffect(id: "buttonGrid", in: animation)
                     }
                 }
+#if os(macOS) || os(tvOS)
+                .focusSection()
+#endif
                 Spacer()
             }
+#if os(macOS) || os(tvOS)
+            .focusSection()
+#endif
             .frame(maxWidth: 600)
             
             if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
                 Spacer()
                 AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
+#if os(macOS) || os(tvOS)
+                    .focusSection()
+#endif
 #if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
 #endif
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
+            } else {
+                Spacer()
             }
             Spacer()
         }
@@ -550,7 +637,7 @@ struct RemoteView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
 #if os(iOS)
                 SKStoreReviewController.requestReview(in: windowScene)
-#elseif !os(tvOS) && !os(visionOS)
+#elseif !os(visionOS) && !os(tvOS)
                 SKStoreReviewController.requestReview()
 #endif
             }
@@ -576,7 +663,7 @@ struct RemoteView: View {
             
             
             
-            if !showKeyboardEntry {
+            if !hideUIForKeyboardEntry {
                 
                 Spacer()
                 // Grid of 9 buttons
@@ -588,13 +675,14 @@ struct RemoteView: View {
             
             
             if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
-                Spacer()
                 AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
 #if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
 #endif
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
+            } else {
+                Spacer()
             }
             Spacer()
         }

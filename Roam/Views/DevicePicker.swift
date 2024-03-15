@@ -2,6 +2,13 @@ import Foundation
 import SwiftUI
 import os
 
+#if os(tvOS)
+let BASELINE_OFFSET: CGFloat = 4
+let CIRCLE_ICON_SIZE: CGFloat = 16
+#else
+let BASELINE_OFFSET: CGFloat = 2
+let CIRCLE_ICON_SIZE: CGFloat = 8
+#endif
 
 struct DevicePicker: View {
     private static let logger = Logger(
@@ -27,7 +34,7 @@ struct DevicePicker: View {
                             .lineLimit(1)
                             .tag(device as Device?)
                     }
-                }.onChange(of: device) { _oldSelected, selected in
+                }.pickerStyle(.inline).onChange(of: device) { _oldSelected, selected in
                     if let chosenDevice = devices.first(where: { d in
                         d.id == selected?.id
                     }) {
@@ -59,14 +66,11 @@ struct DevicePicker: View {
         } label: {
             if let device = device {
                 Group {
-                    Text(Image(systemName: "circle.fill") ).font(.system(size: 8))
+                    Text(Image(systemName: "circle.fill") ).font(.system(size: CIRCLE_ICON_SIZE))
                         .foregroundColor(deviceStatusColor)
-                        .baselineOffset(2) +
-                    Text(" ").font(.body)
-                        .foregroundColor(.secondary)
-                    +
+                        .baselineOffset(BASELINE_OFFSET) +
+                    Text(" ").font(.body) +
                     Text(device.name).font(.body)
-                        .foregroundColor(.secondary)
                 }.multilineTextAlignment(.center)
                     .lineLimit(1)
                     .truncationMode(.tail)

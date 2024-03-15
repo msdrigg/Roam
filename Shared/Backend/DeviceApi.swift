@@ -180,7 +180,7 @@ func fetchAppIcon(location: String, appId: String) async throws -> Data {
 }
 
 
-#if os(watchOS)
+#if os(watchOS) || os(tvOS)
 import libwebp
 import UIKit
 import CoreGraphics

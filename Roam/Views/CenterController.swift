@@ -19,7 +19,7 @@ struct CenterController: View {
             nil, ("chevron.down", .down, "Down"), nil
         ]
         return VStack(alignment: .center) {
-            Grid(horizontalSpacing: 2, verticalSpacing: 2) {
+            Grid(horizontalSpacing: BUTTON_SPACING/5, verticalSpacing: BUTTON_SPACING/5) {
                 ForEach(0..<3) { row in
                     GridRow {
                         ForEach(0..<3) { col in

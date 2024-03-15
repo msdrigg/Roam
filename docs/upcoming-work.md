@@ -16,7 +16,7 @@
         - Update Device (stored) and DeviceState (voilatile)
     - After reconnecting/disconnecting, update online status in remote view
 - Update device settings view
-    - On macOS and iOS show capsule badges for supported features (supports private listening, supports volume control) OR unsupported features on the list UI
+    - On !watchOS show capsule badges for supported features (supports private listening, supports volume control) OR unsupported features on the list UI
     - On all views, in the list of settings/information, show support private listening (y/n), can support volume controls (With headphones, datagram, …), can’t support headphones with …, unknown modes: …
     - On all views add a “No Training Wheels Mode” toggle
         - Allow clicking buttons that the devices says it doesn’t support
@@ -46,16 +46,10 @@
             - Suggest manually adding a device
             - Link to this article to see more troubleshooting https://support.roku.com/article/115001480188
         - Dismiss when tv connects
-- Update keyboard handling (iOS)
+- Update keyboard handling (All but macOS)
     - Show keyboard when textedit is opened
     - Hide keyboard when textedit closed
     - If ecp-textedit is supported, allow selecting, deleting text and moving cursor. Just re-send text each time it changes if this is supported.
-- Make the tvOS version usable
-    - Make buttons style correctly in tvOS
-    - Figure out how to make them more navigable in tvOS (maybe change positioning of certain things/get its own view?)
-    - Make webP work on tvOS (add same decoder from watchOS)
-    - Make device selector work on tvOS (Somehow the menu won't open. Maybe related to https://forums.developer.apple.com/forums/thread/692338)
-    - Make private listening work on tvOS (haven't tested. Just assume it won't work)
 
 
 Keyboard ECP Session Commands (notes)

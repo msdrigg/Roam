@@ -14,9 +14,18 @@ struct RoamApp: App {
     var body: some Scene {
         WindowGroup {
             RemoteView(showKeyboardShortcuts: $showKeyboardShortcuts)
+            // VisionOS doesn't respect object content, so we need to set explicit sizing bounds
+#if os(visionOS)
+                .frame(minWidth: 400, minHeight: 950)
+#endif
         }
+        #if os(visionOS) || os(macOS)
+        .defaultSize(width: 400, height: 1000)
+        .windowResizability(.contentSize)
+        #endif
         .modelContainer(sharedModelContainer)
         #if os(macOS)
+        .defaultPosition(.trailing)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .commands {
             CommandGroup(after: .help) {

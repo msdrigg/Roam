@@ -1,6 +1,14 @@
 import Foundation
 import SwiftUI
 
+#if os(iOS)
+let COLUMNS = 2
+let SIZE: CGFloat = 180
+#else
+let COLUMNS = 3
+let SIZE: CGFloat = 200
+#endif
+
 struct KeyboardShortcut: Identifiable {
     let title: String
     let keys: String
@@ -9,8 +17,13 @@ struct KeyboardShortcut: Identifiable {
     }
 }
 
+enum KeyboardShortcutDestination{
+    case Global
+}
+
 struct KeyboardShortcutPanel: View {
-    let columns: [GridItem] = Array(repeating: .init(.fixed(200)), count: 3) // Adjust the count as needed for columns
+    let columns: [GridItem] = Array(repeating: .init(.fixed(SIZE)), count: COLUMNS)
+    @Environment(\.dismiss) private var dismiss
     
     let shortcuts: [KeyboardShortcut] = [
         KeyboardShortcut(title: "Back", keys: "⌘◀"),
@@ -32,23 +45,19 @@ struct KeyboardShortcutPanel: View {
     ]
     
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 20) {
+        List {
             ForEach(shortcuts) { shortcut in
                 HStack {
                     Text(shortcut.title)
                         .font(.headline)
-                    Spacer().frame(maxWidth: 10)
+                    Spacer()
                     Text(shortcut.keys)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.secondary)
                         .font(.subheadline)
                 }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.secondary.opacity(0.1))
-                .cornerRadius(8)
             }
         }
-        .padding()
+        .navigationTitle("Keyboard Shortcuts")
     }
 }
 
