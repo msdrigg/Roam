@@ -4,18 +4,18 @@ A Roku remote that puts users first
 
 ## Features
 
--   Runs on Mac, iPhone, iPad, Apple Watch or VisionOS!
+-   Runs on Mac, iPhone, iPad, Apple Watch, Vision Pro or Apple TV!
 -   Smart platform integration with keyboard shortcuts on Mac, using hardware volume buttons to control TV Volume on iOS
 -   Use shortcuts and widgets to control your TV without ever opening the app!
--   Private listening support on Mac, iOS and VisionOS (play the audio from your TV through your device)
+-   Private listening support on Mac, iPad, iPhone, VisionOS, and Apple TV (play the audio from your TV through your device)
 -   Discover devices on your local network as soon as you open the app
 -   Intuitive design with apple's native SwiftUI design system
--   Fast and lightweight -- less than 6 MB on iOS and opens in less than half a second!
+-   Fast and lightweight, less than 5 MB on all devices and opens in less than half a second!
 
 ## How to Use
 
--   Open in Xcode 15
--   Run on iOS, macOS, watchOS, or VisionOS
+-   Open in Xcode 15.3 or later
+-   Run on iOS, macOS, watchOS, VisionOS, iPadOS, or tvOS
 
 **_OR_**
 

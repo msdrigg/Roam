@@ -504,7 +504,6 @@
 		AFC24EF22AD0E5A1002AB66C = {
 			isa = PBXGroup;
 			children = (
-				AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */,
 				AF9FC8232B9F9C9500109268 /* scripts */,
 				AFA165C32AE93FE1003F45ED /* AppIcons */,
 				AF95B6F62ADF2F9F005FC338 /* README.md */,
@@ -541,6 +540,7 @@
 				AF4829722AD4C83D008E05FA /* Info.plist */,
 				AFC24F092AD0E5A2002AB66C /* Roam.entitlements */,
 				AFED42492AEE8F3B0023D684 /* VolumeListener.swift */,
+				AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Roam;
 			sourceTree = "<group>";
