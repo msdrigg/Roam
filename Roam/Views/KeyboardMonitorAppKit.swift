@@ -42,12 +42,20 @@ struct KeyHandlingViewRepresentable: NSViewRepresentable {
         }
 
         override var acceptsFirstResponder: Bool { return true }
-
+        
         override func keyDown(with event: NSEvent) {
             guard let ke = getKeyEquivalent(from: event) else {
                 return
             }
+            
             onKeyPress(ke)
+        }
+        
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window != nil {
+                window?.makeFirstResponder(self)
+            }
         }
     }
 }
