@@ -344,6 +344,10 @@ struct RemoteView: View {
                         verticalBody()
                     }
                     
+                    if !showKeyboardEntry {
+                        KeyboardMonitor(onKeyPress: {key in pressKey(key)})
+                    }
+                    
                     if hideUIForKeyboardEntry {
                         Spacer()
                     } else {
@@ -550,12 +554,11 @@ struct RemoteView: View {
                 
                 VStack(alignment: .center) {
                     // Row with Back and Home buttons
-                    TopBar(pressCounter: buttonPressCount, action: pressButton, onKeyPress: pressKey)
+                    TopBar(pressCounter: buttonPressCount, action: pressButton)
 #if os(macOS) || os(tvOS)
                         .focusSection()
 #endif
                         .matchedGeometryEffect(id: "topBar", in: animation)
-                    
                     
                     if !hideUIForKeyboardEntry {
                         Spacer().frame(maxHeight: 60)
@@ -650,7 +653,7 @@ struct RemoteView: View {
     func verticalBody() -> some View {
         VStack(alignment: .center, spacing: 10) {
             // Row with Back and Home buttons
-            TopBar(pressCounter: buttonPressCount, action: pressButton, onKeyPress: pressKey)
+            TopBar(pressCounter: buttonPressCount, action: pressButton)
                 .matchedGeometryEffect(id: "topBar", in: animation)
             
             
