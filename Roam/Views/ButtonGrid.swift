@@ -20,7 +20,7 @@ struct ButtonGrid: View  {
              ("Mute", "speaker.slash", .mute, "m"),
              ("Volume Up", "speaker.plus", .volumeUp, .upArrow)]
         ]
-        return Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+        return Grid(horizontalSpacing: BUTTON_SPACING, verticalSpacing: BUTTON_SPACING) {
             ForEach(buttonRows, id: \.first?.0) { row in
                 GridRow {
                     ForEach(row, id: \.0) { button in
@@ -35,7 +35,7 @@ struct ButtonGrid: View  {
                             .sensoryFeedback(.impact, trigger: pressCounter(button.2))
 #endif
                             .symbolEffect(.bounce, value: pressCounter(button.2))
-#if os(iOS) || os(macOS)
+#if !os(tvOS) && !os(watchOS)
                         if let ks = button.3 {
                             view
                                 .keyboardShortcut(ks)

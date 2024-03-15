@@ -1,4 +1,4 @@
-#if os(iOS)
+#if !os(macOS)
 import Foundation
 import SwiftUI
 import os.log
@@ -15,26 +15,36 @@ struct KeyboardEntry: View {
     var body: some View {
         TextFieldContainer("Enter some text...", text: $str, onDelete: {
             onKeyPress(.delete)
+        }, onDone: {
+            withAnimation {
+                showing = false
+                keyboardFocused = false
+            }
         })
+        #if !os(tvOS)
+        .textSelection(.disabled)
+        #endif
         .focused($keyboardFocused)
         .font(.body)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(RoundedRectangle(cornerRadius: 8).fill(.fill.tertiary))
         .frame(height: 60)
+        #if !os(tvOS)
         .task {
             let listener = KeyboardListener()
             if let events = listener.events {
                 for await _ in events {
                     DispatchQueue.main.async {
                         withAnimation {
-                            showing = false
                             keyboardFocused = false
+                            showing = false
                         }
                     }
                 }
             }
         }
+        #endif
         .onChange(of: str) {
             if str.count > strSent.count {
                 if let char = str.unicodeScalars.last {
@@ -47,14 +57,7 @@ struct KeyboardEntry: View {
         .onChange(of: leaving) {
             if leaving {
                 withAnimation {
-                    showing = false
                     keyboardFocused = false
-                }
-            }
-        }
-        .onChange(of: keyboardFocused) {
-            if !keyboardFocused {
-                withAnimation {
                     showing = false
                 }
             }
@@ -81,17 +84,40 @@ class EndOnlyTextField: UITextField {
         self.didDelete?()
         super.deleteBackward()
     }
+    
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        // Disable cut, copy, paste, select, selectAll
+        if action == #selector(cut(_:)) || action == #selector(copy(_:)) || action == #selector(paste(_:)) || action == #selector(select(_:)) || action == #selector(selectAll(_:)) {
+            return false
+        }
+        return super.canPerformAction(action, withSender: sender)
+    }
+
+    override func selectionRects(for range: UITextRange) -> [UITextSelectionRect] {
+        // Return empty array to prevent selection
+        return []
+    }
+
+    override func caretRect(for position: UITextPosition) -> CGRect {
+        // Force the caret to the end of the text
+        guard let endPosition = self.position(from: self.endOfDocument, offset: 0) else {
+            return super.caretRect(for: position)
+        }
+        return super.caretRect(for: endPosition)
+    }
 }
 
 struct TextFieldContainer: UIViewRepresentable {
     private var placeholder : String
     private var text : Binding<String>
     private var onDelete: () -> Void
+    private var onDone: () -> Void
     
-    init(_ placeholder:String, text:Binding<String>, onDelete: @escaping () -> Void) {
+    init(_ placeholder:String, text:Binding<String>, onDelete: @escaping () -> Void, onDone: @escaping () -> Void) {
         self.placeholder = placeholder
         self.text = text
         self.onDelete = onDelete
+        self.onDone = onDone
     }
     
     func makeCoordinator() -> TextFieldContainer.Coordinator {
@@ -124,8 +150,17 @@ struct TextFieldContainer: UIViewRepresentable {
         
         func setup(_ textField:UITextField) {
             textField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+            textField.becomeFirstResponder()
         }
         
+        @objc func textFieldDidEndEditing(_ textField: UITextField) {
+            self.parent.onDone()
+        }
+        @objc func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            self.parent.onDone()
+            return true
+        }
+
         @objc func textFieldDidChange(_ textField: UITextField) {
             self.parent.text.wrappedValue = textField.text ?? ""
             
@@ -135,6 +170,7 @@ struct TextFieldContainer: UIViewRepresentable {
     }
 }
 
+#if !os(tvOS)
 class KeyboardListener {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
@@ -177,5 +213,6 @@ class KeyboardListener {
         }
     }
 }
+#endif
 
 #endif

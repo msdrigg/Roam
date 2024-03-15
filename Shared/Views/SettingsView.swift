@@ -7,6 +7,20 @@ import UIKit
 import AppKit
 #endif
 
+#if os(tvOS)
+let DEVICE_ICON_SIZE: CGFloat = 64.0
+let CIRCLE_SIZE: CGFloat = 18
+#elseif os(visionOS)
+let DEVICE_ICON_SIZE: CGFloat = 42.0
+let CIRCLE_SIZE: CGFloat = 14
+#elseif os(macOS)
+let DEVICE_ICON_SIZE: CGFloat = 32.0
+let CIRCLE_SIZE: CGFloat = 12
+#else
+let DEVICE_ICON_SIZE: CGFloat = 24.0
+let CIRCLE_SIZE: CGFloat = 10
+#endif
+
 
 private let deviceFetchDescriptor: FetchDescriptor<Device> = {
     var fd = FetchDescriptor(
@@ -41,7 +55,6 @@ struct SettingsView: View {
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
     
-    @State private var showKeyboardShortcuts: Bool = false
     @State private var reportingDebugLogs: Bool = false
     @State private var debugLogReportID: String? = nil
     
@@ -54,27 +67,27 @@ struct SettingsView: View {
             Self.logger.info("Starting to send logs")
             let logs = await getDebugInfo(container: getSharedModelContainer(), message: "Requested from settings")
             Self.logger.info("Sending logs \(logs.id)")
-
+            
             let objectKey = logs.id
             
             do {
                 let encoder = JSONEncoder()
                 encoder.dateEncodingStrategy = .iso8601 // Or .formatted(DateFormatter) if you want a custom format
-
+                
                 let jsonData = try encoder.encode(logs)
-
+                
                 guard let url = URL(string: "https://roam-logs-eyebrows.s3.us-east-1.amazonaws.com/\(objectKey)") else {
                     Self.logger.error("Error uploading to S3: BadURL")
                     return
                 }
                 Self.logger.info("Encoded logs into json data \(jsonData.count). Uploading to \(url)")
-
+                
                 var request = URLRequest(url: url)
                 request.httpMethod = "PUT"
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
+                
                 request.httpBody = jsonData
-
+                
                 let (_, response) = try await URLSession.shared.data(for: request)
                 
                 // Log the upload result
@@ -113,7 +126,7 @@ struct SettingsView: View {
                                             Self.logger.error("HI")
                                             try await deviceActor.delete(device.persistentModelID)
                                             Self.logger.info("Deleted device with id \(String(describing: device.persistentModelID))")
-
+                                            
                                         } catch {
                                             Self.logger.error("Error deleting device \(error)")
                                         }
@@ -158,8 +171,11 @@ struct SettingsView: View {
                         }
                     }
                 }
-#if os(watchOS)
+#if os(watchOS) || os(tvOS)
                 addDeviceButton
+#endif
+#if os(tvOS)
+                scanDevicesButton
 #endif
                 
 #if os(macOS)
@@ -199,19 +215,18 @@ struct SettingsView: View {
 #endif
             
             Section("Other") {
-#if os(macOS) || os(iOS)
-                Button(action: {showKeyboardShortcuts = true}) {
-                    HStack {
+#if !os(tvOS) && !os(watchOS)
+                HStack {
+                    NavigationLink(value: KeyboardShortcutDestination.Global, label: {
                         Label("Keyboard shortcuts", systemImage: "keyboard")
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
+                    })
+                    .buttonStyle(.plain)
+                    .keyboardShortcut("k")
+                    Spacer()
                 }
-                .buttonStyle(.plain)
-                .keyboardShortcut("k")
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
 #endif
-                
                 
                 Button(action: { reportDebugLogs() }) {
                     HStack {
@@ -253,10 +268,10 @@ struct SettingsView: View {
         """, subject: Text("Roam Feedback")) {
                                 Label("Open Email Template", systemImage: "square.and.arrow.up")
                             }
-                            Button("Close", systemImage: "xmark", role: .destructive) {debugLogReportID = nil}
 #endif
+                            Button("Close", systemImage: "xmark", role: .destructive) {debugLogReportID = nil}
                         }
-
+                        
 #if os(macOS)
                         Text("Press [esc] to close")
                             .font(.footnote)
@@ -272,13 +287,8 @@ struct SettingsView: View {
                 NavigationLink("About", value: AboutDestination.Global)
             }
         }
-#if os(macOS)
-        .sheet(isPresented: $showKeyboardShortcuts) {
-            KeyboardShortcutPanel()
-        }
-#endif
         
-#if os(iOS) || os(visionOS)
+#if !os(macOS) && !os(watchOS) && !os(tvOS)
         .refreshable {
             isScanning = true
             defer {
@@ -297,7 +307,7 @@ struct SettingsView: View {
             }
         }
 #endif
-#if !os(watchOS)
+#if !os(watchOS) && !os(tvOS)
         .navigationTitle("Settings")
 #endif
         .formStyle(.grouped)
@@ -324,22 +334,6 @@ struct SettingsView: View {
 #endif
     }
     
-    @ViewBuilder
-    var addDeviceButton: some View {
-        Button("Add a device manually", systemImage: "plus") {
-            let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, udn: "roam:newdevice-\(UUID().uuidString)")
-            do {
-                modelContext.insert(newDevice)
-                Self.logger.info("Added new empty device \(String(describing: newDevice.persistentModelID))")
-                try modelContext.save()
-                path.append(DeviceSettingsDestination(newDevice))
-            } catch {
-                Self.logger.error("Error inserting new device \(error)")
-            }
-        }
-        
-    }
-    
 #if !os(watchOS)
     @ViewBuilder
     var scanDevicesButton: some View {
@@ -356,6 +350,23 @@ struct SettingsView: View {
         .symbolEffect(.variableColor, isActive: isScanning)
     }
 #endif
+    
+    
+    @ViewBuilder
+    var addDeviceButton: some View {
+        Button("Add a device manually", systemImage: "plus") {
+            let newDevice = Device(name: "New device", location: "http://192.168.0.1:8060/", lastSelectedAt: Date.now, udn: "roam:newdevice-\(UUID().uuidString)")
+            do {
+                modelContext.insert(newDevice)
+                Self.logger.info("Added new empty device \(String(describing: newDevice.persistentModelID))")
+                try modelContext.save()
+                path.append(DeviceSettingsDestination(newDevice))
+            } catch {
+                Self.logger.error("Error inserting new device \(error)")
+            }
+        }
+        
+    }
 }
 
 struct DeviceListItem: View {
@@ -371,7 +382,7 @@ struct DeviceListItem: View {
                         .controlSize(.extraLarge)
 #endif
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 24.0, height: 24.0)
+                        .frame(width: DEVICE_ICON_SIZE, height: DEVICE_ICON_SIZE)
                         .padding(4)
                 }
                 
@@ -379,7 +390,7 @@ struct DeviceListItem: View {
                     HStack(alignment: .center, spacing: 8) {
                         Circle()
                             .foregroundColor(device.isOnline() ? Color.green : Color.gray)
-                            .frame(width: 10, height: 10)
+                            .frame(width: CIRCLE_SIZE, height: CIRCLE_SIZE)
                         Text(device.name).lineLimit(1)
                     }
                     Text(getHost(from: device.location)).foregroundStyle(Color.secondary).lineLimit(1)
@@ -398,13 +409,17 @@ struct SettingsNavigationWrapper<Content>: View where Content : View {
     var body: some View {
         NavigationStack(path: $path) {
             content()
-            
                 .navigationDestination(for: SettingsDestination.self) { _ in
                     SettingsView(path: $path)
                 }
                 .navigationDestination(for: AboutDestination.self) { _ in
                     AboutView()
                 }
+#if !os(watchOS)
+                .navigationDestination(for: KeyboardShortcutDestination.self) { _ in
+                    KeyboardShortcutPanel()
+                }
+#endif
                 .navigationDestination(for: DeviceSettingsDestination.self) { destination in
                     DeviceDetailView(device: destination.device) {
                         if path.count > 0 {
@@ -468,31 +483,55 @@ struct DeviceDetailView: View {
                     .frame(maxWidth: .infinity)
                 TextField("IP Address", text: $deviceIP)
                     .frame(maxWidth: .infinity)
+#if os(tvOS)
+                Button("Save", systemImage: "checkmark", action: {
+                    dismiss()
+                })
+                
+                Button("Delete", systemImage: "trash", role: .destructive, action: {
+                    // Don't block the dismiss waiting for save
+                    Self.logger.info("Deleting device")
+                    Task {
+                        do {
+                            try await deviceActor.delete(device.persistentModelID)
+                            Self.logger.info("Deleted device with id \(String(describing: device.persistentModelID))");
+                        } catch {
+                            Self.logger.error("Error deleting device \(error)")
+                        }
+                    }
+                    
+                    dismiss()
+                })
+                .foregroundStyle(Color.red)
+#endif
             }
-            
             Section("Info") {
                 LabeledContent("Id") {
                     Text(device.udn)
                 }
                 LabeledContent("Last Selected") {
                     Text(device.lastSelectedAt?.formatted() ?? "Never")
+                    
                 }
                 LabeledContent("Last Online") {
                     Text(device.lastOnlineAt?.formatted() ?? "Never")
                 }
+                
                 LabeledContent("Power State") {
                     Text(device.powerMode ?? "--")
                 }
+                
                 LabeledContent("Network State") {
                     Text(device.networkType ?? "--")
                 }
+                
                 LabeledContent("Wifi MAC") {
                     Text(device.wifiMAC ?? "--")
                 }
+                
                 LabeledContent("Ethernet MAC") {
                     Text(device.ethernetMAC ?? "--")
                 }
-                
                 
                 LabeledContent("Supports private listening") {
                     if let supportsDatagram = device.supportsDatagram {
@@ -505,6 +544,7 @@ struct DeviceDetailView: View {
                         Text("Unknown")
                     }
                 }
+                
                 LabeledContent("RTCP Port") {
                     if let rtcpPort = device.rtcpPort {
                         Text("\(rtcpPort)")
@@ -512,6 +552,10 @@ struct DeviceDetailView: View {
                         Text("Unknown")
                     }
                 }
+                #if os(tvOS)
+                .focusable()
+                #endif
+                
             }
         }
         .formStyle(.grouped)
@@ -538,6 +582,7 @@ struct DeviceDetailView: View {
                 await saveDevice()
             }
         }
+#if !os(tvOS)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Save", systemImage: "checkmark", action: {
@@ -563,6 +608,7 @@ struct DeviceDetailView: View {
                 .foregroundStyle(Color.red)
             }
         }
+#endif
         .onAppear {
             let modelContainer = modelContext.container
             self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)

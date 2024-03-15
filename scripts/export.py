@@ -19,6 +19,8 @@ def archive_application(platform: str, render_github_actions: bool = False):
     scheme = "Roam"
     project_path = "."
     archive_path = f"{project_path}/Archives/XCArchives/{platform}.xcarchive"
+    # First remove directory and all its contents
+    subprocess.run(f'rm -rf "{archive_path}"', shell=True)
     print(f"Archiving application for platform {platform}")
     subprocess.run(
         f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}' | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
@@ -29,14 +31,6 @@ def archive_application(platform: str, render_github_actions: bool = False):
 
 
 def publish_to_app_store(platform: str, render_github_actions: bool = False):
-    extensions = {
-        "ios": "ipa",
-        "tvos": "ipa",
-        "macos": "pkg",
-        "watchos": "ipa",
-        "visionos": "ipa",
-    }
-    extension = extensions[platform.lower()]
     print(f"Exporting for platform {platform}")
     subprocess.run(
         f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./scripts/options.plist | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
@@ -44,18 +38,6 @@ def publish_to_app_store(platform: str, render_github_actions: bool = False):
         check=True,
     )
 
-    print(f"Validating application for platform {platform} with extension {extension}")
-    subprocess.run(
-        f"""xcrun altool --validate-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
-        shell=True,
-        check=True,
-    )
-    print(f"Uploading application for platform {platform} with extension {extension}")
-    subprocess.run(
-        f"""xcrun altool --upload-app -f "./Archives/Exports/{platform}/Roam.{extension}" -t "{platform.lower()}" --apiKey $XCODE_API_KEY --apiIssuer $XCODE_API_ISSUER""",
-        shell=True,
-        check=True,
-    )
     print(f"Publish succeeded for platform {platform}")
 
 

@@ -15,6 +15,7 @@
 		AF0042852AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
 		AF0042862AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
 		AF0042872AEABA9F0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
+		AF06AAD82BA3798E002C8FAF /* libwebp in Frameworks */ = {isa = PBXBuildFile; platformFilters = (tvos, ); productRef = AF06AAD72BA3798E002C8FAF /* libwebp */; };
 		AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
 		AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
 		AF0C828A2AEB463400CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
@@ -67,10 +68,11 @@
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
 		AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */; };
 		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; platformFilters = (ios, macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF35ACEB2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */; };
 		AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */; };
 		AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5542AE2910B00E2D780 /* CenterController.swift */; };
 		AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5562AE2928600E2D780 /* TopBar.swift */; };
-		AF3AD5592AE2940A00E2D780 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */; };
+		AF3AD5592AE2940A00E2D780 /* KeyboardMonitorAppKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5582AE2940A00E2D780 /* KeyboardMonitorAppKit.swift */; };
 		AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */; };
 		AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */; };
 		AF3D62D72AE6F703006AB8E9 /* OpusDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */; };
@@ -234,10 +236,12 @@
 		AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWidgetsBundle.swift; sourceTree = "<group>"; };
 		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWidgets.entitlements; sourceTree = "<group>"; };
+		AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeyboardMonitorUIKit.swift; sourceTree = "<group>"; };
+		AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonGrid.swift; sourceTree = "<group>"; };
 		AF3AD5542AE2910B00E2D780 /* CenterController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CenterController.swift; sourceTree = "<group>"; };
 		AF3AD5562AE2928600E2D780 /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBar.swift; sourceTree = "<group>"; };
-		AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMonitor.swift; sourceTree = "<group>"; };
+		AF3AD5582AE2940A00E2D780 /* KeyboardMonitorAppKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMonitorAppKit.swift; sourceTree = "<group>"; };
 		AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEntry.swift; sourceTree = "<group>"; };
 		AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusDecoder.swift; sourceTree = "<group>"; };
@@ -323,6 +327,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AFECDE202AE18519003F6676 /* RTP in Frameworks */,
+				AF06AAD82BA3798E002C8FAF /* libwebp in Frameworks */,
 				AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */,
 				AFECDE1D2AE18511003F6676 /* Opus in Frameworks */,
 				AF19CA212AE4536700A42DFF /* AsyncAlgorithms in Frameworks */,
@@ -341,7 +346,8 @@
 				AF3AD5562AE2928600E2D780 /* TopBar.swift */,
 				AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */,
 				AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */,
-				AF3AD5582AE2940A00E2D780 /* KeyboardMonitor.swift */,
+				AF3AD5582AE2940A00E2D780 /* KeyboardMonitorAppKit.swift */,
+				AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */,
 				AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */,
 				AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */,
 				AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */,
@@ -498,6 +504,7 @@
 		AFC24EF22AD0E5A1002AB66C = {
 			isa = PBXGroup;
 			children = (
+				AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */,
 				AF9FC8232B9F9C9500109268 /* scripts */,
 				AFA165C32AE93FE1003F45ED /* AppIcons */,
 				AF95B6F62ADF2F9F005FC338 /* README.md */,
@@ -631,6 +638,7 @@
 				AFECDE1C2AE18511003F6676 /* Opus */,
 				AFECDE1F2AE18519003F6676 /* RTP */,
 				AF19CA202AE4536700A42DFF /* AsyncAlgorithms */,
+				AF06AAD72BA3798E002C8FAF /* libwebp */,
 			);
 			productName = BetterRemote;
 			productReference = AFC24EFB2AD0E5A1002AB66C /* Roam.app */;
@@ -807,6 +815,7 @@
 				AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */,
 				AFED424A2AEE8F3B0023D684 /* VolumeListener.swift in Sources */,
 				AFF607802ADFACBA00A7D657 /* Scanner.swift in Sources */,
+				AF35ACEB2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift in Sources */,
 				AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */,
 				AF0C82992AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF19CA232AE455B400A42DFF /* DataHelpers.swift in Sources */,
@@ -847,7 +856,7 @@
 				AF19CA1B2AE4510900A42DFF /* RTP.swift in Sources */,
 				AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */,
 				AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */,
-				AF3AD5592AE2940A00E2D780 /* KeyboardMonitor.swift in Sources */,
+				AF3AD5592AE2940A00E2D780 /* KeyboardMonitorAppKit.swift in Sources */,
 				AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 				AF19CA2E2AE692E600A42DFF /* AsyncBufferedChannel.swift in Sources */,
@@ -1057,7 +1066,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240313.5261740.8;
+				CURRENT_PROJECT_VERSION = 20240314.7474992.10;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1129,7 +1138,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240313.5261740.8;
+				CURRENT_PROJECT_VERSION = 20240314.7474992.10;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1163,6 +1172,8 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=appletvos*]" = AppIconTVOS;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=appletvsimulator*]" = AppIconTVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = AppIconVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = AppIconVOS;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1209,6 +1220,8 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=appletvos*]" = AppIconTVOS;
+				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=appletvsimulator*]" = AppIconTVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = AppIconVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = AppIconVOS;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1336,6 +1349,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		AF0042822AEAA3ED0051BB1E /* libwebp */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */;
+			productName = libwebp;
+		};
+		AF06AAD72BA3798E002C8FAF /* libwebp */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */;
 			productName = libwebp;

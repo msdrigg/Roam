@@ -1,5 +1,19 @@
 import SwiftUI
 
+#if os(tvOS) || os(visionOS)
+let GRID_WIDTH: CGFloat = 100
+let GRID_SPACING: CGFloat = 20
+let GRID_HEIGHT: CGFloat = 130
+#elseif os(visionOS)
+let GRID_WIDTH: CGFloat = 80
+let GRID_SPACING: CGFloat = 20
+let GRID_HEIGHT: CGFloat = 130
+#else
+let GRID_WIDTH: CGFloat = 60
+let GRID_SPACING: CGFloat = 10
+let GRID_HEIGHT: CGFloat = 80
+#endif
+
 struct AppLinksView: View {
     var appLinks: [AppLinkAppEntity]
     var handleOpenApp: (AppLinkAppEntity) -> Void
@@ -38,7 +52,8 @@ struct AppLinksView: View {
         GeometryReader { geometry in
             ScrollView(.horizontal, showsIndicators: false) {
                 Spacer()
-                LazyHGrid(rows: Array(repeating: GridItem(.fixed(60)), count: rows), spacing: 10) {
+                LazyHGrid(rows: Array(repeating:
+                    GridItem(.fixed(CGFloat(GRID_WIDTH))), count: rows), spacing: GRID_SPACING) {
                     ForEach(Array(cachedAppLinks.enumerated()), id: \.element.id) { index, app in
                         AppLinkButton(app: app, action: handleOpenApp)
                     }
@@ -56,7 +71,7 @@ struct AppLinksView: View {
             }
             .scrollTargetBehavior(.viewAligned)
             .safeAreaPadding(.horizontal, 4)
-        }.frame(height: 80 * CGFloat(rows))
+        }.frame(height: (GRID_HEIGHT) * CGFloat(rows))
             .animation(.interpolatingSpring, value: cachedAppLinks)
             .onChange(of: appIdsIconsHashed) {
                 cachedAppLinks = appLinks
@@ -76,15 +91,19 @@ struct AppLinkButton: View {
                 DataImage(from: app.icon, fallback: "questionmark.app")
                     .resizable().aspectRatio(contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .frame(width: 60, height: 44)
+                    .frame(width: GRID_WIDTH)
                     .shadow(radius: 4)
                 
                 
                 Text(app.name)
+                #if os(tvOS) || os(visionOS)
+                    .font(.body)
+                #else
                     .font(.caption)
+                #endif
                     .truncationMode(.tail)
                     .lineLimit(1)
-                    .frame(maxWidth: 60)
+                    .frame(maxWidth: GRID_WIDTH)
             }
         }
         .buttonStyle(.plain)
