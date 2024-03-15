@@ -69,6 +69,8 @@
 		AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */; };
 		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; platformFilters = (ios, macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF35ACEB2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */; };
+		AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */; };
+		AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */; };
 		AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */; };
 		AF3AD5552AE2910B00E2D780 /* CenterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5542AE2910B00E2D780 /* CenterController.swift */; };
 		AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3AD5562AE2928600E2D780 /* TopBar.swift */; };
@@ -697,6 +699,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */,
 				AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */,
 			);
@@ -715,6 +718,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */,
 				AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */,
 			);
