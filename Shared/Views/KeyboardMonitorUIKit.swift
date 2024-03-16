@@ -16,7 +16,9 @@ struct OnKeyPressModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         if enabled {
-            content.overlay(KeyHandlingViewRepresentable(onKeyPress: onKeyPress), alignment: .bottom)
+            content.background(
+                KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
+            )
         } else {
             content
         }
@@ -47,6 +49,10 @@ class KeyHandlingUIView: UIView {
         super.init(frame: .zero)
         self.isUserInteractionEnabled = true
         self.becomeFirstResponder()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.becomeFirstResponder()
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -55,9 +61,7 @@ class KeyHandlingUIView: UIView {
     
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        if window != nil {
-            self.becomeFirstResponder()
-        }
+        self.becomeFirstResponder()
     }
     
     override var canBecomeFirstResponder: Bool { return true }

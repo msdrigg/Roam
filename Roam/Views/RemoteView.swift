@@ -535,14 +535,13 @@ struct RemoteView: View {
                 if !hideUIForKeyboardEntry {
                     Spacer()
                     VStack {
-                        Spacer()
+                        Spacer().frame(maxHeight: 100)
                         // Center Controller with directional buttons
                         CenterController(pressCounter: buttonPressCount, action: pressButton)
                             .transition(.scale.combined(with: .opacity))
                             .matchedGeometryEffect(id: "centerController", in: animation)
-                        Spacer()
+                        Spacer().frame(maxHeight: 100)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 #if os(macOS) || os(tvOS)
                     .focusSection()
 #endif

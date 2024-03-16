@@ -16,7 +16,9 @@ struct OnKeyPressModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         if enabled {
-            content.overlay(KeyHandlingViewRepresentable(onKeyPress: onKeyPress), alignment: .bottom)
+            content.background(
+                KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
+            )
         } else {
             content
         }
@@ -46,6 +48,11 @@ struct KeyHandlingViewRepresentable: NSViewRepresentable {
             self.onKeyPress = onKeyPress
             super.init(frame: .zero)
             self.becomeFirstResponder()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self.becomeFirstResponder()
+                NSApp.mainWindow?.makeFirstResponder(self)
+            }
         }
 
         required init?(coder: NSCoder) {
@@ -64,11 +71,19 @@ struct KeyHandlingViewRepresentable: NSViewRepresentable {
         
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
+            self.becomeFirstResponder()
             window?.makeFirstResponder(self)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                if let self {
+                    self.becomeFirstResponder()
+                    NSApp.mainWindow?.makeFirstResponder(self)
+                }
+            }
         }
         
         override func viewDidMoveToSuperview() {
             super.viewDidMoveToSuperview()
+            self.becomeFirstResponder()
             window?.makeFirstResponder(self)
         }
     }
