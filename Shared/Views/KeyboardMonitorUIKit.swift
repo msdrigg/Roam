@@ -10,14 +10,22 @@ import Foundation
 import SwiftUI
 import UIKit
 
-import SwiftUI
-
-struct KeyboardMonitor: View {
+struct OnKeyPressModifier: ViewModifier {
     let onKeyPress: (KeyEquivalent) -> Void
+    let enabled: Bool
+    
+    func body(content: Content) -> some View {
+        if enabled {
+            content.overlay(KeyHandlingViewRepresentable(onKeyPress: onKeyPress), alignment: .bottom)
+        } else {
+            content
+        }
+    }
+}
 
-    var body: some View {
-        KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
-            .frame(width: 0, height: 0, alignment: .center)
+extension View {
+    func onKeyDown(_ onKeyPress: @escaping (KeyEquivalent) -> Void, enabled: Bool = true) -> some View {
+        self.modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled))
     }
 }
 
@@ -51,7 +59,7 @@ class KeyHandlingUIView: UIView {
             self.becomeFirstResponder()
         }
     }
-
+    
     override var canBecomeFirstResponder: Bool { return true }
 
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {

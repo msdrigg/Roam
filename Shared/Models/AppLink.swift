@@ -49,7 +49,7 @@ func loadPreviewAsset(_ assetName: String) -> Data? {
     
     guard let file = Bundle.main.url(forResource: assetName, withExtension: nil)
     else {
-        print("Couldn't find \(assetName) in preview xcassets.")
+        os_log(.error, "Couldn't find \(assetName) in preview xcassets.")
         return nil
     }
     
@@ -57,7 +57,7 @@ func loadPreviewAsset(_ assetName: String) -> Data? {
     do {
         data = try Data(contentsOf: file)
     } catch {
-        print("Couldn't load \(assetName) from preview xcassets:\n\(error)")
+        os_log(.error, "Couldn't load \(assetName) from preview xcassets:\n\(error)")
         return nil
     }
     return data

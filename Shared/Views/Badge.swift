@@ -11,6 +11,8 @@ struct BadgeLabelStyle: LabelStyle {
             configuration.title
         }
             .padding(.horizontal, 6)
+            .truncationMode(.tail)
+            .lineLimit(1)
             .padding(.vertical, 3)
             .background(color)
             .clipShape(Capsule())
@@ -25,6 +27,7 @@ extension LabelStyle where Self == BadgeLabelStyle {
     }
 }
 
+#if canImport(UIKit)
 extension Color {
     var isLightColor: Bool {
         var red: CGFloat = 0
@@ -36,6 +39,23 @@ extension Color {
         return brightness > 0.5
     }
 }
+#else
+extension Color {
+    var isLightColor: Bool {
+        guard let rgbColor = NSColor(self).usingColorSpace(.deviceRGB) else {
+            return false
+        }
+        
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        rgbColor.getRed(&red, green: &green, blue: &blue, alpha: nil)
+        
+        let brightness = (red * 299 + green * 587 + blue * 114) / 1000
+        return brightness > 0.5
+    }
+}
+#endif
 
 #Preview("About") {
     Label("Test Badge!", systemImage: "keyboard")

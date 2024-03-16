@@ -94,6 +94,7 @@
 		AF779BF72BA4DDD000231BC5 /* WrappingHStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BF62BA4DDD000231BC5 /* WrappingHStack.swift */; };
 		AF779BF82BA4DE2200231BC5 /* WrappingHStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BF62BA4DDD000231BC5 /* WrappingHStack.swift */; };
 		AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF607892AE0037900A7D657 /* WidgetIntents.swift */; };
+		AF842A5D2BA554E5005D52D2 /* CaptureScrollWheelModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BF22BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift */; };
 		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
 		AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */; };
@@ -814,6 +815,7 @@
 				AF0C82972AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */,
 				AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */,
 				AF0C82932AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
+				AF842A5D2BA554E5005D52D2 /* CaptureScrollWheelModifier.swift in Sources */,
 				AF19CA152AE4471200A42DFF /* AsyncHelpers.swift in Sources */,
 				AF205B262AE02D0100041CDF /* Device.swift in Sources */,
 			);
