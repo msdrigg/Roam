@@ -5,7 +5,7 @@ Roam offers everything you want and nothing you don't
 -   Runs on Mac, iPhone, iPad, Apple Watch, Vision Pro or Apple TV!
 -   Smart platform integration with keyboard shortcuts on Mac, using hardware volume buttons to control TV Volume on iOS
 -   Use shortcuts and widgets to control your TV without ever opening the app!
--   Private listening support on Mac, iPad, iPhone, VisionOS, and Apple TV (play the audio from your TV through your device)
+-   Headphones mode (a.k.a. private listening) support on Mac, iPad, iPhone, VisionOS, and Apple TV (play the audio from your TV through your device)
 -   Discover devices on your local network as soon as you open the app
 -   Intuitive design with apple's native SwiftUI design system
 -   Fast and lightweight, less than 5 MB on all devices and opens in less than half a second!
@@ -15,8 +15,8 @@ Roam offers everything you want and nothing you don't
 
 -   What can I do if Roam doesn't auto-discover my TV
     -   [See here](/manually-add-tv)
--   Why doesn't private-listening work on my TV?
-    -   Private listening currently isn't working on some TV's. If private listening doesn't work with Roam, but works with the official Roku app, please share your Roku's model name and any other relevant information in an email to [roam-support@msd3.io](mailto:roam-support@msd3.io). Your report will help me figure out where to look when trying to fix this bug.
+-   Why doesn't headphones mode (a.k.a. private listening) work on my TV?
+    -   Headphones mode currently isn't working on some TV's. If headphones mode doesn't work with Roam, but works with the official Roku app, please share your Roku's model name and any other relevant information in an email to [roam-support@msd3.io](mailto:roam-support@msd3.io). Your report will help me figure out where to look when trying to fix this bug.
 -   What if I have another problem or want to provide feedback
     -   If it's a bug, it is be best to go initiate a feedback report from the application
         -   Go into the Roam app and open the settings page

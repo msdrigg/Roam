@@ -39,7 +39,7 @@ enum RemoteButtonAppEnum: String, AppEnum {
     case inputHDMI3 = "InputHDMI3"
     case inputHDMI4 = "InputHDMI4"
     case inputAV1 = "InputAV1"
-    case privateListening = "PrivateListening"
+    case headphonesMode = "HeadphonesMode"
     
     
     public static var typeDisplayName: String = "Button"
@@ -75,7 +75,7 @@ enum RemoteButtonAppEnum: String, AppEnum {
         .inputHDMI3: "Input HDMI 3",
         .inputHDMI4: "Input HDMI 4",
         .inputAV1: "Input AV 1",
-        .privateListening: "Private Listening"
+        .headphonesMode: "Headphones Mode"
     ]
     
     var button: RemoteButton {
@@ -140,8 +140,8 @@ enum RemoteButtonAppEnum: String, AppEnum {
             return .inputHDMI4
         case .inputAV1:
             return .inputAV1
-        case .privateListening:
-            return .privateListening
+        case .headphonesMode:
+            return .headphonesMode
         }
     }
     
@@ -207,8 +207,8 @@ enum RemoteButtonAppEnum: String, AppEnum {
             self = .inputHDMI4
         case .inputAV1:
             self = .inputAV1
-        case .privateListening:
-            self = .privateListening
+        case .headphonesMode:
+            self = .headphonesMode
         }
     }
 

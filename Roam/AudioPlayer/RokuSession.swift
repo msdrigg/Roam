@@ -8,7 +8,7 @@ typealias WebSocketStream = AsyncThrowingStream<URLSessionWebSocketTask.Message,
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
-    category: "PrivateListening"
+    category: "HeadphonesMode"
 )
 
 let HOST_RTP_PORT: UInt16 = 6970
@@ -18,21 +18,21 @@ let RTP_PAYLOAD_TYPE = 97
 let CLOCK_RATE = 48000
 let PACKET_SIZE_MS: Int64 = 10
 
-enum PrivateListeningError: Error, LocalizedError {
+enum HeadphonesModeError: Error, LocalizedError {
     case BadURL
 }
 
 func listenContinually(ecpSession: ECPSession, location: String, rtcpPort: UInt16?) async throws {
     do {
         try await withThrowingDiscardingTaskGroup{ taskGroup in
-            logger.info("Starting private listening")
+            logger.info("Starting headphones mode")
             
             let rtpSession: RTPSession
             if let url = URL(string: location), let host = url.host() {
                 rtpSession = try RTPSession(localRTPPort: HOST_RTP_PORT, localRTCPPort: HOST_RTCP_PORT, remoteRTCPPort: rtcpPort ?? DEFAULT_REMOTE_RTCP_PORT, remoteRTCPAddress: host)
             } else {
                 logger.error("Error getting RTPSession")
-                throw PrivateListeningError.BadURL
+                throw HeadphonesModeError.BadURL
             }
             taskGroup.addTask {
                 try await rtpSession.streamAudio()
@@ -41,11 +41,11 @@ func listenContinually(ecpSession: ECPSession, location: String, rtcpPort: UInt1
             
             taskGroup.addTask{
                 do {
-                    try await ecpSession.requestPrivateListening()
+                    try await ecpSession.requestHeadphonesMode()
                     await Task.sleepUntilCancelled()
                 } catch {
                     if !(error is CancellationError) {
-                        logger.error("Error requesting private listing \(error)")
+                        logger.error("Error requesting headphones mode \(error)")
                     }
                     throw error
                 }
@@ -69,7 +69,7 @@ func listenContinually(ecpSession: ECPSession, location: String, rtcpPort: UInt1
             }
         }
     } catch {
-        logger.error("Error among private listening tasks \(error)")
+        logger.error("Error among headphones mode tasks \(error)")
         throw error
     }
 }

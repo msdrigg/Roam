@@ -31,7 +31,7 @@ let HORIZONTAL_MIN_WIDTH: CGFloat = 400
 let TOOLBAR_SHRINK_WIDTH: CGFloat = 300
 
 
-let MAJOR_ACTIONS: [RemoteButton] = [.power, .playPause, .mute, .privateListening]
+let MAJOR_ACTIONS: [RemoteButton] = [.power, .playPause, .mute, .headphonesMode]
 
 private let deviceFetchDescriptor: FetchDescriptor<Device> = {
     var fd = FetchDescriptor(
@@ -67,11 +67,11 @@ struct RemoteView: View {
     @State var inBackground: Bool = false
     @State var buttonPresses: [RemoteButton: Int] = [:]
     @State private var navigationPath: NavigationPath = NavigationPath()
-    @State private var privateListeningEnabled: Bool = false
+    @State private var headphonesModeEnabled: Bool = false
     @State private var errorTrigger: Int = 0
     @State private var ecpSession: ECPSession? = nil
     @StateObject private var networkMonitor = NetworkMonitor()
-    var privateListeningDisabled: Bool {
+    var headphonesModeDisabled: Bool {
         return selectedDevice?.supportsDatagram == true
     }
     var hideUIForKeyboardEntry: Bool {
@@ -250,12 +250,12 @@ struct RemoteView: View {
                     await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                 }
             }
-            .task(id: "\(privateListeningEnabled),\(selectedDevice?.location ?? "--")") {
-                if !privateListeningEnabled {
+            .task(id: "\(headphonesModeEnabled),\(selectedDevice?.location ?? "--")") {
+                if !headphonesModeEnabled {
                     return
                 }
                 defer {
-                    privateListeningEnabled = false
+                    headphonesModeEnabled = false
                 }
                 
                 if let device = selectedDevice, let ecpSession = ecpSession {
@@ -362,7 +362,7 @@ struct RemoteView: View {
 #if !os(macOS)
             .overlay {
 #if os(iOS)
-                if controlVolumeWithHWButtons && !privateListeningEnabled {
+                if controlVolumeWithHWButtons && !headphonesModeEnabled {
                     CustomVolumeSliderOverlay(volume: $volume) { volumeEvent in
                         let key: RemoteButton
                         switch volumeEvent.direction {
@@ -564,7 +564,7 @@ struct RemoteView: View {
                         Spacer().frame(maxHeight: 60)
                         
                         // Grid of 9 buttons
-                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: privateListeningDisabled ? Set([]) : Set([.privateListening]) )
+                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([]) : Set([.headphonesMode]) )
 #if os(macOS) || os(tvOS)
                             .focusSection()
 #endif
@@ -670,7 +670,7 @@ struct RemoteView: View {
                 
                 Spacer()
                 // Grid of 9 buttons
-                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: privateListeningEnabled ? Set([.privateListening]) : Set([]), disabled: privateListeningDisabled ? Set([]) : Set([.privateListening]) )
+                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([]) : Set([.headphonesMode]) )
                     .transition(.scale.combined(with: .opacity))
                     .matchedGeometryEffect(id: "buttonGrid", in: animation)
                 
@@ -724,8 +724,8 @@ struct RemoteView: View {
 #if !os(tvOS)
         donateButtonIntent(button)
 #endif
-        if button == .privateListening {
-            privateListeningEnabled.toggle()
+        if button == .headphonesMode {
+            headphonesModeEnabled.toggle()
             return
         }
         

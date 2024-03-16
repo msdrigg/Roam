@@ -15,19 +15,13 @@
     - On all changes after reconnecting (through notify or anything)
         - Update Device (stored) and DeviceState (voilatile)
     - After reconnecting/disconnecting, update online status in remote view
-- Update device settings view
-    - On !watchOS show capsule badges for supported features (supports private listening, supports volume control) OR unsupported features on the list UI
-    - On all views, in the list of settings/information, show support private listening (y/n), can support volume controls (With headphones, datagram, …), can’t support headphones with …, unknown modes: …
-    - On all views add a “No Training Wheels Mode” toggle
-        - Allow clicking buttons that the devices says it doesn’t support
-- Update user notification
+- Update user messaging when errors may occur
     - When clicking on a disabled button, open popover to show why it’s disabled
         - Show a info indicator on the button to indicate that information can be received when it’s clicked?
-        - Private listening disabled -> because device doesn’t support private-listening to this app
-        - Volume control disabled -> because the audio is outputting over HDMI which does not support volume controls
+        - Headphones mode disabled -> because device doesn’t support headphones mode to this app
+        - Volume control disabled -> because the audio is outputting over HDMI which does not support volume controls?
     - When connected to the device, always disable the network warnings
-    - When trying to connect to the device, show spinning information icon instead of gray dot
-    - When trying to power on the device, also show a spinning information icon
+    - When trying to connect to the device, or trying to power on the device, show spinning information icon instead of gray dot
     - When powering on the device and succeeding, show an animation on transition from gray -> spinning -> green
     - When powering on the device with WOL and not connecting after 5 seconds, or when powering on the device and immediately failing, show a warning message underneath the wifi one
         - “We weren’t able to wake your Roku” (Find out more) (Don’t show again for this device), (X)
@@ -40,13 +34,9 @@
     - When actively scanning for devices and no new ones are found show a warning message underneath the device list
         - “We weren’t able to wake your Roku” (Find out why), (X)
         - Find out more shows a popup with some reasons why this may be happening
-            - The device is turned off (we can’t discover a device that isn’t turned on)
-            - You aren’t connected to the same network (Can we show the device network name?)
-            - You are connected to a cellular connection
-            - Suggest manually adding a device
-            - Link to this article to see more troubleshooting https://support.roku.com/article/115001480188
-        - Dismiss when tv connects
-- Update keyboard handling (All but macOS)
+            - Make sure your device is powered on and connected to the same wifi network as your app. If this still doesn't work, try adding the device manually.
+            - Link https://roam.msd3.io/manually-add-tv.md and https://support.roku.com/article/115001480188 for more troubleshooting 
+- Update keyboard handling to support ecp-textedit (All but macOS)
     - Show keyboard when textedit is opened
     - Hide keyboard when textedit closed
     - If ecp-textedit is supported, allow selecting, deleting text and moving cursor. Just re-send text each time it changes if this is supported.
