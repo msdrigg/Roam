@@ -72,7 +72,7 @@ struct RemoteView: View {
     @State private var ecpSession: ECPSession? = nil
     @StateObject private var networkMonitor = NetworkMonitor()
     var headphonesModeDisabled: Bool {
-        return selectedDevice?.supportsDatagram == true
+        return selectedDevice?.supportsDatagram ?? true
     }
     var hideUIForKeyboardEntry: Bool {
 #if os(iOS)
@@ -344,10 +344,6 @@ struct RemoteView: View {
                         verticalBody()
                     }
                     
-                    if !showKeyboardEntry {
-                        KeyboardMonitor(onKeyPress: {key in pressKey(key)})
-                    }
-                    
                     if hideUIForKeyboardEntry {
                         Spacer()
                     } else {
@@ -419,6 +415,7 @@ struct RemoteView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, 10)
+            .onKeyDown({key in pressKey(key)}, enabled: !showKeyboardEntry)
 #if !os(tvOS)
             .toolbar {
 #if !os(macOS)

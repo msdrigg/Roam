@@ -14,25 +14,6 @@ import OrderedCollections
 /// particularly when one task produces values and another task consumes those values. The values are
 /// buffered awaiting a consumer to consume them from iteration.
 /// `finish()` and `fail()` induce a terminal state and no further elements can be sent.
-///
-/// ```swift
-/// let channel = AsyncThrowingBufferedChannel<Int, Error>()
-///
-/// Task {
-///   do {
-///     for try await element in channel {
-///       print(element) // will print 1, 2, 3
-///     }
-///   } catch {
-///     print(error) // will catch MyError
-///   }
-/// }
-///
-/// sut.send(1)
-/// sut.send(2)
-/// sut.send(3)
-/// sut.fail(MyError())
-/// ```
 public final class AsyncThrowingBufferedChannel<Element, Failure: Error>: AsyncSequence, Sendable where Element: Sendable {
   public typealias Element = Element
   public typealias AsyncIterator = Iterator

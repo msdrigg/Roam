@@ -15,7 +15,7 @@ let DEVICE_ICON_SIZE: CGFloat = 42.0
 let CIRCLE_SIZE: CGFloat = 14
 #elseif os(macOS)
 let DEVICE_ICON_SIZE: CGFloat = 32.0
-let CIRCLE_SIZE: CGFloat = 12
+let CIRCLE_SIZE: CGFloat = 10
 #else
 let DEVICE_ICON_SIZE: CGFloat = 24.0
 let CIRCLE_SIZE: CGFloat = 10
@@ -393,7 +393,7 @@ struct DeviceListItem: View {
                             .frame(width: CIRCLE_SIZE, height: CIRCLE_SIZE)
                         Text(device.name).lineLimit(1)
                     }
-                    WrappingHStack(alignment: .center, horizontalSpacing: 12, verticalSpacing: 12, fitContentWidth: true) {
+                    WrappingHStack(alignment: .bottomLeading, horizontalSpacing: 12, verticalSpacing: 12, fitContentWidth: true) {
                         Text(getHost(from: device.location)).foregroundStyle(Color.secondary).lineLimit(1)
 #if !os(watchOS)
                         if device.supportsDatagram == true {
@@ -485,6 +485,8 @@ struct DeviceDetailView: View {
     @State var deviceName: String = ""
     @State var deviceIP: String = ""
     
+    @State var showHeadphonesModeDescription: Bool = false
+    
     var dismiss: () -> Void
     
     var body: some View {
@@ -519,25 +521,43 @@ struct DeviceDetailView: View {
             
             #if !os(watchOS)
             Section("Private listening") {
-                LabeledContent("Supports headphones mode") {
-                    if device.supportsDatagram == true {
-                        Label("Supported", systemImage: "headphones").labelStyle(.badge(.green))
-                    } else if device.supportsDatagram == false {
-                        Label("Not supported", systemImage: "headphones").labelStyle(.badge(.red))
-                    } else {
-                        Label("Support unknown", systemImage: "headphones").labelStyle(.badge(.yellow))
+                Button(action: {
+                    withAnimation {
+                        showHeadphonesModeDescription = !showHeadphonesModeDescription
                     }
+                }) {
+                    LabeledContent("Supports headphones mode") {
+                        HStack(spacing: 8) {
+                            if device.supportsDatagram == true {
+                                Label("Supported", systemImage: "headphones").labelStyle(.badge(.green))
+                            } else if device.supportsDatagram == false {
+                                Label("Not supported", systemImage: "headphones").labelStyle(.badge(.red))
+                            } else {
+                                Label("Support unknown", systemImage: "headphones").labelStyle(.badge(.yellow))
+                            }
+                            
+                            Image(systemName: "info.circle")
+                            
+                        }
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 
-                if device.supportsDatagram == true {
-                    Text("Your Roku device supports streaming audio directly to your Roam app. Click the headphones button in the main view to see it in action!")
-                        .foregroundStyle(.secondary)
-                } else if device.supportsDatagram == false {
-                    Text("Some Roku devices support streaming audio directly to the Roam app. Unfortunately yours does not support this. To see which devices support this check out https://www.roku.com/products/compare")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Some Roku devices support streaming audio directly to the Roam app. Your device isn't on the supported list, but it may work anyway. Click the headphones button in the main view to see if it works for you or visit https://www.roku.com/products/compare to see which devices do support this feature.")
-                        .foregroundStyle(.secondary)
+                if showHeadphonesModeDescription {
+                    if device.supportsDatagram == true {
+                        Text("Your Roku device supports streaming audio directly to Roam. Click the headphones button in the main view to see it in action!")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    } else if device.supportsDatagram == false {
+                        Text("Some Roku devices support streaming audio directly to Roam. Unfortunately yours does not support this. To see which devices support this check out https://www.roku.com/products/compare")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    } else {
+                        Text("Some Roku devices support streaming audio directly to Roam. Roam hasn't been able to check for support on this device. Click the headphones button in the main view to see if it works for you or visit https://www.roku.com/products/compare to see which devices do support this feature.")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
                 }
             }
             #endif

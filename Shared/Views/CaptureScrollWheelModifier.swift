@@ -27,35 +27,33 @@ struct CaptureVerticalScrollWheelModifier: ViewModifier {
             super.viewDidMoveToWindow()
             window?.makeFirstResponder(self)
         }
-
+        
         override func scrollWheel(with event: NSEvent) {
-            var scrollDist = event.deltaX
-            var scrollDelta = event.scrollingDeltaX
-            if abs(scrollDist) < abs(event.deltaY) {
-                scrollDist = event.deltaY
-                scrollDelta = event.scrollingDeltaY
+            var scrollDist = event.scrollingDeltaX
+            if abs(scrollDist) < 0.000001 {
+                scrollDist = event.scrollingDeltaY
             }
-            if event.phase == .began || event.phase == .changed || event.phase.rawValue == 0 {
-                // Directly handle scrolling
+            if !event.hasPreciseScrollingDeltas {
+                scrollDist *= 4
+            }
+            
+            // Handle legacy mice as event.phase == .none && event.momentumPhase == .none
+            if event.phase == .began || event.phase == .changed || (event.phase.rawValue == 0 && event.momentumPhase.rawValue == 0)  {
                 handleScroll(with: scrollDist)
-                
-                scrollVelocity = scrollDelta / 8
+                scrollVelocity = scrollDist * 1.4
             } else if event.phase == .ended {
-                // Begin decelerating
-                decelerationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] timer in
+                decelerationTimer = Timer.scheduledTimer(withTimeInterval: 0.009, repeats: true) { [weak self] timer in
                     guard let self = self else { timer.invalidate(); return }
                     self.decelerateScroll()
                 }
             } else if event.momentumPhase == .ended {
-                // Invalidate the timer if momentum scrolling has ended
                 decelerationTimer?.invalidate()
                 decelerationTimer = nil
             }
         }
 
         private func handleScroll(with delta: CGFloat) {
-            var scrollDist = delta
-            scrollDist *= 4
+            let scrollDist = delta
 
             guard let scrollView = self.enclosingScrollView else { return }
             let contentView = scrollView.contentView
@@ -65,19 +63,17 @@ struct CaptureVerticalScrollWheelModifier: ViewModifier {
             let currentPoint = contentView.bounds.origin
             var newX = currentPoint.x - scrollDist
 
-            // Calculate the maximum allowable X position (right edge of content)
+            // Clamp to viewable region
             let maxX = contentSize.width - scrollViewSize.width
-            // Ensure newX does not exceed the bounds
-            newX = max(newX, 0) // No less than 0 (left edge)
-            newX = min(newX, maxX) // No more than maxX (right edge)
+            newX = max(newX, 0)
+            newX = min(newX, maxX)
 
-            // Scroll to the new X position if it's within the bounds
             scrollView.contentView.scroll(to: NSPoint(x: newX, y: currentPoint.y))
             scrollView.reflectScrolledClipView(scrollView.contentView)
         }
 
         private func decelerateScroll() {
-            if abs(scrollVelocity) < 0.3 {
+            if abs(scrollVelocity) < 0.1 {
                 decelerationTimer?.invalidate()
                 decelerationTimer = nil
                 return

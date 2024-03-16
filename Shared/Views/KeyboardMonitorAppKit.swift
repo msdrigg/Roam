@@ -10,14 +10,25 @@ import Foundation
 import SwiftUI
 import AppKit
 
-struct KeyboardMonitor: View {
+struct OnKeyPressModifier: ViewModifier {
     let onKeyPress: (KeyEquivalent) -> Void
-
-    var body: some View {
-        Spacer().frame(maxWidth: 20, maxHeight: 20)
-        .background(KeyHandlingViewRepresentable(onKeyPress: onKeyPress))
+    let enabled: Bool
+    
+    func body(content: Content) -> some View {
+        if enabled {
+            content.overlay(KeyHandlingViewRepresentable(onKeyPress: onKeyPress), alignment: .bottom)
+        } else {
+            content
+        }
     }
 }
+
+extension View {
+    func onKeyDown(_ onKeyPress: @escaping (KeyEquivalent) -> Void, enabled: Bool = true) -> some View {
+        self.modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled))
+    }
+}
+
 
 struct KeyHandlingViewRepresentable: NSViewRepresentable {
     var onKeyPress: (KeyEquivalent) -> Void
@@ -53,9 +64,12 @@ struct KeyHandlingViewRepresentable: NSViewRepresentable {
         
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            if window != nil {
-                window?.makeFirstResponder(self)
-            }
+            window?.makeFirstResponder(self)
+        }
+        
+        override func viewDidMoveToSuperview() {
+            super.viewDidMoveToSuperview()
+            window?.makeFirstResponder(self)
         }
     }
 }
