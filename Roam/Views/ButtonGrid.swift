@@ -12,7 +12,7 @@ struct ButtonGrid: View  {
         let buttonRows: [[(String, String, RemoteButton, KeyEquivalent?)]] = [
             [("Replay", "arrow.uturn.backward", .instantReplay, nil),
              ("Options", "asterisk", .options, nil),
-             ("Private Listening", "headphones", .privateListening, nil)],
+             ("Headphones mode", "headphones", .headphonesMode, nil)],
             [("Rewind", "backward", .rewind, nil),
              ("Play/Pause", "playpause", .playPause, "p"),
              ("Fast Forward", "forward", .fastForward, nil)],
@@ -48,21 +48,6 @@ struct ButtonGrid: View  {
                     }
                 }
             }
-        }
-    }
-}
-
-extension View {
-    /// Applies the given transform if the given condition evaluates to `true`.
-    /// - Parameters:
-    ///   - condition: The condition to evaluate.
-    ///   - transform: The transform to apply to the source `View`.
-    /// - Returns: Either the original `View` or the modified `View` if the condition is `true`.
-    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
         }
     }
 }

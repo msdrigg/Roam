@@ -393,7 +393,18 @@ struct DeviceListItem: View {
                             .frame(width: CIRCLE_SIZE, height: CIRCLE_SIZE)
                         Text(device.name).lineLimit(1)
                     }
-                    Text(getHost(from: device.location)).foregroundStyle(Color.secondary).lineLimit(1)
+                    WrappingHStack(alignment: .center, horizontalSpacing: 12, verticalSpacing: 12, fitContentWidth: true) {
+                        Text(getHost(from: device.location)).foregroundStyle(Color.secondary).lineLimit(1)
+#if !os(watchOS)
+                        if device.supportsDatagram == true {
+                            Label("Supported", systemImage: "headphones").labelStyle(.badge(.green))
+                        } else if device.supportsDatagram == false {
+                            Label("Not supported", systemImage: "headphones").labelStyle(.badge(.red))
+                        } else {
+                            Label("Support unknown", systemImage: "headphones").labelStyle(.badge(.yellow))
+                        }
+#endif
+                    }
                 }
             }
         }
@@ -505,6 +516,34 @@ struct DeviceDetailView: View {
                 .foregroundStyle(Color.red)
 #endif
             }
+            
+            #if !os(watchOS)
+            Section("Private listening") {
+                LabeledContent("Supports headphones mode") {
+                    if device.supportsDatagram == true {
+                        Label("Supported", systemImage: "headphones").labelStyle(.badge(.green))
+                    } else if device.supportsDatagram == false {
+                        Label("Not supported", systemImage: "headphones").labelStyle(.badge(.red))
+                    } else {
+                        Label("Support unknown", systemImage: "headphones").labelStyle(.badge(.yellow))
+                    }
+                }
+                
+                if device.supportsDatagram == true {
+                    Text("Your Roku device supports streaming audio directly to your Roam app. Click the headphones button in the main view to see it in action!")
+                        .foregroundStyle(.secondary)
+                } else if device.supportsDatagram == false {
+                    Text("Some Roku devices support streaming audio directly to the Roam app. Unfortunately yours does not support this. To see which devices support this check out https://www.roku.com/products/compare")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Some Roku devices support streaming audio directly to the Roam app. Your device isn't on the supported list, but it may work anyway. Click the headphones button in the main view to see if it works for you or visit https://www.roku.com/products/compare to see which devices do support this feature.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            #endif
+            
+
+            
             Section("Info") {
                 LabeledContent("Id") {
                     Text(device.udn)
@@ -533,18 +572,6 @@ struct DeviceDetailView: View {
                     Text(device.ethernetMAC ?? "--")
                 }
                 
-                LabeledContent("Supports private listening") {
-                    if let supportsDatagram = device.supportsDatagram {
-                        if supportsDatagram {
-                            Text("Yes!")
-                        } else {
-                            Text("No :(")
-                        }
-                    } else {
-                        Text("Unknown")
-                    }
-                }
-                
                 LabeledContent("RTCP Port") {
                     if let rtcpPort = device.rtcpPort {
                         Text("\(rtcpPort)")
@@ -552,9 +579,9 @@ struct DeviceDetailView: View {
                         Text("Unknown")
                     }
                 }
-                #if os(tvOS)
+#if os(tvOS)
                 .focusable()
-                #endif
+#endif
                 
             }
         }

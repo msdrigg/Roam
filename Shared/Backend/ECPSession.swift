@@ -74,9 +74,9 @@ actor ECPSession {
     
     
 #if !os(watchOS)
-    public func requestPrivateListening() async throws {
+    public func requestHeadphonesMode() async throws {
         guard let connectingInterface = await tryConnectTCP(location: self.url.absoluteString, timeout: 3.0) else {
-            Self.logger.error("Unable to connect tcp to \(self.url.absoluteString) to request private listening")
+            Self.logger.error("Unable to connect tcp to \(self.url.absoluteString) to request headphones mode")
             throw ECPError.ConnectFailed
         }
         
@@ -88,7 +88,7 @@ actor ECPSession {
         let localAddress = localNWInterface.address.addressString
         Self.logger.debug("Got local address \(localAddress)")
         
-        let requestData = String(data: try encoder.encode(ConfigureAudioRequest.privateListening(hostIp: localAddress, requestId: self.getAndUpdateRequestId())), encoding: .utf8)!
+        let requestData = String(data: try encoder.encode(ConfigureAudioRequest.headphonesMode(hostIp: localAddress, requestId: self.getAndUpdateRequestId())), encoding: .utf8)!
         
         try await preInitWebsocket()
         
@@ -116,10 +116,10 @@ actor ECPSession {
         
         let authResponse = try decoder.decode(BaseResponse.self, from: plResponseData)
         if !authResponse.isSuccess {
-            Self.logger.error("Unable to start private listening on roku with response \(String(describing: authResponse))")
+            Self.logger.error("Unable to start headphones mode on roku with response \(String(describing: authResponse))")
             throw ECPError.PLStartFailed
         } else {
-            Self.logger.info("Started private listening successfully")
+            Self.logger.info("Started headphones mode successfully")
         }
         
     }
@@ -380,7 +380,7 @@ actor ECPSession {
         let requestId: String
         
 #if !os(watchOS)
-        static func privateListening(hostIp: String, requestId: Int) -> Self {
+        static func headphonesMode(hostIp: String, requestId: Int) -> Self {
             Self(paramDevname: "\(hostIp):\(HOST_RTP_PORT):\(RTP_PAYLOAD_TYPE):\(CLOCK_RATE / 50)", paramAudioOutput: "datagram", requestId: String(requestId))
         }
 #endif
