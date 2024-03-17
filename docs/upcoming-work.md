@@ -36,6 +36,7 @@
         - Find out more shows a popup with some reasons why this may be happening
             - Make sure your device is powered on and connected to the same wifi network as your app. If this still doesn't work, try adding the device manually.
             - Link https://roam.msd3.io/manually-add-tv.md and https://support.roku.com/article/115001480188 for more troubleshooting 
+- Add badge for supportsWakeOnWLAN
 - Update keyboard handling to support ecp-textedit (All but macOS)
     - Show keyboard when textedit is opened
     - Hide keyboard when textedit closed
