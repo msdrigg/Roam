@@ -8,12 +8,14 @@ public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Se
     public var id: String
     public var type: String
     public var icon: Data?
+    public var modelId: PersistentIdentifier
 
-    init(name: String, id: String, type: String, icon: Data?) {
+    init(name: String, id: String, type: String, icon: Data?, modelId: PersistentIdentifier) {
         self.name = name
         self.id = id
         self.type = type
         self.icon = icon
+        self.modelId = modelId
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -75,7 +77,7 @@ extension AppLinkAppEntity: AppEntity {
 
 public extension AppLink {
     func toAppEntity() -> AppLinkAppEntity {
-        return AppLinkAppEntity(name: self.name, id: self.id, type: self.type, icon: self.icon)
+        return AppLinkAppEntity(name: self.name, id: self.id, type: self.type, icon: self.icon, modelId: self.persistentModelID)
     }
 }
 

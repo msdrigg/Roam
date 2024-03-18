@@ -27,7 +27,7 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
         predicate: #Predicate {
             $0.deletedAt == nil
         },
-        sortBy: [SortDescriptor(\Device.lastSelectedAt)])
+        sortBy: [SortDescriptor(\Device.name)])
     fd.relationshipKeyPathsForPrefetching = [\.apps]
     fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt, \.deviceIcon]
     return fd
@@ -110,14 +110,13 @@ struct SettingsView: View {
     
     var body: some View {
         Form {
-            Section("Devices") {
+            Section {
                 if devices.isEmpty {
                     Text("No devices")
                         .foregroundStyle(Color.secondary)
                 } else {
-                    ForEach(devices) { device in
+                    ForEach(devices, id: \.displayHash) { device in
                         DeviceListItem(device: device)
-                            .id("\(device.name)\(device.udn)\(device.isOnline())\(device.location)")
 #if !os(watchOS)
                             .contextMenu {
                                 Button(role: .destructive) {
@@ -180,13 +179,39 @@ struct SettingsView: View {
                 
 #if os(macOS)
                 HStack {
-                    addDeviceButton
-                    
                     Spacer()
                     
-                    scanDevicesButton
+                    addDeviceButton
                 }
 #endif
+            } header: {
+                HStack {
+                    Text("Devices")
+#if os(macOS)
+                    Spacer()
+                    if isScanning {
+                        Label("Scanning for devices...", systemImage: "rays")
+                        .labelStyle(.iconOnly)
+                        .symbolEffect(.variableColor, isActive: isScanning)
+                        .padding(.init(top: 3, leading: 8, bottom: 3, trailing: 8))
+                        .offset(x: 6)
+                    } else {
+                        Button("Scan for devices", systemImage: "arrow.clockwise") {
+                            Task {
+                                isScanning = true
+                                defer {
+                                    isScanning = false
+                                }
+                                
+                                await scanningActor.scanIPV4Once()
+                            }
+                        }
+                        .buttonStyle(PaddedHoverButtonStyle(padding: .init(top: 3, leading: 8, bottom: 3, trailing: 8)))
+                        .labelStyle(.iconOnly)
+                        .offset(x: 6)
+                    }
+#endif
+                }
             }
             
 #if os(watchOS)
@@ -614,9 +639,6 @@ struct DeviceDetailView: View {
             Self.logger.info("Seeing host \(host) in change")
             deviceIP = host
         }
-        .onChange(of: deviceIP) { prev, new in
-            Self.logger.info("Changing from \(prev) to \(new)")
-        }
         .onAppear {
             deviceName = device.name
             let host = getHost(from: device.location)
@@ -673,6 +695,15 @@ struct DeviceDetailView: View {
         let cleanedString = deviceIP.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "'", with: "")
         let deviceUrl = addSchemeAndPort(to: cleanedString)
         Self.logger.info("Getting device url \(deviceUrl)")
+        // Save device id and location early
+        do {
+            try await deviceActor.updateDevice(
+                device.persistentModelID, name: deviceName, location: deviceUrl, udn: device.udn
+            )
+        } catch {
+            Self.logger.error("Error early saving device with location \(deviceUrl): \(error)")
+        }
+        
         let deviceInfo = await fetchDeviceInfo(location: deviceUrl)
         
         // If we get a device with a different UDN, replace the device
@@ -690,7 +721,7 @@ struct DeviceDetailView: View {
         }
         
         do {
-            Self.logger.info("Saving devicea abd \(deviceUrl) with da \(String(describing: deviceActor)) id \(String(describing: device.persistentModelID))")
+            Self.logger.info("Saving device \(deviceUrl) with id \(String(describing: device.persistentModelID))")
             try await deviceActor.updateDevice(
                 device.persistentModelID,
                 name: deviceName,

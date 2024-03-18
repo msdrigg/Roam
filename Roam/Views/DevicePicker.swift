@@ -17,6 +17,9 @@ struct DevicePicker: View {
     )
     
     @Environment(\.modelContext) private var modelContext
+    var deviceActor: DeviceActor {
+        DeviceActor(modelContainer: modelContext.container)
+    }
     
     let devices: [Device]
     @Binding var device: Device?
@@ -28,25 +31,30 @@ struct DevicePicker: View {
     var body: some View {
         Menu {
             if !devices.isEmpty {
-                Picker("Device", selection: $device) {
+                Picker("Device", selection: Binding<Device?>(
+                    get: {
+                        self.device
+                    },
+                    set: {
+                        self.device = $0
+                        if let pid = $0?.persistentModelID {
+                            Task {
+                                do {
+                                    try? await Task.sleep(duration: 0.5)
+                                    try await deviceActor.setSelectedDevice(pid)
+                                } catch {
+                                    Self.logger.error("Error setting selected device \(error)")
+                                }
+                            }
+                        }
+                    }
+                )) {
                     ForEach(devices) { device in
                         Text(device.name)
                             .lineLimit(1)
                             .tag(device as Device?)
                     }
-                }.pickerStyle(.inline).onChange(of: device) { _oldSelected, selected in
-                    if let chosenDevice = devices.first(where: { d in
-                        d.id == selected?.id
-                    }) {
-                        Self.logger.debug("Setting last selected at")
-                        chosenDevice.lastSelectedAt = Date.now
-                    }
-                    do {
-                        try modelContext.save()
-                    } catch {
-                        Self.logger.error("Error saving device selection: \(error)")
-                    }
-                }
+                }.pickerStyle(.inline)
             } else {
                 Text("No devices")
             }
@@ -83,5 +91,6 @@ struct DevicePicker: View {
                     .frame(maxWidth: 180)
             }
         }
+        .animation(nil, value: UUID())
     }
 }

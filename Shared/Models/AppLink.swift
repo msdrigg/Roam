@@ -21,9 +21,7 @@ public final class AppLink: Identifiable, Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         type = try container.decode(String.self, forKey: .type)
-        
-        let singleValueContainer = try decoder.singleValueContainer()
-        name = try singleValueContainer.decode(String.self)
+        name = try container.decode(String.self, forKey: .name)
     }
     
     enum CodingKeys: String, CodingKey {

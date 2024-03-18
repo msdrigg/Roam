@@ -54,6 +54,10 @@ public final class Device: Identifiable, Hashable {
         return self.powerMode == "PowerOn"
     }
     
+    public var displayHash: String {
+        "\(name)-\(udn)-\(isOnline())-\(location)-\(String(describing: supportsDatagram))"
+    }
+    
     public func isOnline() -> Bool {
         guard let lastOnlineAt = self.lastOnlineAt else {
             return false
@@ -175,11 +179,32 @@ actor DeviceActor {
         return links.map {$0.toAppEntity()}
     }
     
+    func setSelectedApp(_ deviceId: PersistentIdentifier, _ appId: PersistentIdentifier) throws {
+        Self.logger.info("Updating selectedAt for app with id \(String(describing: deviceId)), appId \(String(describing: appId))")
+        if let device = try? modelContext.existingDevice(for: deviceId) {
+            // Get app
+            if let app = device.apps?.first(where: {$0.persistentModelID == appId}) {
+                app.lastSelected = Date.now
+            }
+            try modelContext.save()
+        }
+    }
+
+    
+    func setSelectedDevice(_ id: PersistentIdentifier) throws {
+        Self.logger.info("Updating selectedAt for device with id \(String(describing: id))")
+        if let device = try? modelContext.existingDevice(for: id) {
+            Self.logger.info("Found device to update with location \(device.location)")
+            device.lastSelectedAt = Date.now
+            try modelContext.save()
+        }
+    }
+
     
     func updateDevice(_ id: PersistentIdentifier, name: String, location: String, udn: String) throws {
         Self.logger.info("Updating device at \(location)")
         if let device = try? modelContext.existingDevice(for: id) {
-            Self.logger.info("Found device to pudate with id \(String(describing: id))")
+            Self.logger.info("Found device to update with id \(String(describing: id))")
             device.location = location
             device.name = name
             device.udn = udn
@@ -256,7 +281,7 @@ actor DeviceActor {
     func existingDevice(id: String) -> DeviceAppEntity? {
         var matchingIds = FetchDescriptor<Device>(
             predicate: #Predicate {
-                $0.deletedAt == nil
+                $0.deletedAt == nil && $0.udn == id
             }
         )
         matchingIds.fetchLimit = 1
@@ -264,13 +289,12 @@ actor DeviceActor {
         do {
             let matchingIds = try self.modelContext.fetchIdentifiers(matchingIds)
             
-            for pid in matchingIds {
-                if let device = try self.modelContext.existingDevice(for: pid) {
-                    if device.udn == id {
-                        return device.toAppEntity()
-                    }
-                }
+            if let matchingPid = matchingIds.first {
+                 if let device = try self.modelContext.existingDevice(for: matchingPid) {
+                     return device.toAppEntity()
+                 }
             }
+            
             
             return nil
         } catch {
