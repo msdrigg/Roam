@@ -2,18 +2,27 @@ import SwiftUI
 
 struct BadgeLabelStyle: LabelStyle {
     var color: Color = Color.blue
-    @ScaledMetric(relativeTo: .footnote) private var iconWidth = 14.0
+    #if os(tvOS)
+    @ScaledMetric(relativeTo: .footnote) private var iconWidth = 28.0
+    #else
+    @ScaledMetric(relativeTo: .footnote) private var iconWidth = 10.0
+    #endif
     
     func makeBody(configuration: Configuration) -> some View {
-        HStack {
+        HStack(alignment: .center, spacing: iconWidth) {
             configuration.icon
                 .frame(width: iconWidth)
             configuration.title
         }
+        #if os(tvOS) || os(visionOS)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+        #else
             .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+        #endif
             .truncationMode(.tail)
             .lineLimit(1)
-            .padding(.vertical, 3)
             .background(color)
             .clipShape(Capsule())
             .foregroundColor(color.isLightColor ? .black : .white)
