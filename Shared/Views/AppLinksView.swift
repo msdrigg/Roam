@@ -71,7 +71,6 @@ struct AppLinksView: View {
             }
             .scrollTargetBehavior(.viewAligned)
             .safeAreaPadding(.horizontal, 4)
-            .animation(nil, value: UUID())
         }.frame(height: (GRID_HEIGHT) * CGFloat(rows))
             .animation(.interpolatingSpring, value: cachedAppLinks)
             .onChange(of: appIdsIconsHashed) {
