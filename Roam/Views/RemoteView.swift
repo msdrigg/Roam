@@ -72,7 +72,7 @@ struct RemoteView: View {
     @State private var ecpSession: ECPSession? = nil
     @StateObject private var networkMonitor = NetworkMonitor()
     var headphonesModeDisabled: Bool {
-        return selectedDevice?.supportsDatagram ?? true
+        return !(selectedDevice?.supportsDatagram ?? true)
     }
     var hideUIForKeyboardEntry: Bool {
 #if os(iOS)
@@ -137,6 +137,10 @@ struct RemoteView: View {
     
     @Namespace var animation
     
+    var deviceActor: DeviceActor {
+        DeviceActor(modelContainer: modelContext.container)
+    }
+    
     var deviceStatusColor: Color {
         selectedDevice?.isOnline() ?? false ? Color.green : Color.secondary
     }
@@ -181,9 +185,9 @@ struct RemoteView: View {
         }
     }
     
-    func donateAppLaunchIntent(_ link: AppLink) {
+    func donateAppLaunchIntent(_ link: AppLinkAppEntity) {
         let intent = LaunchAppIntent()
-        intent.app = link.toAppEntity()
+        intent.app = link
         intent.device = selectedDevice?.toAppEntity()
         intent.donate()
     }
@@ -494,7 +498,6 @@ struct RemoteView: View {
             .onAppear {
                 modelContext.processPendingChanges()
             }
-            .animation(.default, value: selectedDevice?.appsSorted.count)
             .onAppear {
                 let modelContainer = modelContext.container
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
@@ -560,7 +563,7 @@ struct RemoteView: View {
                         Spacer().frame(maxHeight: 60)
                         
                         // Grid of 9 buttons
-                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([]) : Set([.headphonesMode]) )
+                        ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([.headphonesMode]) : Set([]) )
 #if os(macOS) || os(tvOS)
                             .focusSection()
 #endif
@@ -666,7 +669,7 @@ struct RemoteView: View {
                 
                 Spacer()
                 // Grid of 9 buttons
-                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([]) : Set([.headphonesMode]) )
+                ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([.headphonesMode]) : Set([]) )
                     .transition(.scale.combined(with: .opacity))
                     .matchedGeometryEffect(id: "buttonGrid", in: animation)
                 
@@ -689,25 +692,15 @@ struct RemoteView: View {
     
     
     func launchApp(_ app: AppLinkAppEntity) {
-        if let app = selectedDevice?.appsSorted.first(where: { $0.id == app.id}) {
-            
 #if !os(tvOS)
-            donateAppLaunchIntent(app)
+        donateAppLaunchIntent(app)
 #endif
-            incrementButtonPressCount(.inputAV1)
-            app.lastSelected = Date.now
-            let appEntity = app.toAppEntity()
-            Task {
-                do {
-                    try await ecpSession?.openApp(appEntity)
-                } catch {
-                    Self.logger.error("Error opening app \(appEntity.id): \(error)")
-                }
-            }
+        incrementButtonPressCount(.inputAV1)
+        Task {
             do {
-                try modelContext.save()
+                try await ecpSession?.openApp(app)
             } catch {
-                Self.logger.error("Error saving app link \(error)")
+                Self.logger.error("Error opening app \(app.id): \(error)")
             }
         }
     }

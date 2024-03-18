@@ -87,6 +87,10 @@
 		AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */; };
 		AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */; };
 		AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */; };
+		AF70BB072BA7C4D2009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
+		AF70BB092BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */; };
+		AF70BB0A2BA7CBD0009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
+		AF70BB0B2BA7CBD3009A06EC /* PaddedHoverButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */; };
 		AF779BF02BA4D82600231BC5 /* Badge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BEF2BA4D82600231BC5 /* Badge.swift */; };
 		AF779BF12BA4D82600231BC5 /* Badge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BEF2BA4D82600231BC5 /* Badge.swift */; };
 		AF779BF32BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BF22BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift */; };
@@ -265,6 +269,8 @@
 		AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingExtensions.swift; sourceTree = "<group>"; };
 		AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF5FDAD52ADB3C4B006CDEB3 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
+		AF70BB062BA7C4D2009A06EC /* HoveredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoveredView.swift; sourceTree = "<group>"; };
+		AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddedHoverButtonStyle.swift; sourceTree = "<group>"; };
 		AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuSession.swift; sourceTree = "<group>"; };
 		AF779BEF2BA4D82600231BC5 /* Badge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Badge.swift; sourceTree = "<group>"; };
 		AF779BF22BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureScrollWheelModifier.swift; sourceTree = "<group>"; };
@@ -461,6 +467,8 @@
 				AF779BF22BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift */,
 				AF779BF42BA4D95D00231BC5 /* ViewExtensions.swift */,
 				AF779BF62BA4DDD000231BC5 /* WrappingHStack.swift */,
+				AF70BB062BA7C4D2009A06EC /* HoveredView.swift */,
+				AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -746,6 +754,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF70BB0B2BA7CBD3009A06EC /* PaddedHoverButtonStyle.swift in Sources */,
 				AFE89A2E2B9EBBD30078387C /* Debugger.swift in Sources */,
 				AFD9C4FA2AE983B300C4079C /* SSDPDiscovery.swift in Sources */,
 				AF0042862AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */,
@@ -770,6 +779,7 @@
 				AFD590D72AEC787700189620 /* ModelContainer.swift in Sources */,
 				AF779BF12BA4D82600231BC5 /* Badge.swift in Sources */,
 				AFD9C4ED2AE980C300C4079C /* DataHelpers.swift in Sources */,
+				AF70BB0A2BA7CBD0009A06EC /* HoveredView.swift in Sources */,
 				AF0C82982AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */,
 				AFD9C4EB2AE980BD00C4079C /* AsyncHelpers.swift in Sources */,
@@ -833,6 +843,7 @@
 				AF3D62D72AE6F703006AB8E9 /* OpusDecoder.swift in Sources */,
 				AFCF22DE2B2A52190048FFD9 /* NotificationBanner.swift in Sources */,
 				AF19CA3C2AE6BFC400A42DFF /* DeviceApi.swift in Sources */,
+				AF70BB092BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift in Sources */,
 				AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */,
 				AF779BF02BA4D82600231BC5 /* Badge.swift in Sources */,
 				AF779BF32BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift in Sources */,
@@ -849,6 +860,7 @@
 				AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */,
 				AF26A22B2AF1A2B90070250F /* SmallAppView.swift in Sources */,
 				AFC4A65A2AE88411005DAC6C /* LatencyListener.swift in Sources */,
+				AF70BB072BA7C4D2009A06EC /* HoveredView.swift in Sources */,
 				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
 				AF779BF72BA4DDD000231BC5 /* WrappingHStack.swift in Sources */,
 				AFE89A2D2B9E793E0078387C /* Debugger.swift in Sources */,
@@ -1092,7 +1104,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240315.0486910.0;
+				CURRENT_PROJECT_VERSION = 20240317.1826120.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1116,7 +1128,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.20;
+				MARKETING_VERSION = 1.21;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1164,7 +1176,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240315.0486910.0;
+				CURRENT_PROJECT_VERSION = 20240317.1826120.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1182,7 +1194,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.20;
+				MARKETING_VERSION = 1.21;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = auto;
