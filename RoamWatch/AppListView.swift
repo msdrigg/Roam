@@ -9,7 +9,14 @@ struct AppListView: View {
     )
     
     let device: DeviceAppEntity?
-    let apps: [AppLinkAppEntity]
+    let apps: [AppLink]
+    let onClick: ((AppLink) -> Void)?
+    
+    init(device: DeviceAppEntity, apps: [AppLink], onClick: ((AppLink) -> Void)? = nil) {
+        self.device = device
+        self.apps = apps
+        self.onClick = onClick
+    }
     
     @State var appClicks: [String: Int] = [:]
     func appPressCount(_ app: String) -> Int {
@@ -26,8 +33,9 @@ struct AppListView: View {
                 Button(action: {
                     incrementAppPressCount(app.id)
                     Task {
+                        onClick?(app)
                         do {
-                            try await launchApp(app: app, device: device)
+                            try await launchApp(app: app.toAppEntity(), device: device)
                         } catch {
                             Self.logger.error("Error opening app \(app.id): \(error)")
                         }

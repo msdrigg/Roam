@@ -81,6 +81,9 @@
 		AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */; };
 		AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */; };
 		AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */; };
+		AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF42442D2BB1118700334AAF /* SchemaFile.swift */; };
+		AF42442F2BB1118700334AAF /* SchemaFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF42442D2BB1118700334AAF /* SchemaFile.swift */; };
+		AF4244302BB1118700334AAF /* SchemaFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF42442D2BB1118700334AAF /* SchemaFile.swift */; };
 		AF5ED8D52AE984E9007DB2B8 /* WidgetColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */; };
 		AF5ED8DE2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */; };
 		AF5ED8DF2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */; };
@@ -258,6 +261,7 @@
 		AF3AD55A2AE2947E00E2D780 /* KeyboardEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEntry.swift; sourceTree = "<group>"; };
 		AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusDecoder.swift; sourceTree = "<group>"; };
+		AF42442D2BB1118700334AAF /* SchemaFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaFile.swift; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF4BBB742B8BF654009EB5BE /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
@@ -448,6 +452,7 @@
 				AF11D36C2AD2D41100527AF6 /* Device.swift */,
 				AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */,
 				AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */,
+				AF42442D2BB1118700334AAF /* SchemaFile.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -705,6 +710,7 @@
 				AFECDE1E2AE18519003F6676 /* XCRemoteSwiftPackageReference "swift-rtp" */,
 				AF19CA192AE44B1900A42DFF /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
 				AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */,
+				AF15FBF02BB0E61E004AC230 /* XCRemoteSwiftPackageReference "ETTrace" */,
 			);
 			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
 			projectDirPath = "";
@@ -765,6 +771,7 @@
 				AF0C82962AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */,
 				AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */,
 				AF779BF82BA4DE2200231BC5 /* WrappingHStack.swift in Sources */,
+				AF42442F2BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AFD9C4F32AE982E400C4079C /* DiscoveryActor.swift in Sources */,
 				AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */,
 				AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */,
@@ -813,6 +820,7 @@
 				AFC4A65C2AE8AABA005DAC6C /* AppWidget.swift in Sources */,
 				AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */,
 				AFD590D82AEC787700189620 /* ModelContainer.swift in Sources */,
+				AF4244302BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
 				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
 				AF0042772AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
@@ -895,6 +903,7 @@
 				AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */,
 				AF3AD5592AE2940A00E2D780 /* KeyboardMonitorAppKit.swift in Sources */,
 				AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */,
+				AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 				AF779BF52BA4D95D00231BC5 /* ViewExtensions.swift in Sources */,
 				AF19CA2E2AE692E600A42DFF /* AsyncBufferedChannel.swift in Sources */,
@@ -1104,7 +1113,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240317.4427085.0;
+				CURRENT_PROJECT_VERSION = 20240325.8161502.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1128,7 +1137,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.21;
+				MARKETING_VERSION = 1.23;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1176,7 +1185,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240317.4427085.0;
+				CURRENT_PROJECT_VERSION = 20240325.8161502.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1194,7 +1203,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.21;
+				MARKETING_VERSION = 1.23;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = auto;
@@ -1215,7 +1224,7 @@
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = AppIconVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = AppIconVOS;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -1263,7 +1272,7 @@
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = AppIconVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = AppIconVOS;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -1349,6 +1358,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.3.2;
+			};
+		};
+		AF15FBF02BB0E61E004AC230 /* XCRemoteSwiftPackageReference "ETTrace" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/EmergeTools/ETTrace";
+			requirement = {
+				branch = main;
+				kind = branch;
 			};
 		};
 		AF19CA192AE44B1900A42DFF /* XCRemoteSwiftPackageReference "swift-async-algorithms" */ = {

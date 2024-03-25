@@ -11,7 +11,7 @@ struct SmallAppWidget: Widget {
             intent: DeviceChoiceIntent.self,
             provider: RemoteControlProvider()
         ) { entry in
-            SmallAppView(device: entry.device, apps: entry.device?.apps ?? [])
+            SmallAppView(device: entry.device, apps: entry.apps)
                 .containerBackground(Color("WidgetBackground"), for: .widget)
         }
         .supportedFamilies([.systemSmall])
@@ -23,10 +23,12 @@ struct SmallAppWidget: Widget {
 } timeline: {
     DeviceChoiceTimelineEntity (
         date: Date.now,
-        device: getTestingDevices()[0].toAppEntity()
+        device: getTestingDevices()[0].toAppEntity(),
+        apps: getTestingAppLinks().map{$0.toAppEntityWithIcon()}
     )
     DeviceChoiceTimelineEntity (
         date: Date.now,
-        device: nil
+        device: nil,
+        apps: []
     )
 }

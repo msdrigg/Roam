@@ -1,11 +1,11 @@
 
 
-mkdir -p AppIconsResized                   
-mkdir -p AppIconsRounded                  
+mkdir -p Resized
+mkdir -p Rounded
 
-for img in AppIcons/AppIcon*.png; do 
+for img in "$@"; do
   filename=$(basename $img)
-  new_filepath="AppIcons/Rounded/$filename"
+  new_filepath="./Rounded/$filename"
   width=$(identify -format "%w" $img)
   height=$(identify -format "%h" $img)
   radius=$(echo "$width * 0.15" | bc)
@@ -15,11 +15,11 @@ for img in AppIcons/AppIcon*.png; do
   rm mask.png
 done
 
-for img in AppIcons/AppIcon*.png; do
-  base_name=$(basename $img .png)        
-  mkdir -p "AppIcons/Resized/${base_name}.appiconset"
-  jsonFile="AppIcons/Contents.json"
-  cp $jsonFile "AppIcons/Resized/${base_name}.appiconset"
+for img in "$@"; do
+  base_name=$(basename $img .png)
+  mkdir -p "Resized/${base_name}.appiconset"
+  jsonFile="Contents.json"
+  cp $jsonFile "Resized/${base_name}.appiconset"
 
   jq -c '.images.[]' $jsonFile | while read -r item; do
     filename=$(echo "$item" | jq -r '.filename')
@@ -40,13 +40,13 @@ for img in AppIcons/AppIcon*.png; do
     size=${size%.png}
 
     
-    outFile="AppIcons/Resized/${base_name}.appiconset/$filename"
+    outFile="Resized/${base_name}.appiconset/$filename"
     if [[ "$rounded" == "true" ]]; then
-      echo "Converting AppIcons/Rounded/$base_name.png to $outFile"
-      convert "AppIcons/Rounded/$base_name.png" -resize ${size}x${size} $outFile
+      echo "Converting Rounded/$base_name.png to $outFile"
+      convert "Rounded/$base_name.png" -resize ${size}x${size} $outFile
     else
-      echo "Converting AppIcons/$base_name.png to $outFile"
-      convert "AppIcons/$base_name.png" -resize ${size}x${size} $outFile
+      echo "Converting $img to $outFile"
+      convert "$img" -resize ${size}x${size} $outFile
     fi
   done
 done

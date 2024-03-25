@@ -17,12 +17,11 @@ private func demandSharedModelContainer() -> ModelContainer {
 }
 
 private func _getSharedModelContainer() throws -> ModelContainer {
-    let schema = Schema([
-        AppLink.self,
-        Device.self,
-    ])
+    let schema = Schema(
+        versionedSchema: SchemaV1.self
+    )
     
-    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier("group.com.msdrigg.roam"))
+    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier("group.com.msdrigg.roam.models"))
     
-    return try ModelContainer(for: schema, configurations: [modelConfiguration])
+    return try ModelContainer(for: schema, migrationPlan: RoamSchemaMigrationPlan.self, configurations: [modelConfiguration])
 }

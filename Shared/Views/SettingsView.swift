@@ -27,8 +27,7 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
         predicate: #Predicate {
             $0.deletedAt == nil
         },
-        sortBy: [SortDescriptor(\Device.name)])
-    fd.relationshipKeyPathsForPrefetching = [\.apps]
+        sortBy: [SortDescriptor(\Device.name, order: .reverse)])
     fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt, \.deviceIcon]
     return fd
 }()
@@ -222,7 +221,7 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Unfortunately, WatchOS prevents us from discovering TV's on the local network.").font(.caption).foregroundStyle(.secondary)
                                 Text("To work around this limitation, first discover devices on the iPhone app and then the devices will be transfered in the background from the iPhone to the watch (or you can manually add the TV if you can get it's IP address).").font(.caption).foregroundStyle(.secondary)
-                                Text("Please be patient, because I don't have an apple watch so I can't test how effective this is. Please reach out if you aren't able to get this to work :). You can email me at scott@msd3.io").font(.caption).foregroundStyle(.secondary)
+                                Text("Please be patient, because I don't have an apple watch so I can't test how effective this is. Please reach out if you aren't able to get this to work :). You can email me at roam-support@msd3.io").font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }

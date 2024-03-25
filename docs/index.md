@@ -11,7 +11,7 @@ Roam offers everything you want and nothing you don't
 -   Fast and lightweight, less than 5 MB on all devices and opens in less than half a second!
 -   Open source (https://github.com/msdrigg/roam)
 
-## FAQ
+## Common Issues
 
 -   What can I do if Roam doesn't auto-discover my TV
     -   [See here](/manually-add-tv)
@@ -21,11 +21,13 @@ Roam offers everything you want and nothing you don't
     -   If it's a bug, it will be best to go initiate a feedback report from the application
         -   Go into the Roam app and open the settings page
         -   Click "Send feedback". This will generate a diagnostic report that can be shared with roam support (roam-support@msd3.io)
+        - If your app is crashing, also make sure your analytics are turned on in Settings -> Privacy & Security -> Analytics & Improvments
+            - Turn on "Share iPhone & Watch Analytics" and then turn on "Share With App Developers" so apple will report to me when your app crashes
     -   If it's a request for a new feature, just send an email directly (roam-support@msd3.io)
 
 ## Other Resources
 
-If you have any questions or issues, please contact us at: [roam-support@msd3.io](mailto:roam-support@msd3.io)
+If you have any questions or issues, please contact me at: [roam-support@msd3.io](mailto:roam-support@msd3.io)
 
 -   [Privacy Policy](/privacy)
 -   [Core Repository on GitHub](https://github.com/msdrigg/roam)

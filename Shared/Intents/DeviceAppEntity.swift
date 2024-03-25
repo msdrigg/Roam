@@ -54,8 +54,6 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
         udn
     }
     
-    public var apps: [AppLinkAppEntity]?
-    
     public var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
@@ -75,7 +73,6 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
         self.udn = device.udn
         self.wifiMAC = device.wifiMAC
         self.ethernetMAC = device.ethernetMAC
-        self.apps = device.appsSorted.map{ $0.toAppEntity() }
         self.lastSentToWatch = device.lastSentToWatch
         self.modelId = device.persistentModelID
         self.lastSelectedAt = device.lastSelectedAt
@@ -103,8 +100,6 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
 
         try container.encodeIfPresent(rtcpPort, forKey: .rtcpPort)
         try container.encodeIfPresent(supportsDatagram, forKey: .supportsDatagram)
-
-        try container.encodeIfPresent(apps, forKey: .apps)
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -122,7 +117,6 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
         case ethernetMAC
         case rtcpPort
         case supportsDatagram
-        case apps
     }
 }
 

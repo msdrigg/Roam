@@ -7,15 +7,15 @@ public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Se
     var name: String
     public var id: String
     public var type: String
-    public var icon: Data?
     public var modelId: PersistentIdentifier
+    public var icon: Data?
 
-    init(name: String, id: String, type: String, icon: Data?, modelId: PersistentIdentifier) {
+    init(name: String, id: String, type: String, modelId: PersistentIdentifier, icon: Data? = nil) {
         self.name = name
         self.id = id
         self.type = type
-        self.icon = icon
         self.modelId = modelId
+        self.icon = icon
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -23,13 +23,10 @@ public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Se
         try container.encode(id, forKey: .id)
         try container.encode(type, forKey: .type)
         try container.encode(name, forKey: .name)
-        
-        let iconHash = icon?.hashValue
-        try container.encodeIfPresent(iconHash, forKey: .iconHash)
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, type, name, iconHash
+        case id, type, name
     }
 }
 
@@ -44,27 +41,18 @@ extension AppLinkAppEntity: AppEntity {
         public init() {}
 
         public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
-            if let apps = launchAppIntent?.device.apps {
-                return apps
-            }
             let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-            return try await appLinkActor.entities(for: identifiers)
+            return try await appLinkActor.entities(for: identifiers, deviceUid: launchAppIntent?.device.udn)
         }
 
         func entities(matching string: String) async throws -> [AppLinkAppEntity] {
-            if let apps = launchAppIntent?.device.apps {
-                return apps.filter{$0.name.contains(string)}
-            }
             let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-            return try await appLinkActor.entities(matching: string)
+            return try await appLinkActor.entities(matching: string, deviceUid: launchAppIntent?.device.udn)
         }
 
         public func suggestedEntities() async throws -> [AppLinkAppEntity] {
-            if let apps = launchAppIntent?.device.apps {
-                return apps
-            }
             let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-            return try await appLinkActor.suggestedEntities()
+            return try await appLinkActor.entities(deviceUid: launchAppIntent?.device.udn)
         }
     }
 
@@ -77,7 +65,11 @@ extension AppLinkAppEntity: AppEntity {
 
 public extension AppLink {
     func toAppEntity() -> AppLinkAppEntity {
-        return AppLinkAppEntity(name: self.name, id: self.id, type: self.type, icon: self.icon, modelId: self.persistentModelID)
+        return AppLinkAppEntity(name: self.name, id: self.id, type: self.type, modelId: self.persistentModelID)
+    }
+    
+    func toAppEntityWithIcon() -> AppLinkAppEntity {
+        return AppLinkAppEntity(name: self.name, id: self.id, type: self.type, modelId: self.persistentModelID, icon: self.icon)
     }
 }
 

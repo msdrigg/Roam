@@ -2,54 +2,16 @@ import Foundation
 import SwiftData
 import os
 
-@Model
-public final class Device: Identifiable, Hashable {
-    @Attribute(.unique, originalName: "id") public var udn: String
-    public var name: String
-    public var location: String
-    
-    public var lastSelectedAt: Date?
-    public var lastOnlineAt: Date?
-    public var lastScannedAt: Date?
-    public var lastSentToWatch: Date?
-    public var deletedAt: Date?
-    
-    // DisplayOff or PowerOn or Suspend
-    public var powerMode: String?
-    public var networkType: String?
-    public var wifiMAC: String?
-    public var ethernetMAC: String?
-    
-    public var rtcpPort: UInt16?
-    public var supportsDatagram: Bool?
-    
-    @Attribute(.externalStorage) public var deviceIcon: Data?
-    // Associate 0..n Apps with Device
-    @Relationship(deleteRule: .nullify)
-    public var apps: [AppLink]?
-    
-    public var appsSorted: [AppLink] {
-        apps?.sorted(by: {
-            if $0.lastSelected ?? .distantPast == $1.lastSelected ?? .distantPast {
-                return $0.name < $1.name
-            }
-            return ($0.lastSelected ?? Date.distantPast) > ($1.lastSelected ?? Date.distantPast)
-        }) ?? []
-    }
-    
+typealias Device = SchemaV1.Device
+
+extension Device: Identifiable {
     public var id: PersistentIdentifier {
         self.persistentModelID
     }
-    
-    public init(name: String, location: String, lastSelectedAt: Date? = nil, lastOnlineAt: Date? = nil, udn: String, apps: [AppLink] = []) {
-        self.name = name
-        self.lastSelectedAt = lastSelectedAt
-        self.lastOnlineAt = lastOnlineAt
-        self.udn = udn
-        self.location = location
-        self.apps = apps
-    }
-    
+}
+
+
+extension Device {
     public func powerModeOn() -> Bool {
         return self.powerMode == "PowerOn"
     }
@@ -74,12 +36,10 @@ public final class Device: Identifiable, Hashable {
     }
 }
 
-public func getTestingDevices() -> [Device] {
-    let apps = getTestingAppLinks()
-    
+func getTestingDevices() -> [Device] {
     return [
-        Device(name: "Living Room TV", location: "http://192.168.0.1:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), udn: "TD1", apps: apps),
-        Device(name: "2nd Living Room", location: "http://192.168.0.2:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60), udn: "TD2", apps: [])
+        Device(name: "Living Room TV", location: "http://192.168.0.1:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), udn: "TD1"),
+        Device(name: "2nd Living Room", location: "http://192.168.0.2:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0 - 24 * 60 * 60), udn: "TD2")
     ]
 }
 
@@ -105,6 +65,17 @@ public let devicePreviewContainer: ModelContainer = {
 public func fetchSelectedDevice(modelContainer: ModelContainer) async -> DeviceAppEntity? {
     let deviceActor = DeviceActor(modelContainer: modelContainer)
     return await deviceActor.fetchSelectedDeviceAppEntity()
+}
+
+
+public func fetchSelectedAppLinks(modelContainer: ModelContainer, deviceId: String) async -> [AppLinkAppEntity] {
+    let appActor = AppLinkActor(modelContainer: modelContainer)
+    do {
+        return try await appActor.entities(deviceUid: deviceId)
+    } catch {
+        os_log("Error getting selected app entities for widget \(error)")
+        return []
+    }
 }
 
 // Models shouldn't be sendable
@@ -179,13 +150,12 @@ actor DeviceActor {
         return links.map {$0.toAppEntity()}
     }
     
-    func setSelectedApp(_ deviceId: PersistentIdentifier, _ appId: PersistentIdentifier) throws {
-        Self.logger.info("Updating selectedAt for app with id \(String(describing: deviceId)), appId \(String(describing: appId))")
-        if let device = try? modelContext.existingDevice(for: deviceId) {
-            // Get app
-            if let app = device.apps?.first(where: {$0.persistentModelID == appId}) {
-                app.lastSelected = Date.now
-            }
+    func setSelectedApp(_ appId: PersistentIdentifier) throws {
+        Self.logger.info("Updating selectedAt for app with id \(String(describing: appId))")
+        
+        if let appLink = try? modelContext.existingApp(for: appId) {
+            Self.logger.info("Setting appId selected to now")
+            appLink.lastSelected = Date.now
             try modelContext.save()
         }
     }
@@ -257,25 +227,31 @@ actor DeviceActor {
     }
     
     
-    func deleteInPast() throws {
+    func deleteInPast() async throws {
         Self.logger.info("Hard deleting devices")
         let future = Date.now + 60 * 3600
         let distantFuture = Date.distantFuture
-        try modelContext.delete(model: Device.self, where: #Predicate {
+        let models = try modelContext.fetch(
+            FetchDescriptor<Device>(predicate: #Predicate {
             $0.deletedAt ?? distantFuture < future
-        }, includeSubclasses: true)
+        }))
         
+        for model in models {
+            try await AppLinkActor(modelContainer: modelContainer).deleteEntities(deviceUid: model.udn)
+            modelContext.delete(model)
+        }
+                                                    
         try modelContext.save()
     }
     
-    func delete(_ id: PersistentIdentifier) throws {
+    func delete(_ id: PersistentIdentifier) async throws {
         Self.logger.info("Soft deleting device \(String(describing: id))")
         if let device = try? modelContext.existingDevice(for: id) {
             device.deletedAt = .now
             try modelContext.save()
         }
         
-        try deleteInPast()
+        try await deleteInPast()
     }
     
     func existingDevice(id: String) -> DeviceAppEntity? {
@@ -317,7 +293,6 @@ actor DeviceActor {
             }
         )
         descriptor.sortBy = [SortDescriptor(\Device.lastSelectedAt, order: .reverse), SortDescriptor(\Device.lastOnlineAt, order: .reverse)]
-        descriptor.relationshipKeyPathsForPrefetching = [\.apps]
         descriptor.fetchLimit = 1
         
         let selectedDevice: Device? = try? modelContext.fetch(descriptor).first
@@ -336,6 +311,8 @@ actor DeviceActor {
             return
         }
         
+
+        
         if let device = try? modelContext.existingDevice(for: id) {
             if device.udn.starts(with: "roam:newdevice-") {
                 device.udn = deviceInfo.udn
@@ -345,8 +322,18 @@ actor DeviceActor {
             
             device.lastOnlineAt = Date.now
             
-            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_INTERVAL && (device.apps?.allSatisfy { $0.icon != nil} ?? true) {
+            let udn: String? = device.udn
+            let deviceApps = (try? modelContext.fetch(
+                FetchDescriptor<AppLink>(
+                    predicate: #Predicate {
+                        $0.deviceUid == udn
+                    }
+                )
+            )) ?? []
+            
+            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -MIN_RESCAN_INTERVAL && deviceApps.allSatisfy({ $0.icon != nil}) && deviceApps.count > 0 {
                 try? modelContext.save()
+                Self.logger.info("Returning early from refresh")
                 return
             }
             device.lastScannedAt = Date.now
@@ -364,6 +351,7 @@ actor DeviceActor {
             try? modelContext.save()
         }
         
+        Self.logger.info("Refreshing capabilities and apps")
         
         
         var capabilities: DeviceCapabilities? = nil
@@ -389,16 +377,27 @@ actor DeviceActor {
                 device.supportsDatagram = capabilities.supportsDatagram
             }
             
+            let udn: String = device.udn
+            let deviceApps = (try? modelContext.fetch(
+                FetchDescriptor<AppLink>(
+                    predicate: #Predicate {
+                        $0.deviceUid == udn
+                    }
+                )
+            )) ?? []
+
             if let apps = apps {
                 // Remove apps from device that aren't in fetchedApps
-                var deviceApps = device.apps?.filter { app in
+                var deviceApps = deviceApps.filter { app in
                     apps.contains { $0.id == app.id }
-                } ?? []
+                }
                 
                 // Add new apps to device
                 for app in apps {
                     if !deviceApps.contains(where: { $0.id == app.id }) {
-                        deviceApps.append(AppLink(id: app.id, type: app.type, name: app.name))
+                        let al = AppLink(id: app.id, type: app.type, name: app.name, deviceUid: device.udn)
+                        modelContext.insert(al)
+                        deviceApps.append(al)
                     }
                 }
                 
@@ -408,9 +407,6 @@ actor DeviceActor {
                         appsNeedingIcons.append(app.id)
                     }
                 }
-                
-                // Set apps to the new apps
-                device.apps = deviceApps
             }
             
             try? modelContext.save()
@@ -430,7 +426,7 @@ actor DeviceActor {
         var appIcons: [String: Data] = [:]
         for appId in appsNeedingIcons {
             do {
-                Self.logger.error("Getting device app icon ")
+                Self.logger.error("Getting device app icon for id \(appId)")
                 let iconData = try await fetchAppIcon(location: location, appId: appId)
                 appIcons[appId] = iconData
             } catch {
@@ -440,11 +436,21 @@ actor DeviceActor {
         
         
         if let device = try? modelContext.existingDevice(for: id){
+            let udn: String? = device.udn
+
+            let deviceApps = (try? modelContext.fetch(
+                FetchDescriptor<AppLink>(
+                    predicate: #Predicate {
+                        $0.deviceUid == udn
+                    }
+                )
+            )) ?? []
+            
             if let icon = deviceIcon {
                 device.deviceIcon = icon
             }
             for app in appIcons {
-                if let deviceApp = device.apps?.first(where: {$0.id == app.key}) {
+                if let deviceApp = deviceApps.first(where: {$0.id == app.key}) {
                     deviceApp.icon = app.value
                 }
             }
@@ -454,8 +460,7 @@ actor DeviceActor {
 }
 
 private extension ModelContext {
-    func existingDevice(for objectID: PersistentIdentifier)
-    throws -> Device? {
+    func existingDevice(for objectID: PersistentIdentifier) throws -> Device? {
         if let registered: Device = registeredModel(for: objectID) {
             return registered
         }
@@ -464,9 +469,23 @@ private extension ModelContext {
             predicate: #Predicate {
                 $0.persistentModelID == objectID && $0.deletedAt == nil
             })
-        fetchDescriptor.relationshipKeyPathsForPrefetching = [\.apps]
         fetchDescriptor.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
         
         return try fetch(fetchDescriptor).first
     }
+    
+    func existingApp(for objectID: PersistentIdentifier) throws -> AppLink? {
+        if let registered: AppLink = registeredModel(for: objectID) {
+            return registered
+        }
+        
+        var fetchDescriptor = FetchDescriptor<AppLink>(
+            predicate: #Predicate {
+                $0.persistentModelID == objectID
+            })
+        fetchDescriptor.propertiesToFetch = [\.name, \.lastSelected, \.id, \.deviceUid]
+        
+        return try fetch(fetchDescriptor).first
+    }
+
 }

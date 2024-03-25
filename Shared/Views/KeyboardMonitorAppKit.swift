@@ -16,8 +16,9 @@ struct OnKeyPressModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         if enabled {
-            content.background(
+            content.overlay(
                 KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
+                    .allowsHitTesting(false)
             )
         } else {
             content
