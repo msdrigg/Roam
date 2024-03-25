@@ -737,6 +737,18 @@ struct RemoteView: View {
     
     func pressKey(_ key: KeyEquivalent) -> Void {
         Self.logger.trace("Getting keyboard press \(key.character)")
+        if let button = RemoteButton.fromCharacter(character: key.character){
+            
+            incrementButtonPressCount(button)
+            if MAJOR_ACTIONS.contains(button) {
+                handleMajorUserAction()
+            }
+#if !os(tvOS)
+            donateButtonIntent(button)
+#endif
+        }
+
+        
         if let ecpSession = ecpSession {
             Self.logger.info("Getting ecp session to send data to")
             Task {

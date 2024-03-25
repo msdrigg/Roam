@@ -156,6 +156,33 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
         }
     }
     
+    public static func fromCharacter(character: Character) -> RemoteButton? {
+#if !os(watchOS)
+        let keyMap: [Character: RemoteButton] = [
+            "\u{7F}": RemoteButton.backspace,
+            KeyEquivalent.delete.character: RemoteButton.backspace,
+            KeyEquivalent.deleteForward.character: RemoteButton.backspace,
+            KeyEquivalent.escape.character: RemoteButton.backspace,
+            KeyEquivalent.downArrow.character: RemoteButton.down,
+            KeyEquivalent.upArrow.character: RemoteButton.up,
+            KeyEquivalent.rightArrow.character: RemoteButton.right,
+            KeyEquivalent.leftArrow.character: RemoteButton.left,
+            KeyEquivalent.home.character: RemoteButton.home,
+            KeyEquivalent.return.character: RemoteButton.select,
+        ]
+#else
+        let keyMap: [Character: RemoteButton] = [
+            "\u{7F}": RemoteButton.backspace,
+        ]
+#endif
+    
+        if let mappedString = keyMap[character] {
+            return mappedString
+        }
+    
+        return nil
+    }
+    
     @ViewBuilder
     public var label: some View {
         if let systemIcon = systemIcon {

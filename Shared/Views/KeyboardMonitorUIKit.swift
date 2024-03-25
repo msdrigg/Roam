@@ -9,6 +9,12 @@
 import Foundation
 import SwiftUI
 import UIKit
+import OSLog
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier!,
+    category: "KeyboardMonitor"
+)
 
 struct OnKeyPressModifier: ViewModifier {
     let onKeyPress: (KeyEquivalent) -> Void
@@ -63,6 +69,11 @@ class KeyHandlingUIView: UIView {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         self.becomeFirstResponder()
+    }
+    
+    override func resignFirstResponder() -> Bool {
+        logger.info("Asked to resign first responder. Returning false")
+        return false
     }
     
     override var canBecomeFirstResponder: Bool { return true }
