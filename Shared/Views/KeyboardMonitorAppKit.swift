@@ -1,10 +1,3 @@
-//
-//  KeyboardMonitor.swift
-//  Roam
-//
-//  Created by Scott Driggers on 10/20/23.
-//
-
 #if os(macOS)
 import Foundation
 import SwiftUI
@@ -44,10 +37,12 @@ struct KeyHandlingViewRepresentable: NSViewRepresentable {
 
     class KeyHandlingView: NSView {
         var onKeyPress: (KeyEquivalent) -> Void
+        var observerTokens: [Any] = []
 
         init(onKeyPress: @escaping (KeyEquivalent) -> Void) {
             self.onKeyPress = onKeyPress
             super.init(frame: .zero)
+            self.setupObservers()
             self.becomeFirstResponder()
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -85,7 +80,26 @@ struct KeyHandlingViewRepresentable: NSViewRepresentable {
         override func viewDidMoveToSuperview() {
             super.viewDidMoveToSuperview()
             self.becomeFirstResponder()
+
             window?.makeFirstResponder(self)
+        }
+        
+        deinit {
+            for token in observerTokens {
+                NotificationCenter.default.removeObserver(token)
+            }
+        }
+        
+        private func windowDidBecomeMain() {
+            
+            window?.makeFirstResponder(self)
+        }
+
+        private func setupObservers() {
+            let token = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeMainNotification, object: self.window, queue: .main) { [weak self] _ in
+                self?.windowDidBecomeMain()
+            }
+            observerTokens.append(token)
         }
     }
 }
