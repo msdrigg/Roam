@@ -8,7 +8,6 @@ struct TopBar: View {
     
     var body: some View {
         HStack(spacing: BUTTON_SPACING * 2) {
-            Spacer()
             Button(action: {action(.back)}) {
                 Label("Back", systemImage: "arrow.left")
                     .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
@@ -47,7 +46,6 @@ struct TopBar: View {
             .sensoryFeedback(.impact, trigger: pressCounter(.home))
 #endif
             .symbolEffect(.bounce, value: pressCounter(.home))
-            Spacer()
         }
         
     }
