@@ -149,10 +149,16 @@ if __name__ == "__main__":
         help="Render output for GitHub Actions",
         action="store_true",
     )
+    parser.add_argument(
+        "--no-bump",
+        help="Don't update versions to match git",
+        action="store_true",
+    )
 
     args = parser.parse_args()
 
-    bump_versions()
+    if not args.no_bump:
+        bump_versions()
 
     if args.archive:
         for platform in args.platform:
