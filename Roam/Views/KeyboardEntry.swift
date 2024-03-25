@@ -17,8 +17,8 @@ struct KeyboardEntry: View {
             onKeyPress(.delete)
         }, onDone: {
             withAnimation {
-                showing = false
                 keyboardFocused = false
+                showing = false
             }
         })
         #if !os(tvOS)
@@ -153,9 +153,11 @@ struct TextFieldContainer: UIViewRepresentable {
             textField.becomeFirstResponder()
         }
         
+        #if !os(iOS)
         @objc func textFieldDidEndEditing(_ textField: UITextField) {
             self.parent.onDone()
         }
+        #endif
         @objc func textFieldShouldReturn(_ textField: UITextField) -> Bool {
             self.parent.onDone()
             return true

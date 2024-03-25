@@ -40,7 +40,7 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
         },
         sortBy: [SortDescriptor(\Device.name, order: .reverse)]
     )
-    fd.relationshipKeyPathsForPrefetching = [\.apps]
+    fd.relationshipKeyPathsForPrefetching = []
     fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
     
     return fd
@@ -415,11 +415,11 @@ struct RemoteView: View {
                 }
             }
 #endif
+            .onKeyDown({key in pressKey(key)}, enabled: !showKeyboardEntry)
             .disabled(selectedDevice == nil)
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, 10)
-            .onKeyDown({key in pressKey(key)}, enabled: !showKeyboardEntry)
 #if !os(tvOS)
             .toolbar {
 #if !os(macOS)
@@ -581,9 +581,9 @@ struct RemoteView: View {
 #endif
             .frame(maxWidth: 600)
             
-            if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
+            if !showKeyboardEntry {
                 Spacer()
-                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
+                AppLinksView(deviceId: selectedDevice?.udn, rows: appLinkRows, handleOpenApp: launchApp)
 #if os(macOS) || os(tvOS)
                     .focusSection()
 #endif
@@ -661,6 +661,7 @@ struct RemoteView: View {
             
             // Center Controller with directional buttons
             CenterController(pressCounter: buttonPressCount, action: pressButton)
+                .transition(.scale.combined(with: .opacity))
                 .matchedGeometryEffect(id: "centerController", in: animation)
             
             
@@ -676,8 +677,8 @@ struct RemoteView: View {
             }
             
             
-            if !showKeyboardEntry && (selectedDevice?.appsSorted.count ?? 0) > 0 {
-                AppLinksView(appLinks: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [], rows: appLinkRows, handleOpenApp: launchApp)
+            if !showKeyboardEntry {
+                AppLinksView(deviceId: selectedDevice?.udn, rows: appLinkRows, handleOpenApp: launchApp)
 #if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
 #endif
@@ -701,6 +702,13 @@ struct RemoteView: View {
                 try await ecpSession?.openApp(app)
             } catch {
                 Self.logger.error("Error opening app \(app.id): \(error)")
+            }
+        }
+        Task {
+            do {
+                try await DeviceActor(modelContainer: modelContext.container).setSelectedApp(app.modelId)
+            } catch {
+                Self.logger.error("Error marking app \(app.id) as selected")
             }
         }
     }

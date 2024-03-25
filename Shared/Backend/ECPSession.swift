@@ -37,10 +37,9 @@ actor ECPSession {
             throw ECPError.BadURL
         }
         self.url = url
-        let config: URLSessionConfiguration = .default
         
-        self.session = URLSession(configuration: config)
-        webSocketTask = session.webSocketTask(with: self.url, protocols: ["ecp-2"])
+        self.session = URLSession(configuration: .ephemeral)
+        webSocketTask = session.webSocketTask(with: url, protocols: ["ecp-2"])
         self.device = device
     }
     

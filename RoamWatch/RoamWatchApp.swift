@@ -53,7 +53,6 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
             $0.deletedAt == nil
         },
         sortBy: [SortDescriptor(\Device.name, order: .reverse)])
-    fd.relationshipKeyPathsForPrefetching = [\.apps]
     fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
     
     return fd
@@ -90,15 +89,16 @@ struct WatchAppView: View {
     var mainBody: some View {
         NavigationStack {
             TabView {
-                
                 ButtonGridView(device: selectedDevice?.toAppEntity(), controls: DPAD)
                 
                 ButtonGridView(device: selectedDevice?.toAppEntity(), controls: CONTROLS)
                 
-                AppListView(device: selectedDevice?.toAppEntity(), apps: selectedDevice?.appsSorted.map{$0.toAppEntity()} ?? [])
+                if let device = selectedDevice {
+                    AppListViewWrapper(device: device.toAppEntity())
+                }
             }
-                .disabled(selectedDevice == nil)
-                .navigationTitle(selectedDevice?.name ?? "No device")
+            .disabled(selectedDevice == nil)
+            .navigationTitle(selectedDevice?.name ?? "No device")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     DevicePicker(
@@ -148,6 +148,51 @@ struct WatchAppView: View {
                         await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                     }
                 }
+        }
+    }
+}
+
+struct AppListViewWrapper: View {
+    private let device: DeviceAppEntity
+    @Query private var apps: [AppLink]
+    @Environment(\.modelContext) private var modelContext
+    @State var cachedAppLinks: [AppLink]
+
+    var appIdsIconsHashed: Int {
+        var appLinkPairs: Set<String>  = Set()
+        self.apps.forEach {
+            appLinkPairs.insert("\($0.id);\($0.icon != nil)")
+        }
+        
+        var hasher = Hasher()
+        hasher.combine(appLinkPairs)
+        return hasher.finalize()
+    }
+
+    init(device: DeviceAppEntity) {
+        let pid = device.udn
+        
+        self._apps = Query(
+            filter: #Predicate {
+                pid != nil && $0.deviceUid == pid
+            },
+            sort: \.lastSelected,
+            order: .reverse
+        )
+        self.device = device
+        cachedAppLinks = []
+    }
+    
+    var body: some View {
+        AppListView(device: device, apps: cachedAppLinks, onClick: {
+            $0.lastSelected = Date.now
+            try? modelContext.save()
+        })
+        .onAppear {
+            cachedAppLinks = apps
+        }
+        .onChange(of: appIdsIconsHashed) {
+            cachedAppLinks = apps
         }
     }
 }

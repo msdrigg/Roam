@@ -2,43 +2,44 @@ import Foundation
 import SwiftData
 import os
 
-@Model
-public final class AppLink: Identifiable, Decodable {
-    public let id: String
-    public let type: String
-    public let name: String
-    public var lastSelected: Date? = nil
-    @Attribute(.externalStorage) public var icon: Data?
-    
-    init(id: String, type: String, name: String, icon: Data? = nil, devices: [Device] = []) {
-        self.id = id
-        self.type = type
-        self.name = name
-        self.icon = icon
+typealias AppLink = SchemaV1.AppLink
+
+extension AppLink: Decodable {
+    public convenience init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let id = try container.decode(String.self, forKey: .id)
+        let type = try container.decode(String.self, forKey: .type)
+        
+        let singleValueContainer = try decoder.singleValueContainer()
+        let name = try singleValueContainer.decode(String.self)
+        
+        self.init(id: id, type: type, name: name)
     }
     
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        type = try container.decode(String.self, forKey: .type)
-        name = try container.decode(String.self, forKey: .name)
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(type, forKey: .type)
+        var svc = encoder.singleValueContainer()
+        
+        try svc.encode(name)
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, type, name
+        case id, type
     }
 }
 
-public func getTestingAppLinks() -> [AppLink] {
+func getTestingAppLinks() -> [AppLink] {
     return [
-        AppLink(id: "1", type: "appl", name: "Netflix", icon: nil),
-        AppLink(id: "5", type: "appl", name: "Hulu", icon: nil),
-        AppLink(id: "3", type: "appl", name: "Spotify with test long name", icon: nil),
+        AppLink(id: "1", type: "appl", name: "Netflix", icon: nil, deviceUid: nil),
+        AppLink(id: "5", type: "appl", name: "Hulu", icon: nil, deviceUid: nil),
+        AppLink(id: "3", type: "appl", name: "Spotify with test long name", icon: nil, deviceUid: nil),
         AppLink(id: "2", type: "appl", name: "Showtime (no icon)"),
-        AppLink(id: "4", type: "appl", name: "Disney another sweet long name", icon: nil),
-        AppLink(id: "6", type: "appl", name: "Disney another sweet long name", icon: nil),
-        AppLink(id: "7", type: "appl", name: "Disney another sweet long name", icon: nil),
-        AppLink(id: "7", type: "appl2", name: "Disney another", icon: nil),
+        AppLink(id: "4", type: "appl", name: "Disney another sweet long name", icon: nil, deviceUid: nil),
+        AppLink(id: "6", type: "appl", name: "Disney another sweet long name", icon: nil, deviceUid: nil),
+        AppLink(id: "7", type: "appl", name: "Disney another sweet long name", icon: nil, deviceUid: nil),
+        AppLink(id: "7", type: "appl2", name: "Disney another", icon: nil, deviceUid: nil),
     ]
 }
 
@@ -72,28 +73,46 @@ actor AppLinkActor {
         category: String(describing: AppLinkActor.self)
     )
     
-    public func entities(for identifiers: [AppLinkAppEntity.ID]) throws -> [AppLinkAppEntity] {
+    public func entities(for identifiers: [AppLinkAppEntity.ID], deviceUid: String?) throws -> [AppLinkAppEntity] {
         let links = try modelContext.fetch(
             FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
-                identifiers.contains(appLink.id)
+                identifiers.contains(appLink.id) && (deviceUid == nil || appLink.deviceUid == deviceUid)
             })
         )
-        return links.map {$0.toAppEntity()}
+        return links.map {$0.toAppEntityWithIcon()}
     }
     
-    public func entities(matching string: String) throws -> [AppLinkAppEntity] {
+    public func entities(matching string: String, deviceUid: String?) throws -> [AppLinkAppEntity] {
         let links = try modelContext.fetch(
             FetchDescriptor<AppLink>(predicate: #Predicate<AppLink> { appLink in
-                appLink.name.contains(string)
+                appLink.name.contains(string) && (deviceUid == nil || appLink.deviceUid == deviceUid)
             })
         )
-        return links.map {$0.toAppEntity()}
+        return links.map {$0.toAppEntityWithIcon()}
     }
     
-    public func suggestedEntities() throws -> [AppLinkAppEntity] {
+    public func entities(deviceUid: String?) throws -> [AppLinkAppEntity] {
         let links = try modelContext.fetch(
-            FetchDescriptor<AppLink>()
+            FetchDescriptor<AppLink>(
+                predicate: #Predicate {
+                    deviceUid == nil || $0.deviceUid == deviceUid
+                },
+                sortBy: [SortDescriptor(\AppLink.lastSelected, order: .reverse)]
+            )
         )
-        return links.map {$0.toAppEntity()}
+        return links.map {$0.toAppEntityWithIcon()}
+    }
+    
+    public func deleteEntities(deviceUid: String?) throws {
+        let links = try modelContext.fetch(
+            FetchDescriptor<AppLink>(
+                predicate: #Predicate {
+                    deviceUid == nil || $0.deviceUid == deviceUid
+                }
+            )
+        )
+        for link in links {
+            modelContext.delete(link)
+        }
     }
 }

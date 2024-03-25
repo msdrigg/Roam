@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 #if os(tvOS) || os(visionOS)
 let GRID_WIDTH: CGFloat = 100
@@ -15,10 +16,10 @@ let GRID_HEIGHT: CGFloat = 80
 #endif
 
 struct AppLinksView: View {
-    var appLinks: [AppLinkAppEntity]
     var handleOpenApp: (AppLinkAppEntity) -> Void
+    @Query private var appLinks: [AppLink]
     let rows: Int
-    @State var cachedAppLinks: [AppLinkAppEntity]
+    @State var cachedAppLinks: [AppLink]
     
     var appIdsIconsHashed: Int {
         var appLinkPairs: Set<String>  = Set()
@@ -35,57 +36,65 @@ struct AppLinksView: View {
     
     @Namespace var linkAnimation
     
-    init(appLinks: [AppLinkAppEntity], rows: Int, handleOpenApp: @escaping (AppLinkAppEntity) -> Void) {
-        self.appLinks = appLinks
+    init(deviceId: String?, rows: Int, handleOpenApp: @escaping (AppLinkAppEntity) -> Void) {
         self.handleOpenApp = handleOpenApp
         self.rows = rows
-        
-        var seenIDs = Set<String>()
-        self.cachedAppLinks = appLinks.filter { appLink in
-            guard !seenIDs.contains(appLink.id) else { return false }
-            seenIDs.insert(appLink.id)
-            return true
-        }
+
+        _appLinks = Query(
+            filter: #Predicate {
+                $0.deviceUid == deviceId
+            },
+            sort: \.lastSelected,
+            order: .reverse
+        )
+        cachedAppLinks = []
     }
     
     var body: some View {
         GeometryReader { geometry in
-            ScrollView(.horizontal, showsIndicators: false) {
-                Spacer()
-                LazyHGrid(rows: Array(repeating:
-                    GridItem(.fixed(CGFloat(GRID_WIDTH))), count: rows), spacing: GRID_SPACING) {
-                    ForEach(Array(cachedAppLinks.enumerated()), id: \.element.id) { index, app in
-                        AppLinkButton(app: app, action: handleOpenApp)
+            if !cachedAppLinks.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    Spacer()
+                    LazyHGrid(rows: Array(repeating:
+                                            GridItem(.fixed(CGFloat(GRID_WIDTH))), count: rows), spacing: GRID_SPACING) {
+                        ForEach(Array(cachedAppLinks.enumerated()), id: \.element.id) { index, app in
+                            AppLinkButton(app: app, action: handleOpenApp)
+                        }
                     }
-                }
-                .scrollTargetLayout()
-                .frame(
-                    minWidth: geometry.frame(in: .global).width,
-                    minHeight: geometry.frame(in: .global).height
-                )
-                
+                        .scrollTargetLayout()
+                        .frame(
+                            minWidth: geometry.frame(in: .global).width,
+                            minHeight: geometry.frame(in: .global).height
+                        )
+
 #if os(macOS)
-                .captureVerticalScrollWheel()
+                        .captureVerticalScrollWheel()
 #endif
-                Spacer()
+                    Spacer()
+                }
+                .scrollTargetBehavior(.viewAligned)
+                .safeAreaPadding(.horizontal, 4)
             }
-            .scrollTargetBehavior(.viewAligned)
-            .safeAreaPadding(.horizontal, 4)
-        }.frame(height: (GRID_HEIGHT) * CGFloat(rows))
-            .animation(.interpolatingSpring, value: cachedAppLinks)
-            .onChange(of: appIdsIconsHashed) {
+        }
+            .frame(height: (GRID_HEIGHT) * CGFloat(rows))
+            .onAppear {
                 cachedAppLinks = appLinks
+            }
+            .onChange(of: appIdsIconsHashed) {
+                withAnimation(.interpolatingSpring) {
+                    cachedAppLinks = appLinks
+                }
             }
     }
 }
 
 struct AppLinkButton: View {
-    let app: AppLinkAppEntity
+    let app: AppLink
     let action: (AppLinkAppEntity) -> Void
     
     var body: some View {
         Button(action: {
-            action(app)
+            action(app.toAppEntity())
         }) {
             VStack {
                 DataImage(from: app.icon, fallback: "questionmark.app")
@@ -112,11 +121,13 @@ struct AppLinkButton: View {
 }
 
 #Preview {
-    AppLinksView(appLinks: getTestingAppLinks().map{$0.toAppEntity()}, rows: 1, handleOpenApp: {_ in })
+    AppLinksView(deviceId: nil, rows: 1, handleOpenApp: {_ in })
+        .modelContainer(devicePreviewContainer)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }
 
 #Preview {
-    AppLinksView(appLinks: getTestingAppLinks().map{$0.toAppEntity()}, rows: 2, handleOpenApp: {_ in })
+    AppLinksView(deviceId: nil, rows: 2, handleOpenApp: {_ in })
+        .modelContainer(devicePreviewContainer)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }

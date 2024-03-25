@@ -47,6 +47,7 @@ struct MediumRemoteView: View {
 } timeline: {
     DeviceChoiceTimelineEntity (
         date: Date.now,
-        device: getTestingDevices()[0].toAppEntity()
+        device: getTestingDevices()[0].toAppEntity(),
+        apps: getTestingAppLinks().map{$0.toAppEntityWithIcon()}
     )
 }
