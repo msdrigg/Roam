@@ -550,7 +550,7 @@ struct RemoteView: View {
 #endif
                 }
                 Spacer()
-                
+
                 VStack(alignment: .center) {
                     // Row with Back and Home buttons
                     TopBar(pressCounter: buttonPressCount, action: pressButton)
@@ -652,12 +652,13 @@ struct RemoteView: View {
     func verticalBody() -> some View {
         VStack(alignment: .center, spacing: 10) {
             // Row with Back and Home buttons
+            Spacer().frame(maxHeight: 60)
             TopBar(pressCounter: buttonPressCount, action: pressButton)
                 .matchedGeometryEffect(id: "topBar", in: animation)
             
             
             
-            Spacer()
+            Spacer().frame(maxHeight: 60)
             
             // Center Controller with directional buttons
             CenterController(pressCounter: buttonPressCount, action: pressButton)
@@ -667,8 +668,7 @@ struct RemoteView: View {
             
             
             if !hideUIForKeyboardEntry {
-                
-                Spacer()
+                Spacer().frame(maxHeight: 60)
                 // Grid of 9 buttons
                 ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([.headphonesMode]) : Set([]) )
                     .transition(.scale.combined(with: .opacity))
@@ -678,6 +678,7 @@ struct RemoteView: View {
             
             
             if !showKeyboardEntry {
+                Spacer().frame(maxHeight: 60)
                 AppLinksView(deviceId: selectedDevice?.udn, rows: appLinkRows, handleOpenApp: launchApp)
 #if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
@@ -687,7 +688,7 @@ struct RemoteView: View {
             } else {
                 Spacer()
             }
-            Spacer()
+            Spacer().frame(maxHeight: 60)
         }
     }
     
