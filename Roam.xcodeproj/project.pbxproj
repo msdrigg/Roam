@@ -90,6 +90,8 @@
 		AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */; };
 		AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */; };
 		AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */; };
+		AF7091F52BB4736D00A6CFF8 /* ETTrace in Frameworks */ = {isa = PBXBuildFile; productRef = AF7091F42BB4736D00A6CFF8 /* ETTrace */; };
+		AF7091F62BB4736D00A6CFF8 /* ETTrace in Embed Frameworks */ = {isa = PBXBuildFile; productRef = AF7091F42BB4736D00A6CFF8 /* ETTrace */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		AF70BB072BA7C4D2009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
 		AF70BB092BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */; };
 		AF70BB0A2BA7CBD0009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
@@ -197,6 +199,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				AF7091F62BB4736D00A6CFF8 /* ETTrace in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -352,6 +355,7 @@
 				AFECDE202AE18519003F6676 /* RTP in Frameworks */,
 				AF06AAD82BA3798E002C8FAF /* libwebp in Frameworks */,
 				AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */,
+				AF7091F52BB4736D00A6CFF8 /* ETTrace in Frameworks */,
 				AFECDE1D2AE18511003F6676 /* Opus in Frameworks */,
 				AF19CA212AE4536700A42DFF /* AsyncAlgorithms in Frameworks */,
 			);
@@ -669,6 +673,7 @@
 				AFECDE1F2AE18519003F6676 /* RTP */,
 				AF19CA202AE4536700A42DFF /* AsyncAlgorithms */,
 				AF06AAD72BA3798E002C8FAF /* libwebp */,
+				AF7091F42BB4736D00A6CFF8 /* ETTrace */,
 			);
 			productName = BetterRemote;
 			productReference = AFC24EFB2AD0E5A1002AB66C /* Roam.app */;
@@ -1422,6 +1427,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AFECDE182AE184FE003F6676 /* XCRemoteSwiftPackageReference "XMLCoder" */;
 			productName = XMLCoder;
+		};
+		AF7091F42BB4736D00A6CFF8 /* ETTrace */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF15FBF02BB0E61E004AC230 /* XCRemoteSwiftPackageReference "ETTrace" */;
+			productName = ETTrace;
 		};
 		AFD9C4F42AE9830100C4079C /* XMLCoder */ = {
 			isa = XCSwiftPackageProductDependency;
