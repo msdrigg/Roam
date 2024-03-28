@@ -262,6 +262,7 @@ actor DeviceActor {
         )
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
+        matchingIds.propertiesToFetch = []
         do {
             let matchingIds = try self.modelContext.fetchIdentifiers(matchingIds)
             

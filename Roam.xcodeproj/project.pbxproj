@@ -66,8 +66,17 @@
 		AF26A22B2AF1A2B90070250F /* SmallAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */; };
 		AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */; };
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
-		AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */; };
+		AF2740102AE02C25007C6208 /* RoamWidgetsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsApp.swift */; };
 		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; platformFilters = (ios, macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF35035A2BB493F3004F4337 /* RoamClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3503592BB493F3004F4337 /* RoamClipApp.swift */; };
+		AF35035C2BB493F3004F4337 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF35035B2BB493F3004F4337 /* ContentView.swift */; };
+		AF35035E2BB493F3004F4337 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF35035D2BB493F3004F4337 /* Item.swift */; };
+		AF3503602BB493F4004F4337 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF35035F2BB493F4004F4337 /* Assets.xcassets */; };
+		AF3503632BB493F4004F4337 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF3503622BB493F4004F4337 /* Preview Assets.xcassets */; };
+		AF3503682BB493F4004F4337 /* RoamClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = AF3503572BB493F3004F4337 /* RoamClip.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF3503882BB494A6004F4337 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3503872BB494A6004F4337 /* main.swift */; };
+		AF35038F2BB499F3004F4337 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF3503942BB499FA004F4337 /* libwebp in Frameworks */ = {isa = PBXBuildFile; platformFilters = (watchos, ); productRef = AF3503932BB499FA004F4337 /* libwebp */; };
 		AF35ACEB2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */; };
 		AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */; };
 		AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */; };
@@ -90,6 +99,9 @@
 		AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */; };
 		AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */; };
 		AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */; };
+		AF65A8882BB4B7D4005ECF7F /* RoamWindowDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF65A8872BB4B7D4005ECF7F /* RoamWindowDelegate.swift */; };
+		AF65A88A2BB5ABF9005ECF7F /* RoamAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */; };
+		AF65A88C2BB5AD02005ECF7F /* ExternalAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */; };
 		AF70BB072BA7C4D2009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
 		AF70BB092BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */; };
 		AF70BB0A2BA7CBD0009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
@@ -177,6 +189,20 @@
 			remoteGlobalIDString = AF27400A2AE02C25007C6208;
 			remoteInfo = BetterRemoteWidgetsExtension;
 		};
+		AF3503662BB493F4004F4337 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF3503562BB493F3004F4337;
+			remoteInfo = RoamClip;
+		};
+		AF3503902BB499F3004F4337 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFC24EF32AD0E5A1002AB66C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF27400A2AE02C25007C6208;
+			remoteInfo = RoamWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -189,6 +215,37 @@
 				AF15C2532AE8672800B79FD9 /* Roam.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF3503692BB493F4004F4337 /* Embed App Clips */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/AppClips";
+			dstSubfolderSpec = 16;
+			files = (
+				AF3503682BB493F4004F4337 /* RoamClip.app in Embed App Clips */,
+			);
+			name = "Embed App Clips";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF3503832BB494A6004F4337 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		AF3503922BB499F3004F4337 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AF35038F2BB499F3004F4337 /* RoamWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AF95B7302ADF3F5A005FC338 /* Embed Frameworks */ = {
@@ -249,9 +306,19 @@
 		AF19CA3B2AE6BFC300A42DFF /* DeviceApi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceApi.swift; sourceTree = "<group>"; };
 		AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteButtonAppEnum.swift; sourceTree = "<group>"; };
 		AF27400B2AE02C25007C6208 /* RoamWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoamWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWidgetsBundle.swift; sourceTree = "<group>"; };
+		AF27400F2AE02C25007C6208 /* RoamWidgetsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWidgetsApp.swift; sourceTree = "<group>"; };
 		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWidgets.entitlements; sourceTree = "<group>"; };
+		AF3503572BB493F3004F4337 /* RoamClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoamClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF3503592BB493F3004F4337 /* RoamClipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamClipApp.swift; sourceTree = "<group>"; };
+		AF35035B2BB493F3004F4337 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AF35035D2BB493F3004F4337 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		AF35035F2BB493F4004F4337 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AF3503622BB493F4004F4337 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		AF3503642BB493F4004F4337 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AF3503652BB493F4004F4337 /* RoamClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamClip.entitlements; sourceTree = "<group>"; };
+		AF3503852BB494A6004F4337 /* RoamCli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RoamCli; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF3503872BB494A6004F4337 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeyboardMonitorUIKit.swift; sourceTree = "<group>"; };
 		AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonGrid.swift; sourceTree = "<group>"; };
@@ -273,6 +340,9 @@
 		AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingExtensions.swift; sourceTree = "<group>"; };
 		AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF5FDAD52ADB3C4B006CDEB3 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
+		AF65A8872BB4B7D4005ECF7F /* RoamWindowDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWindowDelegate.swift; sourceTree = "<group>"; };
+		AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamAppDelegate.swift; sourceTree = "<group>"; };
+		AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalAboutView.swift; sourceTree = "<group>"; };
 		AF70BB062BA7C4D2009A06EC /* HoveredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoveredView.swift; sourceTree = "<group>"; };
 		AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddedHoverButtonStyle.swift; sourceTree = "<group>"; };
 		AF76B8152AD8A14600DF6FF7 /* RokuSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RokuSession.swift; sourceTree = "<group>"; };
@@ -339,9 +409,24 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF3503942BB499FA004F4337 /* libwebp in Frameworks */,
 				AF19CA3A2AE6BF9D00A42DFF /* XMLCoder in Frameworks */,
 				AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */,
 				AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF3503542BB493F3004F4337 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF3503822BB494A6004F4337 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,6 +456,7 @@
 				AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */,
 				AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */,
 				AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */,
+				AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -420,18 +506,46 @@
 		AF27400E2AE02C25007C6208 /* RoamWidgets */ = {
 			isa = PBXGroup;
 			children = (
-				AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */,
 				AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */,
 				AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */,
 				AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */,
 				AFC4A65B2AE8AABA005DAC6C /* AppWidget.swift */,
 				AF95B71D2ADF3BA7005FC338 /* MediumRemoteWidget.swift */,
-				AF27400F2AE02C25007C6208 /* RoamWidgetsBundle.swift */,
+				AF27400F2AE02C25007C6208 /* RoamWidgetsApp.swift */,
 				AF2740172AE02C26007C6208 /* Info.plist */,
 				AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */,
-				AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */,
 			);
 			path = RoamWidgets;
+			sourceTree = "<group>";
+		};
+		AF3503582BB493F3004F4337 /* RoamClip */ = {
+			isa = PBXGroup;
+			children = (
+				AF3503592BB493F3004F4337 /* RoamClipApp.swift */,
+				AF35035B2BB493F3004F4337 /* ContentView.swift */,
+				AF35035D2BB493F3004F4337 /* Item.swift */,
+				AF35035F2BB493F4004F4337 /* Assets.xcassets */,
+				AF3503642BB493F4004F4337 /* Info.plist */,
+				AF3503652BB493F4004F4337 /* RoamClip.entitlements */,
+				AF3503612BB493F4004F4337 /* Preview Content */,
+			);
+			path = RoamClip;
+			sourceTree = "<group>";
+		};
+		AF3503612BB493F4004F4337 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				AF3503622BB493F4004F4337 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		AF3503862BB494A6004F4337 /* RoamCli */ = {
+			isa = PBXGroup;
+			children = (
+				AF3503872BB494A6004F4337 /* main.swift */,
+			);
+			path = RoamCli;
 			sourceTree = "<group>";
 		};
 		AF4D5F322AD4355E0055AF35 /* Frameworks */ = {
@@ -473,6 +587,7 @@
 				AF779BF42BA4D95D00231BC5 /* ViewExtensions.swift */,
 				AF779BF62BA4DDD000231BC5 /* WrappingHStack.swift */,
 				AF70BB062BA7C4D2009A06EC /* HoveredView.swift */,
+				AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */,
 				AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */,
 			);
 			path = Views;
@@ -544,6 +659,8 @@
 				AF95B7372ADF3F9E005FC338 /* Shared */,
 				AF27400E2AE02C25007C6208 /* RoamWidgets */,
 				AF15C2472AE8672700B79FD9 /* RoamWatch */,
+				AF3503582BB493F3004F4337 /* RoamClip */,
+				AF3503862BB494A6004F4337 /* RoamCli */,
 				AFC24EFC2AD0E5A1002AB66C /* Products */,
 				AF4D5F322AD4355E0055AF35 /* Frameworks */,
 			);
@@ -555,6 +672,8 @@
 				AFC24EFB2AD0E5A1002AB66C /* Roam.app */,
 				AF27400B2AE02C25007C6208 /* RoamWidgets.appex */,
 				AF15C2462AE8672700B79FD9 /* Roam.app */,
+				AF3503572BB493F3004F4337 /* RoamClip.app */,
+				AF3503852BB494A6004F4337 /* RoamCli */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -563,6 +682,8 @@
 			isa = PBXGroup;
 			children = (
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
+				AF65A8872BB4B7D4005ECF7F /* RoamWindowDelegate.swift */,
+				AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */,
 				AFC4A6592AE88411005DAC6C /* LatencyListener.swift */,
 				AFD590CF2AEC673C00189620 /* WatchConnector.swift */,
 				AF0C82862AEB3AA500CBE7F8 /* Views */,
@@ -580,6 +701,7 @@
 			children = (
 				AF19CA252AE54AA800A42DFF /* Discovery */,
 				AF19CA3B2AE6BFC300A42DFF /* DeviceApi.swift */,
+				AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */,
 				AF0C828F2AEBF2A200CBE7F8 /* ECPSession.swift */,
 				AFE89A2C2B9E793E0078387C /* Debugger.swift */,
 			);
@@ -610,10 +732,12 @@
 				AF15C2422AE8672700B79FD9 /* Sources */,
 				AF15C2432AE8672700B79FD9 /* Frameworks */,
 				AF15C2442AE8672700B79FD9 /* Resources */,
+				AF3503922BB499F3004F4337 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AF3503912BB499F3004F4337 /* PBXTargetDependency */,
 			);
 			name = RoamWatch;
 			packageProductDependencies = (
@@ -639,10 +763,45 @@
 			name = RoamWidgets;
 			packageProductDependencies = (
 				AF19CA392AE6BF9D00A42DFF /* XMLCoder */,
+				AF3503932BB499FA004F4337 /* libwebp */,
 			);
 			productName = BetterRemoteWidgetsExtension;
 			productReference = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		AF3503562BB493F3004F4337 /* RoamClip */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF35036C2BB493F4004F4337 /* Build configuration list for PBXNativeTarget "RoamClip" */;
+			buildPhases = (
+				AF3503532BB493F3004F4337 /* Sources */,
+				AF3503542BB493F3004F4337 /* Frameworks */,
+				AF3503552BB493F3004F4337 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RoamClip;
+			productName = RoamClip;
+			productReference = AF3503572BB493F3004F4337 /* RoamClip.app */;
+			productType = "com.apple.product-type.application.on-demand-install-capable";
+		};
+		AF3503842BB494A6004F4337 /* RoamCli */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF3503892BB494A6004F4337 /* Build configuration list for PBXNativeTarget "RoamCli" */;
+			buildPhases = (
+				AF3503812BB494A6004F4337 /* Sources */,
+				AF3503822BB494A6004F4337 /* Frameworks */,
+				AF3503832BB494A6004F4337 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RoamCli;
+			productName = RoamCli;
+			productReference = AF3503852BB494A6004F4337 /* RoamCli */;
+			productType = "com.apple.product-type.tool";
 		};
 		AFC24EFA2AD0E5A1002AB66C /* Roam */ = {
 			isa = PBXNativeTarget;
@@ -655,12 +814,14 @@
 				AF95B7302ADF3F5A005FC338 /* Embed Frameworks */,
 				AFA079CE2AE02352003E2754 /* Embed ExtensionKit Extensions */,
 				AF15C2572AE8672800B79FD9 /* Embed Watch Content */,
+				AF3503692BB493F4004F4337 /* Embed App Clips */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				AF27401A2AE02C26007C6208 /* PBXTargetDependency */,
 				AF15C2522AE8672800B79FD9 /* PBXTargetDependency */,
+				AF3503672BB493F4004F4337 /* PBXTargetDependency */,
 			);
 			name = Roam;
 			packageProductDependencies = (
@@ -681,7 +842,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 1530;
 				LastUpgradeCheck = 1510;
 				TargetAttributes = {
 					AF15C2452AE8672700B79FD9 = {
@@ -689,6 +850,12 @@
 					};
 					AF27400A2AE02C25007C6208 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					AF3503562BB493F3004F4337 = {
+						CreatedOnToolsVersion = 15.3;
+					};
+					AF3503842BB494A6004F4337 = {
+						CreatedOnToolsVersion = 15.3;
 					};
 					AFC24EFA2AD0E5A1002AB66C = {
 						CreatedOnToolsVersion = 15.0;
@@ -719,6 +886,8 @@
 				AFC24EFA2AD0E5A1002AB66C /* Roam */,
 				AF15C2452AE8672700B79FD9 /* RoamWatch */,
 				AF27400A2AE02C25007C6208 /* RoamWidgets */,
+				AF3503562BB493F3004F4337 /* RoamClip */,
+				AF3503842BB494A6004F4337 /* RoamCli */,
 			);
 		};
 /* End PBXProject section */
@@ -740,6 +909,15 @@
 			files = (
 				AF5ED8D52AE984E9007DB2B8 /* WidgetColor.xcassets in Resources */,
 				AF0C828A2AEB463400CBE7F8 /* AccentColor.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF3503552BB493F3004F4337 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF3503632BB493F4004F4337 /* Preview Assets.xcassets in Resources */,
+				AF3503602BB493F4004F4337 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -818,7 +996,7 @@
 				AF205B2C2AE02D1C00041CDF /* WidgetIntents.swift in Sources */,
 				AF19CA242AE455B400A42DFF /* DataHelpers.swift in Sources */,
 				AFC4A65C2AE8AABA005DAC6C /* AppWidget.swift in Sources */,
-				AF2740102AE02C25007C6208 /* RoamWidgetsBundle.swift in Sources */,
+				AF2740102AE02C25007C6208 /* RoamWidgetsApp.swift in Sources */,
 				AFD590D82AEC787700189620 /* ModelContainer.swift in Sources */,
 				AF4244302BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AF205B2D2AE02D1C00041CDF /* DeviceAppEntity.swift in Sources */,
@@ -839,11 +1017,30 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AF3503532BB493F3004F4337 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF35035C2BB493F3004F4337 /* ContentView.swift in Sources */,
+				AF35035E2BB493F3004F4337 /* Item.swift in Sources */,
+				AF35035A2BB493F3004F4337 /* RoamClipApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF3503812BB494A6004F4337 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF3503882BB494A6004F4337 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AFC24EF72AD0E5A1002AB66C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				AF0C82952AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */,
+				AF65A88A2BB5ABF9005ECF7F /* RoamAppDelegate.swift in Sources */,
 				AF19CA2B2AE54AD100A42DFF /* SSDPDiscovery.swift in Sources */,
 				AF20AD0C2AE01E9100D371C7 /* AppLink.swift in Sources */,
 				AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */,
@@ -863,6 +1060,7 @@
 				AF0C82992AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF19CA232AE455B400A42DFF /* DataHelpers.swift in Sources */,
 				AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */,
+				AF65A88C2BB5AD02005ECF7F /* ExternalAboutView.swift in Sources */,
 				AF0042752AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
 				AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */,
 				AF7BD44F2AE1789800F5E087 /* WidgetIntents.swift in Sources */,
@@ -905,6 +1103,7 @@
 				AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */,
 				AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
+				AF65A8882BB4B7D4005ECF7F /* RoamWindowDelegate.swift in Sources */,
 				AF779BF52BA4D95D00231BC5 /* ViewExtensions.swift in Sources */,
 				AF19CA2E2AE692E600A42DFF /* AsyncBufferedChannel.swift in Sources */,
 			);
@@ -927,6 +1126,17 @@
 			);
 			target = AF27400A2AE02C25007C6208 /* RoamWidgets */;
 			targetProxy = AF2740192AE02C26007C6208 /* PBXContainerItemProxy */;
+		};
+		AF3503672BB493F4004F4337 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = AF3503562BB493F3004F4337 /* RoamClip */;
+			targetProxy = AF3503662BB493F4004F4337 /* PBXContainerItemProxy */;
+		};
+		AF3503912BB499F3004F4337 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AF27400A2AE02C25007C6208 /* RoamWidgets */;
+			targetProxy = AF3503902BB499F3004F4337 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1026,14 +1236,16 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = "$(MARKETING_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.RoamWidgets;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=watchos*]" = com.msdrigg.roam.watchkitapp.RoamWidgets;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=watchsimulator*]" = com.msdrigg.roam.watchkitapp.RoamWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,4";
 			};
 			name = Debug;
 		};
@@ -1067,14 +1279,125 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = "$(MARKETING_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.RoamWidgets;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=watchos*]" = com.msdrigg.roam.watchkitapp.RoamWidgets;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=watchsimulator*]" = com.msdrigg.roam.watchkitapp.RoamWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,4";
+			};
+			name = Release;
+		};
+		AF35036A2BB493F4004F4337 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RoamClip/RoamClip.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				DEVELOPMENT_ASSET_PATHS = "\"RoamClip/Preview Content\"";
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RoamClip/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Roam;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(MARKETING_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.Clip;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AF35036B2BB493F4004F4337 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = RoamClip/RoamClip.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				DEVELOPMENT_ASSET_PATHS = "\"RoamClip/Preview Content\"";
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RoamClip/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Roam;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(MARKETING_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.msdrigg.roam.Clip;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AF35038A2BB494A6004F4337 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MARKETING_VERSION = "$(MARKETING_VERSION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AF35038B2BB494A6004F4337 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
+				DEVELOPMENT_TEAM = 2865NTZ7H3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MARKETING_VERSION = "$(MARKETING_VERSION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -1331,6 +1654,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		AF35036C2BB493F4004F4337 /* Build configuration list for PBXNativeTarget "RoamClip" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF35036A2BB493F4004F4337 /* Debug */,
+				AF35036B2BB493F4004F4337 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AF3503892BB494A6004F4337 /* Build configuration list for PBXNativeTarget "RoamCli" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF35038A2BB494A6004F4337 /* Debug */,
+				AF35038B2BB494A6004F4337 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		AFC24EF62AD0E5A1002AB66C /* Build configuration list for PBXProject "Roam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1422,6 +1763,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AFECDE182AE184FE003F6676 /* XCRemoteSwiftPackageReference "XMLCoder" */;
 			productName = XMLCoder;
+		};
+		AF3503932BB499FA004F4337 /* libwebp */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */;
+			productName = libwebp;
 		};
 		AFD9C4F42AE9830100C4079C /* XMLCoder */ = {
 			isa = XCSwiftPackageProductDependency;

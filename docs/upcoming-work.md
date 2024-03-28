@@ -15,6 +15,12 @@
     - On all changes after reconnecting (through notify or anything)
         - Update Device (stored) and DeviceState (voilatile)
     - After reconnecting/disconnecting, update online status in remote view
+- More Apple Integrations
+    - HomeKit
+    - Universal links
+        - for debugging
+        - for adding a device
+    - App Clip
 - Update user messaging when errors may occur
     - When clicking on a disabled button, open popover to show why it’s disabled
         - Show a info indicator on the button to indicate that information can be received when it’s clicked?
