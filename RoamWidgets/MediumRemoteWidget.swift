@@ -1,3 +1,4 @@
+#if !os(watchOS)
 import Foundation
 import SwiftUI
 import SwiftData
@@ -51,3 +52,5 @@ struct MediumRemoteView: View {
         apps: getTestingAppLinks().map{$0.toAppEntityWithIcon()}
     )
 }
+
+#endif

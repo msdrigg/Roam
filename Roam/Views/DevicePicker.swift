@@ -21,6 +21,9 @@ struct DevicePicker: View {
         DeviceActor(modelContainer: modelContext.container)
     }
     
+    @AppStorage(UserDefaultKeys.userMajorActionCount) private var majorActionsCount = 0
+    
+    
     let devices: [Device]
     @Binding var device: Device?
     
@@ -71,6 +74,13 @@ struct DevicePicker: View {
             }
             .labelStyle(.titleAndIcon)
 #endif
+            if (majorActionsCount > 5) {
+                Divider()
+                ShareLink(item: URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!) {
+                    Label("Gift Roam to a friend", systemImage: "gift")
+                }
+                .labelStyle(.titleAndIcon)
+            }
         } label: {
             if let device = device {
                 Group {
