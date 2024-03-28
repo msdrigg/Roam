@@ -1,9 +1,3 @@
-//  StatelessDeviceAPI.swift
-//  RoamWidgets
-//
-//  Created by Scott Driggers on 10/27/23.
-//
-
 import Foundation
 import Network
 import os.log

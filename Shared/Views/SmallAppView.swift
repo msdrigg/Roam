@@ -5,18 +5,25 @@ import Foundation
 struct SmallAppView: View {
     let device: DeviceAppEntity?
     let apps: [AppLinkAppEntity]
+    let rows: Int
     
     var appRows: [[AppLinkAppEntity?]] {
         if device == nil && apps.isEmpty {
-            return [[nil, nil], [nil, nil]]
+            if rows == 1 {
+                return [[nil, nil]]
+            } else {
+                return [[nil, nil], [nil, nil]]
+            }
         }
-        var rows: [[AppLinkAppEntity?]] = []
         let cappedApps = Array(apps.prefix(4))
+        let rowCount = rows
+        let rowSize = cappedApps.count / rowCount
+        var rows: [[AppLinkAppEntity?]] = []
         
-        for i in stride(from: 0, to: cappedApps.count, by: 2) {
-            let endIndex = min(i + 2, cappedApps.count)
+        for i in stride(from: 0, to: cappedApps.count, by: rowSize) {
+            let endIndex = min(i + rowCount, cappedApps.count)
             let row = Array(cappedApps[i..<endIndex])
-            rows.append(row + [nil, nil][..<(2 - row.count)])
+            rows.append(row + [nil, nil][..<(rowCount - row.count)])
         }
         
         return rows
@@ -34,7 +41,6 @@ struct SmallAppView: View {
                                     DataImage(from: app.icon, fallback: "questionmark.app")
                                         .resizable().aspectRatio(contentMode: .fit)
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
-                                        .frame(width: 60, height: 60)
                                         .shadow(radius: 4)
                                     
                                         Text(" \(app.name) ")
@@ -53,7 +59,6 @@ struct SmallAppView: View {
                             VStack(spacing: 0) {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(Color.gray.opacity(0.5))
-                                    .frame(width: 60, height: 60)
                                     .shadow(radius: 4)
 
                                 Text("App")
@@ -69,6 +74,7 @@ struct SmallAppView: View {
                 }
             }
         }
+        .padding(.all, 4)
         .fontDesign(.rounded)
         .font(.body.bold())
         .buttonBorderShape(.roundedRectangle)
@@ -79,8 +85,12 @@ struct SmallAppView: View {
     }
 }
 
-#Preview {
-    SmallAppView(device: nil, apps: [])
+#Preview("TwoRowsSmallAppView") {
+    SmallAppView(device: nil, apps: [], rows: 2)
+        .frame(width: 200, height: 200)
+}
+#Preview("OneRowSmallAppView") {
+    SmallAppView(device: nil, apps: [], rows: 1)
         .frame(width: 200, height: 200)
 }
 

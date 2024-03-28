@@ -4,6 +4,7 @@ import SwiftData
 import AppIntents
 import WidgetKit
 
+#if !os(watchOS)
 struct SmallDpadWidget: Widget {
     let dpad: [[RemoteButton?]] = [
         [
@@ -86,3 +87,40 @@ struct SmallMediaWidget: Widget {
         apps: []
     )
 }
+#endif
+
+#if !os(macOS)
+struct SmallVolumeWidget: Widget {
+    let dpad: [[RemoteButton?]] = [[
+        .volumeDown, .mute, .volumeUp
+    ]]
+    
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: "com.msdrigg.roam.small-volume-remote",
+            intent: DeviceChoiceIntent.self,
+            provider: RemoteControlProvider()
+        ) { entry in
+            SmallRemoteView(device: entry.device, controls: dpad)
+                .containerBackground(Color("WidgetBackground"), for: .widget)
+        }
+        .supportedFamilies([.accessoryRectangular])
+    }
+}
+
+
+#Preview(as: WidgetFamily.accessoryRectangular) {
+    SmallVolumeWidget()
+} timeline: {
+    DeviceChoiceTimelineEntity (
+        date: Date.now,
+        device: getTestingDevices()[0].toAppEntity(),
+        apps: getTestingAppLinks().map{$0.toAppEntityWithIcon()}
+    )
+    DeviceChoiceTimelineEntity (
+        date: Date.now,
+        device: nil,
+        apps: []
+    )
+}
+#endif

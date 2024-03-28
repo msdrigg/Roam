@@ -1,0 +1,22 @@
+{
+    "applinks": {
+        "details": [
+            {
+                "appIDs": [
+                    "2865NTZ7H3.com.msdrigg.roam.Clip"
+                ],
+                "components": [
+                    {
+                        "/": "/deep-link/*",
+                        "comment": "Matches any URL whose path starts with /deep-link/"
+                    }
+                ]
+            }
+        ]
+    },
+    "appclips": {
+        "apps": [
+            "2865NTZ7H3.com.msdrigg.roam.Clip"
+        ]
+    }
+}
