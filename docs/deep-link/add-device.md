@@ -11,6 +11,9 @@ anchorElements.forEach((anchor) => {
 if (anchor.textContent === 'here') {
 const queryParamsString = queryParams.toString();
 anchor.href = `roamforroku://roam.msd3.io/add-device?${queryParamsString}`;
+setTimeout(() => {
+anchor.click()
+}, 200);
 }
 });
 });
