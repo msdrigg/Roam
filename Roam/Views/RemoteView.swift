@@ -540,16 +540,22 @@ struct RemoteView: View {
     
     /// Handles the incoming URL and performs validations before acknowledging.
     private func handleIncomingURL(_ url: URL) {
-        guard url.scheme == "roamforroku" else {
+        guard url.host == "roam.msd3.io" else {
             return
         }
         
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-            Self.logger.error("Getting Invalid URL")
+            Self.logger.error("Getting Invalid URL host")
             return
         }
+        var path = url.pathComponents
+        guard let dlpath = path.first, dlpath == "deep-link" else {
+            Self.logger.error("Getting Invalid URL path")
+            return
+        }
+        path.removeFirst()
 
-        guard let action = components.host else {
+        guard let action = path.first else {
             Self.logger.warning("Getting url deep link with no action")
             return
         }
@@ -557,13 +563,10 @@ struct RemoteView: View {
         
         if action == "add-device" {
             // Need to parse device info from query parameters
-        } else if action == "debugger" {
+        } else if action == "feedback" {
             //
         } else if action == "settings" {
             openAppSettings()
-            //
-        } else if action == "about" {
-            
         } else {
             Self.logger.warning("Trying to open app with back action \(action)")
         }
