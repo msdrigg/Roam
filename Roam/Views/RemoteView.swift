@@ -538,16 +538,11 @@ struct RemoteView: View {
         }
     }
     
-    /// Handles the incoming URL and performs validations before acknowledging.
     private func handleIncomingURL(_ url: URL) {
         guard url.host == "roam.msd3.io" else {
             return
         }
         
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-            Self.logger.error("Getting Invalid URL host")
-            return
-        }
         var path = url.pathComponents
         guard let dlpath = path.first, dlpath == "deep-link" else {
             Self.logger.error("Getting Invalid URL path")
