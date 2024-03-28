@@ -19,6 +19,11 @@ let WEBP_LICENSES = [
 ]
 #endif
 
+#if os(macOS)
+let MACOS_LICENSES = [
+    Dependency(name: "SettingsAccess", link: "https://github.com/orchetect/SettingsAccess", licenseType: "MIT")
+]
+#endif
 
 let MAIN_LICENSES: [Dependency] = [
     Dependency(name: "Opus", link: "https://github.com/xiph/opus/tree/master", licenseType: "BSD-3-Clause"),
@@ -34,6 +39,8 @@ let MAIN_LICENSES: [Dependency] = [
 
 #if os(watchOS) || os(tvOS)
 let LICENSES = MAIN_LICENSES + WEBP_LICENSES
+#elseif os(macOS)
+let LICENSES = MAIN_LICENSES + MACOS_LICENSES
 #else
 let LICENSES = MAIN_LICENSES
 #endif
@@ -92,7 +99,6 @@ struct AboutView: View {
         }
     }
 }
-
 
 enum AboutDestination{
     case Global

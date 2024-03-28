@@ -68,7 +68,7 @@ struct DevicePicker: View {
                 Label("Settings", systemImage: "gear")
                     .labelStyle(.titleAndIcon)
             }
-#else
+#elseif !APPCLIP
             NavigationLink(value: SettingsDestination.Global) {
                 Label("Settings", systemImage: "gear")
             }

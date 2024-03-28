@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {% if page.appclip %}
+    <meta name="apple-itunes-app" content="app-id=6469834197, app-clip-bundle-id=com.msdrigg.roam.Clip, app-clip-display=card">
+    {% endif %}
 
     <title>
         {% if page.title %}
@@ -39,4 +42,24 @@
       </div>
     </main>
   </body>
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const queryParams = new URLSearchParams(window.location.search);
+        const anchors = document.querySelectorAll('a');
+        anchors.forEach(anchor => {
+            if (anchor.textContent.includes('+queryparams')) {
+                anchor.textContent = anchor.textContent.replace('+queryparams', '');
+                const queryParams = new URLSearchParams(window.location.search);
+                const queryParamsString = queryParams.toString();
+                anchor.href = `${anchor.href}?${queryParamsString}`;
+            }
+            
+            if (anchor.textContent.includes("+quickclick")) {
+                setTimeout(() => {
+                    anchor.click();
+                }, 200);
+            }
+        });
+    });
+  </script>
 </html>

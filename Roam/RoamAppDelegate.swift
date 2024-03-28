@@ -1,10 +1,3 @@
-//
-//  RoamAppDelegate.swift
-//  Roam
-//
-//  Created by Scott Driggers on 3/28/24.
-//
-
 import Foundation
 
 #if os(macOS)
