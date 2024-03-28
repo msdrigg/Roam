@@ -193,6 +193,16 @@ struct RemoteView: View {
     }
 #endif
     
+    private func openAppSettings() {
+        #if os(macOS)
+        if let settingsUrl = URL(string: "x-apple.systempreferences:com.msdrigg.roam") {
+            NSWorkspace.shared.open(settingsUrl)
+        }
+        #else
+        navigationPath.append(SettingsDestination.Global)
+        #endif
+    }
+    
     var body: some View {
         if runningInPreview {
             SettingsNavigationWrapper(path: $navigationPath) {
@@ -520,8 +530,45 @@ struct RemoteView: View {
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle)
         .labelStyle(.iconOnly)
+        /// Responds to any URLs opened with our app. In this case, the URLs
+        /// defined inside the URL Types section.
+        .onOpenURL { incomingURL in
+            Self.logger.info("App was opened via URL: \(incomingURL)")
+            handleIncomingURL(incomingURL)
+        }
     }
     
+    /// Handles the incoming URL and performs validations before acknowledging.
+    private func handleIncomingURL(_ url: URL) {
+        guard url.scheme == "roamforroku" else {
+            return
+        }
+        
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+            Self.logger.error("Getting Invalid URL")
+            return
+        }
+
+        guard let action = components.host else {
+            Self.logger.warning("Getting url deep link with no action")
+            return
+        }
+        Self.logger.info("Getting action \(action)")
+        
+        if action == "add-device" {
+            // Need to parse device info from query parameters
+        } else if action == "debugger" {
+            //
+        } else if action == "settings" {
+            openAppSettings()
+            //
+        } else if action == "about" {
+            
+        } else {
+            Self.logger.warning("Trying to open app with back action \(action)")
+        }
+    }
+
     @ViewBuilder
     var networkConnectivityBanner: some View {
         if networkMonitor.networkConnection == .none {

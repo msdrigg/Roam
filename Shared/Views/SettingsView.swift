@@ -777,6 +777,8 @@ extension Binding {
 
 enum SettingsDestination{
     case Global
+    case About
+    case Debugging
 }
 
 struct DeviceSettingsDestination: Hashable {

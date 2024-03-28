@@ -11,6 +11,7 @@ struct DeviceChoiceTimelineEntity: TimelineEntry {
 }
 
 struct RemoteControlProvider: AppIntentTimelineProvider {
+    
     typealias Intent = DeviceChoiceIntent
     typealias Entry = DeviceChoiceTimelineEntity
     
@@ -20,6 +21,12 @@ struct RemoteControlProvider: AppIntentTimelineProvider {
         modelContainer = getSharedModelContainer()
     }
     
+    func recommendations() -> [AppIntentRecommendation<DeviceChoiceIntent>] {
+        return [
+            AppIntentRecommendation(intent: DeviceChoiceIntent(), description: Text("Control your Roku!"))
+        ]
+    }
+
     func snapshot(for configuration: DeviceChoiceIntent, in context: Context) async -> DeviceChoiceTimelineEntity {
         let device = if !configuration.useDefaultDevice, let device = configuration.device {
             device
