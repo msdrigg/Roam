@@ -36,6 +36,73 @@ extension Device {
     }
 }
 
+func getHost(from urlString: String) -> String {
+    guard let url = URL(string: addSchemeAndPort(to: urlString)), let host = url.host else {
+        return urlString
+    }
+    return host
+}
+
+func addSchemeAndPort(to urlString: String, scheme: String = "http", port: Int = 8060) -> String {
+    let urlString = "http://" + urlString.replacing(/^.*:\/\//, with: { _ in "" })
+    
+    guard let url = URL(string: urlString), var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+        return urlString
+    }
+    components.scheme = scheme
+    components.port = url.port ?? port // Replace the port only if it's not already specified
+    
+    return (components.string ?? urlString).replacing(/\/*$/, with: {_ in ""}) + "/"
+}
+
+@main
+func saveDevice(existingDevice device: Device, newIP deviceIP: String, newDeviceName deviceName: String, deviceActor: DeviceActor) async {
+    // Try to get device id
+    // Watchos can't check tcp connection, so just do the request
+    let cleanedString = deviceIP.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "'", with: "")
+    let deviceUrl = addSchemeAndPort(to: cleanedString)
+    Device.logger.info("Getting device url \(deviceUrl)")
+    // Save device id and location early
+    do {
+        try await deviceActor.updateDevice(
+            device.persistentModelID, name: deviceName, location: deviceUrl, udn: device.udn
+        )
+    } catch {
+        Device.logger.error("Error early saving device with location \(deviceUrl): \(error)")
+    }
+    let existingUDN = device.udn
+    
+    let deviceInfo = await fetchDeviceInfo(location: deviceUrl)
+    
+    // If we get a device with a different UDN, replace the device
+    if let udn = deviceInfo?.udn, udn != existingUDN {
+        do {
+            try await deviceActor.delete(device.persistentModelID)
+            let _ = try await deviceActor.addOrReplaceDevice(
+                location: deviceUrl, friendlyDeviceName: deviceName, udn: udn
+            )
+            
+        } catch {
+            Device.logger.error("Error saving device \(error)")
+        }
+        return
+    }
+    
+    do {
+        Device.logger.info("Saving device \(deviceUrl) with id \(String(describing: device.persistentModelID))")
+        try await deviceActor.updateDevice(
+            device.persistentModelID,
+            name: deviceName,
+            location: deviceUrl,
+            udn: existingUDN
+        )
+        Device.logger.info("Saved device \(deviceUrl)")
+    } catch {
+        Device.logger.error("Error saving device \(error)")
+    }
+}
+
+
 func getTestingDevices() -> [Device] {
     return [
         Device(name: "Living Room TV", location: "http://192.168.0.1:8060/", lastSelectedAt: Date(timeIntervalSince1970: 1696767580.0), udn: "TD1"),

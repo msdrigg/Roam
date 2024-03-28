@@ -30,7 +30,7 @@ public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Se
     }
 }
 
-#if !os(tvOS)
+#if !os(tvOS) && !APPCLIP
 extension AppLinkAppEntity: AppEntity {
     public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "TV App")
     public static var defaultQuery = AppLinkAppEntityQuery()

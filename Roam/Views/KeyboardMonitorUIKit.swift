@@ -1,10 +1,3 @@
-//
-//  KeyboardMonitor.swift
-//  Roam
-//
-//  Created by Scott Driggers on 10/20/23.
-//
-
 #if !os(macOS)
 import Foundation
 import SwiftUI

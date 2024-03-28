@@ -41,6 +41,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(deviceFetchDescriptor) private var devices: [Device]
     @Binding var path: NavigationPath
+    let destination: SettingsDestination
     
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var isScanning: Bool = false
@@ -311,7 +312,11 @@ struct SettingsView: View {
                 NavigationLink("About", value: AboutDestination.Global)
             }
         }
-        
+        .onAppear {
+            if destination == .Debugging {
+                reportDebugLogs()
+            }
+        }
 #if !os(macOS) && !os(watchOS) && !os(tvOS)
         .refreshable {
             isScanning = true
@@ -435,63 +440,13 @@ struct DeviceListItem: View {
     }
 }
 
-struct SettingsNavigationWrapper<Content>: View where Content : View {
-    @Binding var path: NavigationPath
-    @ViewBuilder let content: () -> Content
-    
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationStack(path: $path) {
-            content()
-                .navigationDestination(for: SettingsDestination.self) { _ in
-                    SettingsView(path: $path)
-                }
-                .navigationDestination(for: AboutDestination.self) { _ in
-                    AboutView()
-                }
-#if !os(watchOS)
-                .navigationDestination(for: KeyboardShortcutDestination.self) { _ in
-                    KeyboardShortcutPanel()
-                }
-#endif
-                .navigationDestination(for: DeviceSettingsDestination.self) { destination in
-                    DeviceDetailView(device: destination.device) {
-                        if path.count > 0 {
-                            path.removeLast()
-                        }
-                    }
-                }
-        }
-    }
-}
-
 struct MacSettings: View {
     @State var navPath = NavigationPath()
     var body: some View {
         SettingsNavigationWrapper(path: $navPath) {
-            SettingsView(path: $navPath)
+            SettingsView(path: $navPath, destination: .Global)
         }
     }
-}
-
-func getHost(from urlString: String) -> String {
-    guard let url = URL(string: addSchemeAndPort(to: urlString)), let host = url.host else {
-        return urlString
-    }
-    return host
-}
-
-func addSchemeAndPort(to urlString: String, scheme: String = "http", port: Int = 8060) -> String {
-    let urlString = "http://" + urlString.replacing(/^.*:\/\//, with: { _ in "" })
-    
-    guard let url = URL(string: urlString), var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
-        return urlString
-    }
-    components.scheme = scheme
-    components.port = url.port ?? port // Replace the port only if it's not already specified
-    
-    return (components.string ?? urlString).replacing(/\/*$/, with: {_ in ""}) + "/"
 }
 
 struct DeviceDetailView: View {
@@ -647,7 +602,14 @@ struct DeviceDetailView: View {
         }
         .onDisappear {
             Task {
-                await saveDevice()
+                saveDevice(
+                    existingDevice: device,
+                    newIP: deviceIP,
+                    newDeviceName: deviceName,
+                    deviceActor: DeviceActor(
+                        modelContainer: modelContainer
+                    )
+                )
             }
         }
 #if !os(tvOS)
@@ -686,51 +648,6 @@ struct DeviceDetailView: View {
 #if os(macOS)
         .padding()
 #endif
-    }
-    
-    func saveDevice() async {
-        // Try to get device id
-        // Watchos can't check tcp connection, so just do the request
-        let cleanedString = deviceIP.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "'", with: "")
-        let deviceUrl = addSchemeAndPort(to: cleanedString)
-        Self.logger.info("Getting device url \(deviceUrl)")
-        // Save device id and location early
-        do {
-            try await deviceActor.updateDevice(
-                device.persistentModelID, name: deviceName, location: deviceUrl, udn: device.udn
-            )
-        } catch {
-            Self.logger.error("Error early saving device with location \(deviceUrl): \(error)")
-        }
-        
-        let deviceInfo = await fetchDeviceInfo(location: deviceUrl)
-        
-        // If we get a device with a different UDN, replace the device
-        if let udn = deviceInfo?.udn, udn != device.udn {
-            do {
-                try await deviceActor.delete(device.persistentModelID)
-                let _ = try await deviceActor.addOrReplaceDevice(
-                    location: deviceUrl, friendlyDeviceName: deviceName, udn: udn
-                )
-                
-            } catch {
-                Self.logger.error("Error saving device \(error)")
-            }
-            return
-        }
-        
-        do {
-            Self.logger.info("Saving device \(deviceUrl) with id \(String(describing: device.persistentModelID))")
-            try await deviceActor.updateDevice(
-                device.persistentModelID,
-                name: deviceName,
-                location: deviceUrl,
-                udn: device.udn
-            )
-            Self.logger.info("Saved device \(deviceUrl)")
-        } catch {
-            Self.logger.error("Error saving device \(error)")
-        }
     }
 }
 
@@ -774,12 +691,11 @@ extension Binding {
     }
 }
 
-
 enum SettingsDestination{
     case Global
-    case About
     case Debugging
 }
+
 
 struct DeviceSettingsDestination: Hashable {
     let device: Device
@@ -792,7 +708,7 @@ struct DeviceSettingsDestination: Hashable {
 
 #Preview("Device List") {
     @State var path: NavigationPath = NavigationPath()
-    return SettingsView(path: $path)
+    return SettingsView(path: $path, destination: .Global)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
         .modelContainer(devicePreviewContainer)
 }

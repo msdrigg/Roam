@@ -7,9 +7,6 @@ struct RoamApp: App {
     #if os(macOS)
     @NSApplicationDelegateAdaptor(RoamAppDelegate.self) var appDelegate
     #endif
-//    #else
-//    @UIApplicationDelegateAdaptor(RoamAppDelegate.self) var appDelegate
-//    #endif
 
     
     var sharedModelContainer: ModelContainer

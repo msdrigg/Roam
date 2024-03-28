@@ -59,7 +59,9 @@ struct RemoteView: View {
     
     @Binding var showKeyboardShortcuts: Bool
     
+#if !APPCLIP
     @State private var scanningActor: DeviceDiscoveryActor!
+#endif
     @State private var manuallySelectedDevice: Device?
     @State private var showKeyboardEntry: Bool = false
     @State private var keyboardLeaving: Bool = false
@@ -153,7 +155,7 @@ struct RemoteView: View {
         buttonPresses[key] = (buttonPresses[key] ?? 0) + 1
     }
     
-#if !os(tvOS)
+#if !os(tvOS) && !APPCLIP
     func donateButtonIntent(_ key: RemoteButton) {
         switch key {
         case .power:
@@ -193,17 +195,6 @@ struct RemoteView: View {
     }
 #endif
     
-    private func openAppSettings() {
-        Self.logger.info("Attempting to open app settings")
-        #if os(macOS)
-        if let settingsUrl = URL(string: "x-apple.systempreferences:com.msdrigg.roam") {
-            NSWorkspace.shared.open(settingsUrl)
-        }
-        #else
-        navigationPath.append(SettingsDestination.Global)
-        #endif
-    }
-    
     var body: some View {
         if runningInPreview {
             SettingsNavigationWrapper(path: $navigationPath) {
@@ -213,7 +204,7 @@ struct RemoteView: View {
             SettingsNavigationWrapper(path: $navigationPath) {
                 remotePage
             }
-#if os(iOS)
+#if os(iOS) && !APPCLIP
             .task(id: devices.count, priority: .background) {
                 // Send devices to connected watch
                 WatchConnectivity.shared.transferDevices(devices: devices.map{$0.toAppEntity()})
@@ -229,6 +220,7 @@ struct RemoteView: View {
             .onDisappear {
                 networkMonitor.stopMonitoring()
             }
+#if !APPCLIP
             .task(priority: .background) {
                 await withDiscardingTaskGroup { taskGroup in
                     taskGroup.addTask {
@@ -242,6 +234,7 @@ struct RemoteView: View {
                     }
                 }
             }
+#endif
             .task(id: selectedDevice?.location, priority: .medium) {
                 Self.logger.info("Creating ecp session with location \(String(describing: selectedDevice?.location))")
                 let oldECP = self.ecpSession
@@ -260,11 +253,13 @@ struct RemoteView: View {
                     ecpSession = nil
                 }
             }
+            #if !APPCLIP
             .task(id: selectedDevice?.persistentModelID, priority: .medium) {
                 if let devId = selectedDevice?.persistentModelID {
                     await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                 }
             }
+            #endif
             .task(id: "\(headphonesModeEnabled),\(selectedDevice?.location ?? "--")") {
                 if !headphonesModeEnabled {
                     return
@@ -312,6 +307,7 @@ struct RemoteView: View {
                         isSmallWidth = value
                     }
                 }
+
             HStack {
                 Spacer()
                 VStack(alignment: .center) {
@@ -450,7 +446,7 @@ struct RemoteView: View {
                     .font(.headline)
                 }
 #endif
-                #if os(macOS)
+#if os(macOS)
                 ToolbarItem(placement: .navigation) {
                     DevicePicker(
                         devices: devices,
@@ -458,7 +454,7 @@ struct RemoteView: View {
                     )
                     .font(.body)
                 }
-                #else
+#else
                 ToolbarItem(placement: .topBarTrailing) {
                     DevicePicker(
                         devices: devices,
@@ -466,9 +462,10 @@ struct RemoteView: View {
                     )
                     .font(.body)
                 }
-                #endif
+#endif
             }
 #endif
+#if !APPCLIP
             .overlay {
                 if selectedDevice == nil {
                     VStack(spacing: 2) {
@@ -506,12 +503,15 @@ struct RemoteView: View {
                     .labelStyle(.titleAndIcon)
                 }
             }
+#endif
             .onAppear {
                 modelContext.processPendingChanges()
             }
             .onAppear {
                 let modelContainer = modelContext.container
+#if !APPCLIP
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
+#endif
             }
 #if !os(visionOS)
             .sensoryFeedback(.error, trigger: errorTrigger)
@@ -531,8 +531,6 @@ struct RemoteView: View {
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle)
         .labelStyle(.iconOnly)
-        /// Responds to any URLs opened with our app. In this case, the URLs
-        /// defined inside the URL Types section.
         .onOpenURL { incomingURL in
             Self.logger.info("App was opened via URL: \(incomingURL)")
             handleIncomingURL(incomingURL)
@@ -545,27 +543,64 @@ struct RemoteView: View {
         }
         
         var path = url.pathComponents
-        guard let dlpath = path.first, dlpath == "deep-link" else {
+        print("HERE \(path)")
+        path.removeFirst()
+        guard let dlpath = path.first, dlpath == "deep-link"  || dlpath == "appclip" else {
             Self.logger.error("Getting Invalid URL path")
             return
         }
+        let firstPath = path.first
         path.removeFirst()
-
-        guard let action = path.first else {
+        guard let action = path.first ?? firstPath else {
             Self.logger.warning("Getting url deep link with no action")
             return
         }
         Self.logger.info("Getting action \(action)")
         
-        if action == "add-device" {
-            // Need to parse device info from query parameters
-        } else if action == "feedback" {
-            //
-        } else if action == "settings" {
-            openAppSettings()
-        } else {
-            Self.logger.warning("Trying to open app with back action \(action)")
+        if action == "add-device" || action == "appclip" {
+            let queryParams = URLComponents(string: url.absoluteString)?.queryItems
+            let name = queryParams?.first(where: { $0.name == "name" })?.value ?? "Default Name"
+            let location = queryParams?.first(where: { $0.name == "location" })?.value ?? "192.168.0.1"
+            let udn = queryParams?.first(where: { $0.name == "udn" })?.value ?? "roam:newdevice-\(UUID().uuidString)"
+            
+            let newDevice = Device(
+                name: name,
+                location: location,
+                lastSelectedAt: Date.now,
+                udn: udn
+            )
+            
+            Task {
+                modelContext.insert(newDevice)
+                do {
+                    try modelContext.save()
+                } catch {
+                    Self.logger.error("Error inserting new device \(error)")
+                    return
+                }
+                
+                await saveDevice(
+                    existingDevice: newDevice,
+                    newIP: location,
+                    newDeviceName: name,
+                    deviceActor: DeviceActor(
+                        modelContainer: modelContext.container
+                    )
+                )
+            }
         }
+        #if !APPCLIP
+        if action == "feedback" {
+            Self.logger.info("Attempting to open app debugging")
+            navigationPath.append(SettingsDestination.Debugging)
+        } else if action == "settings" {
+            Self.logger.info("Attempting to open app settings")
+            navigationPath.append(SettingsDestination.Global)
+        } else if action == "about" {
+            Self.logger.info("Attempting to open about page")
+            navigationPath.append(AboutDestination.Global)
+        }
+        #endif
     }
 
     @ViewBuilder
@@ -740,7 +775,7 @@ struct RemoteView: View {
     
     
     func launchApp(_ app: AppLinkAppEntity) {
-#if !os(tvOS)
+#if !os(tvOS) && !APPCLIP
         donateAppLaunchIntent(app)
 #endif
         incrementButtonPressCount(.inputAV1)
@@ -765,7 +800,7 @@ struct RemoteView: View {
         if MAJOR_ACTIONS.contains(button) {
             handleMajorUserAction()
         }
-#if !os(tvOS)
+#if !os(tvOS) && !APPCLIP
         donateButtonIntent(button)
 #endif
         if button == .headphonesMode {
@@ -790,7 +825,7 @@ struct RemoteView: View {
             if MAJOR_ACTIONS.contains(button) {
                 handleMajorUserAction()
             }
-#if !os(tvOS)
+#if !os(tvOS) && !APPCLIP
             donateButtonIntent(button)
 #endif
         }

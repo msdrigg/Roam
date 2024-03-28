@@ -1,11 +1,16 @@
 import Foundation
 import SwiftData
+import OSLog
 
 enum SchemaV1: VersionedSchema {
     static var versionIdentifier = Schema.Version(1, 0, 0)
     
     @Model
     public final class Device: Hashable {
+        public static let logger = Logger(
+            subsystem: Bundle.main.bundleIdentifier!, category: String(describing: Device.self)
+        )
+        
         @Attribute(.unique, originalName: "id") public var udn: String
         public var name: String
         public var location: String
@@ -26,7 +31,7 @@ enum SchemaV1: VersionedSchema {
         
         @Attribute(.externalStorage) public var deviceIcon: Data?
         
-        public init(name: String, location: String, lastSelectedAt: Date? = nil, lastOnlineAt: Date? = nil, udn: String, apps: [AppLink] = []) {
+        public init(name: String, location: String, lastSelectedAt: Date? = nil, lastOnlineAt: Date? = nil, udn: String) {
             self.name = name
             self.lastSelectedAt = lastSelectedAt
             self.lastOnlineAt = lastOnlineAt
