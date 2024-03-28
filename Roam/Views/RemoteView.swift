@@ -194,6 +194,7 @@ struct RemoteView: View {
 #endif
     
     private func openAppSettings() {
+        Self.logger.info("Attempting to open app settings")
         #if os(macOS)
         if let settingsUrl = URL(string: "x-apple.systempreferences:com.msdrigg.roam") {
             NSWorkspace.shared.open(settingsUrl)
