@@ -5,13 +5,14 @@ author: Scott Driggers
 url: https://roam.msd3.io # root address of the site
 favicon: "/favicon.ico" # relative path to site's favico
 description: >- # used by seo meta and the atom feed
-  A minimal, responsive, and featureful roku remote for macOS, iOS and watchOS
+    A minimal, responsive, and featureful roku remote for macOS, iOS and watchOS
 
 # theme: jekyll-theme-tactile
 remote_theme: abhinavs/moonwalk
 theme_config:
-  appearance: "dark" # can be "light", "dark" or "auto"
-  appearance_toggle: true # if appearance can be switched by user
-  show_description: true # show blog description
-  show_footer: false # show footer links in home page,add in _data/home.yml
-  show_copyright: true # show copyright notice in footer
+    appearance: "dark" # can be "light", "dark" or "auto"
+    appearance_toggle: true # if appearance can be switched by user
+    show_description: true # show blog description
+    show_footer: false # show footer links in home page,add in _data/home.yml
+    show_copyright: true # show copyright notice in footer
+include: [".well-known"]
