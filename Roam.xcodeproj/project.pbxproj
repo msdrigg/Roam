@@ -69,7 +69,6 @@
 		AF2740102AE02C25007C6208 /* RoamWidgetsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsApp.swift */; };
 		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; platformFilters = (ios, macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF3503682BB493F4004F4337 /* RoamClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = AF3503572BB493F3004F4337 /* RoamClip.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		AF3503882BB494A6004F4337 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3503872BB494A6004F4337 /* main.swift */; };
 		AF35038F2BB499F3004F4337 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF3503942BB499FA004F4337 /* libwebp in Frameworks */ = {isa = PBXBuildFile; platformFilters = (watchos, ); productRef = AF3503932BB499FA004F4337 /* libwebp */; };
 		AF35ACEB2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */; };
@@ -167,6 +166,10 @@
 		AF8EF51D2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8EF51C2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift */; };
 		AF8EF51E2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8EF51C2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift */; };
 		AF8EF51F2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8EF51C2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift */; };
+		AF8EF5202BB61AD6002A4D6D /* DiscoveryActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */; };
+		AF8EF5212BB61ADC002A4D6D /* SSDPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA272AE54ABC00A42DFF /* SSDPService.swift */; };
+		AF8EF5222BB61ADF002A4D6D /* SSDPDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA2A2AE54AD100A42DFF /* SSDPDiscovery.swift */; };
+		AF8EF5232BB61AE4002A4D6D /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
 		AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */; };
 		AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6872ADDDE110036EC90 /* DeviceAppEntity.swift */; };
 		AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E6862ADDDE110036EC90 /* ButtonPressIntents.swift */; };
@@ -281,15 +284,6 @@
 			name = "Embed App Clips";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AF3503832BB494A6004F4337 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
 		AF3503922BB499F3004F4337 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -365,8 +359,6 @@
 		AF3503572BB493F3004F4337 /* RoamClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoamClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF3503642BB493F4004F4337 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF3503652BB493F4004F4337 /* RoamClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamClip.entitlements; sourceTree = "<group>"; };
-		AF3503852BB494A6004F4337 /* RoamCli */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RoamCli; sourceTree = BUILT_PRODUCTS_DIR; };
-		AF3503872BB494A6004F4337 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		AF35ACEA2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeyboardMonitorUIKit.swift; sourceTree = "<group>"; };
 		AF35ACF12BA3D21F00CC8B36 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AF3AD5522AE28F7400E2D780 /* ButtonGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonGrid.swift; sourceTree = "<group>"; };
@@ -475,13 +467,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AF3503822BB494A6004F4337 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		AFC24EF82AD0E5A1002AB66C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -580,14 +565,6 @@
 				AF3503652BB493F4004F4337 /* RoamClip.entitlements */,
 			);
 			path = RoamClip;
-			sourceTree = "<group>";
-		};
-		AF3503862BB494A6004F4337 /* RoamCli */ = {
-			isa = PBXGroup;
-			children = (
-				AF3503872BB494A6004F4337 /* main.swift */,
-			);
-			path = RoamCli;
 			sourceTree = "<group>";
 		};
 		AF4D5F322AD4355E0055AF35 /* Frameworks */ = {
@@ -699,7 +676,6 @@
 				AF27400E2AE02C25007C6208 /* RoamWidgets */,
 				AF15C2472AE8672700B79FD9 /* RoamWatch */,
 				AF3503582BB493F3004F4337 /* RoamClip */,
-				AF3503862BB494A6004F4337 /* RoamCli */,
 				AFC24EFC2AD0E5A1002AB66C /* Products */,
 				AF4D5F322AD4355E0055AF35 /* Frameworks */,
 			);
@@ -712,7 +688,6 @@
 				AF27400B2AE02C25007C6208 /* RoamWidgets.appex */,
 				AF15C2462AE8672700B79FD9 /* Roam.app */,
 				AF3503572BB493F3004F4337 /* RoamClip.app */,
-				AF3503852BB494A6004F4337 /* RoamCli */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -831,23 +806,6 @@
 			productReference = AF3503572BB493F3004F4337 /* RoamClip.app */;
 			productType = "com.apple.product-type.application.on-demand-install-capable";
 		};
-		AF3503842BB494A6004F4337 /* RoamCli */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = AF3503892BB494A6004F4337 /* Build configuration list for PBXNativeTarget "RoamCli" */;
-			buildPhases = (
-				AF3503812BB494A6004F4337 /* Sources */,
-				AF3503822BB494A6004F4337 /* Frameworks */,
-				AF3503832BB494A6004F4337 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = RoamCli;
-			productName = RoamCli;
-			productReference = AF3503852BB494A6004F4337 /* RoamCli */;
-			productType = "com.apple.product-type.tool";
-		};
 		AFC24EFA2AD0E5A1002AB66C /* Roam */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AFC24F222AD0E5A3002AB66C /* Build configuration list for PBXNativeTarget "Roam" */;
@@ -899,9 +857,6 @@
 					AF3503562BB493F3004F4337 = {
 						CreatedOnToolsVersion = 15.3;
 					};
-					AF3503842BB494A6004F4337 = {
-						CreatedOnToolsVersion = 15.3;
-					};
 					AFC24EFA2AD0E5A1002AB66C = {
 						CreatedOnToolsVersion = 15.0;
 					};
@@ -931,7 +886,6 @@
 				AF15C2452AE8672700B79FD9 /* RoamWatch */,
 				AF27400A2AE02C25007C6208 /* RoamWidgets */,
 				AF3503562BB493F3004F4337 /* RoamClip */,
-				AF3503842BB494A6004F4337 /* RoamCli */,
 			);
 		};
 /* End PBXProject section */
@@ -1066,6 +1020,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF8EF5232BB61AE4002A4D6D /* AsyncSemaphore.swift in Sources */,
+				AF8EF5222BB61ADF002A4D6D /* SSDPDiscovery.swift in Sources */,
 				AF8EF4E12BB60A9F002A4D6D /* BindingExtensions.swift in Sources */,
 				AF8EF4E32BB60A9F002A4D6D /* HoveredView.swift in Sources */,
 				AF8EF5012BB60B2E002A4D6D /* RemoteView.swift in Sources */,
@@ -1088,6 +1044,7 @@
 				AF8EF4EA2BB60A9F002A4D6D /* PaddedHoverButtonStyle.swift in Sources */,
 				AF8EF51A2BB60E43002A4D6D /* KeyboardShortcutPanel.swift in Sources */,
 				AF8EF4EB2BB60AB5002A4D6D /* Debugger.swift in Sources */,
+				AF8EF5212BB61ADC002A4D6D /* SSDPService.swift in Sources */,
 				AF8EF4EC2BB60AB5002A4D6D /* StatelessDeviceAPI.swift in Sources */,
 				AF8EF4EF2BB60ADA002A4D6D /* DeviceAppEntity.swift in Sources */,
 				AF8EF4FC2BB60AF5002A4D6D /* ModelContainer.swift in Sources */,
@@ -1102,6 +1059,7 @@
 				AF8EF4FD2BB60B15002A4D6D /* LatencyListener.swift in Sources */,
 				AF8EF4EE2BB60AB5002A4D6D /* ECPSession.swift in Sources */,
 				AF8EF4DE2BB60A15002A4D6D /* RoamApp.swift in Sources */,
+				AF8EF5202BB61AD6002A4D6D /* DiscoveryActor.swift in Sources */,
 				AF8EF4F52BB60AF0002A4D6D /* NetworkMonitor.swift in Sources */,
 				AF8EF4F62BB60AF0002A4D6D /* DataHelpers.swift in Sources */,
 				AF8EF5062BB60B45002A4D6D /* NotificationBanner.swift in Sources */,
@@ -1117,14 +1075,6 @@
 				AF8EF5192BB60D54002A4D6D /* VolumeListener.swift in Sources */,
 				AF8EF50F2BB60CE8002A4D6D /* NetworkUtils.swift in Sources */,
 				AF8EF4FB2BB60AF0002A4D6D /* CollectionHelpers.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AF3503812BB494A6004F4337 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AF3503882BB494A6004F4337 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1418,6 +1368,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) APPCLIP";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1457,40 +1408,11 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = APPCLIP;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		AF35038A2BB494A6004F4337 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
-				ENABLE_HARDENED_RUNTIME = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
-				MARKETING_VERSION = "$(MARKETING_VERSION)";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		AF35038B2BB494A6004F4337 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
-				DEVELOPMENT_TEAM = 2865NTZ7H3;
-				ENABLE_HARDENED_RUNTIME = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
-				MARKETING_VERSION = "$(MARKETING_VERSION)";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -1529,7 +1451,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240325.7119116.2;
+				CURRENT_PROJECT_VERSION = 20240328.4415314.2;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1553,12 +1475,12 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.25;
+				MARKETING_VERSION = 1.26;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = auto;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG APPCLIP $(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
@@ -1601,7 +1523,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240325.7119116.2;
+				CURRENT_PROJECT_VERSION = 20240328.4415314.2;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1619,11 +1541,11 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.25;
+				MARKETING_VERSION = 1.26;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = auto;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = APPCLIP;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
@@ -1753,15 +1675,6 @@
 			buildConfigurations = (
 				AF35036A2BB493F4004F4337 /* Debug */,
 				AF35036B2BB493F4004F4337 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		AF3503892BB494A6004F4337 /* Build configuration list for PBXNativeTarget "RoamCli" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AF35038A2BB494A6004F4337 /* Debug */,
-				AF35038B2BB494A6004F4337 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

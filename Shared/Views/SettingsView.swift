@@ -602,12 +602,13 @@ struct DeviceDetailView: View {
         }
         .onDisappear {
             Task {
-                saveDevice(
-                    existingDevice: device,
+                await saveDevice(
+                    existingDeviceId: device.persistentModelID,
+                    existingUDN: device.udn,
                     newIP: deviceIP,
                     newDeviceName: deviceName,
                     deviceActor: DeviceActor(
-                        modelContainer: modelContainer
+                        modelContainer: modelContext.container
                     )
                 )
             }
