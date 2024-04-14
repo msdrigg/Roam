@@ -59,9 +59,7 @@ struct RemoteView: View {
     
     @Binding var showKeyboardShortcuts: Bool
     
-#if !APPCLIP
     @State private var scanningActor: DeviceDiscoveryActor!
-#endif
     @State private var manuallySelectedDevice: Device?
     @State private var showKeyboardEntry: Bool = false
     @State private var keyboardLeaving: Bool = false
@@ -220,7 +218,6 @@ struct RemoteView: View {
             .onDisappear {
                 networkMonitor.stopMonitoring()
             }
-#if !APPCLIP
             .task(priority: .background) {
                 await withDiscardingTaskGroup { taskGroup in
                     taskGroup.addTask {
@@ -234,7 +231,6 @@ struct RemoteView: View {
                     }
                 }
             }
-#endif
             .task(id: selectedDevice?.location, priority: .medium) {
                 Self.logger.info("Creating ecp session with location \(String(describing: selectedDevice?.location))")
                 let oldECP = self.ecpSession
@@ -253,13 +249,11 @@ struct RemoteView: View {
                     ecpSession = nil
                 }
             }
-            #if !APPCLIP
             .task(id: selectedDevice?.persistentModelID, priority: .medium) {
                 if let devId = selectedDevice?.persistentModelID {
                     await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
                 }
             }
-            #endif
             .task(id: "\(headphonesModeEnabled),\(selectedDevice?.location ?? "--")") {
                 if !headphonesModeEnabled {
                     return
@@ -509,9 +503,7 @@ struct RemoteView: View {
             }
             .onAppear {
                 let modelContainer = modelContext.container
-#if !APPCLIP
                 self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
-#endif
             }
 #if !os(visionOS)
             .sensoryFeedback(.error, trigger: errorTrigger)
@@ -557,10 +549,29 @@ struct RemoteView: View {
         }
         Self.logger.info("Getting action \(action)")
         
-        if action == "add-device" || action == "appclip" {
+        if action == "add-device" || action == "appclip" || action == "scan" {
             let queryParams = URLComponents(string: url.absoluteString)?.queryItems
-            let name = queryParams?.first(where: { $0.name == "name" })?.value ?? "Default Name"
-            let location = queryParams?.first(where: { $0.name == "location" })?.value ?? "192.168.0.1"
+            let name = queryParams?.first(where: { $0.name == "name" })?.value ?? "New device"
+            // Get location param as location=IP or p=IPV4Hex
+            guard let location = queryParams?.first(where: { $0.name == "location" })?.value ??
+                    queryParams?.first(where: { $0.name == "p" })?.value.flatMap({ hex in
+                                let ipComponents = stride(from: 0, to: hex.count, by: 2).compactMap { index -> UInt8? in
+                                let start = hex.index(hex.startIndex, offsetBy: index)
+                                let end = hex.index(start, offsetBy: 2, limitedBy: hex.endIndex) ?? hex.endIndex
+                                return UInt8(hex[start..<end], radix: 16)
+                            }
+                        guard ipComponents.count == 4 else { return nil }
+                        return ipComponents.map(String.init).joined(separator: ".")
+                    })
+            else {
+                Self.logger.error("Trying to add device with no location")
+                return
+            }
+
+
+
+
+
             let udn = queryParams?.first(where: { $0.name == "udn" })?.value ?? "roam:newdevice-\(UUID().uuidString)"
             
             let newDevice = Device(
@@ -580,7 +591,8 @@ struct RemoteView: View {
                 }
                 
                 await saveDevice(
-                    existingDevice: newDevice,
+                    existingDeviceId: newDevice.persistentModelID,
+                    existingUDN: newDevice.udn,
                     newIP: location,
                     newDeviceName: name,
                     deviceActor: DeviceActor(

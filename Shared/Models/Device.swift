@@ -55,8 +55,8 @@ func addSchemeAndPort(to urlString: String, scheme: String = "http", port: Int =
     return (components.string ?? urlString).replacing(/\/*$/, with: {_ in ""}) + "/"
 }
 
-@main
-func saveDevice(existingDevice device: Device, newIP deviceIP: String, newDeviceName deviceName: String, deviceActor: DeviceActor) async {
+
+func saveDevice(existingDeviceId modelId: PersistentIdentifier, existingUDN: String, newIP deviceIP: String, newDeviceName deviceName: String, deviceActor: DeviceActor) async {
     // Try to get device id
     // Watchos can't check tcp connection, so just do the request
     let cleanedString = deviceIP.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "'", with: "")
@@ -65,19 +65,18 @@ func saveDevice(existingDevice device: Device, newIP deviceIP: String, newDevice
     // Save device id and location early
     do {
         try await deviceActor.updateDevice(
-            device.persistentModelID, name: deviceName, location: deviceUrl, udn: device.udn
+            modelId, name: deviceName, location: deviceUrl, udn: existingUDN
         )
     } catch {
         Device.logger.error("Error early saving device with location \(deviceUrl): \(error)")
     }
-    let existingUDN = device.udn
     
     let deviceInfo = await fetchDeviceInfo(location: deviceUrl)
     
     // If we get a device with a different UDN, replace the device
     if let udn = deviceInfo?.udn, udn != existingUDN {
         do {
-            try await deviceActor.delete(device.persistentModelID)
+            try await deviceActor.delete(modelId)
             let _ = try await deviceActor.addOrReplaceDevice(
                 location: deviceUrl, friendlyDeviceName: deviceName, udn: udn
             )
@@ -89,9 +88,9 @@ func saveDevice(existingDevice device: Device, newIP deviceIP: String, newDevice
     }
     
     do {
-        Device.logger.info("Saving device \(deviceUrl) with id \(String(describing: device.persistentModelID))")
+        Device.logger.info("Saving device \(deviceUrl) with id \(String(describing: modelId))")
         try await deviceActor.updateDevice(
-            device.persistentModelID,
+            modelId,
             name: deviceName,
             location: deviceUrl,
             udn: existingUDN
