@@ -11,10 +11,9 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v4
-      - name: Create Secrets.xcconfig
-        run: echo 'BACKEND_API_KEY = ${secrets.BACKEND_API_KEY}' > Secrets.xcconfig
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
+          packageManager: yarn
           workingDirectory: "backend"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

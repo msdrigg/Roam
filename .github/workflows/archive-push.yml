@@ -19,6 +19,9 @@ jobs:
                   mkdir -p "./.private_keys" && \
                   echo "${{ secrets.XCODE_API_SECRET }}" > ./.private_keys/AuthKey_${{secrets.XCODE_API_KEY}}.p8
 
+            - name: Create Secrets.xcconfig
+              run: echo 'BACKEND_API_KEY = ${secrets.BACKEND_API_KEY}' > Secrets.xcconfig
+
             - name: Fetch Tags
               run: |
                   git fetch --tags origin && \
