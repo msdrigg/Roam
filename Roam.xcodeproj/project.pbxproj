@@ -68,6 +68,9 @@
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
 		AF2740102AE02C25007C6208 /* RoamWidgetsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF27400F2AE02C25007C6208 /* RoamWidgetsApp.swift */; };
 		AF27401B2AE02C26007C6208 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; platformFilters = (ios, macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF2F54EF2BCE58EF00BAE156 /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
+		AF2F54F02BCE58EF00BAE156 /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
+		AF2F54F12BCE58EF00BAE156 /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
 		AF3503682BB493F4004F4337 /* RoamClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = AF3503572BB493F3004F4337 /* RoamClip.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF35038F2BB499F3004F4337 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF3503942BB499FA004F4337 /* libwebp in Frameworks */ = {isa = PBXBuildFile; platformFilters = (watchos, ); productRef = AF3503932BB499FA004F4337 /* libwebp */; };
@@ -356,6 +359,7 @@
 		AF27400F2AE02C25007C6208 /* RoamWidgetsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWidgetsApp.swift; sourceTree = "<group>"; };
 		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF2740182AE02C26007C6208 /* RoamWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWidgets.entitlements; sourceTree = "<group>"; };
+		AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersBackend.swift; sourceTree = "<group>"; };
 		AF3503572BB493F3004F4337 /* RoamClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RoamClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF3503642BB493F4004F4337 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF3503652BB493F4004F4337 /* RoamClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamClip.entitlements; sourceTree = "<group>"; };
@@ -380,6 +384,7 @@
 		AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BindingExtensions.swift; sourceTree = "<group>"; };
 		AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF5FDAD52ADB3C4B006CDEB3 /* NetworkUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkUtils.swift; sourceTree = "<group>"; };
+		AF6520872BCE55E200B69BE8 /* Vars.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Vars.xcconfig; sourceTree = "<group>"; };
 		AF65A8872BB4B7D4005ECF7F /* RoamWindowDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWindowDelegate.swift; sourceTree = "<group>"; };
 		AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamAppDelegate.swift; sourceTree = "<group>"; };
 		AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalAboutView.swift; sourceTree = "<group>"; };
@@ -665,6 +670,7 @@
 		AFC24EF22AD0E5A1002AB66C = {
 			isa = PBXGroup;
 			children = (
+				AF6520872BCE55E200B69BE8 /* Vars.xcconfig */,
 				AF9FC8232B9F9C9500109268 /* scripts */,
 				AFA165C32AE93FE1003F45ED /* AppIcons */,
 				AF95B6F62ADF2F9F005FC338 /* README.md */,
@@ -718,6 +724,7 @@
 				AF0C82922AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift */,
 				AF0C828F2AEBF2A200CBE7F8 /* ECPSession.swift */,
 				AFE89A2C2B9E793E0078387C /* Debugger.swift */,
+				AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */,
 			);
 			path = Backend;
 			sourceTree = "<group>";
@@ -950,6 +957,7 @@
 				AF42442F2BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AFD9C4F32AE982E400C4079C /* DiscoveryActor.swift in Sources */,
 				AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */,
+				AF2F54F02BCE58EF00BAE156 /* WorkersBackend.swift in Sources */,
 				AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */,
 				AFD9C4F82AE983A800C4079C /* NetworkUtils.swift in Sources */,
 				AFD9C4DA2AE97FDA00C4079C /* SettingsView.swift in Sources */,
@@ -1032,6 +1040,7 @@
 				AF8EF5162BB60D46002A4D6D /* AsyncBufferedChannel.swift in Sources */,
 				AF8EF5172BB60D46002A4D6D /* AsyncThrowingBufferedChannel.swift in Sources */,
 				AF8EF5182BB60D46002A4D6D /* ManagedCriticalState.swift in Sources */,
+				AF2F54F12BCE58EF00BAE156 /* WorkersBackend.swift in Sources */,
 				AF8EF4E62BB60A9F002A4D6D /* CaptureScrollWheelModifier.swift in Sources */,
 				AF8EF4E72BB60A9F002A4D6D /* AppLinksView.swift in Sources */,
 				AF8EF5002BB60B2B002A4D6D /* VolumeSliderView.swift in Sources */,
@@ -1086,6 +1095,7 @@
 				AF65A88A2BB5ABF9005ECF7F /* RoamAppDelegate.swift in Sources */,
 				AF19CA2B2AE54AD100A42DFF /* SSDPDiscovery.swift in Sources */,
 				AF20AD0C2AE01E9100D371C7 /* AppLink.swift in Sources */,
+				AF2F54EF2BCE58EF00BAE156 /* WorkersBackend.swift in Sources */,
 				AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */,
 				AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */,
 				AF3D62D72AE6F703006AB8E9 /* OpusDecoder.swift in Sources */,
@@ -1186,6 +1196,7 @@
 /* Begin XCBuildConfiguration section */
 		AF15C2552AE8672800B79FD9 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1218,6 +1229,7 @@
 		};
 		AF15C2562AE8672800B79FD9 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1251,6 +1263,7 @@
 		};
 		AF27401C2AE02C27007C6208 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
@@ -1294,6 +1307,7 @@
 		};
 		AF27401D2AE02C27007C6208 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
@@ -1337,6 +1351,7 @@
 		};
 		AF35036A2BB493F4004F4337 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1377,6 +1392,7 @@
 		};
 		AF35036B2BB493F4004F4337 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1418,6 +1434,7 @@
 		};
 		AFC24F202AD0E5A3002AB66C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
@@ -1490,6 +1507,7 @@
 		};
 		AFC24F212AD0E5A3002AB66C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
@@ -1555,6 +1573,7 @@
 		};
 		AFC24F232AD0E5A3002AB66C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -1603,6 +1622,7 @@
 		};
 		AFC24F242AD0E5A3002AB66C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
