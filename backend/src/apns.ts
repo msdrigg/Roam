@@ -4,12 +4,63 @@ export type APNSAuthKey = {
     privateKey: string; // Provide in PEM format
 };
 
-async function createJwt(key: APNSAuthKey, algorithm = { name: "ECDSA", namedCurve: "P-256" }) {
+function decodeBase64(base64: string): ArrayBuffer {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let bytes = [];
+
+    let i = 0, bin = 0, shift = 0;
+    for (let char of base64.replace(/=+$/, '')) {
+        bin = (bin << 6) | chars.indexOf(char);
+        shift += 6;
+        if (shift >= 8) {
+            shift -= 8;
+            bytes.push(bin >> shift);
+            bin &= (1 << shift) - 1;
+        }
+    }
+
+    return new Uint8Array(bytes).buffer;
+}
+
+function encodeBase64(data: ArrayBuffer | string): string {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    if (typeof data === 'string') {
+        data = new TextEncoder().encode(data).buffer;
+    }
+
+    let bytes = new Uint8Array(data);
+    let base64 = '';
+    let bin = 0, shift = 0;
+
+    for (let byte of bytes) {
+        bin = (bin << 8) | byte;
+        shift += 8;
+        while (shift >= 6) {
+            shift -= 6;
+            base64 += chars[(bin >> shift) & 63];
+        }
+    }
+
+    if (shift > 0) {
+        base64 += chars[(bin << (6 - shift)) & 63];
+    }
+
+    while (base64.length % 4 !== 0) {
+        base64 += '=';
+    }
+
+    return base64;
+}
+
+
+
+async function createJwt(key: APNSAuthKey, algorithm = { name: "ECDSA", namedCurve: "P-256", hash: "SHA-256" }) {
     // Prepare the signing key from the provided P8 private key
-    let privateKeyP8B64Decoded = Buffer.from(key.privateKey, 'base64').toString('utf8');
+    let privateKeyText = new TextDecoder().decode(decodeBase64(key.privateKey));
     const ecPrivateKey = await crypto.subtle.importKey(
         'pkcs8',
-        Buffer.from(privateKeyP8B64Decoded.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, ''), 'base64'),
+        decodeBase64(privateKeyText.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '')),
         algorithm,
         false,
         ['sign']
@@ -29,7 +80,7 @@ async function createJwt(key: APNSAuthKey, algorithm = { name: "ECDSA", namedCur
         exp: timeNow + 3600
     };
 
-    const toUrlBase64 = (text: string) => Buffer.from(text).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const toUrlBase64 = (text: string) => encodeBase64(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     const encodedHeader = toUrlBase64(JSON.stringify(header));
     const encodedPayload = toUrlBase64(JSON.stringify(payload));
     const signTarget = `${encodedHeader}.${encodedPayload}`;
@@ -38,11 +89,11 @@ async function createJwt(key: APNSAuthKey, algorithm = { name: "ECDSA", namedCur
     const signature = await crypto.subtle.sign(
         algorithm,
         ecPrivateKey,
-        Buffer.from(signTarget)
+        new TextEncoder().encode(signTarget)
     );
 
     // Return the complete JWT
-    return `${signTarget}.${Buffer.from(signature).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+    return `${signTarget}.${encodeBase64(signature).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
 }
 
 export async function sendPushNotification(title: string, body: string, key: APNSAuthKey, deviceToken: string, bundleId: string) {
