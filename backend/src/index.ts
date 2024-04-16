@@ -156,10 +156,15 @@ export default {
 
 			for (let message of messages) {
 				if (message.author.id === env.DISCORD_BOT_ID) {
+					console.log("Skipping message from bot");
 					// Don't notify on messages from the bot
 					continue;
 				}
-				await sendPushNotification("Message from roam", message.content, apnsKey, apnsToken, env.ROAM_BUNDLE_ID);
+				try {
+					await sendPushNotification("Message from roam", message.content, apnsKey, apnsToken, env.ROAM_BUNDLE_ID);
+				} catch (e) {
+					console.error(`Error sending push notification: ${e}`);
+				}
 			}
 		}
 	},
