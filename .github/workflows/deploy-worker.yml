@@ -11,6 +11,7 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
