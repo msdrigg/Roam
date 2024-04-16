@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import OSLog
 
 @main
 struct RoamApp: App {
