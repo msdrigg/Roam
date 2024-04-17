@@ -230,6 +230,14 @@
 		AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
 		AFF607802ADFACBA00A7D657 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* NetworkUtils.swift */; };
 		AFF607812ADFACBA00A7D657 /* DiscoveryActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */; };
+		AFF6DE092BCEFF5F002C13FC /* backend in Resources */ = {isa = PBXBuildFile; fileRef = AFF6DE082BCEFF5F002C13FC /* backend */; };
+		AFF6DE0A2BCEFF5F002C13FC /* backend in Resources */ = {isa = PBXBuildFile; fileRef = AFF6DE082BCEFF5F002C13FC /* backend */; };
+		AFF6DE0B2BCEFF5F002C13FC /* backend in Resources */ = {isa = PBXBuildFile; fileRef = AFF6DE082BCEFF5F002C13FC /* backend */; };
+		AFF6DE0D2BCF0326002C13FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE0C2BCF0326002C13FC /* Message.swift */; };
+		AFF6DE0E2BCF0326002C13FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE0C2BCF0326002C13FC /* Message.swift */; };
+		AFF6DE0F2BCF0326002C13FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE0C2BCF0326002C13FC /* Message.swift */; };
+		AFF6DE112BCF0740002C13FC /* MessagingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE102BCF0740002C13FC /* MessagingView.swift */; };
+		AFF6DE142BCF0A14002C13FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE0C2BCF0326002C13FC /* Message.swift */; };
 		AFFC71E62AD1212100EE8EA0 /* RemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */; };
 /* End PBXBuildFile section */
 
@@ -436,6 +444,9 @@
 		AFE89A2C2B9E793E0078387C /* Debugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debugger.swift; sourceTree = "<group>"; };
 		AFED42492AEE8F3B0023D684 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
+		AFF6DE082BCEFF5F002C13FC /* backend */ = {isa = PBXFileReference; lastKnownFileType = folder; path = backend; sourceTree = "<group>"; };
+		AFF6DE0C2BCF0326002C13FC /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		AFF6DE102BCF0740002C13FC /* MessagingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingView.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
 		AFFED2502AD75EAF00357FA4 /* BinaryHeap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinaryHeap.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -502,6 +513,7 @@
 				AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */,
 				AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */,
 				AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */,
+				AFF6DE102BCF0740002C13FC /* MessagingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -591,6 +603,7 @@
 				AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */,
 				AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */,
 				AF42442D2BB1118700334AAF /* SchemaFile.swift */,
+				AFF6DE0C2BCF0326002C13FC /* Message.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -674,6 +687,7 @@
 				AF9FC8232B9F9C9500109268 /* scripts */,
 				AFA165C32AE93FE1003F45ED /* AppIcons */,
 				AF95B6F62ADF2F9F005FC338 /* README.md */,
+				AFF6DE082BCEFF5F002C13FC /* backend */,
 				AF4BBB742B8BF654009EB5BE /* docs */,
 				AFA165C22AE93401003F45ED /* LICENSE-MIT */,
 				AFA165C12AE933D7003F45ED /* LICENSE-APACHE */,
@@ -905,6 +919,7 @@
 				AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */,
 				AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */,
+				AFF6DE0A2BCEFF5F002C13FC /* backend in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -921,6 +936,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AFF6DE0B2BCEFF5F002C13FC /* backend in Resources */,
 				AF8EF4DF2BB60A61002A4D6D /* AppIcon.xcassets in Resources */,
 				AF8EF4E02BB60A65002A4D6D /* AccentColor.xcassets in Resources */,
 			);
@@ -933,6 +949,7 @@
 				AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */,
 				AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */,
+				AFF6DE092BCEFF5F002C13FC /* backend in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -970,6 +987,7 @@
 				AFD590D72AEC787700189620 /* ModelContainer.swift in Sources */,
 				AF779BF12BA4D82600231BC5 /* Badge.swift in Sources */,
 				AFD9C4ED2AE980C300C4079C /* DataHelpers.swift in Sources */,
+				AFF6DE0E2BCF0326002C13FC /* Message.swift in Sources */,
 				AF70BB0A2BA7CBD0009A06EC /* HoveredView.swift in Sources */,
 				AF0C82982AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF8EF51E2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
@@ -1011,6 +1029,7 @@
 				AF0042772AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
 				AFA9F8972B1B878600829B7C /* Shortcuts.swift in Sources */,
 				AF0042872AEABA9F0051BB1E /* CollectionHelpers.swift in Sources */,
+				AFF6DE142BCF0A14002C13FC /* Message.swift in Sources */,
 				AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */,
 				AF205B242AE02D0100041CDF /* RemoteButton.swift in Sources */,
 				AF205B292AE02D1C00041CDF /* LaunchAppIntent.swift in Sources */,
@@ -1073,6 +1092,7 @@
 				AF8EF4F62BB60AF0002A4D6D /* DataHelpers.swift in Sources */,
 				AF8EF5062BB60B45002A4D6D /* NotificationBanner.swift in Sources */,
 				AF8EF4F72BB60AF0002A4D6D /* UserDefaultKeys.swift in Sources */,
+				AFF6DE0F2BCF0326002C13FC /* Message.swift in Sources */,
 				AF8EF5112BB60D43002A4D6D /* BinaryHeap.swift in Sources */,
 				AF8EF5122BB60D43002A4D6D /* OpusDecoder.swift in Sources */,
 				AF8EF5132BB60D43002A4D6D /* AudioPlayer.swift in Sources */,
@@ -1122,6 +1142,7 @@
 				AF70BB072BA7C4D2009A06EC /* HoveredView.swift in Sources */,
 				AFA079DB2AE02561003E2754 /* ButtonPressIntents.swift in Sources */,
 				AF779BF72BA4DDD000231BC5 /* WrappingHStack.swift in Sources */,
+				AFF6DE112BCF0740002C13FC /* MessagingView.swift in Sources */,
 				AFE89A2D2B9E793E0078387C /* Debugger.swift in Sources */,
 				AF19CA312AE6947600A42DFF /* ManagedCriticalState.swift in Sources */,
 				AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */,
@@ -1154,6 +1175,7 @@
 				AFC24EFF2AD0E5A1002AB66C /* RoamApp.swift in Sources */,
 				AF3AD5592AE2940A00E2D780 /* KeyboardMonitorAppKit.swift in Sources */,
 				AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */,
+				AFF6DE0D2BCF0326002C13FC /* Message.swift in Sources */,
 				AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 				AF8EF51D2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
@@ -1597,7 +1619,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Roam;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Roam uses the local network to discover and control your Roku TV";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1646,7 +1668,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Roam;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "We scan the network for roku devices and wake them using WOL";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Roam uses the local network to discover and control your Roku TV";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (

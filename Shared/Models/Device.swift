@@ -109,10 +109,10 @@ func getTestingDevices() -> [Device] {
     ]
 }
 
+
 public let devicePreviewContainer: ModelContainer = {
     do {
-        let container = try ModelContainer(for: Device.self,
-                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(for: Schema(versionedSchema: SchemaV1.self), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         
         Task { @MainActor in
             let context = container.mainContext
@@ -120,6 +120,16 @@ public let devicePreviewContainer: ModelContainer = {
             let models = getTestingDevices()
             for model in models {
                 context.insert(model)
+            }
+            
+            let appLinks = getTestingAppLinks()
+            for appLink in appLinks {
+                context.insert(appLink)
+            }
+            
+            let messages = getTestingMessages()
+            for message in messages {
+                context.insert(message)
             }
         }
         return container

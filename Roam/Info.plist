@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Roam can notify you when the the developer responds to your message</string>
 	<key>BACKEND_API_KEY</key>
 	<string>$(BACKEND_API_KEY)</string>
 	<key>NSLocalNetworkUsageDescription</key>

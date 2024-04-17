@@ -1,12 +1,38 @@
 import Foundation
+import OSLog
+import UserNotifications
+import SwiftData
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier!,
+    category: "AppDelegate"
+)
+
+// Optional: Send the device token to your server
+func sendDeviceTokenToServer(_ token: String) async {
+    do {
+        try await sendMessage(message: "", apnsToken: token)
+    } catch {
+        logger.error("Error sending apns token to server \(error)")
+    }
+}
 
 #if os(macOS)
 import AppKit
 import SwiftUI
 
-class RoamAppDelegate: NSObject, NSApplicationDelegate {
+class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
     var windowDelegate = RoamWindowDelegate()
     private var aboutBoxWindowController: NSWindowController?
+    private var messagingWindowController: NSWindowController?
+    private var modelContainer: ModelContainer = getSharedModelContainer()
+    @Published var navigationPath: NavigationPath = NavigationPath()
+    @Published var messagingWindowOpenTrigger: UUID? = nil
+    
+    override init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = self
+    }
 
     func showAboutPanel() {
         if aboutBoxWindowController == nil {
@@ -20,39 +46,7 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate {
         }
         aboutBoxWindowController?.showWindow(aboutBoxWindowController?.window)
     }
-
-    func application(_ application: NSApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([NSUserActivityRestoring]) -> Void) -> Bool
-    {
-        // Get URL components from the incoming user activity.
-        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
-            let incomingURL = userActivity.webpageURL,
-            let components = NSURLComponents(url: incomingURL, resolvingAgainstBaseURL: true) else {
-            return false
-        }
-
-
-        // Check for specific URL components that you need.
-        guard let path = components.path,
-        let params = components.queryItems else {
-            return false
-        }
-        print("path = \(path)")
-
-
-        if let albumName = params.first(where: { $0.name == "albumname" } )?.value,
-            let photoIndex = params.first(where: { $0.name == "index" })?.value {
-            print("album = \(albumName)")
-            print("photoIndex = \(photoIndex)")
-            return true
-
-
-        } else {
-            print("Either album name or photo index missing")
-            return false
-        }
-    }
-
-
+    
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let application = notification.object as? NSApplication {
             if let mainWindow = application.mainWindow ?? application.windows.first {
@@ -60,11 +54,106 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+    
+    func application(_ application: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        let tokenParts = deviceToken.map { data -> String in
+            return String(format: "%02.2hhx", data)
+        }
+        let token = tokenParts.joined()
+        logger.info("Device Token: \(token)")
+
+        Task {
+            await sendDeviceTokenToServer(token)
+            UserDefaults.standard.set(true, forKey: "hasSentFirstMessage")
+        }
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        logger.info("didReceive notification. Showing Messages...")
+        #if os(macOS)
+        messagingWindowOpenTrigger = UUID()
+        #else
+        navigationPath.removeLast(100)
+        navigationPath.append(MessagingDestination.Global)
+        #endif
+        completionHandler()
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        logger.info("WillPresent notification. Refreshing messages...")
+        let context = ModelContext(modelContainer)
+        var descriptor = FetchDescriptor<Message>(
+            predicate: #Predicate {
+                $0.fetchedBackend == true
+            },
+            sortBy: [SortDescriptor(\.id)]
+        )
+        descriptor.fetchLimit = 1
+        
+        let lastMessage = try? context.fetch(descriptor).last
+        
+        let latestMessageId = lastMessage?.id
+        Task {
+            await refreshMessages(modelContainer: modelContainer, latestMessageId: latestMessageId)
+        }
+        completionHandler(.badge)
+    }
+    
+    func application(_ application: NSApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        logger.error("Failed to register with Error \(error)")
+    }
 }
 #else
 import UIKit
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
+    @State var navigationPath: NavigationPath = NavigationPath()
     
+    override init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = self
+    }
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        let tokenParts = deviceToken.map { data -> String in
+            return String(format: "%02.2hhx", data)
+        }
+        let token = tokenParts.joined()
+        logger.info("Device Token: \(token)")
+
+        // Here you might want to send the token to your server
+        Task {
+            await sendDeviceTokenToServer(token)
+        }
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        navigationPath.removeLast(100)
+        navigationPath.append(MessagingDestination.Global)
+        completionHandler()
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let context = ModelContext(modelContainer)
+        var descriptor = FetchDescriptor<Message>(
+            predicate: #Predicate {
+                $0.fetchedBackend == true
+            },
+            sortBy: [SortDescriptor(\.id)]
+        )
+        descriptor.fetchLimit = 1
+        
+        let lastMessage = try? context.fetch(descriptor).last
+        
+        let latestMessageId = lastMessage?.id
+        Task {
+            await refreshMessages(modelContext: ModelContext(modelContainer), latestMessageId: latestMessageId)
+        }
+        completionHandler(.badge)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        logger.error("Failed to register with Error \(error)")
+    }
 }
 #endif

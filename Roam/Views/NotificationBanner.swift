@@ -4,12 +4,14 @@ struct NotificationBanner: View {
     let message: String
     let level: Level
     let onClick: (() -> Void)?
+    let onDismiss: (() -> Void)?
     let dismissable: Bool = false
     
-    init(message: String, onClick: (() -> Void)? = nil, level: Level = .error) {
+    init(message: String, onClick: (() -> Void)? = nil, onDismiss: (() -> Void)? = nil, level: Level = .error) {
         self.message = message
         self.onClick = onClick
         self.level = level
+        self.onDismiss = onDismiss
     }
 
     var body: some View {
@@ -20,7 +22,7 @@ struct NotificationBanner: View {
 
             if dismissable {
                 Button(action: {
-                    // Dismiss action here
+                    onDismiss?()
                 }) {
                     Image(systemName: "xmark")
                         .foregroundColor(textColor)
@@ -40,7 +42,7 @@ struct NotificationBanner: View {
     private var backgroundColor: Color {
         switch level {
         case .info:
-            return Color.gray.opacity(0)
+            return Color.blue.opacity(0.3)
         case .warning:
             return Color.orange.opacity(0.3)
         case .error:
