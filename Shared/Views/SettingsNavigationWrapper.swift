@@ -22,9 +22,6 @@ struct DeviceSettingsDestination: Hashable {
     }
 }
 
-
-
-
 struct SettingsNavigationWrapper<Content>: View where Content : View {
     @Binding var path: [NavigationDestination]
     @ViewBuilder let content: () -> Content

@@ -138,7 +138,9 @@ struct MessageView: View {
                         }
                         .padding(.vertical, 12)
                     }
+#if !os(visionOS)
                     .scrollDismissesKeyboard(.interactively)
+#endif
                     .onChange(of: messages.count) { old, new in
                         if let id = messages.last?.persistentModelID {
                             print("Scrolling here \(messages.last?.id ?? "")")

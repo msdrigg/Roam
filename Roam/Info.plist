@@ -2,12 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSUserNotificationUsageDescription</key>
-	<string>Roam can notify you when the the developer responds to your message</string>
 	<key>BACKEND_API_KEY</key>
 	<string>$(BACKEND_API_KEY)</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Roam uses the local network to discover and control your Roku TV</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -49,9 +45,13 @@
 		<string>PowerIntent</string>
 		<string>SelectIntent</string>
 	</array>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Roam can notify you when the the developer responds to your message</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>

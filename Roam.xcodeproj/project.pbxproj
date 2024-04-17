@@ -231,9 +231,6 @@
 		AFF6077F2ADFACBA00A7D657 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
 		AFF607802ADFACBA00A7D657 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* NetworkUtils.swift */; };
 		AFF607812ADFACBA00A7D657 /* DiscoveryActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */; };
-		AFF6DE092BCEFF5F002C13FC /* backend in Resources */ = {isa = PBXBuildFile; fileRef = AFF6DE082BCEFF5F002C13FC /* backend */; };
-		AFF6DE0A2BCEFF5F002C13FC /* backend in Resources */ = {isa = PBXBuildFile; fileRef = AFF6DE082BCEFF5F002C13FC /* backend */; };
-		AFF6DE0B2BCEFF5F002C13FC /* backend in Resources */ = {isa = PBXBuildFile; fileRef = AFF6DE082BCEFF5F002C13FC /* backend */; };
 		AFF6DE0D2BCF0326002C13FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE0C2BCF0326002C13FC /* Message.swift */; };
 		AFF6DE0E2BCF0326002C13FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE0C2BCF0326002C13FC /* Message.swift */; };
 		AFF6DE0F2BCF0326002C13FC /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE0C2BCF0326002C13FC /* Message.swift */; };
@@ -383,7 +380,6 @@
 		AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusDecoder.swift; sourceTree = "<group>"; };
 		AF42442D2BB1118700334AAF /* SchemaFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaFile.swift; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AF4BBB742B8BF654009EB5BE /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WidgetColor.xcassets; sourceTree = "<group>"; };
@@ -416,6 +412,8 @@
 		AFA165C12AE933D7003F45ED /* LICENSE-APACHE */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-APACHE"; sourceTree = "<group>"; };
 		AFA165C22AE93401003F45ED /* LICENSE-MIT */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-MIT"; sourceTree = "<group>"; };
 		AFA165C32AE93FE1003F45ED /* AppIcons */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppIcons; sourceTree = "<group>"; };
+		AFA68FE32BD06424005A102E /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = backend/src; sourceTree = "<group>"; };
+		AFA68FE72BD06474005A102E /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = docs/src; sourceTree = "<group>"; };
 		AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutPanel.swift; sourceTree = "<group>"; };
 		AFC24EFB2AD0E5A1002AB66C /* Roam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamApp.swift; sourceTree = "<group>"; };
@@ -444,7 +442,6 @@
 		AFE89A2C2B9E793E0078387C /* Debugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debugger.swift; sourceTree = "<group>"; };
 		AFED42492AEE8F3B0023D684 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
-		AFF6DE082BCEFF5F002C13FC /* backend */ = {isa = PBXFileReference; lastKnownFileType = folder; path = backend; sourceTree = "<group>"; };
 		AFF6DE0C2BCF0326002C13FC /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		AFF6DE102BCF0740002C13FC /* MessagingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingView.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
@@ -680,6 +677,31 @@
 			path = Scanning;
 			sourceTree = "<group>";
 		};
+		AFA68FE02BD063DD005A102E /* External */ = {
+			isa = PBXGroup;
+			children = (
+				AFA68FE62BD0646C005A102E /* docs */,
+				AFA68FE22BD06414005A102E /* backend */,
+			);
+			name = External;
+			sourceTree = "<group>";
+		};
+		AFA68FE22BD06414005A102E /* backend */ = {
+			isa = PBXGroup;
+			children = (
+				AFA68FE32BD06424005A102E /* src */,
+			);
+			name = backend;
+			sourceTree = "<group>";
+		};
+		AFA68FE62BD0646C005A102E /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				AFA68FE72BD06474005A102E /* src */,
+			);
+			name = docs;
+			sourceTree = "<group>";
+		};
 		AFC24EF22AD0E5A1002AB66C = {
 			isa = PBXGroup;
 			children = (
@@ -687,10 +709,9 @@
 				AF9FC8232B9F9C9500109268 /* scripts */,
 				AFA165C32AE93FE1003F45ED /* AppIcons */,
 				AF95B6F62ADF2F9F005FC338 /* README.md */,
-				AFF6DE082BCEFF5F002C13FC /* backend */,
-				AF4BBB742B8BF654009EB5BE /* docs */,
 				AFA165C22AE93401003F45ED /* LICENSE-MIT */,
 				AFA165C12AE933D7003F45ED /* LICENSE-APACHE */,
+				AFA68FE02BD063DD005A102E /* External */,
 				AFC24EFD2AD0E5A1002AB66C /* Roam */,
 				AF95B7372ADF3F9E005FC338 /* Shared */,
 				AF27400E2AE02C25007C6208 /* RoamWidgets */,
@@ -918,7 +939,6 @@
 				AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */,
 				AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */,
-				AFF6DE0A2BCEFF5F002C13FC /* backend in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -935,7 +955,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AFF6DE0B2BCEFF5F002C13FC /* backend in Resources */,
 				AF8EF4DF2BB60A61002A4D6D /* AppIcon.xcassets in Resources */,
 				AF8EF4E02BB60A65002A4D6D /* AccentColor.xcassets in Resources */,
 			);
@@ -948,7 +967,6 @@
 				AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */,
 				AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */,
-				AFF6DE092BCEFF5F002C13FC /* backend in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1490,7 +1508,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240328.4415314.2;
+				CURRENT_PROJECT_VERSION = 20240417.0822302.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1563,7 +1581,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240328.4415314.2;
+				CURRENT_PROJECT_VERSION = 20240417.0822302.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
