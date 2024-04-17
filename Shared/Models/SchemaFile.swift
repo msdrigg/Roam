@@ -2,8 +2,8 @@ import Foundation
 import SwiftData
 import OSLog
 
-enum SchemaV1: VersionedSchema {
-    static var versionIdentifier = Schema.Version(1, 0, 0)
+public enum SchemaV1: VersionedSchema {
+    public static var versionIdentifier = Schema.Version(1, 0, 1)
     
     @Model
     public final class Device: Hashable {
@@ -57,9 +57,32 @@ enum SchemaV1: VersionedSchema {
             self.deviceUid = deviceUid
         }
     }
+    
+    @Model
+    public final class Message: Identifiable {
+        @Attribute(.unique) public let id: String
+        let message: String
+        let author: AuthorType
+        let fetchedBackend: Bool
+        var viewed: Bool = false
+        
+        enum AuthorType: String, Codable {
+            case me
+            case support
+        }
 
-    static var models: [any PersistentModel.Type] {
-        [Device.self, AppLink.self]
+        
+        init(id: String, message: String, author: AuthorType, fetchedBackend: Bool = true, viewed: Bool = false) {
+            self.id = id
+            self.message = message
+            self.author = author
+            self.fetchedBackend = fetchedBackend
+            self.viewed = viewed
+        }
+    }
+
+    public static var models: [any PersistentModel.Type] {
+        [Device.self, AppLink.self, Message.self]
     }
 }
 

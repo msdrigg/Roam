@@ -9,7 +9,7 @@ struct KeyboardShortcut: Identifiable {
     }
 }
 
-enum KeyboardShortcutDestination{
+enum KeyboardShortcutDestination {
     case Global
 }
 

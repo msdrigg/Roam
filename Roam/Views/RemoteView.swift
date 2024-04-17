@@ -45,6 +45,14 @@ private let deviceFetchDescriptor: FetchDescriptor<Device> = {
     
     return fd
 }()
+private let messageFetchDescriptor: FetchDescriptor<Message> = {
+    var fd = FetchDescriptor(
+        predicate: #Predicate<Message> {
+            !$0.viewed
+        })
+    return fd
+}()
+
 
 struct RemoteView: View {
     private static let logger = Logger(
@@ -54,11 +62,13 @@ struct RemoteView: View {
     
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) var scenePhase
+    @Environment(\.openWindow) var openWindow
+
+    @EnvironmentObject private var appDelegate: RoamAppDelegate
     
     @Query(deviceFetchDescriptor) private var devices: [Device]
-    
-    @Binding var showKeyboardShortcuts: Bool
-    
+    @Query(messageFetchDescriptor) private var unreadMessages: [Message]
+
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var manuallySelectedDevice: Device?
     @State private var showKeyboardEntry: Bool = false
@@ -66,7 +76,6 @@ struct RemoteView: View {
     @State private var keyboardEntryText: String = ""
     @State var inBackground: Bool = false
     @State var buttonPresses: [RemoteButton: Int] = [:]
-    @State private var navigationPath: NavigationPath = NavigationPath()
     @State private var headphonesModeEnabled: Bool = false
     @State private var errorTrigger: Int = 0
     @State private var ecpSession: ECPSession? = nil
@@ -195,13 +204,36 @@ struct RemoteView: View {
     
     var body: some View {
         if runningInPreview {
-            SettingsNavigationWrapper(path: $navigationPath) {
+            SettingsNavigationWrapper(path: $appDelegate.navigationPath) {
                 remotePage
             }
         } else {
-            SettingsNavigationWrapper(path: $navigationPath) {
+            SettingsNavigationWrapper(path: $appDelegate.navigationPath) {
                 remotePage
             }
+            .task {
+                while true {
+                    if Task.isCancelled {
+                        return
+                    }
+                    Self.logger.info("Refreshing messages")
+                    var descriptor = FetchDescriptor<Message>(
+                        predicate: #Predicate {
+                            $0.fetchedBackend == true
+                        },
+                        sortBy: [SortDescriptor(\.id)]
+                    )
+                    descriptor.fetchLimit = 1
+                    
+                    let lastMessage = try? modelContext.fetch(descriptor).last
+                    let container = modelContext.container
+                    
+                    _ = await refreshMessages(modelContainer: container, latestMessageId: lastMessage?.id)
+                    Self.logger.info("Sleeping for an hour")
+                    try? await Task.sleep(nanoseconds: 1000 * 1000 * 1000 * 3600)
+                }
+            }
+
 #if os(iOS) && !APPCLIP
             .task(id: devices.count, priority: .background) {
                 // Send devices to connected watch
@@ -340,6 +372,11 @@ struct RemoteView: View {
                         networkConnectivityBanner
                             .offset(y: -20)
                             .padding(.bottom, -16)
+                        if unreadMessages.count > 0 {
+                            NotificationBanner(message: "See the developers response!", level: .info)
+                                .offset(y: -20)
+                                .padding(.bottom, -16)
+                        }
                     }
                     
                     
@@ -355,6 +392,11 @@ struct RemoteView: View {
                         if verticalSizeClass != .compact {
                             networkConnectivityBanner
                                 .padding(.bottom, 12)
+                            if unreadMessages.count > 0 {
+                                NotificationBanner(message: "See the developers response!", level: .info)
+                                    .padding(.bottom, 12)
+                            }
+
                         }
                     }
                 }
@@ -511,9 +553,12 @@ struct RemoteView: View {
             .onChange(of: scenePhase) { _oldPhase, newPhase in
                 inBackground = newPhase != .active
             }
-        }
-        .sheet(isPresented: $showKeyboardShortcuts) {
-            KeyboardShortcutPanel()
+            .onChange(of: appDelegate.messagingWindowOpenTrigger) { old, new in
+                if new != nil {
+                    openWindow(id: "messages")
+                }
+            }
+
         }
         .font(.title2)
         .fontDesign(.rounded)
@@ -535,7 +580,6 @@ struct RemoteView: View {
         }
         
         var path = url.pathComponents
-        print("HERE \(path)")
         path.removeFirst()
         guard let dlpath = path.first, dlpath == "deep-link"  || dlpath == "appclip" else {
             Self.logger.error("Getting Invalid URL path")
@@ -567,10 +611,6 @@ struct RemoteView: View {
                 Self.logger.error("Trying to add device with no location")
                 return
             }
-
-
-
-
 
             let udn = queryParams?.first(where: { $0.name == "udn" })?.value ?? "roam:newdevice-\(UUID().uuidString)"
             
@@ -604,13 +644,13 @@ struct RemoteView: View {
         #if !APPCLIP
         if action == "feedback" {
             Self.logger.info("Attempting to open app debugging")
-            navigationPath.append(SettingsDestination.Debugging)
+            appDelegate.navigationPath.append(SettingsDestination.Debugging)
         } else if action == "settings" {
             Self.logger.info("Attempting to open app settings")
-            navigationPath.append(SettingsDestination.Global)
+            appDelegate.navigationPath.append(SettingsDestination.Global)
         } else if action == "about" {
             Self.logger.info("Attempting to open about page")
-            navigationPath.append(AboutDestination.Global)
+            appDelegate.navigationPath.append(AboutDestination.Global)
         }
         #endif
     }
@@ -860,6 +900,6 @@ struct RemoteView: View {
 
 
 #Preview("Remote horizontal") {
-    RemoteView(showKeyboardShortcuts: Binding.constant(false))
+    RemoteView()
         .modelContainer(devicePreviewContainer)
 }

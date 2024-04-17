@@ -38,6 +38,7 @@ class DiscordClient {
         if (lastMessageId) {
             url.searchParams.append('after', lastMessageId);
         }
+        console.log(`Fetching messages in thread: ${url.toString()}`);
 
         try {
             const response = await fetch(url.toString(), {

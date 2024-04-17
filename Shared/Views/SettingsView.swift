@@ -21,6 +21,14 @@ let DEVICE_ICON_SIZE: CGFloat = 24.0
 let CIRCLE_SIZE: CGFloat = 10
 #endif
 
+private let messageFetchDescriptor: FetchDescriptor<Message> = {
+    var fd = FetchDescriptor(
+        predicate: #Predicate<Message> {
+            !$0.viewed
+        })
+    return fd
+}()
+
 
 private let deviceFetchDescriptor: FetchDescriptor<Device> = {
     var fd = FetchDescriptor(
@@ -37,9 +45,13 @@ struct SettingsView: View {
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: SettingsView.self)
     )
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
     
     @Environment(\.modelContext) private var modelContext
     @Query(deviceFetchDescriptor) private var devices: [Device]
+    @Query(messageFetchDescriptor) private var unreadMessages: [Message]
     @Binding var path: NavigationPath
     let destination: SettingsDestination
     
@@ -54,6 +66,8 @@ struct SettingsView: View {
     
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
+    @AppStorage(UserDefaultKeys.userMajorActionCount) private var majorActionsCount = 0
+
     
     @State private var reportingDebugLogs: Bool = false
     @State private var debugLogReportID: String? = nil
@@ -68,39 +82,19 @@ struct SettingsView: View {
             let logs = await getDebugInfo(container: getSharedModelContainer(), message: "Requested from settings")
             Self.logger.info("Sending logs \(logs.id)")
             
-            let objectKey = logs.id
-            
             do {
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601 // Or .formatted(DateFormatter) if you want a custom format
+                try await uploadDebugLogs(logs: logs)
                 
-                let jsonData = try encoder.encode(logs)
-                
-                guard let url = URL(string: "https://roam-logs-eyebrows.s3.us-east-1.amazonaws.com/\(objectKey)") else {
-                    Self.logger.error("Error uploading to S3: BadURL")
-                    return
-                }
-                Self.logger.info("Encoded logs into json data \(jsonData.count). Uploading to \(url)")
-                
-                var request = URLRequest(url: url)
-                request.httpMethod = "PUT"
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                
-                request.httpBody = jsonData
-                
-                let (_, response) = try await URLSession.shared.data(for: request)
-                
-                // Log the upload result
-                Self.logger.info("Getting upload result")
-                
-                guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-                    Self.logger.error("Server error")
-                    return
-                }
-                
-                // Successfully uploaded to S3
                 Self.logger.info("Upload successful")
-                debugLogReportID = logs.id
+                DispatchQueue.main.async {
+#if os(watchOS)
+                    debugLogReportID = logs.id
+#elseif os(macOS)
+                    openWindow(id: "messages")
+#else
+                    path.append(MessagingDestination.Global)
+#endif
+                }
             } catch {
                 Self.logger.error("Failed to upload logs to s3: \(error)")
             }
@@ -252,7 +246,45 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
 #endif
-                
+                if (majorActionsCount > 5) {
+                    HStack {
+                        ShareLink(item: URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!) {
+                            Label("Gift Roam to a friend", systemImage: "gift")
+                        }
+                        .buttonStyle(.plain)
+                        .labelStyle(.titleAndIcon)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                }
+
+#if !os(watchOS)
+                HStack {
+                    Button(action: {
+#if os(macOS)
+                        openWindow(id: "messages")
+#else
+                        path.append(MessagingDestination.Global)
+#endif
+                    }) {
+                        if unreadMessages.count > 0 {
+                            Label("Chat with the developer", systemImage: "message")
+                                .badge(unreadMessages.count)
+                                .badgeProminence(.increased)
+                        } else {
+                            Label("Chat with the developer", systemImage: "message")
+                        }
+
+                    }
+                    .buttonStyle(.plain)
+                    .labelStyle(.titleAndIcon)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+#endif
+
                 Button(action: { reportDebugLogs() }) {
                     HStack {
                         Label(reportingDebugLogs ? "Collecting Diagnostics..." : "Send Feedback", systemImage: "square.and.arrow.up")

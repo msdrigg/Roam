@@ -1,5 +1,8 @@
 import SwiftData
 
+
+public let APP_GROUP = "group.com.msdrigg.roam.models"
+
 public class GlobalModelContainer {
     static let sharedModelContainer = demandSharedModelContainer()
 }
@@ -21,7 +24,7 @@ private func _getSharedModelContainer() throws -> ModelContainer {
         versionedSchema: SchemaV1.self
     )
     
-    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier("group.com.msdrigg.roam.models"))
+    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier(APP_GROUP))
     
     return try ModelContainer(for: schema, migrationPlan: RoamSchemaMigrationPlan.self, configurations: [modelConfiguration])
 }

@@ -21,15 +21,11 @@ export interface Env {
 	ROAM_BUNDLE_ID: string;
 }
 
-type ThreadCreateRequest = {
+type MessageRequest = {
 	title: string;
 	content: string;
+	userId: string;
 	apnsToken: string | null;
-}
-
-type MessageCreateRequest = {
-	chatId: string;
-	content: string
 }
 
 export default {
@@ -58,8 +54,11 @@ export default {
 		}
 
 		if (pathSegments[0] === "messages") {
-			let chatId = pathSegments[1];
-			let threadId = await env.ROAM_KV.get(`threadId:${chatId}`);
+			let userId = pathSegments[1];
+			if (!userId) {
+				return new Response("Bad request", { status: 400 });
+			}
+			let threadId = await env.ROAM_KV.get(`threadId:${userId}`);
 
 			let queryParams = new URL(request.url).searchParams;
 			let after = queryParams.get("after") || null;
@@ -73,37 +72,44 @@ export default {
 			return new Response(JSON.stringify(messages), { status: 200 });
 		}
 
-		if (pathSegments[0] === "new-thread") {
+		if (pathSegments[0] === "new-message") {
 			let {
 				title,
 				content,
-				apnsToken
-			} = await request.json() as ThreadCreateRequest;
+				apnsToken,
+				userId,
+			} = await request.json() as MessageRequest;
+			console.log("Handling new message request", title, content, apnsToken, userId);
+
+			if (!userId) {
+				return new Response("Bad request", { status: 400 });
+			}
+
+			let existingThreadId = await env.ROAM_KV.get(`threadId:${userId}`);
+			console.log(`Existing thread ID: ${existingThreadId}`)
+
+			if (apnsToken && existingThreadId) {
+				await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
+				await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
+			}
+
+			if (existingThreadId) {
+				if (content) {
+					await discordClient.sendMessage(existingThreadId, content);
+				}
+
+				return new Response("OK", { status: 200 });
+			}
 
 			let threadId = await discordClient.createThread(title, content);
-			let uniqueId = crypto.randomUUID();
-			await env.ROAM_KV.put(`threadId:${uniqueId}`, threadId);
+			await env.ROAM_KV.put(`threadId:${userId}`, threadId);
 
 			if (apnsToken) {
-				await env.ROAM_KV.put(`apnsToken:${threadId}`, apnsToken);
+				await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
+				await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
 			}
 
-			return new Response(JSON.stringify({ chatId: uniqueId }), { status: 200 });
-		}
 
-		if (pathSegments[0] === "new-message") {
-			let {
-				chatId,
-				content
-			} = await request.json() as MessageCreateRequest;
-
-			let threadId = await env.ROAM_KV.get(`threadId:${chatId}`);
-
-			if (!threadId) {
-				return new Response("Not found", { status: 404 });
-			}
-
-			await discordClient.sendMessage(threadId, content);
 			return new Response("OK", { status: 200 });
 		}
 
@@ -113,7 +119,15 @@ export default {
 				return new Response("Bad request", { status: 400 });
 			}
 
-			env.ROAM_DIAGNOSTIC_BUCKET.put(diagnosticKey, await request.arrayBuffer());
+			let data = await request.arrayBuffer();
+			console.log(`Uploading diagnostic data for key: ${diagnosticKey}`);
+			await env.ROAM_DIAGNOSTIC_BUCKET.put(diagnosticKey, data, {
+				httpMetadata: {
+					contentType: "application/json"
+				}
+			});
+
+			return new Response("OK", { status: 200 });
 		}
 
 		return new Response("Not found", { status: 404 });
@@ -161,6 +175,7 @@ export default {
 					continue;
 				}
 				try {
+					console.log(`Sending push notification for message: ${message.content} to ${apnsToken} with bundle ID ${env.ROAM_BUNDLE_ID}`)
 					await sendPushNotification("Message from roam", message.content, apnsKey, apnsToken, env.ROAM_BUNDLE_ID);
 				} catch (e) {
 					console.error(`Error sending push notification: ${e}`);

@@ -23,6 +23,11 @@ struct SettingsNavigationWrapper<Content>: View where Content : View {
                     KeyboardShortcutPanel()
                 }
 #endif
+#if !os(watchOS)
+                .navigationDestination(for: MessagingDestination.self) { _ in
+                    MessageView()
+                }
+#endif
             #if !APPCLIP
                 .navigationDestination(for: DeviceSettingsDestination.self) { destination in
                     DeviceDetailView(device: destination.device) {

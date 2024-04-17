@@ -1,11 +1,20 @@
 import SwiftUI
 import SwiftData
 import OSLog
+#if os(macOS)
+import AppKit
+#endif
+
 
 @main
 struct RoamApp: App {
-    @State var showKeyboardShortcuts: Bool = false
+#if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+#endif
+    
     #if os(macOS)
+    @NSApplicationDelegateAdaptor(RoamAppDelegate.self) var appDelegate
+    #elseif !os(watchOS)
     @NSApplicationDelegateAdaptor(RoamAppDelegate.self) var appDelegate
     #endif
 
@@ -16,8 +25,8 @@ struct RoamApp: App {
     }
     
     var body: some Scene {
-        WindowGroup {
-            RemoteView(showKeyboardShortcuts: $showKeyboardShortcuts)
+        Window("Roam", id: "main") {
+            RemoteView()
 #if os(visionOS)
                 .frame(minWidth: 400, minHeight: 950)
 #endif
@@ -34,10 +43,44 @@ struct RoamApp: App {
         .commands {
             CommandGroup(after: .help) {
                 Button("Keyboard Shortcuts", systemImage: "keyboard") {
-                    showKeyboardShortcuts = !showKeyboardShortcuts
+                    #if os(macOS)
+                    openWindow(id: "keyboard-shortcuts")
+                    #else
+                    navigationPath.append(KeyboardShortcutDestination.Global)
+                    #endif
                 }
                 .keyboardShortcut("k")
                 
+                
+                Button("Chat with Developer", systemImage: "message") {
+                    #if os(macOS)
+                    openWindow(id: "messages")
+                    #else
+                    navigationPath.append(MessagingDestination.Global)
+                    #endif
+                }
+                .keyboardShortcut("j")
+            }
+            
+            CommandGroup(after: .singleWindowList) {
+                Button("Keyboard Shortcuts", systemImage: "keyboard") {
+                    #if os(macOS)
+                    openWindow(id: "keyboard-shortcuts")
+                    #else
+                    navigationPath.append(KeyboardShortcutDestination.Global)
+                    #endif
+                }
+                .keyboardShortcut("k")
+                
+                
+                Button("Chat with Developer", systemImage: "message") {
+                    #if os(macOS)
+                    openWindow(id: "messages")
+                    #else
+                    navigationPath.append(MessagingDestination.Global)
+                    #endif
+                }
+                .keyboardShortcut("j")
             }
         }
         .commands {
@@ -50,6 +93,20 @@ struct RoamApp: App {
             }
         }
         #endif
+        
+        #if os(macOS)
+        Window("Messages", id: "messages") {
+            MessageView()
+                .frame(width: 400)
+        }
+        .windowResizability(.contentSize)
+            .modelContainer(sharedModelContainer)
+
+        Window("Keyboard Shortcuts", id: "keyboard-shortcuts") {
+            KeyboardShortcutPanel()
+        }
+        #endif
+        
         
         #if os(macOS)
         Settings {
