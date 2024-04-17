@@ -22,7 +22,6 @@ func sendDeviceTokenToServer(_ token: String) async {
 import AppKit
 
 class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
-    var windowDelegate = RoamWindowDelegate()
     private var aboutBoxWindowController: NSWindowController?
     private var messagingWindowController: NSWindowController?
     private var modelContainer: ModelContainer = getSharedModelContainer()
@@ -45,14 +44,6 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenter
             aboutBoxWindowController?.showWindow(nil)
         }
         aboutBoxWindowController?.showWindow(aboutBoxWindowController?.window)
-    }
-    
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        if let application = notification.object as? NSApplication {
-            if let mainWindow = application.mainWindow ?? application.windows.first {
-                mainWindow.delegate = windowDelegate
-            }
-        }
     }
     
     func application(_ application: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

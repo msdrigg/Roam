@@ -143,6 +143,11 @@ struct MessageView: View {
                                         scrollValue.scrollTo(id)
                                     }
                                 }
+                                .onAppear{
+                                    if let id = messages.last?.persistentModelID {
+                                        scrollValue.scrollTo(id)
+                                    }
+                                }
                             }
                         }
                     }
@@ -186,6 +191,7 @@ struct MessageView: View {
             }
         }
         .task(id: refreshResetId) {
+            refreshInterval = 10
             await handleRefresh()
         }  
         .frame(minHeight: 200)
@@ -208,10 +214,10 @@ struct MessageView: View {
             let result = await refreshMessages(modelContainer: modelContext.container, latestMessageId: latestMessageId, viewed: true)
             logger.info("Got results \(result)")
             if result > 0 {
-                refreshInterval = 20
+                refreshInterval = 10
             } else {
-                if refreshInterval < 600 {
-                    refreshInterval = min(refreshInterval * 2, 600)
+                if refreshInterval < 60 {
+                    refreshInterval = min(refreshInterval * 2, 60)
                 }
             }
             logger.info("Sleeping for \(refreshInterval)s")
