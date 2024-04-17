@@ -1,8 +1,32 @@
 import SwiftUI
 
+enum NavigationDestination: Hashable {
+    case SettingsDestination(SettingsDestination)
+    case AboutDestination
+    case DeviceSettingsDestination(DeviceSettingsDestination)
+    case KeyboardShortcutDestinaion
+    case MessageDestination
+}
+
+enum SettingsDestination {
+    case Global
+    case Debugging
+}
+
+
+struct DeviceSettingsDestination: Hashable {
+    let device: Device
+    
+    init(_ device: Device) {
+        self.device = device
+    }
+}
+
+
+
 
 struct SettingsNavigationWrapper<Content>: View where Content : View {
-    @Binding var path: NavigationPath
+    @Binding var path: [NavigationDestination]
     @ViewBuilder let content: () -> Content
     
     @Environment(\.dismiss) private var dismiss
@@ -10,33 +34,34 @@ struct SettingsNavigationWrapper<Content>: View where Content : View {
     var body: some View {
         NavigationStack(path: $path) {
             content()
-            #if !APPCLIP
-                .navigationDestination(for: SettingsDestination.self) { destination in
-                    SettingsView(path: $path, destination: destination)
-                }
-                .navigationDestination(for: AboutDestination.self) { _ in
-                    AboutView()
-                }
-            #endif
-#if !os(watchOS)
-                .navigationDestination(for: KeyboardShortcutDestination.self) { _ in
-                    KeyboardShortcutPanel()
-                }
+                .navigationDestination(for: NavigationDestination.self) { globalDestination in
+                    switch globalDestination {
+                    case .SettingsDestination(let destination):
+#if !APPCLIP
+                        SettingsView(path: $path, destination: destination)
 #endif
-#if !os(watchOS)
-                .navigationDestination(for: MessagingDestination.self) { _ in
-                    MessageView()
-                }
+                    case .AboutDestination:
+#if !APPCLIP
+                        AboutView()
 #endif
-            #if !APPCLIP
-                .navigationDestination(for: DeviceSettingsDestination.self) { destination in
-                    DeviceDetailView(device: destination.device) {
-                        if path.count > 0 {
-                            path.removeLast()
+                    case .DeviceSettingsDestination(let destination):
+#if !APPCLIP
+                        DeviceDetailView(device: destination.device) {
+                            if path.count > 0 {
+                                path.removeLast()
+                            }
                         }
+#endif
+                    case .KeyboardShortcutDestinaion:
+#if !os(watchOS)
+                        KeyboardShortcutPanel()
+#endif
+                    case .MessageDestination:
+#if !os(watchOS)
+                        MessageView()
+#endif
                     }
                 }
-            #endif
         }
     }
 }

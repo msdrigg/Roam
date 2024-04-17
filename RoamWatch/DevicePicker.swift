@@ -21,7 +21,7 @@ struct DevicePicker: View {
     let devices: [Device]
     @Binding var device: Device?
     @Binding var showingPicker: Bool
-    @State var navPath = NavigationPath()
+    @State var navPath: [NavigationDestination] = []
     
     @State var deviceActor: DeviceActor!
     
@@ -96,7 +96,7 @@ struct DevicePicker: View {
                         }
                     }
                     
-                    NavigationLink(value: SettingsDestination.Global) {
+                    NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
                         Label("Settings", systemImage: "gear")
                     }
                     .labelStyle(.titleAndIcon)

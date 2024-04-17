@@ -25,7 +25,7 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenter
     private var aboutBoxWindowController: NSWindowController?
     private var messagingWindowController: NSWindowController?
     private var modelContainer: ModelContainer = getSharedModelContainer()
-    @Published var navigationPath: NavigationPath = NavigationPath()
+    @Published var navigationPath: [NavigationDestination] = []
     @Published var messagingWindowOpenTrigger: UUID? = nil
     
     override init() {
@@ -64,8 +64,9 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenter
         #if os(macOS)
         messagingWindowOpenTrigger = UUID()
         #else
-        navigationPath.removeLast(100)
-        navigationPath.append(MessagingDestination.Global)
+        if navigationPath.last != NavigationDestination.MessageDestination {
+            navigationPath.append(NavigationDestination.MessageDestination)
+        }
         #endif
         completionHandler()
     }
@@ -100,13 +101,14 @@ import UIKit
 class RoamAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
     private var modelContainer: ModelContainer = getSharedModelContainer()
 
-    @Published var navigationPath: NavigationPath = NavigationPath()
+    @Published var navigationPath: [NavigationDestination] = []
 
     override init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
     }
-
+    
+    
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let tokenParts = deviceToken.map { data -> String in
             return String(format: "%02.2hhx", data)
@@ -114,15 +116,16 @@ class RoamAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenter
         let token = tokenParts.joined()
         logger.info("Device Token: \(token)")
 
-        // Here you might want to send the token to your server
         Task {
             await sendDeviceTokenToServer(token)
+            UserDefaults.standard.set(true, forKey: "hasSentFirstMessage")
         }
     }
-    
+
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        navigationPath.removeLast(100)
-        navigationPath.append(MessagingDestination.Global)
+        if navigationPath.last != NavigationDestination.MessageDestination {
+            navigationPath.append(NavigationDestination.MessageDestination)
+        }
         completionHandler()
     }
     

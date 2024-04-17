@@ -4,12 +4,10 @@ hide_table_of_contents: true
 
 # Upcoming Roam Updates
 
-    - Fix everything on visionOS
 -   AppClip
     -   Add a "getAShareableLinkToThisDevice" button on settings -> device
     -   Autogenerate app clip codes with that shareable link
     
-
 -   Update Info/status management to better handle volatile state
     -   On disconnect, select, button click, move to foreground, app opened -> Restart reconnect loop if disconnected
     -   Reconnect loop is to exponentially backoff retrying failing connections (0.5s, double, 10s backoff)

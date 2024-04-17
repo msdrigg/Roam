@@ -87,10 +87,6 @@ public func refreshMessages(modelContainer: ModelContainer, latestMessageId: Str
 }
 
 
-enum MessagingDestination {
-    case Global
-}
-
 struct MessageView: View {
     @State private var messageText = ""
     @Query(sort: \Message.id) private var baseMessages: [Message]
@@ -110,7 +106,7 @@ struct MessageView: View {
         GeometryReader { geometry in
             VStack {
                 ScrollViewReader { scrollValue in
-                ScrollView {
+                    ScrollView {
                         LazyVStack {
                             ForEach(messages, id: \.persistentModelID) { message in
                                 HStack {
@@ -140,14 +136,22 @@ struct MessageView: View {
                                 }
                             }
                         }
+                        .padding(.vertical, 12)
                     }
-                    .defaultScrollAnchor(.bottom)
-                    .padding(.vertical, 12)
+                    .scrollDismissesKeyboard(.interactively)
                     .onChange(of: messages.count) { old, new in
                         if let id = messages.last?.persistentModelID {
                             print("Scrolling here \(messages.last?.id ?? "")")
                             withAnimation {
-                                scrollValue.scrollTo(id, anchor: .bottom)
+                                scrollValue.scrollTo(id)
+                            }
+                        }
+                    }
+                    .onAppear {
+                        if let id = messages.last?.persistentModelID {
+                            print("Scrolling here \(messages.last?.id ?? "")")
+                            withAnimation {
+                                scrollValue.scrollTo(id)
                             }
                         }
                     }
@@ -164,24 +168,26 @@ struct MessageView: View {
                         .padding(.vertical, 6)
                         .lineLimit(1...8)
                         .textFieldStyle(PlainTextFieldStyle())
-                        .fixedSize(horizontal: false, vertical: true)
                         .background(RoundedRectangle(cornerRadius: 15).stroke(Color.secondary, lineWidth: 2).background(Color.clear))
                         .scrollIndicators(.hidden)
+#if os(visionOS)
+                        .padding(.bottom, 6)
+#endif
 
 #if os(macOS)
                     EmojiPicker().padding(.bottom, 2)
 #else
                     Button(action: sendTypedMessage) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 32, height: 32)
-                            .foregroundColor(Color.accentColor)
+                        Label("Send", systemImage: "arrow.up")
                     }
+                    .buttonBorderShape(.circle)
+                    .buttonStyle(.borderedProminent)
+                    .labelStyle(.iconOnly)
+
 #endif
                 }
                 .padding(.horizontal)
-                .padding(.vertical, 8)
+                .padding(.vertical, 16)
             }
             .onAppear {
                 UNUserNotificationCenter.current().setBadgeCount(0)
@@ -189,12 +195,15 @@ struct MessageView: View {
                 UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
             }
         }
+        .navigationTitle("Messages")
         .task(id: refreshResetId) {
             refreshInterval = 10
             await handleRefresh()
         }  
+        #if os(macOS)
         .frame(minHeight: 200)
         .frame(width: 400)
+        #endif
         .navigationTitle("Messages")
         #if !os(macOS)
         .navigationBarTitleDisplayMode(.inline)

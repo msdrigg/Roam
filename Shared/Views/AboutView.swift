@@ -100,10 +100,6 @@ struct AboutView: View {
     }
 }
 
-enum AboutDestination{
-    case Global
-}
-
 #Preview("About") {
     AboutView()
         .previewLayout(.fixed(width: 100.0, height: 300.0))
