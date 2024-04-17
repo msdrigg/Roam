@@ -4,54 +4,51 @@ struct NotificationBanner: View {
     let message: String
     let level: Level
     let onClick: (() -> Void)?
-    let onDismiss: (() -> Void)?
-    let dismissable: Bool = false
     
-    init(message: String, onClick: (() -> Void)? = nil, onDismiss: (() -> Void)? = nil, level: Level = .error) {
+    @Environment(\.colorScheme) private var colorScheme
+    
+    init(message: String, onClick: (() -> Void)? = nil, level: Level = .error) {
         self.message = message
         self.onClick = onClick
         self.level = level
-        self.onDismiss = onDismiss
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        if onClick != nil {
+            Button(action: {onClick?()}) {
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(
+                        colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
+                    )
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(backgroundColor)
+#if !os(tvOS)
+            .controlSize(.small)
+#endif
+        } else {
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(textColor)
-
-            if dismissable {
-                Button(action: {
-                    onDismiss?()
-                }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(textColor)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(backgroundColor)
-        .cornerRadius(5)
-        .onTapGesture {
-            onClick?()
+                .foregroundStyle(
+                    colorScheme == .dark ? Color.white : Color.black
+                )
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(backgroundColor)
+            .cornerRadius(5)
         }
     }
 
     private var backgroundColor: Color {
         switch level {
         case .info:
-            return Color.blue.opacity(0.3)
+            return Color.accentColor.opacity(0.3)
         case .warning:
             return Color.orange.opacity(0.3)
         case .error:
             return Color.red.opacity(0.3)
         }
-    }
-
-    private var textColor: Color {
-        Color.primary.opacity(0.7)
     }
 
     enum Level {

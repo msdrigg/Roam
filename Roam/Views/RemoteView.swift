@@ -221,15 +221,16 @@ struct RemoteView: View {
                         predicate: #Predicate {
                             $0.fetchedBackend == true
                         },
-                        sortBy: [SortDescriptor(\.id)]
+                        sortBy: [SortDescriptor(\.id, order: .reverse)]
                     )
                     descriptor.fetchLimit = 1
                     
                     let lastMessage = try? modelContext.fetch(descriptor).last
                     let container = modelContext.container
-                    
-                    _ = await refreshMessages(modelContainer: container, latestMessageId: lastMessage?.id)
-                    Self.logger.info("Sleeping for an hour")
+                    Self.logger.info("Refreshing messages with last message \(String(describing: lastMessage?.id))")
+
+                    let results = await refreshMessages(modelContainer: container, latestMessageId: lastMessage?.id, viewed: false)
+                    Self.logger.info("Sleeping for an hour after getting \(results) messages")
                     try? await Task.sleep(nanoseconds: 1000 * 1000 * 1000 * 3600)
                 }
             }
@@ -336,7 +337,7 @@ struct RemoteView: View {
 
             HStack {
                 Spacer()
-                VStack(alignment: .center) {
+                VStack(alignment: .center, spacing: 10) {
 #if os(tvOS)
                     HStack{
                         HStack {
@@ -369,14 +370,20 @@ struct RemoteView: View {
                     
                     
                     if verticalSizeClass == .compact && !hideUIForKeyboardEntry {
-                        networkConnectivityBanner
-                            .offset(y: -20)
-                            .padding(.bottom, -16)
                         if unreadMessages.count > 0 {
-                            NotificationBanner(message: "See the developers response!", level: .info)
+                            NotificationBanner(message: "Scott chatted you back", onClick: {
+#if os (macOS)
+                                openWindow(id: "messages")
+#else
+                                appDelegate.navigationPath.append(MessagingDestination.Global)
+#endif
+                            }, level: .info)
                                 .offset(y: -20)
                                 .padding(.bottom, -16)
                         }
+                        networkConnectivityBanner
+                            .offset(y: -20)
+                            .padding(.bottom, -16)
                     }
                     
                     
@@ -390,13 +397,17 @@ struct RemoteView: View {
                         Spacer()
                     } else {
                         if verticalSizeClass != .compact {
+                            if unreadMessages.count > 0 {
+                                NotificationBanner(message: "Scott chatted you back", onClick: {
+    #if os (macOS)
+                                    openWindow(id: "messages")
+    #else
+                                    appDelegate.navigationPath.append(MessagingDestination.Global)
+    #endif
+                                }, level: .info)
+                            }
                             networkConnectivityBanner
                                 .padding(.bottom, 12)
-                            if unreadMessages.count > 0 {
-                                NotificationBanner(message: "See the developers response!", level: .info)
-                                    .padding(.bottom, 12)
-                            }
-
                         }
                     }
                 }
@@ -553,11 +564,13 @@ struct RemoteView: View {
             .onChange(of: scenePhase) { _oldPhase, newPhase in
                 inBackground = newPhase != .active
             }
+#if os(macOS)
             .onChange(of: appDelegate.messagingWindowOpenTrigger) { old, new in
                 if new != nil {
                     openWindow(id: "messages")
                 }
             }
+#endif
 
         }
         .font(.title2)
@@ -783,15 +796,18 @@ struct RemoteView: View {
     }
     
     func verticalBody() -> some View {
-        VStack(alignment: .center, spacing: 10) {
+        VStack(alignment: .center, spacing: 20) {
+            #if os(macOS) || os(visionOS)
+            Spacer()
+            #endif
+
             // Row with Back and Home buttons
-            Spacer().frame(maxHeight: 60)
             TopBar(pressCounter: buttonPressCount, action: pressButton)
                 .matchedGeometryEffect(id: "topBar", in: animation)
             
             
             
-            Spacer().frame(maxHeight: 60)
+            Spacer()
             
             // Center Controller with directional buttons
             CenterController(pressCounter: buttonPressCount, action: pressButton)
@@ -801,7 +817,7 @@ struct RemoteView: View {
             
             
             if !hideUIForKeyboardEntry {
-                Spacer().frame(maxHeight: 60)
+                Spacer()
                 // Grid of 9 buttons
                 ButtonGrid(pressCounter: buttonPressCount, action: pressButton, enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]), disabled: headphonesModeDisabled ? Set([.headphonesMode]) : Set([]) )
                     .transition(.scale.combined(with: .opacity))
@@ -811,17 +827,19 @@ struct RemoteView: View {
             
             
             if !showKeyboardEntry {
-                Spacer().frame(maxHeight: 60)
+                Spacer()
                 AppLinksView(deviceId: selectedDevice?.udn, rows: appLinkRows, handleOpenApp: launchApp)
 #if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
 #endif
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
+#if os(macOS) || os(visionOS)
+Spacer()
+#endif
             } else {
                 Spacer()
             }
-            Spacer().frame(maxHeight: 60)
         }
     }
     

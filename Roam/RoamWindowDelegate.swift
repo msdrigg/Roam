@@ -6,9 +6,10 @@ class RoamWindowDelegate: NSObject, NSWindowDelegate {
     var animationTimer: Timer?
 
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
-        targetFrame = NSRect(origin: sender.frame.origin, size: frameSize)
-        startSmoothResizeAnimation(for: sender)
-        return sender.frame.size
+//        targetFrame = NSRect(origin: sender.frame.origin, size: frameSize)
+//        self.startSmoothResizeAnimation(for: sender)
+//        return sender.window.frame
+        return frameSize
     }
 
     private func startSmoothResizeAnimation(for window: NSWindow) {
@@ -26,7 +27,7 @@ class RoamWindowDelegate: NSObject, NSWindowDelegate {
         let deltaX = (strongSelf.targetFrame.size.width - currentFrame.size.width) / 4
         let deltaY = (strongSelf.targetFrame.size.height - currentFrame.size.height) / 4
 
-        if abs(deltaX) < 1 && abs(deltaY) < 1 {
+        if abs(deltaX) < 0.1 && abs(deltaY) < 0.1 {
             strongSelf.animationTimer?.invalidate()
             currentFrame.size = strongSelf.targetFrame.size
         } else {

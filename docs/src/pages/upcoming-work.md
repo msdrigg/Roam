@@ -4,10 +4,6 @@ hide_table_of_contents: true
 
 # Upcoming Roam Updates
 
--   Switch to cloudflare backend
-    - Update remote view to support messages
-        - Add button to open developer messages in device picker if there are dev messages (or at bottom if not)
-        - Ensure the unreadNotificationCount works
     - Fix everything on iPhone
     - Fix everything on visionOS
 

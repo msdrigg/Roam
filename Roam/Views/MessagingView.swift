@@ -41,7 +41,7 @@ func getNotificationSettings() {
     }
 }
 
-public func refreshMessages(modelContainer: ModelContainer, latestMessageId: String?) async -> Int {
+public func refreshMessages(modelContainer: ModelContainer, latestMessageId: String?, viewed: Bool) async -> Int {
     let modelContext = ModelContext(modelContainer)
     do {
         var count = 0
@@ -49,7 +49,7 @@ public func refreshMessages(modelContainer: ModelContainer, latestMessageId: Str
             let newMessages = try await getMessages(after: latestMessageId)
             
             for message in newMessages {
-                message.viewed = true
+                message.viewed = viewed
                 modelContext.insert(message)
             }
             count = newMessages.count
@@ -67,12 +67,14 @@ public func refreshMessages(modelContainer: ModelContainer, latestMessageId: Str
         }
         logger.info("Ending delete")
         
-        let unviewedMessagesDescriptor = FetchDescriptor<Message>(predicate: #Predicate {
-            $0.viewed == false
-        })
-        let unviewedMessages = try modelContext.fetch<Message>(unviewedMessagesDescriptor)
-        for message in unviewedMessages {
-            message.viewed = true
+        if viewed == true {
+            let unviewedMessagesDescriptor = FetchDescriptor<Message>(predicate: #Predicate {
+                !$0.viewed
+            })
+            let unviewedMessages = try modelContext.fetch<Message>(unviewedMessagesDescriptor)
+            for message in unviewedMessages {
+                message.viewed = true
+            }
         }
         
         try modelContext.save()
@@ -96,11 +98,12 @@ struct MessageView: View {
     @State private var refreshInterval: TimeInterval = 20
     @State private var refreshResetId = UUID()
     @AppStorage("hasSentFirstMessage") private var hasSentFirstMessage: Bool = false
+    @Environment(\.colorScheme) var colorScheme
 
     @Environment(\.modelContext) private var modelContext
     
     var messages: [Message] {
-        return ([Message(id: "start", message: "Hi, I'm Scott. I make Roam. Let me know if you have any feedback. I'll do my best to respond to these messages as quick as I can.", author: .support, fetchedBackend: false)] + baseMessages).filter{!$0.message.isEmpty}
+        return ([Message(id: "start", message: "Hi, I'm Scott. I make Roam. What's on your mind? I'll do my best to respond to these messages as quick as I can.", author: .support, fetchedBackend: false)] + baseMessages).filter{!$0.message.isEmpty}
     }
 
     var body: some View {
@@ -116,10 +119,14 @@ struct MessageView: View {
                                         Text(message.message)
                                             .padding(.vertical, 6)
                                             .padding(.horizontal, 10)
-                                            .background(Color.accentColor)
+                                            .background(Color.accentColor.opacity(0.5))
+                                            .foregroundStyle(
+                                                colorScheme == .dark ? Color.white : Color.black
+                                            )
                                             .cornerRadius(15)
                                             .frame(maxWidth: geometry.size.width * 2 / 3, alignment: .trailing)
                                             .padding(.trailing, 10)
+                                        
                                     } else {
                                         Text(message.message)
                                             .padding(.vertical, 6)
@@ -141,6 +148,7 @@ struct MessageView: View {
                     }
                     .padding(.vertical, 12)
                 }
+                .padding(.horizontal, 12)
 
                 HStack(alignment: .bottom, spacing: 10) {
                     TextField("Message", text: $messageText, axis: .vertical)
@@ -173,6 +181,8 @@ struct MessageView: View {
             }
             .onAppear {
                 UNUserNotificationCenter.current().setBadgeCount(0)
+                UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+                UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
             }
         }
         .task(id: refreshResetId) {
@@ -195,7 +205,7 @@ struct MessageView: View {
             try? await Task.sleep(nanoseconds: 1000 * 1000 * 1000)
             let latestMessageId = messages.last{$0.fetchedBackend == true}?.id
             
-            let result = await refreshMessages(modelContainer: modelContext.container, latestMessageId: latestMessageId)
+            let result = await refreshMessages(modelContainer: modelContext.container, latestMessageId: latestMessageId, viewed: true)
             logger.info("Got results \(result)")
             if result > 0 {
                 refreshInterval = 20
@@ -216,7 +226,7 @@ struct MessageView: View {
         Task {
             do {
                 try await sendMessage(message: messageCopy, apnsToken: nil)
-                if await refreshMessages(modelContainer: modelContext.container, latestMessageId: messages.last{$0.fetchedBackend}?.id) > 0 {
+                if await refreshMessages(modelContainer: modelContext.container, latestMessageId: messages.last{$0.fetchedBackend}?.id, viewed: true) > 0 {
                     refreshResetId = UUID()
                 }
             } catch {
