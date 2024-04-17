@@ -103,6 +103,8 @@
 		AF70BB092BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */; };
 		AF70BB0A2BA7CBD0009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
 		AF70BB0B2BA7CBD3009A06EC /* PaddedHoverButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB082BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift */; };
+		AF71071F2BD00C8600384691 /* MessagingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF6DE102BCF0740002C13FC /* MessagingView.swift */; };
+		AF7107202BD00D9400384691 /* RoamAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */; };
 		AF779BF02BA4D82600231BC5 /* Badge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BEF2BA4D82600231BC5 /* Badge.swift */; };
 		AF779BF12BA4D82600231BC5 /* Badge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BEF2BA4D82600231BC5 /* Badge.swift */; };
 		AF779BF32BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF779BF22BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift */; };
@@ -1056,6 +1058,7 @@
 				AF8EF4E42BB60A9F002A4D6D /* AboutView.swift in Sources */,
 				AF8EF4E52BB60A9F002A4D6D /* Badge.swift in Sources */,
 				AF8EF51F2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
+				AF71071F2BD00C8600384691 /* MessagingView.swift in Sources */,
 				AF8EF5162BB60D46002A4D6D /* AsyncBufferedChannel.swift in Sources */,
 				AF8EF5172BB60D46002A4D6D /* AsyncThrowingBufferedChannel.swift in Sources */,
 				AF8EF5182BB60D46002A4D6D /* ManagedCriticalState.swift in Sources */,
@@ -1080,6 +1083,7 @@
 				AF8EF4F22BB60AE8002A4D6D /* Device.swift in Sources */,
 				AF8EF5102BB60D20002A4D6D /* RokuSession.swift in Sources */,
 				AF8EF4F32BB60AE8002A4D6D /* SchemaFile.swift in Sources */,
+				AF7107202BD00D9400384691 /* RoamAppDelegate.swift in Sources */,
 				AF8EF4F42BB60AE8002A4D6D /* AppLink.swift in Sources */,
 				AF8EF5022BB60B31002A4D6D /* ButtonGrid.swift in Sources */,
 				AF8EF4F02BB60ADA002A4D6D /* AppLinkAppEntity.swift in Sources */,

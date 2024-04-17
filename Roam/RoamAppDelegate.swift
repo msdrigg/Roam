@@ -2,6 +2,7 @@ import Foundation
 import OSLog
 import UserNotifications
 import SwiftData
+import SwiftUI
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
@@ -19,7 +20,6 @@ func sendDeviceTokenToServer(_ token: String) async {
 
 #if os(macOS)
 import AppKit
-import SwiftUI
 
 class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
     var windowDelegate = RoamWindowDelegate()
@@ -86,7 +86,7 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenter
             predicate: #Predicate {
                 $0.fetchedBackend == true
             },
-            sortBy: [SortDescriptor(\.id)]
+            sortBy: [SortDescriptor(\.id, order: .reverse)]
         )
         descriptor.fetchLimit = 1
         
@@ -94,7 +94,7 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenter
         
         let latestMessageId = lastMessage?.id
         Task {
-            await refreshMessages(modelContainer: modelContainer, latestMessageId: latestMessageId)
+            await refreshMessages(modelContainer: modelContainer, latestMessageId: latestMessageId, viewed: false)
         }
         completionHandler(.badge)
     }
@@ -106,9 +106,11 @@ class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenter
 #else
 import UIKit
 
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
-    @State var navigationPath: NavigationPath = NavigationPath()
-    
+class RoamAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
+    private var modelContainer: ModelContainer = getSharedModelContainer()
+
+    @Published var navigationPath: NavigationPath = NavigationPath()
+
     override init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
@@ -139,7 +141,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             predicate: #Predicate {
                 $0.fetchedBackend == true
             },
-            sortBy: [SortDescriptor(\.id)]
+            sortBy: [SortDescriptor(\.id, order: .reverse)]
         )
         descriptor.fetchLimit = 1
         
@@ -147,7 +149,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         
         let latestMessageId = lastMessage?.id
         Task {
-            await refreshMessages(modelContext: ModelContext(modelContainer), latestMessageId: latestMessageId)
+            await refreshMessages(modelContainer: modelContainer, latestMessageId: latestMessageId, viewed: false)
         }
         completionHandler(.badge)
     }

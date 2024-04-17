@@ -15,7 +15,7 @@ struct RoamApp: App {
     #if os(macOS)
     @NSApplicationDelegateAdaptor(RoamAppDelegate.self) var appDelegate
     #elseif !os(watchOS)
-    @NSApplicationDelegateAdaptor(RoamAppDelegate.self) var appDelegate
+    @UIApplicationDelegateAdaptor(RoamAppDelegate.self) var appDelegate
     #endif
 
     
@@ -25,22 +25,22 @@ struct RoamApp: App {
     }
     
     var body: some Scene {
+#if os(macOS)
         Window("Roam", id: "main") {
             RemoteView()
-#if os(visionOS)
-                .frame(minWidth: 400, minHeight: 950)
-#endif
-
         }
-        #if os(visionOS) || os(macOS)
-        .defaultSize(width: 400, height: 1000)
-        .windowResizability(.contentMinSize)
-        #endif
         .modelContainer(sharedModelContainer)
-        #if os(macOS)
+        .defaultSize(width: 400, height: 1000)
         .defaultPosition(.trailing)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .commands {
+            CommandGroup(replacing: CommandGroupPlacement.appInfo) {
+                Button(action: {
+                    appDelegate.showAboutPanel()
+                }) {
+                    Text("About Roam")
+                }
+            }
             CommandGroup(after: .help) {
                 Button("Keyboard Shortcuts", systemImage: "keyboard") {
                     #if os(macOS)
@@ -83,16 +83,19 @@ struct RoamApp: App {
                 .keyboardShortcut("j")
             }
         }
-        .commands {
-            CommandGroup(replacing: CommandGroupPlacement.appInfo) {
-                Button(action: {
-                    appDelegate.showAboutPanel()
-                }) {
-                    Text("About Roam")
-                }
-            }
+#else
+        WindowGroup {
+            RemoteView()
+#if os(visionOS)
+                .frame(minWidth: 400, minHeight: 950)
+#endif
+
         }
-        #endif
+        .modelContainer(sharedModelContainer)
+#endif
+#if os(visionOS)
+        .defaultSize(width: 400, height: 1000)
+#endif
         
         #if os(macOS)
         Window("Messages", id: "messages") {

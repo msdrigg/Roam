@@ -252,7 +252,6 @@ struct SettingsView: View {
                             Label("Gift Roam to a friend", systemImage: "gift")
                         }
                         .buttonStyle(.plain)
-                        .labelStyle(.titleAndIcon)
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
@@ -271,14 +270,12 @@ struct SettingsView: View {
                         if unreadMessages.count > 0 {
                             Label("Chat with the developer", systemImage: "message")
                                 .badge(unreadMessages.count)
-                                .badgeProminence(.increased)
                         } else {
                             Label("Chat with the developer", systemImage: "message")
                         }
 
                     }
                     .buttonStyle(.plain)
-                    .labelStyle(.titleAndIcon)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
