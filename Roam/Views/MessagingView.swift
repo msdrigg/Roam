@@ -109,8 +109,8 @@ struct MessageView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack {
+                ScrollViewReader { scrollValue in
                 ScrollView {
-                    ScrollViewReader { scrollValue in
                         LazyVStack {
                             ForEach(messages, id: \.persistentModelID) { message in
                                 HStack {
@@ -138,20 +138,19 @@ struct MessageView: View {
                                         Spacer()
                                     }
                                 }
-                                .onChange(of: messages) { old, new in
-                                    if let id = messages.last?.persistentModelID {
-                                        scrollValue.scrollTo(id)
-                                    }
-                                }
-                                .onAppear{
-                                    if let id = messages.last?.persistentModelID {
-                                        scrollValue.scrollTo(id)
-                                    }
-                                }
                             }
                         }
                     }
+                    .defaultScrollAnchor(.bottom)
                     .padding(.vertical, 12)
+                    .onChange(of: messages.count) { old, new in
+                        if let id = messages.last?.persistentModelID {
+                            print("Scrolling here \(messages.last?.id ?? "")")
+                            withAnimation {
+                                scrollValue.scrollTo(id, anchor: .bottom)
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 12)
 
