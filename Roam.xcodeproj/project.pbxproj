@@ -96,7 +96,6 @@
 		AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */; };
 		AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */; };
 		AF5ED8E52AE99D95007DB2B8 /* ButtonGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */; };
-		AF65A8882BB4B7D4005ECF7F /* RoamWindowDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF65A8872BB4B7D4005ECF7F /* RoamWindowDelegate.swift */; };
 		AF65A88A2BB5ABF9005ECF7F /* RoamAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */; };
 		AF65A88C2BB5AD02005ECF7F /* ExternalAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */; };
 		AF70BB072BA7C4D2009A06EC /* HoveredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF70BB062BA7C4D2009A06EC /* HoveredView.swift */; };
@@ -395,7 +394,6 @@
 		AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF5FDAD52ADB3C4B006CDEB3 /* NetworkUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkUtils.swift; sourceTree = "<group>"; };
 		AF6520872BCE55E200B69BE8 /* Vars.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Vars.xcconfig; sourceTree = "<group>"; };
-		AF65A8872BB4B7D4005ECF7F /* RoamWindowDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWindowDelegate.swift; sourceTree = "<group>"; };
 		AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamAppDelegate.swift; sourceTree = "<group>"; };
 		AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalAboutView.swift; sourceTree = "<group>"; };
 		AF70BB062BA7C4D2009A06EC /* HoveredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoveredView.swift; sourceTree = "<group>"; };
@@ -718,7 +716,6 @@
 			isa = PBXGroup;
 			children = (
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
-				AF65A8872BB4B7D4005ECF7F /* RoamWindowDelegate.swift */,
 				AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */,
 				AFC4A6592AE88411005DAC6C /* LatencyListener.swift */,
 				AFED42492AEE8F3B0023D684 /* VolumeListener.swift */,
@@ -1183,7 +1180,6 @@
 				AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 				AF8EF51D2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
-				AF65A8882BB4B7D4005ECF7F /* RoamWindowDelegate.swift in Sources */,
 				AF19CA2E2AE692E600A42DFF /* AsyncBufferedChannel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
