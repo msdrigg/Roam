@@ -211,7 +211,7 @@ struct RemoteView: View {
             SettingsNavigationWrapper(path: $appDelegate.navigationPath) {
                 remotePage
             }
-            .task {
+            .task(priority: .userInitiated) {
                 while true {
                     if Task.isCancelled {
                         return
@@ -228,7 +228,7 @@ struct RemoteView: View {
                     let lastMessage = try? modelContext.fetch(descriptor).last
                     let container = modelContext.container
                     Self.logger.info("Refreshing messages with last message \(String(describing: lastMessage?.id))")
-
+                    
                     let results = await refreshMessages(modelContainer: container, latestMessageId: lastMessage?.id, viewed: false)
                     Self.logger.info("Sleeping for an hour after getting \(results) messages")
                     try? await Task.sleep(nanoseconds: 1000 * 1000 * 1000 * 3600)
@@ -375,7 +375,7 @@ struct RemoteView: View {
 #if os (macOS)
                                 openWindow(id: "messages")
 #else
-                                appDelegate.navigationPath.append(MessagingDestination.Global)
+                                appDelegate.navigationPath.append(NavigationDestination.MessageDestination)
 #endif
                             }, level: .info)
                                 .offset(y: -20)
@@ -402,12 +402,12 @@ struct RemoteView: View {
     #if os (macOS)
                                     openWindow(id: "messages")
     #else
-                                    appDelegate.navigationPath.append(MessagingDestination.Global)
+                                    appDelegate.navigationPath.append(NavigationDestination.MessageDestination)
     #endif
                                 }, level: .info)
                             }
                             networkConnectivityBanner
-                                .padding(.bottom, 12)
+                            Spacer().frame(maxHeight: 10)
                         }
                     }
                 }
@@ -530,7 +530,7 @@ struct RemoteView: View {
                         .shadow(radius: 4)
                         
 #else
-                        NavigationLink(value: SettingsDestination.Global) {
+                        NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
                             Label("Setup a device to get started :)", systemImage: "gear")
                                 .frame(maxWidth: .infinity)
                                 .font(.callout)
@@ -657,13 +657,16 @@ struct RemoteView: View {
         #if !APPCLIP
         if action == "feedback" {
             Self.logger.info("Attempting to open app debugging")
-            appDelegate.navigationPath.append(SettingsDestination.Debugging)
+            appDelegate.navigationPath.append(NavigationDestination.SettingsDestination(.Debugging))
         } else if action == "settings" {
             Self.logger.info("Attempting to open app settings")
-            appDelegate.navigationPath.append(SettingsDestination.Global)
+            appDelegate.navigationPath.append(NavigationDestination.SettingsDestination(.Global))
         } else if action == "about" {
             Self.logger.info("Attempting to open about page")
-            appDelegate.navigationPath.append(AboutDestination.Global)
+            appDelegate.navigationPath.append(NavigationDestination.AboutDestination)
+        } else if action == "messages" {
+            Self.logger.info("Attempting to open messages page")
+            appDelegate.navigationPath.append(NavigationDestination.MessageDestination)
         }
         #endif
     }
@@ -737,7 +740,6 @@ struct RemoteView: View {
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
 #endif
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
-                
             } else {
                 Spacer()
             }
@@ -834,9 +836,7 @@ struct RemoteView: View {
 #endif
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 
-#if os(macOS) || os(visionOS)
-Spacer()
-#endif
+                Spacer()
             } else {
                 Spacer()
             }

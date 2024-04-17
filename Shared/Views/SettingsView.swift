@@ -52,7 +52,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(deviceFetchDescriptor) private var devices: [Device]
     @Query(messageFetchDescriptor) private var unreadMessages: [Message]
-    @Binding var path: NavigationPath
+    @Binding var path: [NavigationDestination]
     let destination: SettingsDestination
     
     @State private var scanningActor: DeviceDiscoveryActor!
@@ -92,7 +92,7 @@ struct SettingsView: View {
 #elseif os(macOS)
                     openWindow(id: "messages")
 #else
-                    path.append(MessagingDestination.Global)
+                    path.append(NavigationDestination.MessageDestination)
 #endif
                 }
             } catch {
@@ -236,7 +236,7 @@ struct SettingsView: View {
             Section("Other") {
 #if !os(tvOS) && !os(watchOS)
                 HStack {
-                    NavigationLink(value: KeyboardShortcutDestination.Global, label: {
+                    NavigationLink(value: NavigationDestination.KeyboardShortcutDestinaion, label: {
                         Label("Keyboard shortcuts", systemImage: "keyboard")
                     })
                     .buttonStyle(.plain)
@@ -247,39 +247,46 @@ struct SettingsView: View {
                 .contentShape(Rectangle())
 #endif
                 if (majorActionsCount > 5) {
-                    HStack {
-                        ShareLink(item: URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!) {
+                    ShareLink(item: URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!) {
+                        HStack {
                             Label("Gift Roam to a friend", systemImage: "gift")
+                            Spacer()
                         }
-                        .buttonStyle(.plain)
-                        Spacer()
                     }
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
+#if os(macOS)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+#endif
                 }
 
 #if !os(watchOS)
-                HStack {
-                    Button(action: {
+                Button(action: {
 #if os(macOS)
-                        openWindow(id: "messages")
+                    openWindow(id: "messages")
 #else
-                        path.append(MessagingDestination.Global)
+                    path.append(NavigationDestination.MessageDestination)
 #endif
-                    }) {
+                }) {
+                    HStack {
                         if unreadMessages.count > 0 {
                             Label("Chat with the developer", systemImage: "message")
                                 .badge(unreadMessages.count)
                         } else {
                             Label("Chat with the developer", systemImage: "message")
                         }
-
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
-                    Spacer()
-                }
+                    #if os(macOS)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
+#endif
+
+                }
+                #if os(macOS)
+                                .buttonStyle(.plain)
+
+                #endif
 #endif
 
                 Button(action: { reportDebugLogs() }) {
@@ -338,7 +345,7 @@ struct SettingsView: View {
             }
             
             Section {
-                NavigationLink("About", value: AboutDestination.Global)
+                NavigationLink("About", value: NavigationDestination.AboutDestination)
             }
         }
         .onAppear {
@@ -418,7 +425,7 @@ struct SettingsView: View {
                 modelContext.insert(newDevice)
                 Self.logger.info("Added new empty device \(String(describing: newDevice.persistentModelID))")
                 try modelContext.save()
-                path.append(DeviceSettingsDestination(newDevice))
+                path.append(NavigationDestination.DeviceSettingsDestination( DeviceSettingsDestination(newDevice)))
             } catch {
                 Self.logger.error("Error inserting new device \(error)")
             }
@@ -470,7 +477,7 @@ struct DeviceListItem: View {
 }
 
 struct MacSettings: View {
-    @State var navPath = NavigationPath()
+    @State var navPath: [NavigationDestination] = []
     var body: some View {
         SettingsNavigationWrapper(path: $navPath) {
             SettingsView(path: $navPath, destination: .Global)
@@ -721,23 +728,8 @@ extension Binding {
     }
 }
 
-enum SettingsDestination{
-    case Global
-    case Debugging
-}
-
-
-struct DeviceSettingsDestination: Hashable {
-    let device: Device
-    
-    init(_ device: Device) {
-        self.device = device
-    }
-}
-
-
 #Preview("Device List") {
-    @State var path: NavigationPath = NavigationPath()
+    @State var path: [NavigationDestination] = []
     return SettingsView(path: $path, destination: .Global)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
         .modelContainer(devicePreviewContainer)

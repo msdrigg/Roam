@@ -21,9 +21,13 @@ struct NotificationBanner: View {
                     .foregroundStyle(
                         colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
                     )
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(backgroundColor)
+                .cornerRadius(3.0)
+                .cornerRadius(5)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(backgroundColor)
+            .buttonStyle(.plain)
 #if !os(tvOS)
             .controlSize(.small)
 #endif
@@ -31,11 +35,12 @@ struct NotificationBanner: View {
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(
-                    colorScheme == .dark ? Color.white : Color.black
+                    colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
                 )
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(backgroundColor)
+            .cornerRadius(3.0)
             .cornerRadius(5)
         }
     }

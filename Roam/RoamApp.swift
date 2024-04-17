@@ -46,7 +46,7 @@ struct RoamApp: App {
                     #if os(macOS)
                     openWindow(id: "keyboard-shortcuts")
                     #else
-                    navigationPath.append(KeyboardShortcutDestination.Global)
+                    navigationPath.append(NavigationDestination.KeyboardShortcutDestinaion)
                     #endif
                 }
                 .keyboardShortcut("k")
@@ -56,7 +56,7 @@ struct RoamApp: App {
                     #if os(macOS)
                     openWindow(id: "messages")
                     #else
-                    navigationPath.append(MessagingDestination.Global)
+                    navigationPath.append(NavigationDestination.MessageDestination)
                     #endif
                 }
                 .keyboardShortcut("j")
@@ -67,7 +67,7 @@ struct RoamApp: App {
                     #if os(macOS)
                     openWindow(id: "keyboard-shortcuts")
                     #else
-                    navigationPath.append(KeyboardShortcutDestination.Global)
+                    navigationPath.append(NavigationDestination.KeyboardShortcutDestinaion)
                     #endif
                 }
                 .keyboardShortcut("k")
@@ -77,7 +77,7 @@ struct RoamApp: App {
                     #if os(macOS)
                     openWindow(id: "messages")
                     #else
-                    navigationPath.append(MessagingDestination.Global)
+                    navigationPath.append(NavigationDestination.MessageDestination)
                     #endif
                 }
                 .keyboardShortcut("j")
@@ -89,12 +89,12 @@ struct RoamApp: App {
 #if os(visionOS)
                 .frame(minWidth: 400, minHeight: 950)
 #endif
-
         }
-        .modelContainer(sharedModelContainer)
-#endif
 #if os(visionOS)
+        .windowResizability(.contentMinSize)
         .defaultSize(width: 400, height: 1000)
+#endif
+        .modelContainer(sharedModelContainer)
 #endif
         
         #if os(macOS)

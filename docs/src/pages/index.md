@@ -31,14 +31,15 @@ Roam offers everything you want and nothing you don't
         -   Click "Send feedback". This will generate a diagnostic report that can be shared with roam support (roam-support@msd3.io)
         -   If your app is crashing, also make sure your analytics are turned on in Settings -> Privacy & Security -> Analytics & Improvments
             -   Turn on "Share iPhone & Watch Analytics" and then turn on "Share With App Developers" so apple will report to me when your app crashes
-    -   If it's a request for a new feature, just send an email directly (roam-support@msd3.io)
+    -   If it's a request for a new feature, you can send an email directly (roam-support@msd3.io) or chat with me directly in the Roam app (Settings -> Chat with Developer)
 
 ## Other Resources
 
-If you have any questions or issues, please contact me at: [roam-support@msd3.io](mailto:roam-support@msd3.io)
+If you have any questions or issues, please contact me at: [roam-support@msd3.io](mailto:roam-support@msd3.io). You can also chat with me directly in the Roam app (Settings -> Chat with Developer).
 
 -   [Privacy Policy](/privacy)
 -   [Core Repository on GitHub](https://github.com/msdrigg/roam)
+-   [Roam Discord](https://discord.gg/Q7M7M6Sw)
 -   [Download on the app store](https://apps.apple.com/us/app/roam/6469834197)
 -   [Download the app clip](/scan)
 -   [Roadmap](/upcoming-work)
