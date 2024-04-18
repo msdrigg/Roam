@@ -50,6 +50,7 @@ struct SmallAppView: View {
                                             .frame(width: 60)
                                             .frame(height: 10)
                                             .foregroundStyle(.secondary)
+                                            .padding(.top, 2)
                                 }
                             }
                             .buttonStyle(.plain)

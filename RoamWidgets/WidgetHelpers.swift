@@ -3,6 +3,7 @@ import SwiftData
 import AppIntents
 import WidgetKit
 import SwiftUI
+import OSLog
 
 struct DeviceChoiceTimelineEntity: TimelineEntry {
     var date: Date
@@ -44,8 +45,6 @@ struct RemoteControlProvider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: DeviceChoiceIntent, in context: Context) async -> Timeline<DeviceChoiceTimelineEntity> {
-        let currentDate = Date()
-        
         let device = if !configuration.useDefaultDevice, let device = configuration.device {
             device
         } else {
@@ -57,8 +56,9 @@ struct RemoteControlProvider: AppIntentTimelineProvider {
         } else {
             []
         }
-        let entry = DeviceChoiceTimelineEntity(date: currentDate, device: device, apps: apps)
-        let timeline = Timeline(entries: [entry], policy: .atEnd)
+        let entryNow = DeviceChoiceTimelineEntity(date: Date.now, device: device, apps: apps)
+        let entryLater = DeviceChoiceTimelineEntity(date: Date.now + 86400, device: device, apps: apps)
+        let timeline = Timeline(entries: [entryNow, entryLater], policy: .atEnd)
         return timeline
     }
     
