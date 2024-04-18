@@ -4,13 +4,50 @@ hide_table_of_contents: true
 
 # Upcoming Roam Updates
 
+## Small message improvements
+
+-   Don't notify or show in app
+    -   Changes to post title
+    -   Blank messages
+    -   Diagnostic uploads
+
+## Add a simple discord gateway API proxy
+
+-   When the user has the messages view open, open a websocket connection to this API
+-   Single route `/channel/{channelId}` to poll for messages from a single channel
+    -   Adds the websocket object to the hashmap of channelId -> HashSet<Websocket> on connect
+    -   Deletes the websocket object from the hashmap on disconnect
+    -   When a new message comes in, attempt to send it to all matching websockets
+    -   Maybe do this with long polling instead of websockets to work better with workers?
+-   Migrate cloudflare apns token scheduler to get called via a route from this whenever a new message comes in
+-   Add cloudflare proxy for this
+
+## Bug Fixes
+
+-   Fix app widget not working
+
+## App Clip
+
 -   AppClip
     -   Add a "getAShareableLinkToThisDevice" button on settings -> device
     -   Autogenerate app clip codes with that shareable link
     
+## Improve user messaging around info/status management
+
 -   Update Info/status management to better handle volatile state
     -   On disconnect, select, button click, move to foreground, app opened -> Restart reconnect loop if disconnected
     -   Reconnect loop is to exponentially backoff retrying failing connections (0.5s, double, 10s backoff)
+    -   When connected to the device, always disable the network warnings
+    -   When trying to connect to the device, or trying to power on the device, show spinning information icon instead of gray dot
+    -   When powering on the device and succeeding, show an animation on transition from gray -> spinning -> green
+    -   When powering on the device with WOL and not connecting after 5 seconds, or when powering on the device and immediately failing, show a warning message underneath the wifi one
+        -   “We weren’t able to wake your Roku” (Find out more) (Don’t show again for this device), (X)
+        -   Find out more shows some reasons why
+            -   You aren’t connected to the same network (Show last device network name. Ask if the user is connected to this network)
+            -   Your device is in deep sleep (wasn’t powered down recently) and can’t be woken up
+                -   Your device doesn’t support WWOL and is connected to wifi
+                -   Your device doesn’t support WWOL or WOL
+            -   Your network isn’t setup in a way to allow us to send wakeup commands to the device
     -   Reconnect loop = Backing off Exponentially attempt to reconnect to reconnect ECP
         -   Reconnect ECP first
         -   Listen to notify second
@@ -23,49 +60,28 @@ hide_table_of_contents: true
     -   On all changes after reconnecting (through notify or anything)
         -   Update Device (stored) and DeviceState (voilatile)
     -   After reconnecting/disconnecting, update online status in remote view
--   More Apple Integrations
-    -   App Clip
+
+## Improve user messaging around device capabilities
+
 -   Update user messaging when errors may occur
     -   When clicking on a disabled button, open popover to show why it’s disabled
         -   Show a info indicator on the button to indicate that information can be received when it’s clicked?
         -   Headphones mode disabled -> because device doesn’t support headphones mode to this app
         -   Volume control disabled -> because the audio is outputting over HDMI which does not support volume controls?
-    -   When connected to the device, always disable the network warnings
-    -   When trying to connect to the device, or trying to power on the device, show spinning information icon instead of gray dot
-    -   When powering on the device and succeeding, show an animation on transition from gray -> spinning -> green
-    -   When powering on the device with WOL and not connecting after 5 seconds, or when powering on the device and immediately failing, show a warning message underneath the wifi one
-        -   “We weren’t able to wake your Roku” (Find out more) (Don’t show again for this device), (X)
-        -   Find out more shows some reasons why
-            -   You aren’t connected to the same network (Show last device network name. Ask if the user is connected to this network)
-            -   Your device is in deep sleep (wasn’t powered down recently) and can’t be woken up
-                -   Your device doesn’t support WWOL and is connected to wifi
-                -   Your device doesn’t support WWOL or WOL
-            -   Your network isn’t setup in a way to allow us to send wakeup commands to the device
     -   When actively scanning for devices and no new ones are found show a warning message underneath the device list
         -   “We weren’t able to wake your Roku” (Find out why), (X)
         -   Find out more shows a popup with some reasons why this may be happening
             -   Make sure your device is powered on and connected to the same wifi network as your app. If this still doesn't work, try adding the device manually.
-            -   Link https://roam.msd3.io/manually-add-tv.md and https://support.roku.com/article/115001480188 for more troubleshooting
+            -   Link https://roam.msd3.io/manually-add-tv.md and https://support.roku.com/article/115001480188 for more troubleshooting or chat
 -   Add badge for supportsWakeOnWLAN and supportsMute
--   Update keyboard handling to support ecp-textedit (All but macOS)
+
+## Support ecp textedit
+
+-   Update keyboard handling to support ecp-textedit on `KeyboardEntry`
     -   Show keyboard when textedit is opened
     -   Hide keyboard when textedit closed
     -   If ecp-textedit is supported, allow selecting, deleting text and moving cursor. Just re-send text each time it changes if this is supported.
--   Add live feedback option for users to chat with me directly through discord's API
-    -   Clients create a thread-per-client and interact with the discord API via a cloudflare workers proxy
-    -   User devices access TS API hosted on cloudflare workers (discord.js)
-        -   Definitely handles thread create, thread pull, message create, and message listening
-            -   Message listening is done when users connect to the websocket JS API and listen
-            -   Message sending/pulling/creating is done using discords js api
-                -   Pulling is done AFTER=last_msg_id
-                -   Listening is done on messageCreate and filtered by channel id
-                -   Roam uses the /messages API most of the time and ONLY uses websockets when client is actively opening the chat app
-            -   Sends APNS notification to the device APNS key associated with the device
-                -   Wake the device up and display notification if not in foreground
-                -   Display bolded "dev chat" message in the top center if there is an "unread message" tracked by "last message"
-    -   Example chat swiftui apps
-        -   https://github.com/mrcflorian/swiftUI-tutorials/tree/master/Tutorials/ChatViewTutorial/ChatViewTutorial
-        -   https://github.com/cometchat-pro-tutorials/swift-ui-chat
+    -   If ecp-textedit is not supported, fall back to current behavior of sending keys
 
 Keyboard ECP Session Commands (notes)
 
