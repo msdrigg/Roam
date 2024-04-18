@@ -42,17 +42,6 @@ export default {
 			return new Response("Hello, world!", { status: 200 });
 		}
 
-		if (pathSegments[0] === "latestMessageId") {
-			let latestMessageId = await env.ROAM_KV.get("latestMessageId");
-			return new Response(latestMessageId || "0", { status: 200 });
-		}
-
-		if (pathSegments[0] === "threads") {
-			let threads = await discordClient.getActiveThreadsUpdatedSince(null);
-
-			return new Response(JSON.stringify(threads), { status: 200 });
-		}
-
 		if (pathSegments[0] === "messages") {
 			let userId = pathSegments[1];
 			if (!userId) {
@@ -67,7 +56,8 @@ export default {
 				return new Response("Not found", { status: 404 });
 			}
 
-			let messages = await discordClient.getMessagesInThread(threadId, after);
+			let messages = (await discordClient.getMessagesInThread(threadId, after))
+				.filter((message) => message.content && message.type in [0, 19, 20, 21] && !message.content.startsWith("!HiddenMessage"));
 
 			return new Response(JSON.stringify(messages), { status: 200 });
 		}
@@ -166,7 +156,8 @@ export default {
 				console.log(`APNS token ${apnsToken} found for thread ${thread.id}`);
 			}
 
-			let messages = await discordClient.getMessagesInThread(thread.id, latestMessageId);
+			let messages = (await discordClient.getMessagesInThread(thread.id, latestMessageId))
+				.filter((message) => message.content && message.type in [0, 19, 20, 21] && !message.content.startsWith("!HiddenMessage"));
 
 			for (let message of messages) {
 				if (message.author.id === env.DISCORD_BOT_ID) {

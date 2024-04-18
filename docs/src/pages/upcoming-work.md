@@ -4,13 +4,6 @@ hide_table_of_contents: true
 
 # Upcoming Roam Updates
 
-## Small message improvements
-
--   Don't notify or show in app
-    -   Changes to post title
-    -   Blank messages
-    -   Diagnostic uploads
-
 ## Add a simple discord gateway API proxy
 
 -   When the user has the messages view open, open a websocket connection to this API
@@ -22,16 +15,12 @@ hide_table_of_contents: true
 -   Migrate cloudflare apns token scheduler to get called via a route from this whenever a new message comes in
 -   Add cloudflare proxy for this
 
-## Bug Fixes
-
--   Fix app widget not working
-
 ## App Clip
 
 -   AppClip
     -   Add a "getAShareableLinkToThisDevice" button on settings -> device
     -   Autogenerate app clip codes with that shareable link
-    
+
 ## Improve user messaging around info/status management
 
 -   Update Info/status management to better handle volatile state

@@ -57,16 +57,15 @@
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "AFC24EFA2AD0E5A1002AB66C"
-            BuildableName = "Roam.app"
-            BlueprintName = "Roam"
+            BlueprintIdentifier = "AF27400A2AE02C25007C6208"
+            BuildableName = "RoamWidgets.appex"
+            BlueprintName = "RoamWidgets"
             ReferencedContainer = "container:Roam.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "_XCWidgetKind"

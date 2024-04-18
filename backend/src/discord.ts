@@ -6,6 +6,7 @@ type Message = {
         username: string;
         discriminator: string;
     }
+    type: number;
 }
 
 type ApiError = {
