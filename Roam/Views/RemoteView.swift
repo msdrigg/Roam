@@ -228,9 +228,13 @@ struct RemoteView: View {
                     let lastMessage = try? modelContext.fetch(descriptor).last
                     let container = modelContext.container
                     Self.logger.info("Refreshing messages with last message \(String(describing: lastMessage?.id))")
-                    
-                    let results = await refreshMessages(modelContainer: container, latestMessageId: lastMessage?.id, viewed: false)
-                    Self.logger.info("Sleeping for an hour after getting \(results) messages")
+                    if lastMessage != nil {
+                        
+                        let results = await refreshMessages(modelContainer: container, latestMessageId: lastMessage?.id, viewed: false)
+                        Self.logger.info("Sleeping for an hour after getting \(results) messages")
+                    } else {
+                        Self.logger.info("Not refreshing messages because no lastMessageId")
+                    }
                     try? await Task.sleep(nanoseconds: 1000 * 1000 * 1000 * 3600)
                 }
             }

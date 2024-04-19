@@ -221,15 +221,20 @@ struct MessageView: View {
             try? await Task.sleep(nanoseconds: 1000 * 1000 * 1000)
             let latestMessageId = messages.last{$0.fetchedBackend == true}?.id
             
-            let result = await refreshMessages(modelContainer: modelContext.container, latestMessageId: latestMessageId, viewed: true)
-            logger.info("Got results \(result)")
-            if result > 0 {
-                refreshInterval = 10
-            } else {
-                if refreshInterval < 60 {
-                    refreshInterval = min(refreshInterval * 2, 60)
+            if latestMessageId != nil {
+                let result = await refreshMessages(modelContainer: modelContext.container, latestMessageId: latestMessageId, viewed: true)
+                logger.info("Got results \(result)")
+                
+                
+                if result > 0 {
+                    refreshInterval = 10
+                } else {
+                    if refreshInterval < 60 {
+                        refreshInterval = min(refreshInterval * 2, 60)
+                    }
                 }
             }
+            
             logger.info("Sleeping for \(refreshInterval)s")
             try? await Task.sleep(nanoseconds: UInt64(refreshInterval * 1_000_000_000))
             logger.info("Done sleeping")
