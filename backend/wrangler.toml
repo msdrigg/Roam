@@ -3,6 +3,9 @@ name = "roam-backend"
 main = "src/index.ts"
 compatibility_date = "2024-04-05"
 
+[placement]
+mode = "smart"
+
 [triggers]
 crons = ["* * * * *"]
 [[kv_namespaces]]
