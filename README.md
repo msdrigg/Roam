@@ -2,6 +2,8 @@
 
 A Roku remote that puts users first
 
+![Roam Logo](./docs/static/img/roam-icon.png | width=100)
+
 ## Features
 
 -   Runs on Mac, iPhone, iPad, Apple Watch, Vision Pro or Apple TV!
@@ -11,6 +13,8 @@ A Roku remote that puts users first
 -   Discover devices on your local network as soon as you open the app
 -   Intuitive design with apple's native SwiftUI design system
 -   Fast and lightweight, less than 5 MB on all devices and opens in less than half a second!
+
+![Roam Logo](./docs/static/img/screenshots.png)
 
 ## How to Use
 
