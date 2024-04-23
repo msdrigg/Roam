@@ -9,8 +9,8 @@ struct SmallAppWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: "com.msdrigg.roam.app-links",
-            intent: DeviceChoiceIntent.self,
-            provider: RemoteControlProvider()
+            intent: DeviceAndAppChoiceIntent.self,
+            provider: AppChoiceRemoteControlProvider()
         ) { entry in
             SmallAppView(device: entry.device, apps: entry.apps, rows: 2)
                 .containerBackground(Color("WidgetBackground"), for: .widget)
@@ -40,8 +40,8 @@ struct SmallerAppWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: "com.msdrigg.roam.smaller-app-links",
-            intent: DeviceChoiceIntent.self,
-            provider: RemoteControlProvider()
+            intent: DeviceAndAppChoiceIntent.self,
+            provider: AppChoiceRemoteControlProvider()
         ) { entry in
             SmallAppView(device: entry.device, apps: Array(entry.apps.prefix(2)), rows: 1)
                 .containerBackground(Color("WidgetBackground"), for: .widget)

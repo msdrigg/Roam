@@ -22,7 +22,7 @@ struct SmallDpadWidget: Widget {
         AppIntentConfiguration(
             kind: "com.msdrigg.roam.small-remote",
             intent: DeviceChoiceIntent.self,
-            provider: RemoteControlProvider()
+            provider: SimpleRemoteControlProvider()
         ) { entry in
             SmallRemoteView(device: entry.device, controls: dpad)
                 .containerBackground(Color("WidgetBackground"), for: .widget)
@@ -48,7 +48,7 @@ struct SmallMediaWidget: Widget {
         AppIntentConfiguration(
             kind: "com.msdrigg.roam.media-remote",
             intent: DeviceChoiceIntent.self,
-            provider: RemoteControlProvider()
+            provider: SimpleRemoteControlProvider()
         ) { entry in
             SmallRemoteView(device: entry.device, controls: controls)
                 .containerBackground(Color("WidgetBackground"), for: .widget)
@@ -99,7 +99,7 @@ struct SmallVolumeWidget: Widget {
         AppIntentConfiguration(
             kind: "com.msdrigg.roam.small-volume-remote",
             intent: DeviceChoiceIntent.self,
-            provider: RemoteControlProvider()
+            provider: SimpleRemoteControlProvider()
         ) { entry in
             SmallRemoteView(device: entry.device, controls: dpad)
                 .containerBackground(Color("WidgetBackground"), for: .widget)
