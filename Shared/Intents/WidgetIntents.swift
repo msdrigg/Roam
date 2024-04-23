@@ -10,13 +10,94 @@ public struct DeviceChoiceIntent: AppIntent, WidgetConfigurationIntent {
     
     public init() {}
     
+    @Parameter(title: "Manually select which device to remote control", default: false)
+    public var manuallySelectDevice: Bool
+    
+    @Parameter(title: "Device")
+    public var device: DeviceAppEntity?
+
+    public static var parameterSummary: some ParameterSummary {
+        When(\.$manuallySelectDevice, .equalTo, true) {
+            Summary {
+                \.$manuallySelectDevice
+                \.$device
+            }
+        } otherwise: {
+            Summary {
+                \.$manuallySelectDevice
+            }
+        }
+
+    }
+}
+
+@available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
+public struct DeviceAndAppChoiceIntent: AppIntent, WidgetConfigurationIntent {
+    public static var title: LocalizedStringResource = "Choose a device and apps"
+    public static var description = IntentDescription("Choose which device to target, and select apps to view")
+    
+    public init() {}
+    
+    @Parameter(title: "Manually select which device to remote control", default: false)
+    public var manuallySelectDevice: Bool
+    
     @Parameter(title: "Device")
     public var device: DeviceAppEntity?
     
-    @Parameter(title: "Ignore this setting and use app's selection instead", default: true)
-    public var useDefaultDevice: Bool
-}
+    @Parameter(title: "Manually select which apps to show", default: false)
+    public var manuallySelectApps: Bool
+    
+    @Parameter(title: "App 1")
+    public var app1: AppLinkAppEntity?
+    
+    @Parameter(title: "App 2")
+    public var app2: AppLinkAppEntity?
+    
+    @Parameter(title: "App 3")
+    public var app3: AppLinkAppEntity?
+    
+    @Parameter(title: "App 4")
+    public var app4: AppLinkAppEntity?
 
+    public static var parameterSummary: some ParameterSummary {
+        When(\.$manuallySelectDevice, .equalTo, true) {
+            When (\.$manuallySelectApps, .equalTo, true) {
+                Summary {
+                    \.$manuallySelectDevice
+                    \.$device
+                    \.$manuallySelectApps
+                    \.$app1
+                    \.$app2
+                    \.$app3
+                    \.$app4
+                }
+            } otherwise: {
+                Summary {
+                    \.$manuallySelectDevice
+                    \.$device
+                    \.$manuallySelectApps
+                }
+            }
+        } otherwise: {
+            When (\.$manuallySelectApps, .equalTo, true) {
+                Summary {
+                    \.$manuallySelectDevice
+                    \.$manuallySelectApps
+                    \.$app1
+                    \.$app2
+                    \.$app3
+                    \.$app4
+                }
+            } otherwise: {
+                Summary {
+                    \.$manuallySelectDevice
+                    \.$manuallySelectApps
+                }
+            }
+        }
+
+    }
+}
 
 @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
 public struct ButtonPressIntent: AppIntent, CustomIntentMigratedAppIntent, PredictableIntent {

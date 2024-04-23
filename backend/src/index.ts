@@ -28,6 +28,46 @@ type MessageRequest = {
 	apnsToken: string | null;
 }
 
+async function sendMessage(message: {
+	title?: string,
+	content: string,
+},
+	userInfo: {
+		apnsToken: string | null,
+		userId: string,
+	},
+	env: Env, discordClient: DiscordClient): Promise<void> {
+	const { title, content } = message;
+	const { apnsToken, userId } = userInfo;
+
+	console.log("Handling new message request", title, content, apnsToken, userId);
+
+	let existingThreadId = await env.ROAM_KV.get(`threadId:${userId}`);
+	console.log(`Existing thread ID: ${existingThreadId}`)
+
+	if (apnsToken && existingThreadId) {
+		await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
+		await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
+	}
+
+	if (existingThreadId) {
+		if (content) {
+			await discordClient.sendMessage(existingThreadId, content);
+		}
+
+		return;
+	}
+
+	let threadId = await discordClient.createThread(title ?? `New message from ${userId}`, content);
+	await env.ROAM_KV.put(`threadId:${userId}`, threadId);
+
+	if (apnsToken) {
+		await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
+		await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
+	}
+}
+
+
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		let pathSegments = new URL(request.url).pathname.split("/").filter(Boolean);
@@ -69,35 +109,12 @@ export default {
 				apnsToken,
 				userId,
 			} = await request.json() as MessageRequest;
-			console.log("Handling new message request", title, content, apnsToken, userId);
 
 			if (!userId) {
 				return new Response("Bad request", { status: 400 });
 			}
 
-			let existingThreadId = await env.ROAM_KV.get(`threadId:${userId}`);
-			console.log(`Existing thread ID: ${existingThreadId}`)
-
-			if (apnsToken && existingThreadId) {
-				await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
-				await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
-			}
-
-			if (existingThreadId) {
-				if (content) {
-					await discordClient.sendMessage(existingThreadId, content);
-				}
-
-				return new Response("OK", { status: 200 });
-			}
-
-			let threadId = await discordClient.createThread(title, content);
-			await env.ROAM_KV.put(`threadId:${userId}`, threadId);
-
-			if (apnsToken) {
-				await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
-				await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
-			}
+			await sendMessage({ title, content }, { apnsToken, userId }, env, discordClient);
 
 
 			return new Response("OK", { status: 200 });
@@ -108,6 +125,8 @@ export default {
 			if (!diagnosticKey) {
 				return new Response("Bad request", { status: 400 });
 			}
+			// User ids are of the form "xxx-xxx-xxx"
+			let userId = diagnosticKey.slice(0, 11);
 
 			let data = await request.arrayBuffer();
 			console.log(`Uploading diagnostic data for key: ${diagnosticKey}`);
@@ -117,13 +136,16 @@ export default {
 				}
 			});
 
+			await sendMessage({ title: `New message from ${userId}`, content: `!HiddenMessage\nLogs uploaded with key ${diagnosticKey}` }, { apnsToken: null, userId }, env, discordClient);
+
+
 			return new Response("OK", { status: 200 });
 		}
 
 		return new Response("Not found", { status: 404 });
 	},
 
-	async scheduled(event, env, ctx) {
+	async scheduled(_event, env, _ctx) {
 		console.log("Handling scheduled event")
 		let discordClient = new DiscordClient(env.DISCORD_TOKEN, env.DISCORD_HELP_CHANNEL, env.DISCORD_GUILD_ID);
 

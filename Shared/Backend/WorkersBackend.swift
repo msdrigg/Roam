@@ -171,7 +171,5 @@ public func uploadDebugLogs(logs: DebugInfo) async throws {
         }
         throw URLError(.badServerResponse)
     }
-    
-    try await sendMessage(message: "!HiddenMessage\nUser uploaded logs with key \(diagnosticKey)", apnsToken: nil)
 }
 

@@ -10,7 +10,7 @@ struct MediumRemoteWidget: Widget {
         AppIntentConfiguration(
             kind: "com.msdrigg.roam.medium-remote",
             intent: DeviceChoiceIntent.self,
-            provider: RemoteControlProvider()
+            provider: SimpleRemoteControlProvider()
         ) { entry in
             MediumRemoteView(device: entry.device)
         }
