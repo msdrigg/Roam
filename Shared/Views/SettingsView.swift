@@ -249,7 +249,7 @@ struct SettingsView: View {
                 if (majorActionsCount > 5) {
                     ShareLink(item: URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!) {
                         HStack {
-                            Label("Gift Roam to a friend", systemImage: "gift")
+                            Label("Gift Roam to a friend", systemImage: "app.gift")
                             Spacer()
                         }
                     }
