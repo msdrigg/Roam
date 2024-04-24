@@ -17,6 +17,7 @@ struct DevicePicker: View {
     )
     
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
     var deviceActor: DeviceActor {
         DeviceActor(modelContainer: modelContext.container)
     }
@@ -69,6 +70,11 @@ struct DevicePicker: View {
 #elseif !APPCLIP
             NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
                 Label("Settings", systemImage: "gear")
+            }
+            .labelStyle(.titleAndIcon)
+#elseif APPCLIP
+            Button("Download the full app", systemImage: "app.gift") {
+                openURL(URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!)
             }
             .labelStyle(.titleAndIcon)
 #endif
