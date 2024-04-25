@@ -73,6 +73,15 @@ actor AppLinkActor {
         category: String(describing: AppLinkActor.self)
     )
     
+    public func allEntities() throws -> [AppLinkAppEntity] {
+        let links = try modelContext.fetch(
+            FetchDescriptor<AppLink>(predicate: #Predicate { appLink in
+                true
+            })
+        )
+        return links.map {$0.toAppEntityWithIcon()}
+    }
+
     public func entities(for identifiers: [AppLinkAppEntity.ID], deviceUid: String?) throws -> [AppLinkAppEntity] {
         let links = try modelContext.fetch(
             FetchDescriptor<AppLink>(predicate: #Predicate { appLink in

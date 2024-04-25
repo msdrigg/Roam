@@ -3,6 +3,7 @@ import OSLog
 import SwiftData
 
 private let BACKEND_URL = "https://backend.roam.msd3.io"
+//private let BACKEND_URL = "http://192.168.8.133:8787"
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
     category: "WorkersBackend"
@@ -46,12 +47,13 @@ private extension UserDefaultInfo {
         UserDefaults.standard.set(value, forKey: self.key)
     }
 }
-
+ 
 struct MessageRequest: Encodable {
     let content: String
     let title: String?
     let apnsToken: String?
     let userId: String
+    let installationInfo: InstallationInfo
 }
 
 
@@ -130,7 +132,7 @@ public func sendMessage(message: String, apnsToken: String?) async throws {
     request.addValue(getAPIKey() ?? "", forHTTPHeaderField: "x-api-key")
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
-    let messageRequest = MessageRequest(content: message, title: "Message from \(userId)", apnsToken: apnsToken, userId: userId)
+    let messageRequest = MessageRequest(content: message, title: "Message from \(userId)", apnsToken: apnsToken, userId: userId, installationInfo: InstallationInfo())
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(messageRequest)
     request.httpBody = jsonData
@@ -147,7 +149,7 @@ public func sendMessage(message: String, apnsToken: String?) async throws {
 }
 
 public func uploadDebugLogs(logs: DebugInfo) async throws {
-    let diagnosticKey = "\(logs.id)-\(Date.now.ISO8601Format().replacingOccurrences(of: ":", with: "-"))"
+    let diagnosticKey = logs.installationInfo.userId
     guard let url = URL(string: "\(BACKEND_URL)/upload-diagnostics/\(diagnosticKey)") else {
         throw URLError(.badURL)
     }
@@ -158,6 +160,7 @@ public func uploadDebugLogs(logs: DebugInfo) async throws {
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
     let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
     let jsonData = try encoder.encode(logs)
     request.httpBody = jsonData
 

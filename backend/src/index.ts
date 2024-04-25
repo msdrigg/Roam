@@ -1,9 +1,8 @@
 import { APNSAuthKey, sendPushNotification } from "./apns";
-import DiscordClient from "./discord";
+import DiscordClient, { DiscordFile, DiscordMessage } from "./discord";
 
 export interface Env {
 	ROAM_KV: KVNamespace;
-	ROAM_DIAGNOSTIC_BUCKET: R2Bucket;
 
 	// Secrets
 	DISCORD_TOKEN: string;
@@ -26,50 +25,71 @@ type MessageRequest = {
 	content: string;
 	userId: string;
 	apnsToken: string | null;
+	installationInfo: InstallationInfo;
+}
+
+type InstallationInfo = {
+	userId: string;
+	buildVersion: string | null;
+	osPlatform: string | null;
+	osVersion: string | null;
+}
+
+async function sendDeviceInfoIfNotSent(env: Env, userId: string, threadId: string, installationInfo: InstallationInfo | undefined, discordClient: DiscordClient) {
+	let alreadySentDeviceInfo = await env.ROAM_KV.get(`deviceInfoSent:${userId}`);
+	console.log(`Maybe sending device info: alreadySent=${alreadySentDeviceInfo} blank=${!installationInfo}`);
+
+	if (!alreadySentDeviceInfo && installationInfo) {
+		let { userId, buildVersion, osPlatform, osVersion } = installationInfo;
+		await discordClient.sendMessage(threadId, `:ninja:\n\n**Device info**:\n- User ID: ${userId}\n- Build version: ${buildVersion}\n- OS platform: ${osPlatform}\n- OS version: ${osVersion}`);
+		await env.ROAM_KV.put(`deviceInfoSent:${userId}`, "true");
+	}
 }
 
 async function sendMessage(message: {
 	title?: string,
-	content: string,
+	content?: string,
+	attachment?: DiscordFile,
 },
 	userInfo: {
 		apnsToken: string | null,
 		userId: string,
+		installationInfo?: InstallationInfo,
 	},
 	env: Env, discordClient: DiscordClient): Promise<void> {
-	const { title, content } = message;
-	const { apnsToken, userId } = userInfo;
+	const { title, content, attachment: attachment } = message;
+	const { apnsToken, userId, installationInfo } = userInfo;
 
 	console.log("Handling new message request", title, content, apnsToken, userId);
 
-	let existingThreadId = await env.ROAM_KV.get(`threadId:${userId}`);
-	console.log(`Existing thread ID: ${existingThreadId}`)
+	let threadId = await env.ROAM_KV.get(`threadId:${userId}`);
+	console.log(`Existing thread ID: ${threadId}`)
 
-	if (apnsToken && existingThreadId) {
-		await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
-		await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
-	}
-
-	if (existingThreadId) {
+	if (threadId) {
 		if (content) {
-			await discordClient.sendMessage(existingThreadId, content);
+			await discordClient.sendMessage(threadId, content)
 		}
-
-		return;
+	} else {
+		threadId = await discordClient.createThread(title || `New message from ${userId}`, content || "");
+		await env.ROAM_KV.put(`threadId:${userId}`, threadId);
 	}
 
-	let threadId = await discordClient.createThread(title ?? `New message from ${userId}`, content);
-	await env.ROAM_KV.put(`threadId:${userId}`, threadId);
+	if (attachment) {
+		await discordClient.sendAttachment(threadId, attachment)
+	}
+
+
+	await sendDeviceInfoIfNotSent(env, userId, threadId, installationInfo, discordClient);
 
 	if (apnsToken) {
-		await env.ROAM_KV.put(`apnsToken:${existingThreadId}`, apnsToken);
+		await env.ROAM_KV.put(`apnsToken:${threadId}`, apnsToken);
 		await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
 	}
 }
 
 
 export default {
-	async fetch(request, env, ctx): Promise<Response> {
+	async fetch(request, env, _ctx): Promise<Response> {
 		let pathSegments = new URL(request.url).pathname.split("/").filter(Boolean);
 		let apiKeyHeader = request.headers.get("x-api-key");
 		if (apiKeyHeader !== env.API_KEY) {
@@ -97,24 +117,26 @@ export default {
 			}
 
 			let messages = (await discordClient.getMessagesInThread(threadId, after))
-				.filter((message) => message.content && message.type in [0, 19, 20, 21] && !message.content.startsWith("!HiddenMessage"));
+				.filter((message) => !isHidden(message));
 
 			return new Response(JSON.stringify(messages), { status: 200 });
 		}
 
 		if (pathSegments[0] === "new-message") {
+			let messageRequest = await request.json() as MessageRequest;
 			let {
 				title,
 				content,
 				apnsToken,
 				userId,
-			} = await request.json() as MessageRequest;
+				installationInfo,
+			} = messageRequest;
 
 			if (!userId) {
 				return new Response("Bad request", { status: 400 });
 			}
 
-			await sendMessage({ title, content }, { apnsToken, userId }, env, discordClient);
+			await sendMessage({ title, content }, { apnsToken, userId, installationInfo }, env, discordClient);
 
 
 			return new Response("OK", { status: 200 });
@@ -122,6 +144,7 @@ export default {
 
 		if (pathSegments[0] === "upload-diagnostics") {
 			let diagnosticKey = pathSegments[1];
+
 			if (!diagnosticKey) {
 				return new Response("Bad request", { status: 400 });
 			}
@@ -129,14 +152,14 @@ export default {
 			let userId = diagnosticKey.slice(0, 11);
 
 			let data = await request.arrayBuffer();
-			console.log(`Uploading diagnostic data for key: ${diagnosticKey}`);
-			await env.ROAM_DIAGNOSTIC_BUCKET.put(diagnosticKey, data, {
-				httpMetadata: {
+
+			await sendMessage({
+				attachment: {
+					name: "diagnostics.json",
+					data,
 					contentType: "application/json"
 				}
-			});
-
-			await sendMessage({ title: `New message from ${userId}`, content: `!HiddenMessage\nLogs uploaded with key ${diagnosticKey}` }, { apnsToken: null, userId }, env, discordClient);
+			}, { apnsToken: null, userId }, env, discordClient);
 
 
 			return new Response("OK", { status: 200 });
@@ -197,3 +220,10 @@ export default {
 		}
 	},
 } satisfies ExportedHandler<Env>;
+
+const allowedMessages = new Set([0, 19, 20, 21]);
+
+function isHidden(message: DiscordMessage): boolean {
+	return !message.content || message.content.startsWith("!HiddenMessage") || message.content.startsWith(":ninja:") || !allowedMessages.has(message.type)
+}
+
