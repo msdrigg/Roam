@@ -3,7 +3,7 @@ import SwiftUI
 enum NavigationDestination: Hashable {
     case SettingsDestination(SettingsDestination)
     case AboutDestination
-    case DeviceSettingsDestination(DeviceSettingsDestination)
+    case DeviceSettingsDestination(Device)
     case KeyboardShortcutDestinaion
     case MessageDestination
 }
@@ -11,15 +11,6 @@ enum NavigationDestination: Hashable {
 enum SettingsDestination {
     case Global
     case Debugging
-}
-
-
-struct DeviceSettingsDestination: Hashable {
-    let device: Device
-    
-    init(_ device: Device) {
-        self.device = device
-    }
 }
 
 struct SettingsNavigationWrapper<Content>: View where Content : View {
@@ -41,9 +32,10 @@ struct SettingsNavigationWrapper<Content>: View where Content : View {
 #if !APPCLIP
                         AboutView()
 #endif
-                    case .DeviceSettingsDestination(let destination):
+                    case .DeviceSettingsDestination(let device):
+                        let _ = print("Getting nav to settings dest")
 #if !APPCLIP
-                        DeviceDetailView(device: destination.device) {
+                        DeviceDetailView(device: device) {
                             if path.count > 0 {
                                 path.removeLast()
                             }

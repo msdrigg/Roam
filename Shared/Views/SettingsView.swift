@@ -128,7 +128,7 @@ struct SettingsView: View {
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
-                                NavigationLink(value: DeviceSettingsDestination(device)) {
+                                NavigationLink(value: NavigationDestination.DeviceSettingsDestination(device)) {
                                     Label("Edit", systemImage: "pencil")
                                 }
                             }
@@ -425,7 +425,7 @@ struct SettingsView: View {
                 modelContext.insert(newDevice)
                 Self.logger.info("Added new empty device \(String(describing: newDevice.persistentModelID))")
                 try modelContext.save()
-                path.append(NavigationDestination.DeviceSettingsDestination( DeviceSettingsDestination(newDevice)))
+                path.append(NavigationDestination.DeviceSettingsDestination( newDevice))
             } catch {
                 Self.logger.error("Error inserting new device \(error)")
             }
@@ -438,7 +438,7 @@ struct DeviceListItem: View {
     @Bindable var device: Device
     
     var body: some View {
-        NavigationLink(value: DeviceSettingsDestination(device)) {
+        NavigationLink(value: NavigationDestination.DeviceSettingsDestination(device)) {
             HStack(alignment: .center) {
                 VStack(alignment: .center) {
                     DataImage(from: device.deviceIcon, fallback: "tv")
