@@ -1,6 +1,6 @@
-import SwiftUI
-import SwiftData
 import os.log
+import SwiftData
+import SwiftUI
 
 @main
 struct RoamWatch: App {
@@ -13,7 +13,7 @@ struct RoamWatch: App {
         sharedModelContainer = getSharedModelContainer()
         Self.logger.info("Getting WatchConnectivity \(String(describing: WatchConnectivity.shared))")
     }
-    
+
     var body: some Scene {
         WindowGroup {
             WatchAppView()
@@ -24,37 +24,37 @@ struct RoamWatch: App {
 
 let DPAD: [[RemoteButton?]] = [
     [
-        .back, .up, .power
+        .back, .up, .power,
     ],
     [
-        .left, .select, .right
+        .left, .select, .right,
     ],
     [
-        .volumeDown, .down, .volumeUp
-    ]
+        .volumeDown, .down, .volumeUp,
+    ],
 ]
 
 let CONTROLS: [[RemoteButton?]] = [
     [
-        .instantReplay, .home, .options
+        .instantReplay, .home, .options,
     ],
     [
-        .rewind, .playPause, .fastForward
+        .rewind, .playPause, .fastForward,
     ],
     [
-        .volumeDown, .mute, .volumeUp
-    ]
+        .volumeDown, .mute, .volumeUp,
+    ],
 ]
-
 
 private let deviceFetchDescriptor: FetchDescriptor<Device> = {
     var fd = FetchDescriptor(
         predicate: #Predicate {
             $0.deletedAt == nil
         },
-        sortBy: [SortDescriptor(\Device.name, order: .reverse)])
+        sortBy: [SortDescriptor(\Device.name, order: .reverse)]
+    )
     fd.propertiesToFetch = [\.udn, \.location, \.name, \.lastOnlineAt, \.lastSelectedAt, \.lastScannedAt]
-    
+
     return fd
 }()
 
@@ -63,36 +63,36 @@ struct WatchAppView: View {
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: WatchAppView.self)
     )
-    
+
     @State private var scanningActor: DeviceDiscoveryActor!
-    
+
     @Query(deviceFetchDescriptor) private var devices: [Device]
     @State private var manuallySelectedDevice: Device?
     @State private var showDeviceList: Bool = false
-    
+
     @Environment(\.modelContext) private var modelContext
-    
+
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
-    
+
     private var runningInPreview: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     }
-    
+
     private var selectedDevice: Device? {
-        return manuallySelectedDevice ?? devices.min { d1, d2 in
+        manuallySelectedDevice ?? devices.min { d1, d2 in
             (d1.lastSelectedAt?.timeIntervalSince1970 ?? 0) > (d2.lastSelectedAt?.timeIntervalSince1970 ?? 0)
         }
     }
-    
+
     @State var navPath = NavigationPath()
-    
+
     var mainBody: some View {
         NavigationStack {
             TabView {
                 ButtonGridView(device: selectedDevice?.toAppEntity(), controls: DPAD)
-                
+
                 ButtonGridView(device: selectedDevice?.toAppEntity(), controls: CONTROLS)
-                
+
                 if let device = selectedDevice {
                     AppListViewWrapper(device: device.toAppEntity())
                 }
@@ -112,14 +112,14 @@ struct WatchAppView: View {
             .tabViewStyle(.verticalPage)
             .onAppear {
                 let modelContainer = modelContext.container
-                self.scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
+                scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
                 modelContext.processPendingChanges()
             }
             .overlay {
                 if selectedDevice == nil {
                     VStack(spacing: 2) {
                         Spacer().frame(maxHeight: 120)
-                        Button(action: {showDeviceList = true}) {
+                        Button(action: { showDeviceList = true }) {
                             Label("Setup a device to get started :)", systemImage: "gear")
                                 .frame(maxWidth: .infinity)
                                 .font(.subheadline)
@@ -136,8 +136,7 @@ struct WatchAppView: View {
             }
         }
     }
-    
-    
+
     var body: some View {
         if runningInPreview {
             mainBody
@@ -145,7 +144,7 @@ struct WatchAppView: View {
             mainBody
                 .task(id: selectedDevice?.persistentModelID, priority: .medium) {
                     if let devId = selectedDevice?.persistentModelID {
-                        await self.scanningActor.refreshSelectedDeviceContinually(id: devId)
+                        await scanningActor.refreshSelectedDeviceContinually(id: devId)
                     }
                 }
         }
@@ -159,11 +158,11 @@ struct AppListViewWrapper: View {
     @State var cachedAppLinks: [AppLink]
 
     var appIdsIconsHashed: Int {
-        var appLinkPairs: Set<String>  = Set()
-        self.apps.forEach {
-            appLinkPairs.insert("\($0.id);\($0.icon != nil)")
+        var appLinkPairs: Set<String> = Set()
+        for app in apps {
+            appLinkPairs.insert("\(app.id);\(app.icon != nil)")
         }
-        
+
         var hasher = Hasher()
         hasher.combine(appLinkPairs)
         return hasher.finalize()
@@ -171,8 +170,8 @@ struct AppListViewWrapper: View {
 
     init(device: DeviceAppEntity) {
         let pid = device.udn
-        
-        self._apps = Query(
+
+        _apps = Query(
             filter: #Predicate {
                 pid != nil && $0.deviceUid == pid
             },
@@ -182,7 +181,7 @@ struct AppListViewWrapper: View {
         self.device = device
         cachedAppLinks = []
     }
-    
+
     var body: some View {
         AppListView(device: device, apps: cachedAppLinks, onClick: {
             $0.lastSelected = Date.now

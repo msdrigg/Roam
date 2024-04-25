@@ -1,9 +1,9 @@
-import Foundation
-import SwiftData
 import AppIntents
-import WidgetKit
-import SwiftUI
+import Foundation
 import OSLog
+import SwiftData
+import SwiftUI
+import WidgetKit
 
 struct DeviceChoiceTimelineEntity: TimelineEntry {
     var date: Date
@@ -12,45 +12,44 @@ struct DeviceChoiceTimelineEntity: TimelineEntry {
 }
 
 struct SimpleRemoteControlProvider: AppIntentTimelineProvider {
-    
     typealias Intent = DeviceChoiceIntent
     typealias Entry = DeviceChoiceTimelineEntity
-    
+
     private let modelContainer: ModelContainer
-    
+
     init() {
         modelContainer = getSharedModelContainer()
     }
-    
+
     func recommendations() -> [AppIntentRecommendation<DeviceChoiceIntent>] {
-        return [
-            AppIntentRecommendation(intent: DeviceChoiceIntent(), description: Text("Control your Roku!"))
+        [
+            AppIntentRecommendation(intent: DeviceChoiceIntent(), description: Text("Control your Roku!")),
         ]
     }
 
-    func snapshot(for configuration: DeviceChoiceIntent, in context: Context) async -> DeviceChoiceTimelineEntity {
+    func snapshot(for configuration: DeviceChoiceIntent, in _: Context) async -> DeviceChoiceTimelineEntity {
         let device = if configuration.manuallySelectDevice, let device = configuration.device {
             device
         } else {
             await fetchSelectedDevice(modelContainer: modelContainer)
         }
-        let apps: [AppLinkAppEntity] = if let udn = device?.udn{
+        let apps: [AppLinkAppEntity] = if let udn = device?.udn {
             await fetchSelectedAppLinks(modelContainer: modelContainer, deviceId: udn)
         } else {
             []
         }
-        
+
         let entry = DeviceChoiceTimelineEntity(date: Date(), device: device, apps: apps)
         return entry
     }
-    
-    func timeline(for configuration: DeviceChoiceIntent, in context: Context) async -> Timeline<DeviceChoiceTimelineEntity> {
+
+    func timeline(for configuration: DeviceChoiceIntent, in _: Context) async -> Timeline<DeviceChoiceTimelineEntity> {
         let device = if configuration.manuallySelectDevice, let device = configuration.device {
             device
         } else {
             await fetchSelectedDevice(modelContainer: modelContainer)
         }
-        
+
         let apps: [AppLinkAppEntity] = if let udn = device?.udn {
             await fetchSelectedAppLinks(modelContainer: modelContainer, deviceId: udn)
         } else {
@@ -61,30 +60,29 @@ struct SimpleRemoteControlProvider: AppIntentTimelineProvider {
         let timeline = Timeline(entries: [entryNow, entryLater], policy: .atEnd)
         return timeline
     }
-    
-    func placeholder(in context: Context) -> DeviceChoiceTimelineEntity {
+
+    func placeholder(in _: Context) -> DeviceChoiceTimelineEntity {
         DeviceChoiceTimelineEntity(date: Date(), device: nil, apps: [])
     }
 }
 
-
 struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
     typealias Intent = DeviceAndAppChoiceIntent
     typealias Entry = DeviceChoiceTimelineEntity
-    
+
     private let modelContainer: ModelContainer
-    
+
     init() {
         modelContainer = getSharedModelContainer()
     }
-    
+
     func recommendations() -> [AppIntentRecommendation<DeviceAndAppChoiceIntent>] {
-        return [
-            AppIntentRecommendation(intent: DeviceAndAppChoiceIntent(), description: Text("Control your Roku!"))
+        [
+            AppIntentRecommendation(intent: DeviceAndAppChoiceIntent(), description: Text("Control your Roku!")),
         ]
     }
 
-    func snapshot(for configuration: DeviceAndAppChoiceIntent, in context: Context) async -> DeviceChoiceTimelineEntity {
+    func snapshot(for configuration: DeviceAndAppChoiceIntent, in _: Context) async -> DeviceChoiceTimelineEntity {
         let device = if configuration.manuallySelectDevice, let device = configuration.device {
             device
         } else {
@@ -109,18 +107,20 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
             }
             apps = loadedApps
         }
-        
+
         let entry = DeviceChoiceTimelineEntity(date: Date(), device: device, apps: apps)
         return entry
     }
-    
-    func timeline(for configuration: DeviceAndAppChoiceIntent, in context: Context) async -> Timeline<DeviceChoiceTimelineEntity> {
+
+    func timeline(for configuration: DeviceAndAppChoiceIntent,
+                  in _: Context) async -> Timeline<DeviceChoiceTimelineEntity>
+    {
         let device = if configuration.manuallySelectDevice, let device = configuration.device {
             device
         } else {
             await fetchSelectedDevice(modelContainer: modelContainer)
         }
-        
+
         var apps: [AppLinkAppEntity] = []
         if let udn = device?.udn {
             var loadedApps = await fetchSelectedAppLinks(modelContainer: modelContainer, deviceId: udn)
@@ -145,8 +145,8 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
         let timeline = Timeline(entries: [entryNow, entryLater], policy: .atEnd)
         return timeline
     }
-    
-    func placeholder(in context: Context) -> DeviceChoiceTimelineEntity {
+
+    func placeholder(in _: Context) -> DeviceChoiceTimelineEntity {
         DeviceChoiceTimelineEntity(date: Date(), device: nil, apps: [])
     }
 }

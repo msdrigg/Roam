@@ -39,7 +39,7 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
     case inputHDMI4 = "InputHDMI4"
     case inputAV1 = "InputAV1"
     case headphonesMode = "Headphones Mode"
-    
+
     public static var typeDisplayName: String = "Button"
 
     public static var caseDisplayRepresentations: [RemoteButton: String] = [
@@ -73,9 +73,9 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
         .inputHDMI3: "Input HDMI 3",
         .inputHDMI4: "Input HDMI 4",
         .inputAV1: "Input AV 1",
-        .headphonesMode: "Headphones Mode"
+        .headphonesMode: "Headphones Mode",
     ]
-    
+
     public static var systemIcons: [RemoteButton: String?] = [
         .up: "chevron.up",
         .left: "chevron.left",
@@ -107,7 +107,7 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
         .inputHDMI2: nil,
         .inputHDMI3: nil,
         .inputHDMI4: nil,
-        .inputAV1: nil
+        .inputAV1: nil,
     ]
 
     public static var buttonApiDescription: [RemoteButton: String] = [
@@ -140,58 +140,58 @@ public enum RemoteButton: String, CaseIterable, Sendable, Encodable, Hashable {
         .inputHDMI2: "InputHDMI2",
         .inputHDMI3: "InputHDMI3",
         .inputHDMI4: "InputHDMI4",
-        .inputAV1: "InputAV1"
+        .inputAV1: "InputAV1",
     ]
-    
+
     public var apiValue: String? {
         Self.buttonApiDescription[self]
     }
-    
+
     public var systemIcon: String? {
         // Why do I have to do this
         if let icon = Self.systemIcons[self] {
-            return icon
+            icon
         } else {
-            return nil
+            nil
         }
     }
-    
+
     public static func fromCharacter(character: Character) -> RemoteButton? {
-#if !os(watchOS)
-        let keyMap: [Character: RemoteButton] = [
-            "\u{7F}": RemoteButton.backspace,
-            KeyEquivalent.delete.character: RemoteButton.backspace,
-            KeyEquivalent.deleteForward.character: RemoteButton.backspace,
-            KeyEquivalent.escape.character: RemoteButton.backspace,
-            KeyEquivalent.downArrow.character: RemoteButton.down,
-            KeyEquivalent.upArrow.character: RemoteButton.up,
-            KeyEquivalent.rightArrow.character: RemoteButton.right,
-            KeyEquivalent.leftArrow.character: RemoteButton.left,
-            KeyEquivalent.home.character: RemoteButton.home,
-            KeyEquivalent.return.character: RemoteButton.select,
-        ]
-#else
-        let keyMap: [Character: RemoteButton] = [
-            "\u{7F}": RemoteButton.backspace,
-        ]
-#endif
-    
+        #if !os(watchOS)
+            let keyMap: [Character: RemoteButton] = [
+                "\u{7F}": RemoteButton.backspace,
+                KeyEquivalent.delete.character: RemoteButton.backspace,
+                KeyEquivalent.deleteForward.character: RemoteButton.backspace,
+                KeyEquivalent.escape.character: RemoteButton.backspace,
+                KeyEquivalent.downArrow.character: RemoteButton.down,
+                KeyEquivalent.upArrow.character: RemoteButton.up,
+                KeyEquivalent.rightArrow.character: RemoteButton.right,
+                KeyEquivalent.leftArrow.character: RemoteButton.left,
+                KeyEquivalent.home.character: RemoteButton.home,
+                KeyEquivalent.return.character: RemoteButton.select,
+            ]
+        #else
+            let keyMap: [Character: RemoteButton] = [
+                "\u{7F}": RemoteButton.backspace,
+            ]
+        #endif
+
         if let mappedString = keyMap[character] {
             return mappedString
         }
-    
+
         return nil
     }
-    
+
     @ViewBuilder
     public var label: some View {
-        if let systemIcon = systemIcon {
+        if let systemIcon {
             Label(description, systemImage: systemIcon)
         } else {
             Text(description)
         }
     }
-    
+
     public var description: String {
         Self.caseDisplayRepresentations[self]!
     }

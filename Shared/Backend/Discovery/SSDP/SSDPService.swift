@@ -21,35 +21,35 @@ public class SSDPService {
     // MARK: Initialisation
 
     /**
-        Initialize the `SSDPService` with the discovery response.
+         Initialize the `SSDPService` with the discovery response.
 
-        - Parameters:
-            - host: The host of service
-            - response: The discovery response.
-    */
+         - Parameters:
+             - host: The host of service
+             - response: The discovery response.
+     */
     init(host: String, response: String) {
         self.host = host
-        
-        let headers = self.parse(response)
-        self.responseHeaders = headers
-        
-        self.location = headers["LOCATION"]
-        self.server = headers["SERVER"]
-        self.searchTarget = headers["ST"]
-        self.uniqueServiceName = headers["USN"]
+
+        let headers = parse(response)
+        responseHeaders = headers
+
+        location = headers["LOCATION"]
+        server = headers["SERVER"]
+        searchTarget = headers["ST"]
+        uniqueServiceName = headers["USN"]
     }
 
     // MARK: Private functions
-    
+
     /**
         Parse the discovery response.
-     
+
         - Parameters:
             - response: The discovery response.
      */
     private func parse(_ response: String) -> [String: String] {
         var result = [String: String]()
-        
+
         let matches = HeaderRegex.matches(in: response, range: NSRange(location: 0, length: response.count))
         for match in matches {
             let keyCaptureGroupIndex = match.range(at: 1)
@@ -58,7 +58,7 @@ public class SSDPService {
             let value = (response as NSString).substring(with: valueCaptureGroupIndex)
             result[key.uppercased()] = value
         }
-        
+
         return result
     }
 }

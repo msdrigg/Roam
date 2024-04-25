@@ -13,31 +13,31 @@ func wakeOnLAN(macAddress: String) async -> Bool {
     let port = NWEndpoint.Port(rawValue: 9)!
     let parameters = NWParameters.udp
     let connection = NWConnection(host: host, port: port, using: parameters)
-    
+
     let packet: Data? = {
         var packet = Data()
         // Create the header with 6 bytes of FF
-        for _ in 0..<6 {
+        for _ in 0 ..< 6 {
             packet.append(0xFF)
         }
-        
+
         // Parse MAC address and append it 16 times to the packet
         let macBytes = macAddress.split(separator: ":").compactMap { UInt8($0, radix: 16) }
         guard macBytes.count == 6 else {
             logger.error("Invalid MAC address")
             return nil
         }
-        
-        for _ in 0..<16 {
+
+        for _ in 0 ..< 16 {
             packet.append(contentsOf: macBytes)
         }
         return packet
     }()
-    
-    guard let packet = packet else {
+
+    guard let packet else {
         return false
     }
-    
+
     let timeout = DispatchTime.now() + .seconds(5) // Set a 5-second timeout
     let statusStream = AsyncStream { continuation in
         // Start a timer to handle timeout
@@ -45,18 +45,18 @@ func wakeOnLAN(macAddress: String) async -> Bool {
             continuation.yield(false)
             connection.cancel()
         }
-        
+
         connection.stateUpdateHandler = { state in
             if state == .ready {
-                connection.send(content: packet, completion: NWConnection.SendCompletion.contentProcessed({ error in
-                    if let error = error {
+                connection.send(content: packet, completion: NWConnection.SendCompletion.contentProcessed { error in
+                    if let error {
                         logger.error("Error sending WOL packet for MAC \(macAddress): \(error)")
                     } else {
                         logger.info("Sent WOL packet")
                     }
                     connection.cancel()
                     continuation.yield(true)
-                }))
+                })
             } else {
                 switch state {
                 case .failed:
@@ -70,10 +70,10 @@ func wakeOnLAN(macAddress: String) async -> Bool {
         }
         connection.start(queue: .global())
     }
-    
+
     var iterator = statusStream.makeAsyncIterator()
     let canSendPacket = await iterator.next() ?? false
-    
+
     if !canSendPacket {
         logger.error("Unable to send WOL packet within 5 sec")
     }
@@ -99,14 +99,18 @@ public func openApp(location: String, app: String) async throws {
 @discardableResult
 public func powerToggleDeviceStateless(location: String, mac: String?) async -> Bool {
     logger.debug("Toggling power for device \(location)")
-        
+
     // Attempt checking the device power mode
     logger.debug("Attempting to power toggle device with api first")
 
-    let toggleResult = await internalSendKeyToDevice(location: location, rawKey: RemoteButton.power.apiValue!, timeout: 1.1)
+    let toggleResult = await internalSendKeyToDevice(
+        location: location,
+        rawKey: RemoteButton.power.apiValue!,
+        timeout: 1.1
+    )
     if !toggleResult {
         logger.debug("API toggle failed, trying to WOL to mac \(String(describing: mac))")
-        guard let mac = mac else {
+        guard let mac else {
             return false
         }
         logger.debug("Sending wol packet to \(mac)")
@@ -118,7 +122,7 @@ public func powerToggleDeviceStateless(location: String, mac: String?) async -> 
 }
 
 public func sendKeyPressTodevice(location: String, key: Character) async -> Bool {
-    return await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
+    await internalSendKeyToDevice(location: location, rawKey: getKeypressForKey(key: key))
 }
 
 @discardableResult
@@ -130,7 +134,7 @@ public func sendKeyToDevice(location: String, mac: String?, key: RemoteButton) a
             return await internalSendKeyToDevice(location: location, rawKey: apiValue)
         }
     }
-    
+
     return false
 }
 
@@ -152,7 +156,7 @@ private func internalSendKeyToDevice(location: String, rawKey: String, timeout: 
     }
     var request = URLRequest(url: url, timeoutInterval: timeout ?? 3)
     request.httpMethod = "POST"
-    
+
     do {
         let (_, response) = try await URLSession.shared.data(for: request)
         if let httpResponse = response as? HTTPURLResponse {
@@ -164,10 +168,9 @@ private func internalSendKeyToDevice(location: String, rawKey: String, timeout: 
                 return false
             }
         }
-        
+
         return false
     } catch {
-        
         logger.error("Error sending \(rawKey) to \(location): \(error)")
         return false
     }

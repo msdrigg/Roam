@@ -1,32 +1,31 @@
-import SwiftUI
 import Foundation
 import os.log
+import SwiftUI
 
 struct ButtonGridView: View {
     static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: ButtonGridView.self)
     )
-    
+
     let device: DeviceAppEntity?
     let controls: [[RemoteButton?]]
-    
+
     @State var buttonPresses: [RemoteButton: Int] = [:]
     func buttonPressCount(_ key: RemoteButton) -> Int {
         buttonPresses[key] ?? 0
     }
-    
+
     func incrementButtonPressCount(_ key: RemoteButton) {
         buttonPresses[key] = (buttonPresses[key] ?? 0) + 1
     }
 
-    
     var body: some View {
         Grid(horizontalSpacing: 1, verticalSpacing: 1) {
             ForEach(controls, id: \.self) { row in
                 GridRow {
                     ForEach(row, id: \.self) { button in
-                        if let button = button {
+                        if let button {
                             if button == .power {
                                 Button(action: {
                                     incrementButtonPressCount(button)
@@ -34,7 +33,8 @@ struct ButtonGridView: View {
                                         do {
                                             try await clickButton(button: button, device: device)
                                         } catch {
-                                            Self.logger.error("Error pressing button \(String(describing: button)): \(error)")
+                                            Self.logger
+                                                .error("Error pressing button \(String(describing: button)): \(error)")
                                         }
                                     }
                                 }) {
@@ -59,8 +59,8 @@ struct ButtonGridView: View {
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                 }.buttonStyle(.borderedProminent)
-                                .sensoryFeedback(.impact, trigger: buttonPressCount(button))
-                                .symbolEffect(.bounce, value: buttonPressCount(button))
+                                    .sensoryFeedback(.impact, trigger: buttonPressCount(button))
+                                    .symbolEffect(.bounce, value: buttonPressCount(button))
                             } else {
                                 Button(action: {
                                     incrementButtonPressCount(button)

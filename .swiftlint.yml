@@ -1,0 +1,12 @@
+disabled_rules:
+    - trailing_comma
+    - opening_brace
+line_length:
+    warning: 200
+    ignores_comments: true
+    ignores_interpolated_strings: false
+identifier_name:
+    min_length: 1
+cyclomatic_complexity:
+  ignores_case_statements: true
+    

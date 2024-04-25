@@ -1,32 +1,32 @@
-import SwiftUI
 import Foundation
 import os.log
+import SwiftUI
 
 struct AppListView: View {
     static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: AppListView.self)
     )
-    
+
     let device: DeviceAppEntity?
     let apps: [AppLink]
     let onClick: ((AppLink) -> Void)?
-    
+
     init(device: DeviceAppEntity, apps: [AppLink], onClick: ((AppLink) -> Void)? = nil) {
         self.device = device
         self.apps = apps
         self.onClick = onClick
     }
-    
+
     @State var appClicks: [String: Int] = [:]
     func appPressCount(_ app: String) -> Int {
         appClicks[app] ?? 0
     }
-    
+
     func incrementAppPressCount(_ app: String) {
         appClicks[app] = (appClicks[app] ?? 0) + 1
     }
-    
+
     var body: some View {
         List {
             ForEach(apps) { app in
@@ -51,9 +51,8 @@ struct AppListView: View {
                             .shadow(radius: 4)
                     }
                     .labelStyle(AppIconLabelStyle())
-                }                   
+                }
                 .sensoryFeedback(.impact, trigger: appPressCount(app.id))
-
             }
             if apps.isEmpty {
                 Text("No apps")
@@ -71,4 +70,3 @@ struct AppIconLabelStyle: LabelStyle {
         }
     }
 }
-

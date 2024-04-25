@@ -15,6 +15,7 @@ public extension Task where Success == Never, Failure == Never {
         }
     }
 }
+
 public extension Task where Success == Never, Failure == Never {
     /// Race for the first result by any of the provided tasks.
     ///
@@ -43,7 +44,7 @@ public extension Task where Success == Never, Failure == Never {
     /// Ignores errors that may be thrown and waits for the first result.
     /// If all tasks fail, returns `nil`.
     static func race<Output>(firstValue tasks: [Blueprint<Output>]) async -> Output? {
-        return await withThrowingTaskGroup(of: Output.self) { group -> Output? in
+        await withThrowingTaskGroup(of: Output.self) { group -> Output? in
             for task in tasks {
                 group.addTask(priority: task.priority) {
                     try await task.operation()
@@ -55,7 +56,7 @@ public extension Task where Success == Never, Failure == Never {
                 switch nextResult {
                 case .failure:
                     continue
-                case .success(let result):
+                case let .success(result):
                     return result
                 }
             }
@@ -69,9 +70,9 @@ public extension Task where Success == Never, Failure == Never {
 public extension Task where Success == Never, Failure == Never {
     /// Sleep for the specified `TimeInterval`.
     @inlinable static func sleep(duration: TimeInterval) async throws {
-        try await sleep(nanoseconds: UInt64(duration*1e9))
+        try await sleep(nanoseconds: UInt64(duration * 1e9))
     }
-    
+
     /// Sleep until cancelled
     @inlinable static func sleepUntilCancelled() async {
         try? await sleep(nanoseconds: UInt64.max / 2)
@@ -80,7 +81,7 @@ public extension Task where Success == Never, Failure == Never {
 
 public struct TimeoutError: Swift.Error, LocalizedError {
     /// When the timeout occurred.
-    public let occurred: Date = Date()
+    public let occurred: Date = .init()
     public var errorDescription: String? {
         "The operation timed out."
     }
@@ -95,7 +96,7 @@ public func withTimeout<T>(
     priority: TaskPriority = .medium,
     run task: @Sendable @escaping () async throws -> T
 ) async throws -> T {
-    return try await Task.race(firstResolved: [
+    try await Task.race(firstResolved: [
         .init {
             try await Task.sleep(duration: delay)
             throw TimeoutError()
@@ -111,11 +112,11 @@ public func exponentialBackoff(
     max maxTime: TimeInterval,
     multiplier: Double = 2
 ) -> AsyncStream<Date> {
-    var currentTimeout: TimeInterval? = nil
+    var currentTimeout: TimeInterval?
     return AsyncStream {
         if let timeout = currentTimeout {
             // Jitter for 1% of timeout
-            let jitter = Double.random(in: 0..<timeout * 0.01)
+            let jitter = Double.random(in: 0 ..< timeout * 0.01)
             try? await Task.sleep(duration: timeout + jitter)
             currentTimeout = min(timeout * multiplier, maxTime)
         } else {
@@ -124,7 +125,7 @@ public func exponentialBackoff(
         if Task.isCancelled {
             return nil
         }
-        
+
         return Date.now
     }
 }
@@ -132,20 +133,20 @@ public func exponentialBackoff(
 public func interval(
     time: TimeInterval
 ) -> AsyncStream<Date> {
-    return AsyncStream {
+    AsyncStream {
         // Jitter for 1% of timeout
-        let jitter = Double.random(in: 0..<time * 0.01)
+        let jitter = Double.random(in: 0 ..< time * 0.01)
         try? await Task.sleep(duration: time + jitter)
         if Task.isCancelled {
             return nil
         }
-        
+
         return Date.now
     }
 }
 
 public func nanoseconds(_ timeInterval: TimeInterval) -> UInt64 {
-    return UInt64(timeInterval) * 1_000_000_000
+    UInt64(timeInterval) * 1_000_000_000
 }
 
 class Signaler {
@@ -159,8 +160,8 @@ class Signaler {
     }
 
     func hasFired() -> Bool {
-        return flagQueue.sync {
-            return hasFiredFlag
+        flagQueue.sync {
+            hasFiredFlag
         }
     }
 }

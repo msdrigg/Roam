@@ -1,5 +1,5 @@
-import Foundation
 import AppIntents
+import Foundation
 import SwiftData
 
 @available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
@@ -7,25 +7,25 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
     public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Device")
 
     public struct DeviceAppEntityQuery: EntityQuery {
-        public init() {
-        }
-        
+        public init() {}
+
         public func entities(for identifiers: [DeviceAppEntity.ID]) async throws -> [DeviceAppEntity] {
             let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
-            
+
             return try await deviceActor.entities(for: identifiers)
         }
-        
+
         public func entities(matching string: String) async throws -> [DeviceAppEntity] {
             let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
             return try await deviceActor.entities(matching: string)
         }
-        
+
         public func suggestedEntities() async throws -> [DeviceAppEntity] {
             let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
             return try await deviceActor.allDeviceEntities()
         }
     }
+
     public static var defaultQuery = DeviceAppEntityQuery()
 
     public var name: String
@@ -33,54 +33,51 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
     public var udn: String
     public var lastSentToWatch: Date?
     public var modelId: PersistentIdentifier
-    
+
     public var lastSelectedAt: Date?
     public var lastOnlineAt: Date?
     public var lastScannedAt: Date?
     public var deletedAt: Date?
-    
+
     // DisplayOff or PowerOn or Suspend
     public var powerMode: String?
     public var networkType: String?
     public var wifiMAC: String?
     public var ethernetMAC: String?
-    
+
     public var rtcpPort: UInt16?
     public var supportsDatagram: Bool?
 
-    
-    
     public var id: String {
         udn
     }
-    
+
     public var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
-    
+
     func usingMac() -> String? {
         if networkType == "ethernet" {
-            return ethernetMAC
+            ethernetMAC
         } else {
-            return wifiMAC
+            wifiMAC
         }
     }
 
-
     init(device: Device) {
-        self.name = device.name
-        self.location = device.location
-        self.udn = device.udn
-        self.wifiMAC = device.wifiMAC
-        self.ethernetMAC = device.ethernetMAC
-        self.lastSentToWatch = device.lastSentToWatch
-        self.modelId = device.persistentModelID
-        self.lastSelectedAt = device.lastSelectedAt
-        self.lastOnlineAt = device.lastOnlineAt
-        self.lastScannedAt = device.lastScannedAt
-        self.deletedAt = device.deletedAt
+        name = device.name
+        location = device.location
+        udn = device.udn
+        wifiMAC = device.wifiMAC
+        ethernetMAC = device.ethernetMAC
+        lastSentToWatch = device.lastSentToWatch
+        modelId = device.persistentModelID
+        lastSelectedAt = device.lastSelectedAt
+        lastOnlineAt = device.lastOnlineAt
+        lastScannedAt = device.lastScannedAt
+        deletedAt = device.deletedAt
     }
-    
+
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(udn, forKey: .udn)
@@ -122,7 +119,6 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
 
 public extension Device {
     func toAppEntity() -> DeviceAppEntity {
-        return DeviceAppEntity(device: self)
+        DeviceAppEntity(device: self)
     }
 }
-

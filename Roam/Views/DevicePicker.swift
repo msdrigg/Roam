@@ -1,13 +1,13 @@
 import Foundation
-import SwiftUI
 import os
+import SwiftUI
 
 #if os(tvOS)
-let BASELINE_OFFSET: CGFloat = 4
-let CIRCLE_ICON_SIZE: CGFloat = 16
+    let BASELINE_OFFSET: CGFloat = 4
+    let CIRCLE_ICON_SIZE: CGFloat = 16
 #else
-let BASELINE_OFFSET: CGFloat = 2
-let CIRCLE_ICON_SIZE: CGFloat = 8
+    let BASELINE_OFFSET: CGFloat = 2
+    let CIRCLE_ICON_SIZE: CGFloat = 8
 #endif
 
 struct DevicePicker: View {
@@ -15,30 +15,29 @@ struct DevicePicker: View {
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: DevicePicker.self)
     )
-    
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
     var deviceActor: DeviceActor {
         DeviceActor(modelContainer: modelContext.container)
     }
-    
-    
+
     let devices: [Device]
     @Binding var device: Device?
-    
+
     var deviceStatusColor: Color {
         device?.isOnline() ?? false ? Color.green : Color.secondary
     }
-    
+
     var body: some View {
         Menu {
             if !devices.isEmpty {
                 Picker("Device", selection: Binding<Device?>(
                     get: {
-                        self.device
+                        device
                     },
                     set: {
-                        self.device = $0
+                        device = $0
                         if let pid = $0?.persistentModelID {
                             Task {
                                 do {
@@ -60,32 +59,32 @@ struct DevicePicker: View {
             } else {
                 Text("No devices")
             }
-            
+
             Divider()
-#if os(macOS)
-            SettingsLink {
-                Label("Settings", systemImage: "gear")
-                    .labelStyle(.titleAndIcon)
-            }
-#elseif !APPCLIP
-            NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
-                Label("Settings", systemImage: "gear")
-            }
-            .labelStyle(.titleAndIcon)
-#elseif APPCLIP
-            Button("Download the full app", systemImage: "app.gift") {
-                openURL(URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!)
-            }
-            .labelStyle(.titleAndIcon)
-#endif
+            #if os(macOS)
+                SettingsLink {
+                    Label("Settings", systemImage: "gear")
+                        .labelStyle(.titleAndIcon)
+                }
+            #elseif !APPCLIP
+                NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
+                    Label("Settings", systemImage: "gear")
+                }
+                .labelStyle(.titleAndIcon)
+            #elseif APPCLIP
+                Button("Download the full app", systemImage: "app.gift") {
+                    openURL(URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!)
+                }
+                .labelStyle(.titleAndIcon)
+            #endif
         } label: {
-            if let device = device {
+            if let device {
                 Group {
-                    Text(Image(systemName: "circle.fill") ).font(.system(size: CIRCLE_ICON_SIZE))
+                    Text(Image(systemName: "circle.fill")).font(.system(size: CIRCLE_ICON_SIZE))
                         .foregroundColor(deviceStatusColor)
                         .baselineOffset(BASELINE_OFFSET) +
-                    Text(" ").font(.body) +
-                    Text(device.name).font(.body)
+                        Text(" ").font(.body) +
+                        Text(device.name).font(.body)
                 }.multilineTextAlignment(.center)
                     .lineLimit(1)
                     .truncationMode(.tail)

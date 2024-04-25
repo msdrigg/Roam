@@ -1,48 +1,64 @@
-import SwiftUI
-import SwiftData
 import os
+import SwiftData
+import SwiftUI
 
 struct Dependency: Identifiable {
     let name: String
     let link: String
     let licenseType: String
-    
+
     var id: String {
         link
     }
 }
 
 #if os(watchOS) || os(tvOS)
-let WEBP_LICENSES = [
-    Dependency(name: "libwebp", link: "https://chromium.googlesource.com/webm/libwebp", licenseType: "BSD-3-Clause"),
-    Dependency(name: "libwebp-Xcode", link: "https://github.com/SDWebImage/libwebp-Xcode", licenseType: "BSD-3-Clause")
-]
+    let WEBP_LICENSES = [
+        Dependency(
+            name: "libwebp",
+            link: "https://chromium.googlesource.com/webm/libwebp",
+            licenseType: "BSD-3-Clause"
+        ),
+        Dependency(
+            name: "libwebp-Xcode",
+            link: "https://github.com/SDWebImage/libwebp-Xcode",
+            licenseType: "BSD-3-Clause"
+        ),
+    ]
 #endif
 
 #if os(macOS)
-let MACOS_LICENSES = [
-    Dependency(name: "SettingsAccess", link: "https://github.com/orchetect/SettingsAccess", licenseType: "MIT")
-]
+    let MACOS_LICENSES = [
+        Dependency(name: "SettingsAccess", link: "https://github.com/orchetect/SettingsAccess", licenseType: "MIT"),
+    ]
 #endif
 
 let MAIN_LICENSES: [Dependency] = [
     Dependency(name: "Opus", link: "https://github.com/xiph/opus/tree/master", licenseType: "BSD-3-Clause"),
     Dependency(name: "Swift-Opus", link: "https://github.com/alta/swift-opus", licenseType: "BSD-3-Clause"),
     Dependency(name: "Swift-RTP", link: "https://github.com/alta/swift-rtp", licenseType: "MIT"),
-    Dependency(name: "Swift-Async-Algorithms", link: "https://github.com/apple/swift-async-algorithms", licenseType: "Apache-2.0"),
+    Dependency(
+        name: "Swift-Async-Algorithms",
+        link: "https://github.com/apple/swift-async-algorithms",
+        licenseType: "Apache-2.0"
+    ),
     Dependency(name: "SSDPClient", link: "https://github.com/pierrickrouxel/SSDPClient", licenseType: "MIT"),
     Dependency(name: "XMLCoder", link: "https://github.com/CoreOffice/XMLCoder", licenseType: "MIT"),
     Dependency(name: "AsyncSemaphore", link: "https://github.com/groue/Semaphore", licenseType: "MIT"),
-    Dependency(name: "Swift Collections", link: "https://github.com/apple/swift-collections", licenseType: "Apache-2.0"),
-    Dependency(name: "Wrapping HStack", link: "https://github.com/ksemianov/WrappingHStack", licenseType: "MIT")
+    Dependency(
+        name: "Swift Collections",
+        link: "https://github.com/apple/swift-collections",
+        licenseType: "Apache-2.0"
+    ),
+    Dependency(name: "Wrapping HStack", link: "https://github.com/ksemianov/WrappingHStack", licenseType: "MIT"),
 ]
 
 #if os(watchOS) || os(tvOS)
-let LICENSES = MAIN_LICENSES + WEBP_LICENSES
+    let LICENSES = MAIN_LICENSES + WEBP_LICENSES
 #elseif os(macOS)
-let LICENSES = MAIN_LICENSES + MACOS_LICENSES
+    let LICENSES = MAIN_LICENSES + MACOS_LICENSES
 #else
-let LICENSES = MAIN_LICENSES
+    let LICENSES = MAIN_LICENSES
 #endif
 
 struct AboutView: View {
@@ -54,14 +70,14 @@ struct AboutView: View {
                 }
                 .focusable()
             }
-            
+
             Section("Dependencies") {
                 licenseIterator
             }
         }
         .navigationTitle("About")
     }
-    
+
     @ViewBuilder
     var licenseIterator: some View {
         ForEach(Array(zip(LICENSES.indices, LICENSES)), id: \.0) { idx, license in
@@ -77,19 +93,19 @@ struct AboutView: View {
                         Text(license.name)
                             .foregroundStyle(.primary, .primary)
                     }
-                    
+
                     Spacer()
-                    
+
                     #if os(tvOS)
-                    Text(license.link)
-                        .font(.body)
-                        .foregroundStyle(.secondary, .secondary)
-                        .lineLimit(1)
+                        Text(license.link)
+                            .font(.body)
+                            .foregroundStyle(.secondary, .secondary)
+                            .lineLimit(1)
                     #else
-                    Link(license.link, destination: URL(string: license.link)!)
-                        .font(.body)
-                        .foregroundStyle(.secondary, .secondary)
-                        .lineLimit(1)
+                        Link(license.link, destination: URL(string: license.link)!)
+                            .font(.body)
+                            .foregroundStyle(.secondary, .secondary)
+                            .lineLimit(1)
                     #endif
                 }
                 Text(license.licenseType)

@@ -1,0 +1,3 @@
+--maxwidth 125
+--swiftversion 5.10
+--selfrequired debug,info,error

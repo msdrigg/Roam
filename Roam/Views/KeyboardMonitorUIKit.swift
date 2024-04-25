@@ -1,113 +1,114 @@
 #if !os(macOS)
-import Foundation
-import SwiftUI
-import UIKit
-import OSLog
+    import Foundation
+    import OSLog
+    import SwiftUI
+    import UIKit
 
-private let logger = Logger(
-    subsystem: Bundle.main.bundleIdentifier!,
-    category: "KeyboardMonitor"
-)
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: "KeyboardMonitor"
+    )
 
-struct OnKeyPressModifier: ViewModifier {
-    let onKeyPress: (KeyEquivalent) -> Void
-    let enabled: Bool
-    
-    func body(content: Content) -> some View {
-        if enabled {
-            content.overlay(
-                KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
-                    .allowsHitTesting(false)
-            )
-        } else {
-            content
-        }
-    }
-}
+    struct OnKeyPressModifier: ViewModifier {
+        let onKeyPress: (KeyEquivalent) -> Void
+        let enabled: Bool
 
-extension View {
-    func onKeyDown(_ onKeyPress: @escaping (KeyEquivalent) -> Void, enabled: Bool = true) -> some View {
-        self.modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled))
-    }
-}
-
-struct KeyHandlingViewRepresentable: UIViewRepresentable {
-    var onKeyPress: (KeyEquivalent) -> Void
-
-    func makeUIView(context: Context) -> KeyHandlingUIView {
-        KeyHandlingUIView(onKeyPress: onKeyPress)
-    }
-
-    func updateUIView(_ uiView: KeyHandlingUIView, context: Context) {}
-}
-
-class KeyHandlingUIView: UIView {
-    var onKeyPress: (KeyEquivalent) -> Void
-
-    init(onKeyPress: @escaping (KeyEquivalent) -> Void) {
-        self.onKeyPress = onKeyPress
-        super.init(frame: .zero)
-        self.isUserInteractionEnabled = true
-        self.becomeFirstResponder()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            self?.becomeFirstResponder()
+        func body(content: Content) -> some View {
+            if enabled {
+                content.overlay(
+                    KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
+                        .allowsHitTesting(false)
+                )
+            } else {
+                content
+            }
         }
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    override func didMoveToWindow() {
-        super.didMoveToWindow()
-        self.becomeFirstResponder()
-    }
-    
-    override func resignFirstResponder() -> Bool {
-        logger.info("Asked to resign first responder. Returning false")
-        return false
-    }
-    
-    override var canBecomeFirstResponder: Bool { return true }
-
-    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        guard let press = presses.first, let key = press.key else { return }
-        if let ke = getKeyEquivalent(key) {
-            onKeyPress(ke)
+    extension View {
+        func onKeyDown(_ onKeyPress: @escaping (KeyEquivalent) -> Void, enabled: Bool = true) -> some View {
+            modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled))
         }
     }
-}
 
-func getKeyEquivalent(_ key: UIKey) -> KeyEquivalent? {
-    if let specialKey = specialKeyMapping(key: key) {
-        return specialKey
-    }
-    
-    guard let firstCharacter = key.characters.first else {
-        return nil
+    struct KeyHandlingViewRepresentable: UIViewRepresentable {
+        var onKeyPress: (KeyEquivalent) -> Void
+
+        func makeUIView(context _: Context) -> KeyHandlingUIView {
+            KeyHandlingUIView(onKeyPress: onKeyPress)
+        }
+
+        func updateUIView(_: KeyHandlingUIView, context _: Context) {}
     }
 
-    return KeyEquivalent(firstCharacter)
-}
+    class KeyHandlingUIView: UIView {
+        var onKeyPress: (KeyEquivalent) -> Void
 
-private func specialKeyMapping(key: UIKey) -> KeyEquivalent? {
-    switch key.keyCode {
-    case UIKeyboardHIDUsage.keyboardLeftArrow: return .leftArrow
-    case UIKeyboardHIDUsage.keyboardRightArrow: return .rightArrow
-    case UIKeyboardHIDUsage.keyboardDownArrow: return .downArrow
-    case UIKeyboardHIDUsage.keyboardUpArrow: return .upArrow
-    case UIKeyboardHIDUsage.keyboardReturnOrEnter: return .return
-    case UIKeyboardHIDUsage.keyboardTab: return .tab
-    case UIKeyboardHIDUsage.keyboardDeleteOrBackspace: return .delete
-    case UIKeyboardHIDUsage.keyboardEscape: return .escape
-    case UIKeyboardHIDUsage.keyboardHome: return .home
-    case UIKeyboardHIDUsage.keyboardPageUp: return .pageUp
-    case UIKeyboardHIDUsage.keyboardEnd: return .end
-    case UIKeyboardHIDUsage.keyboardPageDown: return .pageDown
-    case UIKeyboardHIDUsage.keyboardClear: return .clear
-    default: return nil
+        init(onKeyPress: @escaping (KeyEquivalent) -> Void) {
+            self.onKeyPress = onKeyPress
+            super.init(frame: .zero)
+            isUserInteractionEnabled = true
+            becomeFirstResponder()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                self?.becomeFirstResponder()
+            }
+        }
+
+        @available(*, unavailable)
+        required init?(coder _: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            becomeFirstResponder()
+        }
+
+        override func resignFirstResponder() -> Bool {
+            logger.info("Asked to resign first responder. Returning false")
+            return false
+        }
+
+        override var canBecomeFirstResponder: Bool { true }
+
+        override func pressesBegan(_ presses: Set<UIPress>, with _: UIPressesEvent?) {
+            guard let press = presses.first, let key = press.key else { return }
+            if let ke = getKeyEquivalent(key) {
+                onKeyPress(ke)
+            }
+        }
     }
-}
+
+    func getKeyEquivalent(_ key: UIKey) -> KeyEquivalent? {
+        if let specialKey = specialKeyMapping(key: key) {
+            return specialKey
+        }
+
+        guard let firstCharacter = key.characters.first else {
+            return nil
+        }
+
+        return KeyEquivalent(firstCharacter)
+    }
+
+    private func specialKeyMapping(key: UIKey) -> KeyEquivalent? {
+        switch key.keyCode {
+        case UIKeyboardHIDUsage.keyboardLeftArrow: .leftArrow
+        case UIKeyboardHIDUsage.keyboardRightArrow: .rightArrow
+        case UIKeyboardHIDUsage.keyboardDownArrow: .downArrow
+        case UIKeyboardHIDUsage.keyboardUpArrow: .upArrow
+        case UIKeyboardHIDUsage.keyboardReturnOrEnter: .return
+        case UIKeyboardHIDUsage.keyboardTab: .tab
+        case UIKeyboardHIDUsage.keyboardDeleteOrBackspace: .delete
+        case UIKeyboardHIDUsage.keyboardEscape: .escape
+        case UIKeyboardHIDUsage.keyboardHome: .home
+        case UIKeyboardHIDUsage.keyboardPageUp: .pageUp
+        case UIKeyboardHIDUsage.keyboardEnd: .end
+        case UIKeyboardHIDUsage.keyboardPageDown: .pageDown
+        case UIKeyboardHIDUsage.keyboardClear: .clear
+        default: nil
+        }
+    }
 
 #endif
