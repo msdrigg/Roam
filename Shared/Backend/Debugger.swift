@@ -1,10 +1,3 @@
-//
-//  Debugger.swift
-//  Roam
-//
-//  Created by Scott Driggers on 3/10/24.
-//
-
 import Foundation
 import os
 import OSLog
@@ -24,24 +17,10 @@ struct LogEntry: Encodable {
     let level: String?
     let category: String?
     let subsystem: String?
-    let osPlatform: String?
-    let osVersion: String?
     
     init(entry: OSLogEntry) {
         self.message = entry.composedMessage
         self.timestamp = entry.date
-        osVersion = ProcessInfo().operatingSystemVersionString
-#if os(iOS)
-        osPlatform = "iOS"
-#elseif os(macOS)
-        osPlatform = "macOS"
-#elseif os(watchOS)
-        osPlatform = "watchOS"
-#elseif os(tvOS)
-        osPlatform = "tvOS"
-#elseif os(visionOS)
-        osPlatform = "visionOS"
-#endif
         
         if let logEntry = entry as? OSLogEntryLog {
             switch logEntry.level {
@@ -86,18 +65,46 @@ struct DeviceDebugInfo: Encodable {
     let errorResponse: String?
 }
 
-public struct DebugInfo: Encodable {
-    let message: String?
-    let id: String
-    let date: Date
+public struct InstallationInfo: Encodable {
+    let userId: String;
     let buildVersion: String?
-    let logs: [LogEntry]
-    let devices: [DeviceDebugInfo]
-    let debugErrors: [String]
-    let interfaces: [Addressed4NetworkInterface]
+    let osPlatform: String?
+    let osVersion: String?
+    
+    init() {
+        osVersion = ProcessInfo().operatingSystemVersionString
+#if os(iOS)
+        osPlatform = "iOS"
+#elseif os(macOS)
+        osPlatform = "macOS"
+#elseif os(watchOS)
+        osPlatform = "watchOS"
+#elseif os(tvOS)
+        osPlatform = "tvOS"
+#elseif os(visionOS)
+        osPlatform = "visionOS"
+#endif
+        
+        if let infoPlist = Bundle.main.infoDictionary,
+           let currentProjectVersion = infoPlist["CURRENT_PROJECT_VERSION"] as? String {
+            buildVersion = currentProjectVersion
+        } else {
+            buildVersion = nil
+        }
+        userId = getSystemInstallID()
+    }
 }
 
-func getDebugInfo(container: ModelContainer, message: String?) async -> DebugInfo {
+public struct DebugInfo: Encodable {
+    let installationInfo: InstallationInfo
+    let devices: [DeviceDebugInfo]
+    let appLinks: [AppLinkAppEntity]
+    let interfaces: [Addressed4NetworkInterface]
+    let logs: [LogEntry]
+    let debugErrors: [String]
+}
+
+func getDebugInfo(container: ModelContainer) async -> DebugInfo {
     var debugErrors: [String] = []
     var entries: [LogEntry] = []
     do {
@@ -149,28 +156,26 @@ func getDebugInfo(container: ModelContainer, message: String?) async -> DebugInf
     
     let localInterfaces = await allAddressedInterfaces()
     
-    var buildVersion: String? = nil
-    if let infoPlist = Bundle.main.infoDictionary,
-       let currentProjectVersion = infoPlist["CURRENT_PROJECT_VERSION"] as? String {
-        buildVersion = currentProjectVersion
-    } else {
-        debugErrors.append("AppVersion not found")
+    var appLinks: [AppLinkAppEntity] = []
+    do {
+        appLinks = try await AppLinkActor(modelContainer: container).allEntities()
+    } catch {
+        debugErrors.append("Error Getting AppLinks: \n\(error)")
     }
-    
-    
-    return DebugInfo(message: message, id: getSystemInstallID(), date: Date.now, buildVersion: buildVersion, logs: entries, devices: deviceDebugInfos, debugErrors: debugErrors, interfaces: localInterfaces)
+
+    return DebugInfo(installationInfo: InstallationInfo(), devices: deviceDebugInfos, appLinks: appLinks, interfaces: localInterfaces, logs: entries, debugErrors: debugErrors)
     
 }
 
-private func getLogEntries(limit: Int = 100000) throws -> [LogEntry] {
+private func getLogEntries(limit: Int = 50000) throws -> [LogEntry] {
     let logStore = try OSLogStore(scope: .currentProcessIdentifier)
-    let date = Date.now.addingTimeInterval(-24 * 3600)
+    let date = Date.now
     let position = logStore.position(date: date)
     
     var logEntries: [LogEntry] = []
     
     do {
-        let sequence = try logStore.getEntries(at: position);
+        let sequence = try logStore.getEntries(with: .reverse, at: position);
         for entry in sequence.prefix(limit) {
             if let logEntry = entry as? OSLogEntryLog, logEntries.count < limit {
                 logEntries.append(LogEntry(entry: logEntry))

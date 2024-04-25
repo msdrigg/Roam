@@ -1,12 +1,18 @@
-type Message = {
+export type DiscordMessage = {
     id: string;
     content: string;
     author: {
         id: string;
         username: string;
         discriminator: string;
-    }
+    },
     type: number;
+}
+
+export type DiscordFile = {
+    name: string;
+    contentType: string;
+    data: ArrayBuffer;
 }
 
 type ApiError = {
@@ -33,7 +39,7 @@ class DiscordClient {
         this.guildId = guildId;
     }
 
-    async getMessagesInThread(threadId: string, lastMessageId: string | null = null, limit: number = 100): Promise<Message[]> {
+    async getMessagesInThread(threadId: string, lastMessageId: string | null = null, limit: number = 100): Promise<DiscordMessage[]> {
         const url = new URL(`${this.baseUrl}/channels/${threadId}/messages`);
         url.searchParams.append('limit', limit.toString());
         if (lastMessageId) {
@@ -54,7 +60,7 @@ class DiscordClient {
                 throw new Error(`Failed to fetch messages: ${errorData.message}`);
             }
 
-            const messages = await response.json() as Message[];
+            const messages = await response.json() as DiscordMessage[];
             return messages;
         } catch (error) {
             console.error(`Error fetching messages in thread: ${error}`);
@@ -62,7 +68,7 @@ class DiscordClient {
         }
     }
 
-    async sendMessage(threadId: string, content: string): Promise<string> {
+    async sendMessage(threadId: string, content: string, attachments?: [DiscordFile]): Promise<string> {
         const url = `${this.baseUrl}/channels/${threadId}/messages`;
         const body = {
             content: content
@@ -90,6 +96,35 @@ class DiscordClient {
             throw error;
         }
     }
+
+    async sendAttachment(threadId: string, attachment: DiscordFile): Promise<string> {
+        const url = `${this.baseUrl}/channels/${threadId}/messages`;
+        const formData = new FormData();
+
+        formData.append("files[0]", new Blob([attachment.data], { type: attachment.contentType }), attachment.name);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bot ${this.botToken}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json() as ApiError;
+                throw new Error(`Failed to send message: ${errorData.message}`);
+            }
+
+            const responseData = await response.json() as DiscordMessage;
+            return responseData.id;  // Return the ID of the newly created message
+        } catch (error) {
+            console.error(`Error sending message with attachment: ${error}`);
+            throw error;
+        }
+    }
+
 
 
 

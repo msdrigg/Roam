@@ -79,8 +79,8 @@ struct SettingsView: View {
             reportingDebugLogs = true
             defer { reportingDebugLogs = false }
             Self.logger.info("Starting to send logs")
-            let logs = await getDebugInfo(container: getSharedModelContainer(), message: "Requested from settings")
-            Self.logger.info("Sending logs \(logs.id)")
+            let logs = await getDebugInfo(container: getSharedModelContainer())
+            Self.logger.info("Sending logs \(logs.installationInfo.userId)")
             
             do {
                 try await uploadDebugLogs(logs: logs)
@@ -291,7 +291,7 @@ struct SettingsView: View {
 
                 Button(action: { reportDebugLogs() }) {
                     HStack {
-                        Label(reportingDebugLogs ? "Collecting Diagnostics..." : "Send Feedback", systemImage: "square.and.arrow.up")
+                        Label(reportingDebugLogs ? "Collecting Diagnostics..." : "Share diagnostics", systemImage: "square.and.arrow.up")
                         Spacer()
                         if (reportingDebugLogs) {
                             Image(systemName: "rays")
