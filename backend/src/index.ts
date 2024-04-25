@@ -35,14 +35,29 @@ type InstallationInfo = {
 	osVersion: string | null;
 }
 
-async function sendDeviceInfoIfNotSent(env: Env, userId: string, threadId: string, installationInfo: InstallationInfo | undefined, discordClient: DiscordClient) {
-	let alreadySentDeviceInfo = await env.ROAM_KV.get(`deviceInfoSent:${userId}`);
-	console.log(`Maybe sending device info: alreadySent=${alreadySentDeviceInfo} blank=${!installationInfo}`);
+async function maybeSendDeviceInfo(env: Env, userId: string, threadId: string, installationInfo: InstallationInfo | undefined, discordClient: DiscordClient) {
+	if (!installationInfo) {
+		console.log("No installation info found");
+		return;
+	}
 
-	if (!alreadySentDeviceInfo && installationInfo) {
+	let lastInstallationInfoSentText = await env.ROAM_KV.get(`deviceInfoSent:${userId}`);
+	let lastInstallationInfoSent: InstallationInfo | null = null;
+	try {
+		if (lastInstallationInfoSentText) {
+			lastInstallationInfoSent = JSON.parse(lastInstallationInfoSentText);
+		}
+	} catch (e) {
+		console.error(`Error parsing installation info: ${e}`);
+	}
+
+	console.log(`Maybe sending device info: alreadySent=${!!lastInstallationInfoSent} blank=${!installationInfo}`);
+	if (lastInstallationInfoSent?.buildVersion !== installationInfo.buildVersion || lastInstallationInfoSent?.osVersion !== installationInfo.osVersion || lastInstallationInfoSent?.osPlatform !== installationInfo.osPlatform) {
+		console.log("Installation info changed, (re)sending");
+
 		let { userId, buildVersion, osPlatform, osVersion } = installationInfo;
 		await discordClient.sendMessage(threadId, `:ninja:\n\n**Device info**:\n- User ID: ${userId}\n- Build version: ${buildVersion}\n- OS platform: ${osPlatform}\n- OS version: ${osVersion}`);
-		await env.ROAM_KV.put(`deviceInfoSent:${userId}`, "true");
+		await env.ROAM_KV.put(`deviceInfoSent:${userId}`, JSON.stringify(installationInfo));
 	}
 }
 
@@ -79,7 +94,8 @@ async function sendMessage(message: {
 	}
 
 
-	await sendDeviceInfoIfNotSent(env, userId, threadId, installationInfo, discordClient);
+
+	await maybeSendDeviceInfo(env, userId, threadId, installationInfo, discordClient);
 
 	if (apnsToken) {
 		await env.ROAM_KV.put(`apnsToken:${threadId}`, apnsToken);
