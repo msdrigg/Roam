@@ -88,7 +88,7 @@ struct SettingsView: View {
                 Self.logger.info("Upload successful")
                 DispatchQueue.main.async {
 #if os(watchOS)
-                    debugLogReportID = logs.id
+                    debugLogReportID = logs.installationInfo.userId
 #elseif os(macOS)
                     openWindow(id: "messages")
 #else
