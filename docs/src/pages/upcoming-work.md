@@ -4,16 +4,19 @@ hide_table_of_contents: true
 
 # Upcoming Roam Updates
 
-## Add a simple discord gateway API proxy
+## Improve Testing
 
--   When the user has the messages view open, open a websocket connection to this API
--   Single route `/channel/{channelId}` to poll for messages from a single channel
-    -   Adds the websocket object to the hashmap of channelId -> HashSet<Websocket> on connect
-    -   Deletes the websocket object from the hashmap on disconnect
-    -   When a new message comes in, attempt to send it to all matching websockets
-    -   Maybe do this with long polling instead of websockets to work better with workers?
--   Migrate cloudflare apns token scheduler to get called via a route from this whenever a new message comes in
--   Add cloudflare proxy for this
+-   UI Tests
+    - Test when device is added that it shows up in device picker and is selected by roam
+    - Test that user can navigate to settings -> devices
+    - Test that user can navigate to settings -> messages
+    - Test that user can navigate to settings -> about
+    - Test that user can edit/delete devices
+    - Test that user can click buttons once devices are added
+    - Test that user sees banner for no devices when it shows up
+    - Test that the user sees applinks
+    - Refer to swiftdat testingmodelcontainer for modelcontainers
+    - Refer to here https://medium.com/appledeveloperacademy-ufpe/how-to-implement-ui-tests-with-swiftui-a-few-examples-636708ee26ad for how to setup tests
 
 ## App Clip
 

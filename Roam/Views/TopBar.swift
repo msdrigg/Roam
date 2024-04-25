@@ -4,49 +4,44 @@ import SwiftUI
 struct TopBar: View {
     let pressCounter: (RemoteButton) -> Int
     let action: (RemoteButton) -> Void
-    
-    
+
     var body: some View {
-        HStack(spacing: BUTTON_SPACING * 2) {
-            Button(action: {action(.back)}) {
+        HStack(spacing: globalButtonSpacing * 2) {
+            Button(action: { action(.back) }, label: {
                 Label("Back", systemImage: "arrow.left")
-                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
-            }
-#if !os(tvOS) && !os(watchOS)
+                    .frame(width: globalButtonWidth, height: globalButtonHeight)
+            })
+            #if !os(tvOS) && !os(watchOS)
             .keyboardShortcut(.leftArrow)
-#endif
-#if !os(visionOS)
+            #endif
+            #if !os(visionOS)
             .sensoryFeedback(.impact, trigger: pressCounter(.back))
-#endif
+            #endif
             .symbolEffect(.bounce, value: pressCounter(.back))
-            
-            
-            Button("Power On/Off", systemImage: "power", role: .destructive, action: {action(.power)})
+
+            Button("Power On/Off", systemImage: "power", role: .destructive, action: { action(.power) })
                 .font(.title)
                 .foregroundStyle(.red)
                 .buttonStyle(.plain)
-#if !os(visionOS)
+            #if !os(visionOS)
                 .sensoryFeedback(.impact, trigger: pressCounter(.power))
-#endif
+            #endif
                 .symbolEffect(.bounce, value: pressCounter(.power))
-#if !os(tvOS) && !os(watchOS)
+            #if !os(tvOS) && !os(watchOS)
                 .keyboardShortcut(.return)
-#endif
-            
-            
-            Button(action: {action(.home)}) {
+            #endif
+
+            Button(action: { action(.home) }) {
                 Label("Home", systemImage: "house")
-                    .frame(width: BUTTON_WIDTH, height: BUTTON_HEIGHT)
-                
+                    .frame(width: globalButtonWidth, height: globalButtonHeight)
             }
-#if !os(tvOS) && !os(watchOS)
+            #if !os(tvOS) && !os(watchOS)
             .keyboardShortcut("h")
-#endif
-#if !os(visionOS)
+            #endif
+            #if !os(visionOS)
             .sensoryFeedback(.impact, trigger: pressCounter(.home))
-#endif
+            #endif
             .symbolEffect(.bounce, value: pressCounter(.home))
         }
-        
     }
 }

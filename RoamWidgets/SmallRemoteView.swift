@@ -1,13 +1,13 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 struct SmallRemoteView: View {
     let device: DeviceAppEntity?
     let controls: [[RemoteButton?]]
-    
+
     var body: some View {
         Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-            ForEach(0..<controls.count, id: \.self) { index in
+            ForEach(0 ..< controls.count, id: \.self) { index in
                 let row = controls[index]
                 GridRow {
                     ForEach(row.indices, id: \.self) { rowIndex in

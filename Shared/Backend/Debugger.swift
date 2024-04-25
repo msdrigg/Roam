@@ -17,38 +17,38 @@ struct LogEntry: Encodable {
     let level: String?
     let category: String?
     let subsystem: String?
-    
+
     init(entry: OSLogEntry) {
-        self.message = entry.composedMessage
-        self.timestamp = entry.date
-        
+        message = entry.composedMessage
+        timestamp = entry.date
+
         if let logEntry = entry as? OSLogEntryLog {
             switch logEntry.level {
             case .info:
-                self.level = "Info"
+                level = "Info"
             case .debug:
-                self.level = "Debug"
+                level = "Debug"
             case .error:
-                self.level = "Error"
+                level = "Error"
             case .fault:
-                self.level = "Fault"
+                level = "Fault"
             case .notice:
-                self.level = "Notice"
+                level = "Notice"
             case .undefined:
-                self.level = "Undefined"
+                level = "Undefined"
             default:
-                self.level = "Unknown"
+                level = "Unknown"
             }
         } else {
-            self.level = nil
+            level = nil
         }
-        
+
         if let payloadEntry = entry as? OSLogEntryWithPayload {
-            self.category = payloadEntry.category
-            self.subsystem = payloadEntry.subsystem
+            category = payloadEntry.category
+            subsystem = payloadEntry.subsystem
         } else {
-            self.category = nil
-            self.subsystem = nil
+            category = nil
+            subsystem = nil
         }
     }
 }
@@ -66,27 +66,28 @@ struct DeviceDebugInfo: Encodable {
 }
 
 public struct InstallationInfo: Encodable {
-    let userId: String;
+    let userId: String
     let buildVersion: String?
     let osPlatform: String?
     let osVersion: String?
-    
+
     init() {
         osVersion = ProcessInfo().operatingSystemVersionString
-#if os(iOS)
-        osPlatform = "iOS"
-#elseif os(macOS)
-        osPlatform = "macOS"
-#elseif os(watchOS)
-        osPlatform = "watchOS"
-#elseif os(tvOS)
-        osPlatform = "tvOS"
-#elseif os(visionOS)
-        osPlatform = "visionOS"
-#endif
-        
+        #if os(iOS)
+            osPlatform = "iOS"
+        #elseif os(macOS)
+            osPlatform = "macOS"
+        #elseif os(watchOS)
+            osPlatform = "watchOS"
+        #elseif os(tvOS)
+            osPlatform = "tvOS"
+        #elseif os(visionOS)
+            osPlatform = "visionOS"
+        #endif
+
         if let infoPlist = Bundle.main.infoDictionary,
-           let currentProjectVersion = infoPlist["CURRENT_PROJECT_VERSION"] as? String {
+           let currentProjectVersion = infoPlist["CURRENT_PROJECT_VERSION"] as? String
+        {
             buildVersion = currentProjectVersion
         } else {
             buildVersion = nil
@@ -112,7 +113,7 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
     } catch {
         debugErrors.append("Error Getting Log Entries: \n\(error)")
     }
-    
+
     var devices: [DeviceAppEntity] = []
     do {
         devices = try await DeviceActor(modelContainer: container).allDeviceEntitiesIncludingDeleted()
@@ -120,7 +121,7 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
         debugErrors.append("Error Getting Devices: \n\(error)")
     }
     var deviceDebugInfos: [DeviceDebugInfo] = []
-    
+
     for device in devices {
         do {
             let deviceInfoURL = "\(device.location)query/device-info"
@@ -130,32 +131,38 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
             var request = URLRequest(url: url)
             request.timeoutInterval = 1.5
             request.httpMethod = "GET"
-            
+
             let (data, response) = try await URLSession.shared.data(for: request)
-            
+
             if let httpResponse = response as? HTTPURLResponse {
                 let statusCode = httpResponse.statusCode
                 let dataString = String(decoding: data, as: UTF8.self)
-                
+
                 var headers: [String: String] = [:]
-                
+
                 for (key, value) in httpResponse.allHeaderFields {
                     if let keyString = key as? String, let valueString = value as? String {
                         headers[keyString] = valueString
                     }
                 }
                 let responseData = ResponseData(headers: headers, statusCode: statusCode, data: dataString)
-                deviceDebugInfos.append(DeviceDebugInfo(device: device, successResponse: responseData, errorResponse: nil))
+                deviceDebugInfos.append(DeviceDebugInfo(
+                    device: device,
+                    successResponse: responseData,
+                    errorResponse: nil
+                ))
             } else {
-                throw BadResponseError(message: "Got non-http response trying to query device info \(String(describing: response))")
+                throw BadResponseError(
+                    message: "Got non-http response trying to query device info \(String(describing: response))"
+                )
             }
         } catch {
             deviceDebugInfos.append(DeviceDebugInfo(device: device, successResponse: nil, errorResponse: "\(error)"))
         }
     }
-    
+
     let localInterfaces = await allAddressedInterfaces()
-    
+
     var appLinks: [AppLinkAppEntity] = []
     do {
         appLinks = try await AppLinkActor(modelContainer: container).allEntities()
@@ -163,19 +170,25 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
         debugErrors.append("Error Getting AppLinks: \n\(error)")
     }
 
-    return DebugInfo(installationInfo: InstallationInfo(), devices: deviceDebugInfos, appLinks: appLinks, interfaces: localInterfaces, logs: entries, debugErrors: debugErrors)
-    
+    return DebugInfo(
+        installationInfo: InstallationInfo(),
+        devices: deviceDebugInfos,
+        appLinks: appLinks,
+        interfaces: localInterfaces,
+        logs: entries,
+        debugErrors: debugErrors
+    )
 }
 
 private func getLogEntries(limit: Int = 50000) throws -> [LogEntry] {
     let logStore = try OSLogStore(scope: .currentProcessIdentifier)
     let date = Date.now
     let position = logStore.position(date: date)
-    
+
     var logEntries: [LogEntry] = []
-    
+
     do {
-        let sequence = try logStore.getEntries(with: .reverse, at: position);
+        let sequence = try logStore.getEntries(with: .reverse, at: position)
         for entry in sequence.prefix(limit) {
             if let logEntry = entry as? OSLogEntryLog, logEntries.count < limit {
                 logEntries.append(LogEntry(entry: logEntry))
@@ -184,7 +197,6 @@ private func getLogEntries(limit: Int = 50000) throws -> [LogEntry] {
     } catch {
         os_log(.error, "Error fetching log entries: \(error)")
     }
-    
+
     return logEntries
 }
-

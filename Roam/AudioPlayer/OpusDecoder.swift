@@ -48,10 +48,10 @@ public extension Opus.RoamDecoder {
             return output
         }
     }
-    
+
     func decode_loss_concealment(sampleCount: Int64) throws -> AVAudioPCMBuffer {
         let input = UnsafeBufferPointer<UInt8>(start: nil, count: 0)
-        
+
         if sampleCount < 0 {
             throw Opus.Error(sampleCount)
         }
@@ -60,15 +60,20 @@ public extension Opus.RoamDecoder {
         return output
     }
 
-
     func decode(_ input: UnsafeBufferPointer<UInt8>, to output: AVAudioPCMBuffer) throws {
         let decodedCount: Int
         switch output.format.commonFormat {
         case .pcmFormatInt16:
-            let output = UnsafeMutableBufferPointer(start: output.int16ChannelData![0], count: Int(output.frameCapacity))
+            let output = UnsafeMutableBufferPointer(
+                start: output.int16ChannelData![0],
+                count: Int(output.frameCapacity)
+            )
             decodedCount = try decode(input, to: output)
         case .pcmFormatFloat32:
-            let output = UnsafeMutableBufferPointer(start: output.floatChannelData![0], count: Int(output.frameCapacity))
+            let output = UnsafeMutableBufferPointer(
+                start: output.floatChannelData![0],
+                count: Int(output.frameCapacity)
+            )
             decodedCount = try decode(input, to: output)
         default:
             throw Opus.Error.badArgument
@@ -83,7 +88,9 @@ public extension Opus.RoamDecoder {
 // MARK: Private decode methods
 
 private extension Opus.RoamDecoder {
-    private func decode(_ input: UnsafeBufferPointer<UInt8>, to output: UnsafeMutableBufferPointer<Int16>) throws -> Int {
+    private func decode(_ input: UnsafeBufferPointer<UInt8>,
+                        to output: UnsafeMutableBufferPointer<Int16>) throws -> Int
+    {
         let decodedCount = opus_decode(
             decoder,
             input.baseAddress,
@@ -98,7 +105,9 @@ private extension Opus.RoamDecoder {
         return Int(decodedCount)
     }
 
-    private func decode(_ input: UnsafeBufferPointer<UInt8>, to output: UnsafeMutableBufferPointer<Float32>) throws -> Int {
+    private func decode(_ input: UnsafeBufferPointer<UInt8>,
+                        to output: UnsafeMutableBufferPointer<Float32>) throws -> Int
+    {
         let decodedCount = opus_decode_float(
             decoder,
             input.baseAddress,

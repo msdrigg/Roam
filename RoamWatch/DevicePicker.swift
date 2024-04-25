@@ -6,32 +6,30 @@
 //
 
 import Foundation
-import SwiftUI
 import os
-
+import SwiftUI
 
 struct DevicePicker: View {
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: DevicePicker.self)
     )
-    
+
     @Environment(\.modelContext) private var modelContext
-    
+
     let devices: [Device]
     @Binding var device: Device?
     @Binding var showingPicker: Bool
     @State var navPath: [NavigationDestination] = []
-    
+
     @State var deviceActor: DeviceActor!
-    
-    
+
     var deviceStatusColor: Color {
         device?.isOnline() ?? false ? Color.green : Color.secondary
     }
-    
+
     var body: some View {
-        Button(action: {showingPicker.toggle()}) {
+        Button(action: { showingPicker.toggle() }) {
             Label("Devices", systemImage: "list.bullet")
                 .labelStyle(.iconOnly)
         }
@@ -41,8 +39,8 @@ struct DevicePicker: View {
                     Section("Devices") {
                         ForEach(devices) { listItemDevice in
                             Button(action: {
-                                if let chosenDevice = devices.first(where: { d in
-                                    d.id == listItemDevice.id
+                                if let chosenDevice = devices.first(where: { dev in
+                                    dev.id == listItemDevice.id
                                 }) {
                                     Self.logger.debug("Setting last selected at")
                                     chosenDevice.lastSelectedAt = Date.now
@@ -55,7 +53,8 @@ struct DevicePicker: View {
                                 showingPicker = false
                             }) {
                                 if listItemDevice.id == device?.id {
-                                    Label(listItemDevice.name, systemImage: "checkmark.circle.fill").tag(listItemDevice as Device?)
+                                    Label(listItemDevice.name, systemImage: "checkmark.circle.fill")
+                                        .tag(listItemDevice as Device?)
                                 } else {
                                     Label(listItemDevice.name, systemImage: "").tag(listItemDevice as Device?)
                                 }
@@ -66,15 +65,17 @@ struct DevicePicker: View {
                                         do {
                                             try await deviceActor.delete(listItemDevice.persistentModelID)
                                         } catch {
-                                             Self.logger.error("Error deleting device \(error)")
+                                            Self.logger.error("Error deleting device \(error)")
                                         }
                                     }
-                                    
+
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
                             }
-                            .id("\(listItemDevice.name)\(listItemDevice.udn)\(listItemDevice.isOnline())\(listItemDevice.location)\(listItemDevice.lastSelectedAt ?? Date.distantPast)")
+                            .id(
+                                "\(listItemDevice.name)\(listItemDevice.udn)\(listItemDevice.isOnline())\(listItemDevice.location)\(listItemDevice.lastSelectedAt ?? Date.distantPast)"
+                            )
                         }
                         .onDelete { indexSet in
                             Task {
@@ -85,17 +86,17 @@ struct DevicePicker: View {
                                         }
                                     }
                                 } catch {
-                                     Self.logger.error("Error deleting device \(error)")
+                                    Self.logger.error("Error deleting device \(error)")
                                 }
                             }
                         }
-                        
+
                         if devices.isEmpty {
                             Text("No devices")
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    
+
                     NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
                         Label("Settings", systemImage: "gear")
                     }
@@ -105,7 +106,7 @@ struct DevicePicker: View {
         }
         .onAppear {
             let modelContainer = modelContext.container
-            self.deviceActor = DeviceActor(modelContainer: modelContainer)
+            deviceActor = DeviceActor(modelContainer: modelContainer)
         }
     }
 }

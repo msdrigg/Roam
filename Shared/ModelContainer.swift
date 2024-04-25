@@ -1,14 +1,13 @@
 import SwiftData
 
-
-public let APP_GROUP = "group.com.msdrigg.roam.models"
+public let mainAppGroup = "group.com.msdrigg.roam.models"
 
 public class GlobalModelContainer {
     static let sharedModelContainer = demandSharedModelContainer()
 }
 
 public func getSharedModelContainer() -> ModelContainer {
-    return GlobalModelContainer.sharedModelContainer
+    GlobalModelContainer.sharedModelContainer
 }
 
 private func demandSharedModelContainer() -> ModelContainer {
@@ -23,8 +22,16 @@ private func _getSharedModelContainer() throws -> ModelContainer {
     let schema = Schema(
         versionedSchema: SchemaV1.self
     )
-    
-    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, groupContainer: .identifier(APP_GROUP))
-    
-    return try ModelContainer(for: schema, migrationPlan: RoamSchemaMigrationPlan.self, configurations: [modelConfiguration])
+
+    let modelConfiguration = ModelConfiguration(
+        schema: schema,
+        isStoredInMemoryOnly: false,
+        groupContainer: .identifier(mainAppGroup)
+    )
+
+    return try ModelContainer(
+        for: schema,
+        migrationPlan: RoamSchemaMigrationPlan.self,
+        configurations: [modelConfiguration]
+    )
 }

@@ -2,8 +2,8 @@ import Foundation
 import OSLog
 import SwiftData
 
-private let BACKEND_URL = "https://backend.roam.msd3.io"
-//private let BACKEND_URL = "http://192.168.8.133:8787"
+private let globalBackendURL = "https://backend.roam.msd3.io"
+// private let globalBackendURL = "http://192.168.8.133:8787"
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
     category: "WorkersBackend"
@@ -11,23 +11,21 @@ private let logger = Logger(
 
 private func getAPIKey() -> String? {
     let apiKey = Bundle.main.infoDictionary?["BACKEND_API_KEY"] as? String
-    
+
     return apiKey
 }
 
 public func getSystemInstallID() -> String {
     var ids: [String] = []
-    for _ in 0...2 {
+    for _ in 0 ... 2 {
         let letters = "abcdefghijklmnopqrstuvwxyz"
-        let randomLetters = String((0..<3).map{ _ in letters.randomElement()! })
+        let randomLetters = String((0 ..< 3).map { _ in letters.randomElement()! })
         ids.append(randomLetters)
     }
     let defaultVar = ids.joined(separator: "-")
-    
-    
+
     return UserDefaultInfo(key: "system-install-id", defaultValue: defaultVar).get()
 }
-
 
 private struct UserDefaultInfo<Value> {
     var key: String
@@ -36,18 +34,18 @@ private struct UserDefaultInfo<Value> {
 
 private extension UserDefaultInfo {
     func get() -> Value {
-        guard let existingValue = UserDefaults.standard.object(forKey: self.key) as? Value else {
-            self.set(defaultValue)
+        guard let existingValue = UserDefaults.standard.object(forKey: key) as? Value else {
+            set(defaultValue)
             return defaultValue
         }
         return existingValue
     }
 
     func set(_ value: Value) {
-        UserDefaults.standard.set(value, forKey: self.key)
+        UserDefaults.standard.set(value, forKey: key)
     }
 }
- 
+
 struct MessageRequest: Encodable {
     let content: String
     let title: String?
@@ -55,8 +53,6 @@ struct MessageRequest: Encodable {
     let userId: String
     let installationInfo: InstallationInfo
 }
-
-
 
 struct MessageModelResponse: Decodable {
     let id: String
@@ -68,7 +64,7 @@ struct MessageModelResponse: Decodable {
         case message = "content"
         case author
     }
-    
+
     init(id: String, message: String, author: Message.AuthorType) {
         self.id = id
         self.message = message
@@ -79,7 +75,7 @@ struct MessageModelResponse: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         message = try container.decode(String.self, forKey: .message)
-        
+
         let authorInfo = try container.nestedContainer(keyedBy: AuthorKeys.self, forKey: .author)
         let id = try authorInfo.decode(String.self, forKey: .id)
         author = id == "1229219148228460595" ? .me : .support
@@ -92,9 +88,9 @@ struct MessageModelResponse: Decodable {
 
 public func getMessages(after: String?) async throws -> [Message] {
     let userId = getSystemInstallID()
-    
-    var url = "\(BACKEND_URL)/messages/\(userId)"
-    if let after = after {
+
+    var url = "\(globalBackendURL)/messages/\(userId)"
+    if let after {
         url = "\(url)?after=\(after)"
     }
     guard let url = URL(string: url) else {
@@ -116,14 +112,14 @@ public func getMessages(after: String?) async throws -> [Message] {
     }
 
     let messages = try JSONDecoder().decode([MessageModelResponse].self, from: data)
-    return messages.map{Message(id: $0.id, message: $0.message, author: $0.author)}
+    return messages.map { Message(id: $0.id, message: $0.message, author: $0.author) }
 }
 
 public func sendMessage(message: String, apnsToken: String?) async throws {
-    guard let url = URL(string: "\(BACKEND_URL)/new-message") else {
+    guard let url = URL(string: "\(globalBackendURL)/new-message") else {
         throw URLError(.badURL)
     }
-    
+
     logger.info("Sending message to backend")
     let userId = getSystemInstallID()
 
@@ -132,7 +128,13 @@ public func sendMessage(message: String, apnsToken: String?) async throws {
     request.addValue(getAPIKey() ?? "", forHTTPHeaderField: "x-api-key")
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
-    let messageRequest = MessageRequest(content: message, title: "Message from \(userId)", apnsToken: apnsToken, userId: userId, installationInfo: InstallationInfo())
+    let messageRequest = MessageRequest(
+        content: message,
+        title: "Message from \(userId)",
+        apnsToken: apnsToken,
+        userId: userId,
+        installationInfo: InstallationInfo()
+    )
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(messageRequest)
     request.httpBody = jsonData
@@ -150,7 +152,7 @@ public func sendMessage(message: String, apnsToken: String?) async throws {
 
 public func uploadDebugLogs(logs: DebugInfo) async throws {
     let diagnosticKey = logs.installationInfo.userId
-    guard let url = URL(string: "\(BACKEND_URL)/upload-diagnostics/\(diagnosticKey)") else {
+    guard let url = URL(string: "\(globalBackendURL)/upload-diagnostics/\(diagnosticKey)") else {
         throw URLError(.badURL)
     }
 
@@ -175,4 +177,3 @@ public func uploadDebugLogs(logs: DebugInfo) async throws {
         throw URLError(.badServerResponse)
     }
 }
-

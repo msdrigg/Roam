@@ -2,7 +2,7 @@ import Foundation
 
 extension UInt32 {
     func toData() -> Data {
-        var copy = self.bigEndian
+        var copy = bigEndian
         return Data(bytes: &copy, count: 4)
     }
 
@@ -12,9 +12,10 @@ extension UInt32 {
         self = UInt32(bigEndian: data.withUnsafeBytes { $0.load(as: UInt32.self) })
     }
 }
+
 extension UInt16 {
     func toData() -> Data {
-        var copy = self.bigEndian
+        var copy = bigEndian
         return Data(bytes: &copy, count: 2)
     }
 

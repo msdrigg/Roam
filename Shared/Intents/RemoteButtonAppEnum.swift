@@ -1,38 +1,38 @@
 import AppIntents
 
 enum RemoteButtonAppEnum: String, AppEnum {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = TypeDisplayRepresentation(stringLiteral: "RemoteButtonAppEnum")
-        
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = .init(stringLiteral: "RemoteButtonAppEnum")
+
     case up = "Up"
     case left = "Left"
     case right = "Right"
     case down = "Down"
-    
+
     case select = "Select"
     case home = "Home"
     case back = "Back"
     case powerOff = "PowerOff"
     case powerOn = "PowerOn"
     case power = "Power"
-    
+
     case mute = "VolumeMute"
     case volumeUp = "VolumeUp"
     case volumeDown = "VolumeDown"
-    
+
     case options = "Info"
     case instantReplay = "InstantReplay"
     case rewind = "Rev"
     case fastForward = "Fwd"
     case playPause = "Play"
-    
+
     case findRemote = "FindRemote"
     case backspace = "Backspace"
     case search = "Search"
     case enter = "Enter"
-    
+
     case channelUp = "ChannelUp"
     case channelDown = "ChannelDown"
-    
+
     case inputTuner = "InputTuner"
     case inputHDMI1 = "InputHDMI1"
     case inputHDMI2 = "InputHDMI2"
@@ -40,10 +40,9 @@ enum RemoteButtonAppEnum: String, AppEnum {
     case inputHDMI4 = "InputHDMI4"
     case inputAV1 = "InputAV1"
     case headphonesMode = "HeadphonesMode"
-    
-    
+
     public static var typeDisplayName: String = "Button"
-    
+
     public static var caseDisplayRepresentations: [RemoteButtonAppEnum: DisplayRepresentation] = [
         .up: "Up",
         .left: "Left",
@@ -75,76 +74,76 @@ enum RemoteButtonAppEnum: String, AppEnum {
         .inputHDMI3: "Input HDMI 3",
         .inputHDMI4: "Input HDMI 4",
         .inputAV1: "Input AV 1",
-        .headphonesMode: "Headphones Mode"
+        .headphonesMode: "Headphones Mode",
     ]
-    
+
     var button: RemoteButton {
         switch self {
         case .up:
-            return .up
+            .up
         case .left:
-            return .left
+            .left
         case .right:
-            return .right
+            .right
         case .down:
-            return .down
+            .down
         case .select:
-            return .select
+            .select
         case .home:
-            return .home
+            .home
         case .back:
-            return .back
+            .back
         case .power:
-            return .power
+            .power
         case .powerOn:
-            return .powerOn
+            .powerOn
         case .powerOff:
-            return .powerOff
+            .powerOff
         case .mute:
-            return .mute
+            .mute
         case .volumeUp:
-            return .volumeUp
+            .volumeUp
         case .volumeDown:
-            return .volumeDown
+            .volumeDown
         case .options:
-            return .options
+            .options
         case .instantReplay:
-            return .instantReplay
+            .instantReplay
         case .rewind:
-            return .rewind
+            .rewind
         case .fastForward:
-            return .fastForward
+            .fastForward
         case .playPause:
-            return .playPause
+            .playPause
         case .findRemote:
-            return .findRemote
+            .findRemote
         case .backspace:
-            return .backspace
+            .backspace
         case .search:
-            return .search
+            .search
         case .enter:
-            return .enter
+            .enter
         case .channelUp:
-            return .channelUp
+            .channelUp
         case .channelDown:
-            return .channelDown
+            .channelDown
         case .inputTuner:
-            return .inputTuner
+            .inputTuner
         case .inputHDMI1:
-            return .inputHDMI1
+            .inputHDMI1
         case .inputHDMI2:
-            return .inputHDMI2
+            .inputHDMI2
         case .inputHDMI3:
-            return .inputHDMI3
+            .inputHDMI3
         case .inputHDMI4:
-            return .inputHDMI4
+            .inputHDMI4
         case .inputAV1:
-            return .inputAV1
+            .inputAV1
         case .headphonesMode:
-            return .headphonesMode
+            .headphonesMode
         }
     }
-    
+
     init(_ button: RemoteButton) {
         switch button {
         case .up:
@@ -211,5 +210,4 @@ enum RemoteButtonAppEnum: String, AppEnum {
             self = .headphonesMode
         }
     }
-
 }
