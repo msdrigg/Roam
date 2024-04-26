@@ -2,7 +2,7 @@
 
 A Roku remote that puts users first
 
-![Roam Logo](./docs/static/img/roam-icon.png | width=100)
+<img src="./docs/static/img/roam-icon.png" style="width: 40%">
 
 ## Features
 
