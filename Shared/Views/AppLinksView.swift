@@ -119,12 +119,12 @@ struct AppLinkButton: View {
 
 #Preview {
     AppLinksView(deviceId: nil, rows: 1, handleOpenApp: { _ in })
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }
 
 #Preview {
     AppLinksView(deviceId: nil, rows: 2, handleOpenApp: { _ in })
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }

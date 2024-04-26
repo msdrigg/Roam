@@ -298,5 +298,5 @@ struct MessageView: View {
 
 #Preview("Message View") {
     MessageView()
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
 }

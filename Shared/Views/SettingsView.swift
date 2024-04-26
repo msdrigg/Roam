@@ -69,7 +69,7 @@ struct SettingsView: View {
     @AppStorage(UserDefaultKeys.userMajorActionCount) private var majorActionsCount = 0
 
     @State private var reportingDebugLogs: Bool = false
-    @State private var debugLogReportID: String? = nil
+    @State private var debugLogReportID: String?
 
     @State private var variableColor: CGFloat = 0.0
 
@@ -83,6 +83,7 @@ struct SettingsView: View {
 
             do {
                 try await uploadDebugLogs(logs: logs)
+                try await sendMessage(message: "Diagnostics Shared at \(Date.now.formatted())", apnsToken: nil)
 
                 Self.logger.info("Upload successful")
                 DispatchQueue.main.async {
@@ -284,7 +285,7 @@ struct SettingsView: View {
                         #else
                             path.append(NavigationDestination.MessageDestination)
                         #endif
-                    }) {
+                    }, label: {
                         HStack {
                             if unreadMessages.count > 0 {
                                 Label("Chat with the developer", systemImage: "message")
@@ -298,7 +299,7 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity)
                         .contentShape(Rectangle())
                         #endif
-                    }
+                    })
                     #if os(macOS)
                     .buttonStyle(.plain)
 
@@ -572,7 +573,7 @@ struct DeviceDetailView: View {
                         withAnimation {
                             showHeadphonesModeDescription = !showHeadphonesModeDescription
                         }
-                    }) {
+                    }, label: {
                         LabeledContent("Supports headphones mode") {
                             HStack(spacing: 8) {
                                 if device.supportsDatagram == true {
@@ -587,7 +588,7 @@ struct DeviceDetailView: View {
                             }
                         }
                         .contentShape(Rectangle())
-                    }
+                    })
                     .buttonStyle(.plain)
 
                     if showHeadphonesModeDescription {
@@ -765,7 +766,7 @@ public extension Binding {
     @State var path: [NavigationDestination] = []
     return SettingsView(path: $path, destination: .Global)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
 }
 
 #Preview("Device Detail") {

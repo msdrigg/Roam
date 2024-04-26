@@ -12,7 +12,7 @@ private let logger = Logger(
 // Optional: Send the device token to your server
 func sendDeviceTokenToServer(_ token: String) async {
     do {
-        try await sendMessage(message: "", apnsToken: token)
+        try await sendMessage(message: nil, apnsToken: token)
     } catch {
         logger.error("Error sending apns token to server \(error)")
     }
