@@ -63,6 +63,12 @@
 		AF20AD0D2AE01E9100D371C7 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF11D36C2AD2D41100527AF6 /* Device.swift */; };
 		AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */; };
 		AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */; };
+		AF2480582BDB42F600EF47AE /* TestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2480572BDB42F600EF47AE /* TestData.swift */; };
+		AF2480592BDB42F600EF47AE /* TestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2480572BDB42F600EF47AE /* TestData.swift */; };
+		AF24805A2BDB42F600EF47AE /* TestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2480572BDB42F600EF47AE /* TestData.swift */; };
+		AF24805B2BDB42F600EF47AE /* TestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2480572BDB42F600EF47AE /* TestData.swift */; };
+		AF24805D2BDB475A00EF47AE /* DebugImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */; };
+		AF2480612BDB476B00EF47AE /* DebugImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */; };
 		AF26A22B2AF1A2B90070250F /* SmallAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */; };
 		AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */; };
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
@@ -361,6 +367,12 @@
 		AF19CA342AE694E500A42DFF /* AsyncThrowingBufferedChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncThrowingBufferedChannel.swift; sourceTree = "<group>"; };
 		AF19CA3B2AE6BFC300A42DFF /* DeviceApi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceApi.swift; sourceTree = "<group>"; };
 		AF20ACFB2AE017B600D371C7 /* RemoteButtonAppEnum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteButtonAppEnum.swift; sourceTree = "<group>"; };
+		AF2480572BDB42F600EF47AE /* TestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestData.swift; sourceTree = "<group>"; };
+		AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = DebugImages.xcassets; sourceTree = "<group>"; };
+		AF2480622BDB4D6800EF47AE /* RoamClipRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamClipRelease.entitlements; sourceTree = "<group>"; };
+		AF2480632BDB4D8300EF47AE /* RoamWidgetsRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWidgetsRelease.entitlements; sourceTree = "<group>"; };
+		AF2480642BDB4D9F00EF47AE /* RoamWatchRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWatchRelease.entitlements; sourceTree = "<group>"; };
+		AF2480652BDB4DA500EF47AE /* RoamRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamRelease.entitlements; sourceTree = "<group>"; };
 		AF27400B2AE02C25007C6208 /* RoamWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoamWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF27400F2AE02C25007C6208 /* RoamWidgetsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWidgetsApp.swift; sourceTree = "<group>"; };
 		AF2740172AE02C26007C6208 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -519,6 +531,7 @@
 		AF15C2472AE8672700B79FD9 /* RoamWatch */ = {
 			isa = PBXGroup;
 			children = (
+				AF2480642BDB4D9F00EF47AE /* RoamWatchRelease.entitlements */,
 				AF5ED8DB2AE987A3007DB2B8 /* RoamWatch.entitlements */,
 				AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */,
 				AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */,
@@ -561,6 +574,7 @@
 		AF27400E2AE02C25007C6208 /* RoamWidgets */ = {
 			isa = PBXGroup;
 			children = (
+				AF2480632BDB4D8300EF47AE /* RoamWidgetsRelease.entitlements */,
 				AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */,
 				AF95B7192ADF340A005FC338 /* WidgetHelpers.swift */,
 				AF95B7132ADF304E005FC338 /* SmallRemoteWidget.swift */,
@@ -576,6 +590,7 @@
 		AF3503582BB493F3004F4337 /* RoamClip */ = {
 			isa = PBXGroup;
 			children = (
+				AF2480622BDB4D6800EF47AE /* RoamClipRelease.entitlements */,
 				AF3503642BB493F4004F4337 /* Info.plist */,
 				AF3503652BB493F4004F4337 /* RoamClip.entitlements */,
 			);
@@ -602,6 +617,7 @@
 				AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */,
 				AF42442D2BB1118700334AAF /* SchemaFile.swift */,
 				AFF6DE0C2BCF0326002C13FC /* Message.swift */,
+				AF2480572BDB42F600EF47AE /* TestData.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -643,6 +659,7 @@
 			isa = PBXGroup;
 			children = (
 				AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */,
+				AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */,
 				AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */,
 				AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */,
 				AF56E3BA2AD9863100F5E6E0 /* Views */,
@@ -738,6 +755,7 @@
 		AFC24EFD2AD0E5A1002AB66C /* Roam */ = {
 			isa = PBXGroup;
 			children = (
+				AF2480652BDB4DA500EF47AE /* RoamRelease.entitlements */,
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
 				AF65A8892BB5ABF9005ECF7F /* RoamAppDelegate.swift */,
 				AFC4A6592AE88411005DAC6C /* LatencyListener.swift */,
@@ -940,6 +958,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
+				AF2480612BDB476B00EF47AE /* DebugImages.xcassets in Resources */,
 				AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */,
 				AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */,
 			);
@@ -968,6 +987,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
+				AF24805D2BDB475A00EF47AE /* DebugImages.xcassets in Resources */,
 				AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */,
 				AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */,
 			);
@@ -1021,6 +1041,7 @@
 				AFD9C4F82AE983A800C4079C /* NetworkUtils.swift in Sources */,
 				AFD9C4DA2AE97FDA00C4079C /* SettingsView.swift in Sources */,
 				AF0042762AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
+				AF2480592BDB42F600EF47AE /* TestData.swift in Sources */,
 				AFD9C4E42AE9809900C4079C /* AppLinkAppEntity.swift in Sources */,
 				AFD9C4F92AE983AE00C4079C /* SSDPService.swift in Sources */,
 				AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */,
@@ -1054,6 +1075,7 @@
 				AFD9C4F22AE9828600C4079C /* SmallRemoteView.swift in Sources */,
 				AF205B272AE02D0100041CDF /* NetworkHelpers.swift in Sources */,
 				AF205B2B2AE02D1C00041CDF /* ButtonPressIntents.swift in Sources */,
+				AF24805A2BDB42F600EF47AE /* TestData.swift in Sources */,
 				AFD9C4DF2AE9801400C4079C /* SmallAppView.swift in Sources */,
 				AF205B1F2AE02CAF00041CDF /* MediumRemoteWidget.swift in Sources */,
 				AF19CA3D2AE6BFDF00A42DFF /* DeviceApi.swift in Sources */,
@@ -1092,6 +1114,7 @@
 				AF8EF5232BB61AE4002A4D6D /* AsyncSemaphore.swift in Sources */,
 				AF8EF5222BB61ADF002A4D6D /* SSDPDiscovery.swift in Sources */,
 				AF8EF4E12BB60A9F002A4D6D /* BindingExtensions.swift in Sources */,
+				AF24805B2BDB42F600EF47AE /* TestData.swift in Sources */,
 				AF8EF4E32BB60A9F002A4D6D /* HoveredView.swift in Sources */,
 				AF8EF5012BB60B2E002A4D6D /* RemoteView.swift in Sources */,
 				AF8EF51B2BB60E62002A4D6D /* DevicePicker.swift in Sources */,
@@ -1188,6 +1211,7 @@
 				AF779BF72BA4DDD000231BC5 /* WrappingHStack.swift in Sources */,
 				AFF6DE112BCF0740002C13FC /* MessagingView.swift in Sources */,
 				AFE89A2D2B9E793E0078387C /* Debugger.swift in Sources */,
+				AF2480582BDB42F600EF47AE /* TestData.swift in Sources */,
 				AF19CA312AE6947600A42DFF /* ManagedCriticalState.swift in Sources */,
 				AF3AD55B2AE2947E00E2D780 /* KeyboardEntry.swift in Sources */,
 				AF5ED8DE2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */,
@@ -1298,7 +1322,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = RoamWatch/RoamWatch.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RoamWatch/RoamWatchRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
@@ -1376,7 +1400,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = RoamWidgets/RoamWidgets.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RoamWidgets/RoamWidgetsRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
@@ -1461,7 +1485,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = RoamClip/RoamClip.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RoamClip/RoamClipRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
@@ -1697,7 +1721,7 @@
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = AppIconVOS;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Roam/RoamRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;

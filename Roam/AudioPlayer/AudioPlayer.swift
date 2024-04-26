@@ -126,7 +126,7 @@ actor OpusDecoderWithJitterBuffer {
         )
 
         self.lastSampleTime = sampleTime
-        lastPacketNumber = lastPacketNumber + 1
+        lastPacketNumber += 1
 
         let nextPcm: AVAudioPCMBuffer
         do {
@@ -151,7 +151,7 @@ actor OpusDecoderWithJitterBuffer {
 }
 
 enum AudioPlayerError: Error, LocalizedError {
-    case EngineNotRunningOnPlay
+    case engineNotRunningOnPlay
 }
 
 actor AudioPlayer {
@@ -177,7 +177,7 @@ actor AudioPlayer {
     public func start() throws {
         try engine.start()
         if !engine.isRunning {
-            throw AudioPlayerError.EngineNotRunningOnPlay
+            throw AudioPlayerError.engineNotRunningOnPlay
         }
         streamAudioNode.play()
     }

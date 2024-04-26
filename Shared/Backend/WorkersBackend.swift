@@ -115,7 +115,7 @@ public func getMessages(after: String?) async throws -> [Message] {
     return messages.map { Message(id: $0.id, message: $0.message, author: $0.author) }
 }
 
-public func sendMessage(message: String, apnsToken: String?) async throws {
+public func sendMessage(message: String?, apnsToken: String?) async throws {
     guard let url = URL(string: "\(globalBackendURL)/new-message") else {
         throw URLError(.badURL)
     }
@@ -129,7 +129,7 @@ public func sendMessage(message: String, apnsToken: String?) async throws {
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
     let messageRequest = MessageRequest(
-        content: message,
+        content: message ?? "",
         title: "Message from \(userId)",
         apnsToken: apnsToken,
         userId: userId,

@@ -108,54 +108,6 @@ func saveDevice(
     }
 }
 
-func getTestingDevices() -> [Device] {
-    [
-        Device(
-            name: "Living Room TV",
-            location: "http://192.168.0.1:8060/",
-            lastSelectedAt: Date(timeIntervalSince1970: 1_696_767_580.0),
-            udn: "TD1"
-        ),
-        Device(
-            name: "2nd Living Room",
-            location: "http://192.168.0.2:8060/",
-            lastSelectedAt: Date(timeIntervalSince1970: 1_696_767_580.0 - 24 * 60 * 60),
-            udn: "TD2"
-        ),
-    ]
-}
-
-public let devicePreviewContainer: ModelContainer = {
-    do {
-        let container = try ModelContainer(
-            for: Schema(versionedSchema: SchemaV1.self),
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
-
-        Task { @MainActor in
-            let context = container.mainContext
-
-            let models = getTestingDevices()
-            for model in models {
-                context.insert(model)
-            }
-
-            let appLinks = getTestingAppLinks()
-            for appLink in appLinks {
-                context.insert(appLink)
-            }
-
-            let messages = getTestingMessages()
-            for message in messages {
-                context.insert(message)
-            }
-        }
-        return container
-    } catch {
-        fatalError("Failed to create container with error: \(error.localizedDescription)")
-    }
-}()
-
 public func fetchSelectedDevice(modelContainer: ModelContainer) async -> DeviceAppEntity? {
     let deviceActor = DeviceActor(modelContainer: modelContainer)
     return await deviceActor.fetchSelectedDeviceAppEntity()
@@ -285,6 +237,12 @@ actor DeviceActor {
     }
 
     func addOrReplaceDevice(location: String, friendlyDeviceName: String, udn: String) throws -> PersistentIdentifier {
+        if var device = existingDevice(id: udn) {
+            device.location = location
+            try? modelContext.save()
+            return device.modelId
+        }
+
         Self.logger.info("Adding device at \(location)")
         let device = Device(
             name: friendlyDeviceName,

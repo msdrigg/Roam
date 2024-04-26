@@ -935,5 +935,5 @@ struct RemoteView: View {
 
 #Preview("Remote horizontal") {
     RemoteView()
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
 }

@@ -28,8 +28,10 @@ actor DeviceDiscoveryActor {
             return false
         }
 
-        if await deviceActor.deviceExists(id: deviceInfo.udn) {
-            return false
+        if let device = await deviceActor.existingDevice(id: deviceInfo.udn) {
+            if device.location == location {
+                return false
+            }
         }
 
         do {
