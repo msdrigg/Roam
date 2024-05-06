@@ -188,7 +188,7 @@ private func getLogEntries(limit: Int = 50000) throws -> [LogEntry] {
     var logEntries: [LogEntry] = []
 
     do {
-        let sequence = try logStore.getEntries(with: .reverse, at: position)
+        let sequence = try logStore.getEntries(with: .reverse, at: position, matching: NSPredicate(format: "subsystem != 'com.apple.network'"))
         for entry in sequence.prefix(limit) {
             if let logEntry = entry as? OSLogEntryLog, logEntries.count < limit {
                 logEntries.append(LogEntry(entry: logEntry))

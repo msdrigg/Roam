@@ -73,8 +73,8 @@ func sendDeviceTokenToServer(_ token: String) async {
             #if os(macOS)
                 messagingWindowOpenTrigger = UUID()
             #else
-                if navigationPath.last != NavigationDestination.MessageDestination {
-                    navigationPath.append(NavigationDestination.MessageDestination)
+                if navigationPath.last != NavigationDestination.messageDestination {
+                    navigationPath.append(NavigationDestination.messageDestination)
                 }
             #endif
             completionHandler()
@@ -139,8 +139,8 @@ func sendDeviceTokenToServer(_ token: String) async {
             didReceive _: UNNotificationResponse,
             withCompletionHandler completionHandler: @escaping () -> Void
         ) {
-            if navigationPath.last != NavigationDestination.MessageDestination {
-                navigationPath.append(NavigationDestination.MessageDestination)
+            if navigationPath.last != NavigationDestination.messageDestination {
+                navigationPath.append(NavigationDestination.messageDestination)
             }
             completionHandler()
         }

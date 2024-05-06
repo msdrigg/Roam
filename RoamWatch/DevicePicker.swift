@@ -29,10 +29,10 @@ struct DevicePicker: View {
     }
 
     var body: some View {
-        Button(action: { showingPicker.toggle() }) {
+        Button(action: { showingPicker.toggle() }: label {
             Label("Devices", systemImage: "list.bullet")
                 .labelStyle(.iconOnly)
-        }
+        })
         .sheet(isPresented: $showingPicker) {
             SettingsNavigationWrapper(path: $navPath) {
                 List {
@@ -97,7 +97,7 @@ struct DevicePicker: View {
                         }
                     }
 
-                    NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
+                    NavigationLink(value: NavigationDestination.settingsDestination(.global)) {
                         Label("Settings", systemImage: "gear")
                     }
                     .labelStyle(.titleAndIcon)

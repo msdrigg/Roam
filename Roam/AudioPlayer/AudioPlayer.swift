@@ -115,7 +115,7 @@ actor OpusDecoderWithJitterBuffer {
 
         if nextPacket == nil {
             Self.logger
-                .error("Missing packet \(String(describing: self.jitterBuffer.peek())), lpn \(self.lastPacketNumber)")
+                .error("Missing packet \(String(describing: self.jitterBuffer.peek()), privacy: .public), lpn \(self.lastPacketNumber)")
         }
 
         // Need to get schedule time for when to schedule the packet

@@ -13,7 +13,7 @@ struct Dependency: Identifiable {
 }
 
 #if os(watchOS) || os(tvOS)
-    let WEBP_LICENSES = [
+    let webpLicenses = [
         Dependency(
             name: "libwebp",
             link: "https://chromium.googlesource.com/webm/libwebp",
@@ -28,12 +28,12 @@ struct Dependency: Identifiable {
 #endif
 
 #if os(macOS)
-    let MACOS_LICENSES = [
+    let macosLicenses = [
         Dependency(name: "SettingsAccess", link: "https://github.com/orchetect/SettingsAccess", licenseType: "MIT"),
     ]
 #endif
 
-let MAIN_LICENSES: [Dependency] = [
+let mainLicenses: [Dependency] = [
     Dependency(name: "Opus", link: "https://github.com/xiph/opus/tree/master", licenseType: "BSD-3-Clause"),
     Dependency(name: "Swift-Opus", link: "https://github.com/alta/swift-opus", licenseType: "BSD-3-Clause"),
     Dependency(name: "Swift-RTP", link: "https://github.com/alta/swift-rtp", licenseType: "MIT"),
@@ -54,11 +54,11 @@ let MAIN_LICENSES: [Dependency] = [
 ]
 
 #if os(watchOS) || os(tvOS)
-    let LICENSES = MAIN_LICENSES + WEBP_LICENSES
+    let LICENSES = mainLicenses + webpLicenses
 #elseif os(macOS)
-    let LICENSES = MAIN_LICENSES + MACOS_LICENSES
+    let LICENSES = mainLicenses + macosLicenses
 #else
-    let LICENSES = MAIN_LICENSES
+    let LICENSES = mainLicenses
 #endif
 
 struct AboutView: View {

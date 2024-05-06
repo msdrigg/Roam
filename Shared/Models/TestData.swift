@@ -40,11 +40,12 @@
                 migrationPlan: RoamSchemaMigrationPlan.self,
                 configurations: [modelConfiguration]
             )
-            
+
             Task { @MainActor in
                 let context = container.mainContext
                 try context.delete(model: Device.self)
                 try context.delete(model: AppLink.self)
+                try context.delete(model: Message.self)
 
                 let (models, appLinks) = getLoadTestingData()
                 for model in models {
@@ -113,17 +114,17 @@
 
     func getTestingMessages() -> [Message] {
         [
-            Message(id: "t1", message: "HI", author: .me),
-            Message(id: "t2", message: "BYE BRO", author: .support),
+            Message(id: "0001", message: "HI", author: .me, fetchedBackend: false),
+            Message(id: "0002", message: "BYE BRO", author: .support, fetchedBackend: false),
             Message(
-                id: "t3",
+                id: "0003",
                 message: "BYE BRO (part two but this time with a lot more text. Does it wrap? Does it work? IDK???BYE BRO (part two but this time with a lot more text. Does it wrap? Does it work? IDK???",
-                author: .support
+                author: .support, fetchedBackend: false
             ),
             Message(
-                id: "t4",
+                id: "0004",
                 message: "Resolved! (part two but this time with a lot more text. Does it wrap? Does it work? IDK???",
-                author: .me
+                author: .me, fetchedBackend: false
             ),
         ]
     }
@@ -141,7 +142,7 @@
                 udn: UUID().uuidString
             )
             devices.append(device)
-            for j in 0 ... (i * 40) {
+            for j in 0 ..< (i * 40) {
                 appCount += 1
                 let imageName = "\(j)"
                 #if os(macOS)
@@ -159,9 +160,9 @@
                 #endif
 
                 apps.append(AppLink(
-                    id: "app.id.\(appCount)",
+                    id: "app.id.\(j)",
                     type: "appl",
-                    name: "App \(appCount)",
+                    name: "App \(j)",
                     icon: data,
                     deviceUid: device.udn
                 ))

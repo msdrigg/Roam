@@ -29,61 +29,26 @@
             }
 
             override func scrollWheel(with event: NSEvent) {
-                var scrollDist = event.scrollingDeltaX
-                if abs(scrollDist) < 0.000001 {
-                    scrollDist = event.scrollingDeltaY
-                }
-                if !event.hasPreciseScrollingDeltas {
-                    scrollDist *= 4
-                }
-
-                // Handle legacy mice as event.phase == .none && event.momentumPhase == .none
-                if event.phase == .began || event
-                    .phase == .changed || (event.phase.rawValue == 0 && event.momentumPhase.rawValue == 0)
-                {
-                    handleScroll(with: scrollDist)
-                    scrollVelocity = scrollDist * 1.4
-                } else if event.phase == .ended {
-                    decelerationTimer = Timer
-                        .scheduledTimer(withTimeInterval: 0.009, repeats: true) { [weak self] timer in
-                            guard let self else { timer.invalidate(); return }
-                            decelerateScroll()
-                        }
-                } else if event.momentumPhase == .ended {
-                    decelerationTimer?.invalidate()
-                    decelerationTimer = nil
-                }
-            }
-
-            private func handleScroll(with delta: CGFloat) {
-                let scrollDist = delta
-
-                guard let scrollView = enclosingScrollView else { return }
-                let contentView = scrollView.contentView
-                let contentSize = contentView.documentRect.size
-                let scrollViewSize = scrollView.bounds.size
-
-                let currentPoint = contentView.bounds.origin
-                var newX = currentPoint.x - scrollDist
-
-                // Clamp to viewable region
-                let maxX = contentSize.width - scrollViewSize.width
-                newX = max(newX, 0)
-                newX = min(newX, maxX)
-
-                scrollView.contentView.scroll(to: NSPoint(x: newX, y: currentPoint.y))
-                scrollView.reflectScrolledClipView(scrollView.contentView)
-            }
-
-            private func decelerateScroll() {
-                if abs(scrollVelocity) < 0.1 {
-                    decelerationTimer?.invalidate()
-                    decelerationTimer = nil
+                if event.hasPreciseScrollingDeltas || abs(event.scrollingDeltaX) > 0.000001 || abs(event.deltaX) > 0.000001 {
+                    super.scrollWheel(with: event)
                     return
                 }
+                
+                if let cgEvent = event.cgEvent?.copy() {
+                    cgEvent.setDoubleValueField(.scrollWheelEventDeltaAxis2, value: Double(event.scrollingDeltaY / 10))
+                    cgEvent.setDoubleValueField(.scrollWheelEventDeltaAxis1, value: Double(0))
+                    cgEvent.setDoubleValueField(.scrollWheelEventDeltaAxis3, value: Double(0))
+                    cgEvent.setDoubleValueField(.mouseEventDeltaX, value: Double(0))
+                    cgEvent.setDoubleValueField(.mouseEventDeltaY, value: Double(0))
 
-                handleScroll(with: scrollVelocity)
-                scrollVelocity *= 0.9
+                    if let nsEvent = NSEvent(cgEvent: cgEvent) {
+                        super.scrollWheel(with: nsEvent)
+                    } else {
+                        super.scrollWheel(with: event)
+                    }
+                } else {
+                    super.scrollWheel(with: event)
+                }
             }
         }
     }

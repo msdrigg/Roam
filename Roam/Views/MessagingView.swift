@@ -41,52 +41,6 @@ func getNotificationSettings() {
     }
 }
 
-public func refreshMessages(modelContainer: ModelContainer, latestMessageId: String?, viewed: Bool) async -> Int {
-    let modelContext = ModelContext(modelContainer)
-    do {
-        var count = 0
-        do {
-            let newMessages = try await getMessages(after: latestMessageId)
-
-            for message in newMessages {
-                message.viewed = viewed
-                modelContext.insert(message)
-            }
-            count = newMessages.count
-        } catch {
-            logger.error("Error getting latest messages \(error)")
-        }
-
-        logger.info("Starting delete")
-        let foundModels = try modelContext.fetch(FetchDescriptor(
-            predicate: #Predicate<Message> { model in
-                !model.fetchedBackend
-            }
-        ))
-        for model in foundModels {
-            modelContext.delete(model)
-        }
-        logger.info("Ending delete")
-
-        if viewed == true {
-            let unviewedMessagesDescriptor = FetchDescriptor<Message>(predicate: #Predicate {
-                !$0.viewed
-            })
-            let unviewedMessages = try modelContext.fetch<Message>(unviewedMessagesDescriptor)
-            for message in unviewedMessages {
-                message.viewed = true
-            }
-        }
-
-        try modelContext.save()
-
-        return count
-    } catch {
-        logger.error("Error refreshing messages \(error)")
-        return 0
-    }
-}
-
 struct MessageView: View {
     @State private var messageText = ""
     @Query(sort: \Message.id) private var baseMessages: [Message]
@@ -258,7 +212,7 @@ struct MessageView: View {
                 try await sendMessage(message: messageCopy, apnsToken: nil)
                 if await refreshMessages(
                     modelContainer: modelContext.container,
-                    latestMessageId: messages.last { $0.fetchedBackend }?.id,
+                    latestMessageId: messages.last { $0.fetchedBackend == true }?.id,
                     viewed: true
                 ) > 0 {
                     refreshResetId = UUID()

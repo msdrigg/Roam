@@ -17,19 +17,20 @@ actor ECPSession {
     let decoder = JSONDecoder()
 
     enum ECPError: Error, LocalizedError {
-        case BadWebsocketMessage
-        case AuthDenied
+        case badWebsocketMessage
+        case authDenied
         case badURL
-        case ConnectFailed
-        case BadInterfaceIP
-        case PLStartFailed
-        case BadKepress
-        case ResponseRejection(code: String)
+        case connectFailed
+        case badInterfaceIP
+        case plStartFailed
+        case badKepress
+        case responseRejection(code: String)
     }
 
     public init(device: DeviceAppEntity) throws {
         Self.logger.info("Initing ECP Session with url \(device.location)")
         // SAFETY: "http" is always a valid regex
+        // swiftlint:disable:next force_try
         guard let url = URL(string: "\(device.location.replacing(try! Regex("http"), with: "ws"))ecp-session") else {
             Self.logger.error("Bad url for location \(device.location)ecp-session")
             throw ECPError.badURL
@@ -73,7 +74,7 @@ actor ECPSession {
         public func requestHeadphonesMode() async throws {
             guard let connectingInterface = await tryConnectTCP(location: url.absoluteString, timeout: 3.0) else {
                 Self.logger.error("Unable to connect tcp to \(self.url.absoluteString) to request headphones mode")
-                throw ECPError.ConnectFailed
+                throw ECPError.connectFailed
             }
 
             let localInterfaces = await allAddressedInterfaces()
@@ -84,7 +85,7 @@ actor ECPSession {
                     .error(
                         "Connected with interface \(connectingInterface.name) but no match in \(localInterfaces.map(\.name))"
                     )
-                throw ECPError.BadInterfaceIP
+                throw ECPError.badInterfaceIP
             }
             let localAddress = localNWInterface.address.addressString
             Self.logger.debug("Got local address \(localAddress)")
@@ -111,11 +112,11 @@ actor ECPSession {
                     data
                 } else {
                     Self.logger.error("Unknown message type received: \(String(describing: responseMessage))")
-                    throw ECPError.BadWebsocketMessage
+                    throw ECPError.badWebsocketMessage
                 }
             @unknown default:
                 Self.logger.error("Unknown message type received: \(String(describing: responseMessage))")
-                throw ECPError.BadWebsocketMessage
+                throw ECPError.badWebsocketMessage
             }
 
             let websocketStr = String(data: plResponseData, encoding: .utf8) ?? "--Bad data--"
@@ -125,7 +126,7 @@ actor ECPSession {
             if !authResponse.isSuccess {
                 Self.logger
                     .error("Unable to start headphones mode on roku with response \(String(describing: authResponse))")
-                throw ECPError.PLStartFailed
+                throw ECPError.plStartFailed
             } else {
                 Self.logger.info("Started headphones mode successfully")
             }
@@ -140,7 +141,7 @@ actor ECPSession {
 
         guard let keypress = key.apiValue else {
             Self.logger.fault("Bad key with no api value \(String(describing: key))")
-            throw ECPError.BadKepress
+            throw ECPError.badKepress
         }
 
         try await sendKeypress(keypress)
@@ -236,11 +237,11 @@ actor ECPSession {
                     data
                 } else {
                     Self.logger.error("Unknown message type received: \(String(describing: resultMessage))")
-                    throw ECPError.BadWebsocketMessage
+                    throw ECPError.badWebsocketMessage
                 }
             @unknown default:
                 Self.logger.error("Unknown message type received: \(String(describing: resultMessage))")
-                throw ECPError.BadWebsocketMessage
+                throw ECPError.badWebsocketMessage
             }
             let websocketStr = String(data: responseMessageData, encoding: .utf8) ?? "--Bad data--"
             Self.logger.info("Got Roku weboscket response: \(websocketStr, privacy: .public)")
@@ -248,7 +249,7 @@ actor ECPSession {
             let response = try decoder.decode(BaseResponse.self, from: responseMessageData)
             if !response.isSuccess {
                 Self.logger.error("Bad response for \(response.response): \(String(describing: response))")
-                throw ECPError.ResponseRejection(code: response.status)
+                throw ECPError.responseRejection(code: response.status)
             }
             Self.logger
                 .info(
@@ -275,11 +276,11 @@ actor ECPSession {
                     data
                 } else {
                     Self.logger.error("Unknown message type received: \(String(describing: authMessage))")
-                    throw ECPError.BadWebsocketMessage
+                    throw ECPError.badWebsocketMessage
                 }
             @unknown default:
                 Self.logger.error("Unknown message type received: \(String(describing: authMessage))")
-                throw ECPError.BadWebsocketMessage
+                throw ECPError.badWebsocketMessage
             }
 
             let websocketStr = String(data: authMessageData, encoding: .utf8) ?? "--Bad data--"
@@ -302,8 +303,8 @@ actor ECPSession {
 
                 if let error = error as? ECPError {
                     switch error {
-                    case .ResponseRejection(code: _):
-                        throw ECPError.AuthDenied
+                    case .responseRejection(code:):
+                        throw ECPError.authDenied
                     default:
                         throw error
                     }
@@ -316,138 +317,136 @@ actor ECPSession {
             throw error
         }
     }
+}
 
-    // MARK: Auth
+private struct AuthChallenge: Codable {
+    let paramChallenge: String
 
-    private struct AuthChallenge: Codable {
-        let paramChallenge: String
+    private enum CodingKeys: String, CodingKey {
+        case paramChallenge = "param-challenge"
+    }
+}
 
-        private enum CodingKeys: String, CodingKey {
-            case paramChallenge = "param-challenge"
+private struct AuthVerifyRequest: Codable {
+    let paramMicrophoneSampleRates: String = "1600"
+    let paramResponse: String
+    let requestId: String
+    let paramClientFriendlyName: String = "Wireless Speaker"
+    let request: String = "authenticate"
+    let paramHasMicrophone: String = "false"
+
+    static let KEY = "95E610D0-7C29-44EF-FB0F-97F1FCE4C297"
+
+    private static func charTransform(_ var1: UInt8, _ var2: UInt8) -> UInt8 {
+        var var3: UInt8
+        if var1 >= UInt8(ascii: "0"), var1 <= UInt8(ascii: "9") {
+            var3 = var1 - UInt8(ascii: "0")
+        } else if var1 >= UInt8(ascii: "A"), var1 <= UInt8(ascii: "F") {
+            var3 = var1 - UInt8(ascii: "A") + 10
+        } else {
+            return var1
         }
+
+        var var2 = (15 - var3 + var2) & 15
+        if var2 < 10 {
+            var2 += UInt8(ascii: "0")
+        } else {
+            var2 = var2 + UInt8(ascii: "A") - 10
+        }
+
+        return var2
     }
 
-    private struct AuthVerifyRequest: Codable {
-        let paramMicrophoneSampleRates: String = "1600"
-        let paramResponse: String
-        let requestId: String
-        let paramClientFriendlyName: String = "Wireless Speaker"
-        let request: String = "authenticate"
-        let paramHasMicrophone: String = "false"
+    init(challenge: String, requestId: Int) {
+        let authKeySeed = Data(Self.KEY.utf8.map { Self.charTransform($0, 9) })
 
-        static let KEY = "95E610D0-7C29-44EF-FB0F-97F1FCE4C297"
-
-        private static func charTransform(_ var1: UInt8, _ var2: UInt8) -> UInt8 {
-            var var3: UInt8
-            if var1 >= UInt8(ascii: "0"), var1 <= UInt8(ascii: "9") {
-                var3 = var1 - UInt8(ascii: "0")
-            } else if var1 >= UInt8(ascii: "A"), var1 <= UInt8(ascii: "F") {
-                var3 = var1 - UInt8(ascii: "A") + 10
-            } else {
-                return var1
+        func createAuthKey(_ s: String) -> String {
+            var digest = [UInt8](repeating: 0, count: Int(CC_SHA1_DIGEST_LENGTH))
+            let data = s.data(using: .utf8)! + authKeySeed
+            data.withUnsafeBytes {
+                _ = CC_SHA1($0.baseAddress, CC_LONG(data.count), &digest)
             }
-
-            var var2 = (15 - var3 + var2) & 15
-            if var2 < 10 {
-                var2 += UInt8(ascii: "0")
-            } else {
-                var2 = var2 + UInt8(ascii: "A") - 10
-            }
-
-            return var2
+            let base64String = Data(digest).base64EncodedString()
+            return base64String
         }
-
-        init(challenge: String, requestId: Int) {
-            let authKeySeed = Data(Self.KEY.utf8.map { Self.charTransform($0, 9) })
-
-            func createAuthKey(_ s: String) -> String {
-                var digest = [UInt8](repeating: 0, count: Int(CC_SHA1_DIGEST_LENGTH))
-                let data = s.data(using: .utf8)! + authKeySeed
-                data.withUnsafeBytes {
-                    _ = CC_SHA1($0.baseAddress, CC_LONG(data.count), &digest)
-                }
-                let base64String = Data(digest).base64EncodedString()
-                return base64String
-            }
-            paramResponse = createAuthKey(challenge)
-            self.requestId = String(requestId)
-        }
-
-        private enum CodingKeys: String, CodingKey {
-            case paramMicrophoneSampleRates = "param-microphone-sample-rates"
-            case paramResponse = "param-response"
-            case paramClientFriendlyName = "param-client-friendly-name"
-            case request
-            case requestId = "request-id"
-            case paramHasMicrophone = "param-has-microphone"
-        }
+        paramResponse = createAuthKey(challenge)
+        self.requestId = String(requestId)
     }
 
-    // MARK: Request-response
+    private enum CodingKeys: String, CodingKey {
+        case paramMicrophoneSampleRates = "param-microphone-sample-rates"
+        case paramResponse = "param-response"
+        case paramClientFriendlyName = "param-client-friendly-name"
+        case request
+        case requestId = "request-id"
+        case paramHasMicrophone = "param-has-microphone"
+    }
+}
 
-    private struct ConfigureAudioRequest: Codable {
-        let paramDevname: String?
-        let paramAudioOutput: String
-        let request: String = "set-audio-output"
-        let requestId: String
+// MARK: Request-response
 
-        #if !os(watchOS)
-            static func headphonesMode(hostIp: String, requestId: Int) -> Self {
-                Self(
-                    paramDevname: "\(hostIp):\(globalHostRTPPort):\(globalRTPPayloadType):\(globalClockRate / 50)",
-                    paramAudioOutput: "datagram",
-                    requestId: String(requestId)
-                )
-            }
-        #endif
+private struct ConfigureAudioRequest: Codable {
+    let paramDevname: String?
+    let paramAudioOutput: String
+    let request: String = "set-audio-output"
+    let requestId: String
 
-        private enum CodingKeys: String, CodingKey {
-            case paramDevname = "param-devname"
-            case paramAudioOutput = "param-audio-output"
-            case request
-            case requestId = "request-id"
+    #if !os(watchOS)
+        static func headphonesMode(hostIp: String, requestId: Int) -> Self {
+            Self(
+                paramDevname: "\(hostIp):\(globalHostRTPPort):\(globalRTPPayloadType):\(globalClockRate / 50)",
+                paramAudioOutput: "datagram",
+                requestId: String(requestId)
+            )
         }
+    #endif
+
+    private enum CodingKeys: String, CodingKey {
+        case paramDevname = "param-devname"
+        case paramAudioOutput = "param-audio-output"
+        case request
+        case requestId = "request-id"
+    }
+}
+
+private struct AppLaunchRequest: Codable {
+    let request: String = "launch"
+    let paramChannelId: String
+    let requestId: String
+
+    private enum CodingKeys: String, CodingKey {
+        case paramChannelId = "param-channel-id"
+        case requestId = "request-id"
+        case request
+    }
+}
+
+private struct KeyPressRequest: Codable {
+    let request: String = "key-press"
+    let paramKey: String
+    let requestId: String
+
+    private enum CodingKeys: String, CodingKey {
+        case paramKey = "param-key"
+        case requestId = "request-id"
+        case request
+    }
+}
+
+private struct BaseResponse: Codable {
+    let response: String
+    let responseId: String
+    let status: String
+    let statusMsg: String?
+
+    var isSuccess: Bool {
+        status == "200"
     }
 
-    private struct AppLaunchRequest: Codable {
-        let request: String = "launch"
-        let paramChannelId: String
-        let requestId: String
-
-        private enum CodingKeys: String, CodingKey {
-            case paramChannelId = "param-channel-id"
-            case requestId = "request-id"
-            case request
-        }
-    }
-
-    private struct KeyPressRequest: Codable {
-        let request: String = "key-press"
-        let paramKey: String
-        let requestId: String
-
-        private enum CodingKeys: String, CodingKey {
-            case paramKey = "param-key"
-            case requestId = "request-id"
-            case request
-        }
-    }
-
-    private struct BaseResponse: Codable {
-        let response: String
-        let responseId: String
-        let status: String
-        let statusMsg: String?
-
-        var isSuccess: Bool {
-            status == "200"
-        }
-
-        private enum CodingKeys: String, CodingKey {
-            case response
-            case responseId = "response-id"
-            case status
-            case statusMsg = "status-msg"
-        }
+    private enum CodingKeys: String, CodingKey {
+        case response
+        case responseId = "response-id"
+        case status
+        case statusMsg = "status-msg"
     }
 }
