@@ -71,7 +71,7 @@
     }
 
     class EndOnlyTextField: UITextField {
-        var didDelete: (() -> Void)? = nil
+        var didDelete: (() -> Void)?
 
         override func closestPosition(to _: CGPoint) -> UITextPosition? {
             let beginning = beginningOfDocument

@@ -228,6 +228,11 @@
 		AFD9C4FA2AE983B300C4079C /* SSDPDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA2A2AE54AD100A42DFF /* SSDPDiscovery.swift */; };
 		AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF19CA3B2AE6BFC300A42DFF /* DeviceApi.swift */; };
 		AFD9C4FC2AE983C700C4079C /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncSemaphore.swift */; };
+		AFE6249D2BDCAA5000F4992E /* DataActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataActor.swift */; };
+		AFE6249E2BDCAA5000F4992E /* DataActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataActor.swift */; };
+		AFE6249F2BDCAA5000F4992E /* DataActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataActor.swift */; };
+		AFE624A02BDCAA5000F4992E /* DataActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataActor.swift */; };
+		AFE624A12BDD929700F4992E /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
 		AFE89A2D2B9E793E0078387C /* Debugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE89A2C2B9E793E0078387C /* Debugger.swift */; };
 		AFE89A2E2B9EBBD30078387C /* Debugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE89A2C2B9E793E0078387C /* Debugger.swift */; };
 		AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE192AE184FE003F6676 /* XMLCoder */; };
@@ -452,6 +457,7 @@
 		AFD590D52AEC787700189620 /* ModelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContainer.swift; sourceTree = "<group>"; };
 		AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallAppView.swift; sourceTree = "<group>"; };
 		AFD9C4E02AE9802200C4079C /* SmallRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallRemoteView.swift; sourceTree = "<group>"; };
+		AFE6249C2BDCAA5000F4992E /* DataActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataActor.swift; sourceTree = "<group>"; };
 		AFE89A2C2B9E793E0078387C /* Debugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debugger.swift; sourceTree = "<group>"; };
 		AFED42492AEE8F3B0023D684 /* VolumeListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListener.swift; sourceTree = "<group>"; };
 		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
@@ -618,6 +624,7 @@
 				AF42442D2BB1118700334AAF /* SchemaFile.swift */,
 				AFF6DE0C2BCF0326002C13FC /* Message.swift */,
 				AF2480572BDB42F600EF47AE /* TestData.swift */,
+				AFE6249C2BDCAA5000F4992E /* DataActor.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1023,6 +1030,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF70BB0B2BA7CBD3009A06EC /* PaddedHoverButtonStyle.swift in Sources */,
+				AFE6249E2BDCAA5000F4992E /* DataActor.swift in Sources */,
 				AFE89A2E2B9EBBD30078387C /* Debugger.swift in Sources */,
 				AFD9C4FA2AE983B300C4079C /* SSDPDiscovery.swift in Sources */,
 				AF0042862AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */,
@@ -1076,6 +1084,7 @@
 				AF205B272AE02D0100041CDF /* NetworkHelpers.swift in Sources */,
 				AF205B2B2AE02D1C00041CDF /* ButtonPressIntents.swift in Sources */,
 				AF24805A2BDB42F600EF47AE /* TestData.swift in Sources */,
+				AFE624A12BDD929700F4992E /* WorkersBackend.swift in Sources */,
 				AFD9C4DF2AE9801400C4079C /* SmallAppView.swift in Sources */,
 				AF205B1F2AE02CAF00041CDF /* MediumRemoteWidget.swift in Sources */,
 				AF19CA3D2AE6BFDF00A42DFF /* DeviceApi.swift in Sources */,
@@ -1095,6 +1104,7 @@
 				AF0042872AEABA9F0051BB1E /* CollectionHelpers.swift in Sources */,
 				AFF6DE142BCF0A14002C13FC /* Message.swift in Sources */,
 				AFC4A6602AE8AF3F005DAC6C /* DataImage.swift in Sources */,
+				AFE6249F2BDCAA5000F4992E /* DataActor.swift in Sources */,
 				AF205B242AE02D0100041CDF /* RemoteButton.swift in Sources */,
 				AF205B292AE02D1C00041CDF /* LaunchAppIntent.swift in Sources */,
 				AF205B2E2AE02D1C00041CDF /* AppLinkAppEntity.swift in Sources */,
@@ -1140,6 +1150,7 @@
 				AF8EF4EB2BB60AB5002A4D6D /* Debugger.swift in Sources */,
 				AF8EF5212BB61ADC002A4D6D /* SSDPService.swift in Sources */,
 				AF8EF4EC2BB60AB5002A4D6D /* StatelessDeviceAPI.swift in Sources */,
+				AFE624A02BDCAA5000F4992E /* DataActor.swift in Sources */,
 				AF8EF4EF2BB60ADA002A4D6D /* DeviceAppEntity.swift in Sources */,
 				AF8EF4FC2BB60AF5002A4D6D /* ModelContainer.swift in Sources */,
 				AF8EF4F12BB60AE8002A4D6D /* RemoteButton.swift in Sources */,
@@ -1198,6 +1209,7 @@
 				AF35ACEB2BA3994200CC8B36 /* KeyboardMonitorUIKit.swift in Sources */,
 				AFA079DE2AE02561003E2754 /* LaunchAppIntent.swift in Sources */,
 				AF0C82992AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
+				AFE6249D2BDCAA5000F4992E /* DataActor.swift in Sources */,
 				AF19CA232AE455B400A42DFF /* DataHelpers.swift in Sources */,
 				AFA079DA2AE02561003E2754 /* DeviceAppEntity.swift in Sources */,
 				AF65A88C2BB5AD02005ECF7F /* ExternalAboutView.swift in Sources */,
@@ -1588,6 +1600,7 @@
 				SDKROOT = auto;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 				XROS_DEPLOYMENT_TARGET = 1.0;
@@ -1654,6 +1667,7 @@
 				SDKROOT = auto;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 				XROS_DEPLOYMENT_TARGET = 1.0;

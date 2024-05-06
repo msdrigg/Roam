@@ -8,17 +8,17 @@ import SwiftUI
 #endif
 
 #if os(tvOS)
-    let DEVICE_ICON_SIZE: CGFloat = 64.0
-    let CIRCLE_SIZE: CGFloat = 18
+    let deviceIconSize: CGFloat = 64.0
+    let circleSize: CGFloat = 18
 #elseif os(visionOS)
-    let DEVICE_ICON_SIZE: CGFloat = 42.0
-    let CIRCLE_SIZE: CGFloat = 14
+    let deviceIconSize: CGFloat = 42.0
+    let circleSize: CGFloat = 14
 #elseif os(macOS)
-    let DEVICE_ICON_SIZE: CGFloat = 32.0
-    let CIRCLE_SIZE: CGFloat = 10
+    let deviceIconSize: CGFloat = 32.0
+    let circleSize: CGFloat = 10
 #else
-    let DEVICE_ICON_SIZE: CGFloat = 24.0
-    let CIRCLE_SIZE: CGFloat = 10
+    let deviceIconSize: CGFloat = 24.0
+    let circleSize: CGFloat = 10
 #endif
 
 private let messageFetchDescriptor: FetchDescriptor<Message> = {
@@ -92,7 +92,7 @@ struct SettingsView: View {
                     #elseif os(macOS)
                         openWindow(id: "messages")
                     #else
-                        path.append(NavigationDestination.MessageDestination)
+                        path.append(NavigationDestination.messageDestination)
                     #endif
                 }
             } catch {
@@ -130,7 +130,7 @@ struct SettingsView: View {
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
-                                NavigationLink(value: NavigationDestination.DeviceSettingsDestination(device)) {
+                                NavigationLink(value: NavigationDestination.deviceSettingsDestination(device)) {
                                     Label("Edit", systemImage: "pencil")
                                 }
                             }
@@ -252,7 +252,7 @@ struct SettingsView: View {
             Section("Other") {
                 #if !os(tvOS) && !os(watchOS)
                     HStack {
-                        NavigationLink(value: NavigationDestination.KeyboardShortcutDestinaion, label: {
+                        NavigationLink(value: NavigationDestination.keyboardShortcutDestinaion, label: {
                             Label("Keyboard shortcuts", systemImage: "keyboard")
                         })
                         .buttonStyle(.plain)
@@ -283,7 +283,7 @@ struct SettingsView: View {
                         #if os(macOS)
                             openWindow(id: "messages")
                         #else
-                            path.append(NavigationDestination.MessageDestination)
+                            path.append(NavigationDestination.messageDestination)
                         #endif
                     }, label: {
                         HStack {
@@ -366,11 +366,11 @@ struct SettingsView: View {
             }
 
             Section {
-                NavigationLink("About", value: NavigationDestination.AboutDestination)
+                NavigationLink("About", value: NavigationDestination.aboutDestination)
             }
         }
         .onAppear {
-            if destination == .Debugging {
+            if destination == .debugging {
                 reportDebugLogs()
             }
         }
@@ -453,7 +453,7 @@ struct SettingsView: View {
                 modelContext.insert(newDevice)
                 Self.logger.info("Added new empty device \(String(describing: newDevice.persistentModelID))")
                 try modelContext.save()
-                path.append(NavigationDestination.DeviceSettingsDestination(newDevice))
+                path.append(NavigationDestination.deviceSettingsDestination(newDevice))
             } catch {
                 Self.logger.error("Error inserting new device \(error)")
             }
@@ -465,7 +465,7 @@ struct DeviceListItem: View {
     @Bindable var device: Device
 
     var body: some View {
-        NavigationLink(value: NavigationDestination.DeviceSettingsDestination(device)) {
+        NavigationLink(value: NavigationDestination.deviceSettingsDestination(device)) {
             HStack(alignment: .center) {
                 VStack(alignment: .center) {
                     DataImage(from: device.deviceIcon, fallback: "tv")
@@ -474,7 +474,7 @@ struct DeviceListItem: View {
                         .controlSize(.extraLarge)
                     #endif
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: DEVICE_ICON_SIZE, height: DEVICE_ICON_SIZE)
+                        .frame(width: deviceIconSize, height: deviceIconSize)
                         .padding(4)
                 }
 
@@ -482,7 +482,7 @@ struct DeviceListItem: View {
                     HStack(alignment: .center, spacing: 8) {
                         Circle()
                             .foregroundColor(device.isOnline() ? Color.green : Color.gray)
-                            .frame(width: CIRCLE_SIZE, height: CIRCLE_SIZE)
+                            .frame(width: circleSize, height: circleSize)
                         Text(device.name).lineLimit(1)
                     }
                     WrappingHStack(
@@ -512,7 +512,7 @@ struct MacSettings: View {
     @State var navPath: [NavigationDestination] = []
     var body: some View {
         SettingsNavigationWrapper(path: $navPath) {
-            SettingsView(path: $navPath, destination: .Global)
+            SettingsView(path: $navPath, destination: .global)
         }
     }
 }
@@ -764,7 +764,7 @@ public extension Binding {
 
 #Preview("Device List") {
     @State var path: [NavigationDestination] = []
-    return SettingsView(path: $path, destination: .Global)
+    return SettingsView(path: $path, destination: .global)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
         .modelContainer(previewContainer)
 }

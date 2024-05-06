@@ -383,7 +383,7 @@ struct RemoteView: View {
                                 #if os(macOS)
                                     openWindow(id: "messages")
                                 #else
-                                    appDelegate.navigationPath.append(NavigationDestination.MessageDestination)
+                                    appDelegate.navigationPath.append(NavigationDestination.messageDestination)
                                 #endif
                             }, level: .info)
                                 .offset(y: -20)
@@ -409,7 +409,7 @@ struct RemoteView: View {
                                     #if os(macOS)
                                         openWindow(id: "messages")
                                     #else
-                                        appDelegate.navigationPath.append(NavigationDestination.MessageDestination)
+                                        appDelegate.navigationPath.append(NavigationDestination.messageDestination)
                                     #endif
                                 }, level: .info)
                             }
@@ -544,7 +544,7 @@ struct RemoteView: View {
                                 .shadow(radius: 4)
 
                             #else
-                                NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
+                                NavigationLink(value: NavigationDestination.settingsDestination(.global)) {
                                     Label("Setup a device to get started :)", systemImage: "gear")
                                         .frame(maxWidth: .infinity)
                                         .font(.callout)
@@ -670,16 +670,16 @@ struct RemoteView: View {
         #if !APPCLIP
             if action == "feedback" {
                 Self.logger.info("Attempting to open app debugging")
-                appDelegate.navigationPath.append(NavigationDestination.SettingsDestination(.Debugging))
+                appDelegate.navigationPath.append(NavigationDestination.settingsDestination(.debugging))
             } else if action == "settings" {
                 Self.logger.info("Attempting to open app settings")
-                appDelegate.navigationPath.append(NavigationDestination.SettingsDestination(.Global))
+                appDelegate.navigationPath.append(NavigationDestination.settingsDestination(.global))
             } else if action == "about" {
                 Self.logger.info("Attempting to open about page")
-                appDelegate.navigationPath.append(NavigationDestination.AboutDestination)
+                appDelegate.navigationPath.append(NavigationDestination.aboutDestination)
             } else if action == "messages" {
                 Self.logger.info("Attempting to open messages page")
-                appDelegate.navigationPath.append(NavigationDestination.MessageDestination)
+                appDelegate.navigationPath.append(NavigationDestination.messageDestination)
             }
         #endif
     }
@@ -716,10 +716,10 @@ struct RemoteView: View {
                 VStack(alignment: .center) {
                     // Row with Back and Home buttons
                     TopBar(pressCounter: buttonPressCount, action: pressButton)
+                        .matchedGeometryEffect(id: "topBar", in: animation)
                     #if os(macOS) || os(tvOS)
                         .focusSection()
                     #endif
-                        .matchedGeometryEffect(id: "topBar", in: animation)
 
                     if !hideUIForKeyboardEntry {
                         Spacer().frame(maxHeight: 60)
@@ -731,11 +731,11 @@ struct RemoteView: View {
                             enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
                             disabled: headphonesModeDisabled ? Set([.headphonesMode]) : Set([])
                         )
-                        #if os(macOS) || os(tvOS)
-                        .focusSection()
-                        #endif
                         .transition(.scale.combined(with: .opacity))
                         .matchedGeometryEffect(id: "buttonGrid", in: animation)
+#if os(macOS) || os(tvOS)
+.focusSection()
+#endif
                     }
                 }
                 #if os(macOS) || os(tvOS)
@@ -751,13 +751,13 @@ struct RemoteView: View {
             if !showKeyboardEntry {
                 Spacer()
                 AppLinksView(deviceId: selectedDevice?.udn, rows: appLinkRows, handleOpenApp: launchApp)
+                    .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 #if os(macOS) || os(tvOS)
                     .focusSection()
                 #endif
                 #if !os(visionOS)
                 .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                 #endif
-                .matchedGeometryEffect(id: "appLinksBar", in: animation)
             } else {
                 Spacer()
             }
@@ -852,10 +852,10 @@ struct RemoteView: View {
             if !showKeyboardEntry {
                 Spacer()
                 AppLinksView(deviceId: selectedDevice?.udn, rows: appLinkRows, handleOpenApp: launchApp)
+                    .matchedGeometryEffect(id: "appLinksBar", in: animation)
                 #if !os(visionOS)
                     .sensoryFeedback(SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                 #endif
-                    .matchedGeometryEffect(id: "appLinksBar", in: animation)
 
                 Spacer()
             } else {
