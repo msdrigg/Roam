@@ -94,12 +94,17 @@ public actor DataHandler {
             }
             return device.persistentModelID
         }
+        var lastOnlineAt: Date? = Date.now
+        
+        if udn.hasPrefix("roam:") {
+            lastOnlineAt = nil
+        }
 
         DataHandler.logger.info("Adding device at \(location)")
         let device = Device(
             name: friendlyDeviceName,
             location: location,
-            lastOnlineAt: Date.now,
+            lastOnlineAt: lastOnlineAt,
             udn: udn
         )
         modelContext.insert(device)

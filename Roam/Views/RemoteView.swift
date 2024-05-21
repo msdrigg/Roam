@@ -660,33 +660,9 @@ struct RemoteView: View {
                 return
             }
 
-            let udn = queryParams?.first(where: { $0.name == "udn" })?.value ?? "roam:newdevice-\(UUID().uuidString)"
-
-            let newDevice = Device(
-                name: name,
-                location: location,
-                lastSelectedAt: Date.now,
-                udn: udn
-            )
-
-            Task {
-                modelContext.insert(newDevice)
-                do {
-                    try modelContext.save()
-                } catch {
-                    Self.logger.error("Error inserting new device \(error)")
-                    return
-                }
-
-                await saveDevice(
-                    existingDeviceId: newDevice.persistentModelID,
-                    existingUDN: newDevice.udn,
-                    newIP: location,
-                    newDeviceName: name,
-                    dataHandler: DataHandler(
-                        modelContainer: modelContext.container
-                    )
-                )
+            Task.detached {
+                let udn = queryParams?.first(where: { $0.name == "udn" })?.value ?? "roam:newdevice-\(UUID().uuidString)"
+                await createDataHandler()?.addOrReplaceDevice(location: location, friendlyDeviceName: name, udn: udn)
             }
         }
         #if !APPCLIP
