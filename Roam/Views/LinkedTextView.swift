@@ -14,7 +14,6 @@ struct LinkedText: View {
         // find the ranges of the string that have URLs
         let wholeString = NSRange(location: 0, length: text.count)
         replaced = text.replacing(linkDetector, with: { match in "[\(text[match.range])](\(text[match.range]))" })
-        print("Replacing \(text) into \(replaced)")
     }
     
     var body: Text {

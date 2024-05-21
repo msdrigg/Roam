@@ -16,20 +16,19 @@ struct DevicePicker: View {
     )
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.createDataHandler) private var createDataHandler
 
     let devices: [Device]
     @Binding var device: Device?
     @Binding var showingPicker: Bool
     @State var navPath: [NavigationDestination] = []
 
-    @State var deviceActor: DataHandler!
-
     var deviceStatusColor: Color {
         device?.isOnline() ?? false ? Color.green : Color.secondary
     }
 
     var body: some View {
-        Button(action: { showingPicker.toggle() }: label {
+        Button(action: { showingPicker.toggle() }, label: {
             Label("Devices", systemImage: "list.bullet")
                 .labelStyle(.iconOnly)
         })
@@ -61,9 +60,9 @@ struct DevicePicker: View {
                             }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
-                                    Task {
+                                    Task.detached {
                                         do {
-                                            try await deviceActor.delete(listItemDevice.persistentModelID)
+                                            try await createDataHandler()?.delete(listItemDevice.persistentModelID)
                                         } catch {
                                             Self.logger.error("Error deleting device \(error)")
                                         }
@@ -78,11 +77,11 @@ struct DevicePicker: View {
                             )
                         }
                         .onDelete { indexSet in
-                            Task {
+                            Task.detached {
                                 do {
                                     for index in indexSet {
                                         if let model = devices[safe: index] {
-                                            try await deviceActor.delete(model.persistentModelID)
+                                            try await createDataHandler()?.delete(model.persistentModelID)
                                         }
                                     }
                                 } catch {
@@ -103,10 +102,6 @@ struct DevicePicker: View {
                     .labelStyle(.titleAndIcon)
                 }
             }
-        }
-        .onAppear {
-            let modelContainer = modelContext.container
-            deviceActor = DataHandler(modelContainer: modelContainer)
         }
     }
 }

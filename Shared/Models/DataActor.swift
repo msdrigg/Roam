@@ -82,6 +82,7 @@ public actor DataHandler {
         DataHandler.logger.info("Updated device at \(location)")
     }
 
+    @discardableResult
     func addOrReplaceDevice(location: String, friendlyDeviceName: String, udn: String) -> PersistentIdentifier? {
         if let device = deviceForUdn(udn: udn) {
             device.location = location
@@ -138,15 +139,16 @@ public actor DataHandler {
 
     func deleteInPast() async {
         DataHandler.logger.info("Hard deleting devices")
-        let future = Date.now + 60 * 3600
+        let deleteBefore = Date.now - 60 * 3600
         let distantFuture = Date.distantFuture
         do {
             let models = try modelContext.fetch(
                 FetchDescriptor<Device>(predicate: #Predicate {
-                    $0.deletedAt ?? distantFuture < future
+                    $0.deletedAt ?? distantFuture < deleteBefore
                 })
             )
             for model in models {
+                Self.logger.info("Deleteing device and apps \(model.location) with name \(model.name)")
                 do {
                     try deleteAppsForDeviceUdn(udn: model.udn)
                 } catch {
@@ -282,7 +284,7 @@ extension DataHandler {
 extension ModelContext {
     func existingDevice(for id: PersistentIdentifier) -> Device? {
         if let registered: Device = registeredModel(for: id) {
-            if registered.isDeleted {
+            if registered.isDeleted || registered.deletedAt != nil {
                 return nil
             }
             return registered
@@ -478,7 +480,7 @@ extension DataHandler {
 
         var deviceNeedsIcon = false
         var appsNeedingIcons: [String] = []
-        if let device = try? modelContext.existingDevice(for: id) {
+        if let device = modelContext.existingDevice(for: id) {
             deviceNeedsIcon = device.deviceIcon == nil
             if let capabilities {
                 device.rtcpPort = capabilities.rtcpPort
@@ -558,8 +560,9 @@ extension DataHandler {
             }
             try? modelContext.save()
         }
+        
+        await deleteInPast()
     }
-
 }
 
 #if !WIDGET
@@ -612,15 +615,12 @@ extension DataHandler {
 }
 #endif
 
-
-// TODO: Refactor this into something reasonable
-
 func saveDevice(
     existingDeviceId modelId: PersistentIdentifier,
     existingUDN: String,
     newIP deviceIP: String,
     newDeviceName deviceName: String,
-    deviceActor: DataHandler
+    dataHandler: DataHandler
 ) async {
     // Try to get device id
     // Watchos can't check tcp connection, so just do the request
@@ -629,21 +629,17 @@ func saveDevice(
     let deviceUrl = addSchemeAndPort(to: cleanedString)
     logger.info("Getting device url \(deviceUrl)")
     // Save device id and location early
-    do {
-        try await deviceActor.updateDevice(
-            modelId, name: deviceName, location: deviceUrl, udn: existingUDN
-        )
-    } catch {
-        logger.error("Error early saving device with location \(deviceUrl): \(error)")
-    }
+    await dataHandler.updateDevice(
+        modelId, name: deviceName, location: deviceUrl, udn: existingUDN
+    )
 
     let deviceInfo = await fetchDeviceInfo(location: deviceUrl)
 
     // If we get a device with a different UDN, replace the device
     if let udn = deviceInfo?.udn, udn != existingUDN {
         do {
-            try await deviceActor.delete(modelId)
-            _ = try await deviceActor.addOrReplaceDevice(
+            try await dataHandler.delete(modelId)
+            await dataHandler.addOrReplaceDevice(
                 location: deviceUrl, friendlyDeviceName: deviceName, udn: udn
             )
 
@@ -653,16 +649,12 @@ func saveDevice(
         return
     }
 
-    do {
-        DataHandler.logger.info("Saving device \(deviceUrl) with id \(String(describing: modelId))")
-        try await deviceActor.updateDevice(
-            modelId,
-            name: deviceName,
-            location: deviceUrl,
-            udn: existingUDN
-        )
-        DataHandler.logger.info("Saved device \(deviceUrl)")
-    } catch {
-        DataHandler.logger.error("Error saving device \(error)")
-    }
+    DataHandler.logger.info("Saving device \(deviceUrl) with id \(String(describing: modelId))")
+    await dataHandler.updateDevice(
+        modelId,
+        name: deviceName,
+        location: deviceUrl,
+        udn: existingUDN
+    )
+    DataHandler.logger.info("Saved device \(deviceUrl)")
 }
