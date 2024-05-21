@@ -103,7 +103,6 @@ struct MessageView: View {
                     .textSelection(.enabled)
                     .onChange(of: messages.count) { _, _ in
                         if let id = messages.last?.persistentModelID {
-                            print("Scrolling here \(messages.last?.id ?? "")")
                             withAnimation {
                                 scrollValue.scrollTo(id)
                             }
@@ -111,7 +110,6 @@ struct MessageView: View {
                     }
                     .onAppear {
                         if let id = messages.last?.persistentModelID {
-                            print("Scrolling here \(messages.last?.id ?? "")")
                             withAnimation {
                                 scrollValue.scrollTo(id)
                             }

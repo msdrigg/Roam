@@ -59,31 +59,31 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
             WatchConnectivity.logger.info("Trying to add devices \(deviceMap)")
             Task {
                 let modelContainer = getSharedModelContainer()
-                let deviceActor = DataHandler(modelContainer: modelContainer)
+                let dataHandler = DataHandler(modelContainer: modelContainer)
                 for device in deviceMap {
-                    if let existingDevice = await deviceActor.deviceEntityForUdn(udn: device.key) {
+                    if let existingDevice = await dataHandler.deviceEntityForUdn(udn: device.key) {
                         WatchConnectivity.logger
                             .info("Device aleady exists, only updating name, location \(device.key)")
                         if let location = device.value["location"] {
                             let name = device.value["name"] ?? existingDevice.name
-                            try await deviceActor.updateDevice(
+                            try await dataHandler.updateDevice(
                                 existingDevice.modelId,
                                 name: name,
                                 location: location,
                                 udn: existingDevice.udn
                             )
-                            await deviceActor.refreshDevice(existingDevice.modelId)
+                            await dataHandler.refreshDevice(existingDevice.modelId)
                         }
                         continue
                     }
                     if let location = device.value["location"] {
                         let name = device.value["name"] ?? "New device"
-                        if let pid = await deviceActor.addOrReplaceDevice(
+                        if let pid = await dataHandler.addOrReplaceDevice(
                             location: location,
                             friendlyDeviceName: name,
                             udn: device.key
                         ) {
-                            await deviceActor.refreshDevice(pid)
+                            await dataHandler.refreshDevice(pid)
                         }
                     }
                 }

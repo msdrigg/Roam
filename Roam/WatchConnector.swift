@@ -97,9 +97,9 @@
 
                 session.sendMessage(deviceMap, replyHandler: { reply in
                     Task.detached {
-                        let deviceActor = DataHandler(modelContainer: getSharedModelContainer())
+                        let dataHandler = DataHandler(modelContainer: getSharedModelContainer())
                         for device in transferingDevices {
-                            await deviceActor.sentToWatch(deviceId: device)
+                            await dataHandler.sentToWatch(deviceId: device)
                         }
                     }
                     WatchConnectivity.logger.info("Successfully sent devices to watch with reply \(reply)")

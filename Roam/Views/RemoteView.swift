@@ -113,8 +113,14 @@ struct RemoteView: View {
     #endif
 
     private var selectedDevice: Device? {
-        manuallySelectedDevice ?? devices.min { d1, d2 in
-            (d1.lastSelectedAt?.timeIntervalSince1970 ?? 0) > (d2.lastSelectedAt?.timeIntervalSince1970 ?? 0)
+        if (manuallySelectedDevice != nil && manuallySelectedDevice?.deletedAt == nil) {
+            manuallySelectedDevice
+        } else {
+            devices.filter{
+                $0.deletedAt == nil
+            }.min { d1, d2 in
+                (d1.lastSelectedAt?.timeIntervalSince1970 ?? 0) > (d2.lastSelectedAt?.timeIntervalSince1970 ?? 0)
+            }
         }
     }
 
@@ -665,7 +671,7 @@ struct RemoteView: View {
                     existingUDN: newDevice.udn,
                     newIP: location,
                     newDeviceName: name,
-                    deviceActor: DataHandler(
+                    dataHandler: DataHandler(
                         modelContainer: modelContext.container
                     )
                 )

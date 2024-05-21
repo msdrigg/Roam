@@ -169,11 +169,11 @@ import os
         logger.debug("Pressing widget button \(button.apiValue ?? "nil") on device \(device?.name ?? "nil")")
         let modelContainer = getSharedModelContainer()
         
-        let deviceActor = DataHandler(modelContainer: modelContainer)
+        let dataHandler = DataHandler(modelContainer: modelContainer)
 
         var targetDevice = device
         if targetDevice == nil {
-            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
+            targetDevice = await dataHandler.fetchSelectedDeviceAppEntity()
         }
 
         guard let targetDevice else {

@@ -74,11 +74,11 @@ public extension AppLink {
 
 public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async throws {
     let modelContainer = getSharedModelContainer()
-    let deviceActor = DataHandler(modelContainer: modelContainer)
+    let dataHandler = DataHandler(modelContainer: modelContainer)
 
     var targetDevice = device
     if targetDevice == nil {
-        targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
+        targetDevice = await dataHandler.fetchSelectedDeviceAppEntity()
     }
 
     if let targetDevice {

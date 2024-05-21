@@ -29,15 +29,15 @@ struct SimpleRemoteControlProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: DeviceChoiceIntent, in _: Context) async -> DeviceChoiceTimelineEntity {
         let modelContainer = getSharedModelContainer()
-        let deviceActor = DataHandler(modelContainer: modelContainer)
+        let dataHandler = DataHandler(modelContainer: modelContainer)
 
         var targetDevice = configuration.selectedDevice
         if targetDevice == nil {
-            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
+            targetDevice = await dataHandler.fetchSelectedDeviceAppEntity()
         }
         
         let apps: [AppLinkAppEntity] = if let udn = targetDevice?.udn {
-            (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
+            (try? await dataHandler.appEntities(deviceUid: udn)) ?? []
         } else {
             []
         }
@@ -48,15 +48,15 @@ struct SimpleRemoteControlProvider: AppIntentTimelineProvider {
 
     func timeline(for configuration: DeviceChoiceIntent, in _: Context) async -> Timeline<DeviceChoiceTimelineEntity> {
         let modelContainer = getSharedModelContainer()
-        let deviceActor = DataHandler(modelContainer: modelContainer)
+        let dataHandler = DataHandler(modelContainer: modelContainer)
 
         var targetDevice = configuration.selectedDevice
         if targetDevice == nil {
-            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
+            targetDevice = await dataHandler.fetchSelectedDeviceAppEntity()
         }
 
         let apps: [AppLinkAppEntity] = if let udn = targetDevice?.udn {
-            (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
+            (try? await dataHandler.appEntities(deviceUid: udn)) ?? []
         } else {
             []
         }
@@ -89,16 +89,16 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
 
     func snapshot(for configuration: DeviceAndAppChoiceIntent, in _: Context) async -> DeviceChoiceTimelineEntity {
         let modelContainer = getSharedModelContainer()
-        let deviceActor = DataHandler(modelContainer: modelContainer)
+        let dataHandler = DataHandler(modelContainer: modelContainer)
 
         var targetDevice = configuration.selectedDevice
         if targetDevice == nil {
-            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
+            targetDevice = await dataHandler.fetchSelectedDeviceAppEntity()
         }
         
         var apps: [AppLinkAppEntity] = []
         if let udn = targetDevice?.udn {
-            var loadedApps = (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
+            var loadedApps = (try? await dataHandler.appEntities(deviceUid: udn)) ?? []
             if configuration.manuallySelectApps {
                 if let app1 = configuration.app1 {
                     loadedApps.insert(app1, at: 0)
@@ -124,16 +124,16 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
                   in _: Context) async -> Timeline<DeviceChoiceTimelineEntity>
     {
         let modelContainer = getSharedModelContainer()
-        let deviceActor = DataHandler(modelContainer: modelContainer)
+        let dataHandler = DataHandler(modelContainer: modelContainer)
 
         var targetDevice = configuration.selectedDevice
         if targetDevice == nil {
-            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
+            targetDevice = await dataHandler.fetchSelectedDeviceAppEntity()
         }
 
         var apps: [AppLinkAppEntity] = []
         if let udn = targetDevice?.udn {
-            var loadedApps = (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
+            var loadedApps = (try? await dataHandler.appEntities(deviceUid: udn)) ?? []
             if configuration.manuallySelectApps {
                 if let app1 = configuration.app1 {
                     loadedApps.insert(app1, at: 0)

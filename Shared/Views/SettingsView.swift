@@ -677,7 +677,7 @@ struct DeviceDetailView: View {
                     existingUDN: device.udn,
                     newIP: deviceIP,
                     newDeviceName: deviceName,
-                    deviceActor: DataHandler(
+                    dataHandler: DataHandler(
                         modelContainer: modelContext.container
                     )
                 )

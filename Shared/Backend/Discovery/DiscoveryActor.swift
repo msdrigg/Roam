@@ -11,14 +11,14 @@ actor DeviceDiscoveryActor {
         category: String(describing: DeviceDiscoveryActor.self)
     )
 
-    let deviceActor: DataHandler
+    let dataHandler: DataHandler
 
     init(modelContainer: ModelContainer) {
-        deviceActor = DataHandler(modelContainer: modelContainer)
+        dataHandler = DataHandler(modelContainer: modelContainer)
     }
 
     func refreshDevice(id: PersistentIdentifier) async {
-        await deviceActor.refreshDevice(id)
+        await dataHandler.refreshDevice(id)
     }
 
     @discardableResult
@@ -28,13 +28,13 @@ actor DeviceDiscoveryActor {
             return false
         }
 
-        if let device = await deviceActor.deviceEntityForUdn(udn: deviceInfo.udn) {
+        if let device = await dataHandler.deviceEntityForUdn(udn: deviceInfo.udn) {
             if device.location == location {
                 return false
             }
         }
 
-        if let pid = await deviceActor.addOrReplaceDevice(
+        if let pid = await dataHandler.addOrReplaceDevice(
             location: location,
             friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device",
             udn: deviceInfo.udn
@@ -66,6 +66,8 @@ actor DeviceDiscoveryActor {
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                 return
             }
+            
+            Self.logger.info("Starting to scan ipv4 range")
 
             let MAX_CONCURRENT_SCANNED = 37
 
@@ -80,8 +82,10 @@ actor DeviceDiscoveryActor {
                     } else {
                         Self.logger.debug("Manually scanning \(range.count) devices in network range \(range)")
                     }
+                    var idx = 0
 
                     for ipAddress in range {
+                        idx += 1
                         taskGroup.addTask {
                             try? await sem.waitUnlessCancelled()
                             if Task.isCancelled {
@@ -101,9 +105,14 @@ actor DeviceDiscoveryActor {
 
                             await self.addDevice(location: location)
                         }
+                        
+                        if idx > 1024 {
+                            break
+                        }
                     }
                 }
             }
+            Self.logger.info("Done scanning ipv4 range")
         }
 
         func scanSSDPContinually() async {
