@@ -22,17 +22,17 @@ struct DevicePicker: View {
     @Binding var showingPicker: Bool
     @State var navPath: [NavigationDestination] = []
 
-    @State var deviceActor: DeviceActor!
+    @State var deviceActor: DataHandler!
 
     var deviceStatusColor: Color {
         device?.isOnline() ?? false ? Color.green : Color.secondary
     }
 
     var body: some View {
-        Button(action: { showingPicker.toggle() }) {
+        Button(action: { showingPicker.toggle() }: label {
             Label("Devices", systemImage: "list.bullet")
                 .labelStyle(.iconOnly)
-        }
+        })
         .sheet(isPresented: $showingPicker) {
             SettingsNavigationWrapper(path: $navPath) {
                 List {
@@ -97,7 +97,7 @@ struct DevicePicker: View {
                         }
                     }
 
-                    NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
+                    NavigationLink(value: NavigationDestination.settingsDestination(.global)) {
                         Label("Settings", systemImage: "gear")
                     }
                     .labelStyle(.titleAndIcon)
@@ -106,7 +106,7 @@ struct DevicePicker: View {
         }
         .onAppear {
             let modelContainer = modelContext.container
-            deviceActor = DeviceActor(modelContainer: modelContainer)
+            deviceActor = DataHandler(modelContainer: modelContainer)
         }
     }
 }

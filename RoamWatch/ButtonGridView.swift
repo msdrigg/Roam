@@ -37,13 +37,13 @@ struct ButtonGridView: View {
                                                 .error("Error pressing button \(String(describing: button)): \(error)")
                                         }
                                     }
-                                }) {
+                                }, label: {
                                     button.label
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
                                         .foregroundStyle(.red)
-                                }
+                                })
                                 .buttonStyle(.plain)
                                 .sensoryFeedback(.impact, trigger: buttonPressCount(button))
                                 .symbolEffect(.bounce, value: buttonPressCount(button))
@@ -53,12 +53,12 @@ struct ButtonGridView: View {
                                     Task {
                                         try? await clickButton(button: button, device: device)
                                     }
-                                }) {
+                                }, label: {
                                     button.label
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
-                                }.buttonStyle(.borderedProminent)
+                                }).buttonStyle(.borderedProminent)
                                     .sensoryFeedback(.impact, trigger: buttonPressCount(button))
                                     .symbolEffect(.bounce, value: buttonPressCount(button))
                             } else {
@@ -67,12 +67,12 @@ struct ButtonGridView: View {
                                     Task {
                                         try? await clickButton(button: button, device: device)
                                     }
-                                }) {
+                                }, label: {
                                     button.label
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.8)
-                                }
+                                })
                                 .sensoryFeedback(.impact, trigger: buttonPressCount(button))
                                 .symbolEffect(.bounce, value: buttonPressCount(button))
                             }

@@ -41,52 +41,6 @@ func getNotificationSettings() {
     }
 }
 
-public func refreshMessages(modelContainer: ModelContainer, latestMessageId: String?, viewed: Bool) async -> Int {
-    let modelContext = ModelContext(modelContainer)
-    do {
-        var count = 0
-        do {
-            let newMessages = try await getMessages(after: latestMessageId)
-
-            for message in newMessages {
-                message.viewed = viewed
-                modelContext.insert(message)
-            }
-            count = newMessages.count
-        } catch {
-            logger.error("Error getting latest messages \(error)")
-        }
-
-        logger.info("Starting delete")
-        let foundModels = try modelContext.fetch(FetchDescriptor(
-            predicate: #Predicate<Message> { model in
-                !model.fetchedBackend
-            }
-        ))
-        for model in foundModels {
-            modelContext.delete(model)
-        }
-        logger.info("Ending delete")
-
-        if viewed == true {
-            let unviewedMessagesDescriptor = FetchDescriptor<Message>(predicate: #Predicate {
-                !$0.viewed
-            })
-            let unviewedMessages = try modelContext.fetch<Message>(unviewedMessagesDescriptor)
-            for message in unviewedMessages {
-                message.viewed = true
-            }
-        }
-
-        try modelContext.save()
-
-        return count
-    } catch {
-        logger.error("Error refreshing messages \(error)")
-        return 0
-    }
-}
-
 struct MessageView: View {
     @State private var messageText = ""
     @Query(sort: \Message.id) private var baseMessages: [Message]
@@ -97,6 +51,7 @@ struct MessageView: View {
     @Environment(\.colorScheme) var colorScheme
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.createDataHandler) private var createDataHandler
 
     var messages: [Message] {
         ([Message(
@@ -117,7 +72,7 @@ struct MessageView: View {
                                 HStack {
                                     if message.author == .me {
                                         Spacer()
-                                        Text(message.message)
+                                        LinkedText(message.message)
                                             .padding(.vertical, 6)
                                             .padding(.horizontal, 10)
                                             .background(Color.accentColor.opacity(0.5))
@@ -127,9 +82,8 @@ struct MessageView: View {
                                             .cornerRadius(15)
                                             .frame(maxWidth: geometry.size.width * 2 / 3, alignment: .trailing)
                                             .padding(.trailing, 10)
-
                                     } else {
-                                        Text(message.message)
+                                        LinkedText(message.message)
                                             .padding(.vertical, 6)
                                             .padding(.horizontal, 10)
                                             .background(Color.gray.opacity(0.5))
@@ -146,6 +100,7 @@ struct MessageView: View {
                     #if !os(visionOS)
                     .scrollDismissesKeyboard(.interactively)
                     #endif
+                    .textSelection(.enabled)
                     .onChange(of: messages.count) { _, _ in
                         if let id = messages.last?.persistentModelID {
                             print("Scrolling here \(messages.last?.id ?? "")")
@@ -228,11 +183,13 @@ struct MessageView: View {
             let latestMessageId = messages.last { $0.fetchedBackend == true }?.id
 
             if latestMessageId != nil {
-                let result = await refreshMessages(
-                    modelContainer: modelContext.container,
-                    latestMessageId: latestMessageId,
-                    viewed: true
-                )
+                let createDataHandler = self.createDataHandler;
+                let result = await Task.detached {
+                    return await createDataHandler()?.refreshMessages(
+                        latestMessageId: latestMessageId,
+                        viewed: true
+                    ) ?? 0
+                }.value
                 logger.info("Got results \(result)")
 
                 if result > 0 {
@@ -253,14 +210,22 @@ struct MessageView: View {
     func sendTypedMessage() {
         logger.info("Sending message \"\(messageText)\"")
         let messageCopy = messageText
+        let createDataHandler = self.createDataHandler;
+        let latestMessageId = messages.last { $0.fetchedBackend == true }?.id;
         Task {
             do {
-                try await sendMessage(message: messageCopy, apnsToken: nil)
-                if await refreshMessages(
-                    modelContainer: modelContext.container,
-                    latestMessageId: messages.last { $0.fetchedBackend }?.id,
-                    viewed: true
-                ) > 0 {
+                try await Task.detached {
+                    try await sendMessage(message: messageCopy, apnsToken: nil)
+                }.value
+                
+                let result = await Task.detached {
+                    return await createDataHandler()?.refreshMessages(
+                        latestMessageId: latestMessageId,
+                        viewed: true
+                    ) ?? 0
+                }.value
+                
+                if result > 0 {
                     refreshResetId = UUID()
                 }
             } catch {
@@ -298,5 +263,5 @@ struct MessageView: View {
 
 #Preview("Message View") {
     MessageView()
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
 }

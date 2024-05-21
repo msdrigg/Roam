@@ -11,10 +11,10 @@ actor DeviceDiscoveryActor {
         category: String(describing: DeviceDiscoveryActor.self)
     )
 
-    let deviceActor: DeviceActor
+    let deviceActor: DataHandler
 
     init(modelContainer: ModelContainer) {
-        deviceActor = DeviceActor(modelContainer: modelContainer)
+        deviceActor = DataHandler(modelContainer: modelContainer)
     }
 
     func refreshDevice(id: PersistentIdentifier) async {
@@ -28,21 +28,21 @@ actor DeviceDiscoveryActor {
             return false
         }
 
-        if await deviceActor.deviceExists(id: deviceInfo.udn) {
-            return false
+        if let device = await deviceActor.deviceEntityForUdn(udn: deviceInfo.udn) {
+            if device.location == location {
+                return false
+            }
         }
 
-        do {
-            let pid = try await deviceActor.addOrReplaceDevice(
-                location: location,
-                friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device",
-                udn: deviceInfo.udn
-            )
+        if let pid = await deviceActor.addOrReplaceDevice(
+            location: location,
+            friendlyDeviceName: deviceInfo.friendlyDeviceName ?? "New device",
+            udn: deviceInfo.udn
+        ) {
             Self.logger.info("Saved new device \(deviceInfo.udn), \(location)")
             await refreshDevice(id: pid)
             return true
-        } catch {
-            Self.logger.error("Error saving device with id \(deviceInfo.udn) \(location): \(error)")
+        } else {
             return false
         }
     }

@@ -31,10 +31,10 @@ struct TopBar: View {
                 .keyboardShortcut(.return)
             #endif
 
-            Button(action: { action(.home) }) {
+            Button(action: { action(.home) }, label: {
                 Label("Home", systemImage: "house")
                     .frame(width: globalButtonWidth, height: globalButtonHeight)
-            }
+            })
             #if !os(tvOS) && !os(watchOS)
             .keyboardShortcut("h")
             #endif

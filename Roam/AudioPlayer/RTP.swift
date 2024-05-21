@@ -29,7 +29,7 @@ struct RtpPacket: Comparable {
         if diff < -wrappedMax / 2 {
             rls = rls + diff + wrappedMax + 1
         } else if diff >= -wrappedMax / 2, diff <= wrappedMax / 2 {
-            rls = rls + diff
+            rls += diff
         }
 
         sequenceNumber = Int64(packet.sequenceNumber) + rls - (rls % Int64(UInt16.max))

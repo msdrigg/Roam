@@ -19,6 +19,7 @@ struct RoamWatch: App {
             WatchAppView()
         }
         .modelContainer(sharedModelContainer)
+        .environment(\.createDataHandler, dataHandlerCreator())
     }
 }
 
@@ -86,6 +87,7 @@ struct WatchAppView: View {
 
     @State var navPath = NavigationPath()
 
+    @MainActor
     var mainBody: some View {
         NavigationStack {
             TabView {
@@ -119,7 +121,7 @@ struct WatchAppView: View {
                 if selectedDevice == nil {
                     VStack(spacing: 2) {
                         Spacer().frame(maxHeight: 120)
-                        Button(action: { showDeviceList = true }) {
+                        Button(action: { showDeviceList = true }, label: {
                             Label("Setup a device to get started :)", systemImage: "gear")
                                 .frame(maxWidth: .infinity)
                                 .font(.subheadline)
@@ -127,7 +129,7 @@ struct WatchAppView: View {
                                 .background(Color("AccentColor"))
                                 .cornerRadius(6)
                                 .padding(.horizontal, 4)
-                        }
+                        })
                         .shadow(radius: 4)
                     }
                     .buttonStyle(.plain)

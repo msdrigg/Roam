@@ -3,11 +3,11 @@ import os
 import SwiftUI
 
 #if os(tvOS)
-    let BASELINE_OFFSET: CGFloat = 4
-    let CIRCLE_ICON_SIZE: CGFloat = 16
+    let globalBaselineOffset: CGFloat = 4
+    let circleIconSize: CGFloat = 16
 #else
-    let BASELINE_OFFSET: CGFloat = 2
-    let CIRCLE_ICON_SIZE: CGFloat = 8
+    let globalBaselineOffset: CGFloat = 2
+    let circleIconSize: CGFloat = 8
 #endif
 
 struct DevicePicker: View {
@@ -18,9 +18,7 @@ struct DevicePicker: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
-    var deviceActor: DeviceActor {
-        DeviceActor(modelContainer: modelContext.container)
-    }
+    @Environment(\.createDataHandler) private var createDataHandler
 
     let devices: [Device]
     @Binding var device: Device?
@@ -39,13 +37,9 @@ struct DevicePicker: View {
                     set: {
                         device = $0
                         if let pid = $0?.persistentModelID {
-                            Task {
-                                do {
-                                    try? await Task.sleep(duration: 0.5)
-                                    try await deviceActor.setSelectedDevice(pid)
-                                } catch {
-                                    Self.logger.error("Error setting selected device \(error)")
-                                }
+                            Task.detached {
+                                try? await Task.sleep(duration: 0.5)
+                                await createDataHandler()?.setSelectedDevice(pid)
                             }
                         }
                     }
@@ -67,7 +61,7 @@ struct DevicePicker: View {
                         .labelStyle(.titleAndIcon)
                 }
             #elseif !APPCLIP
-                NavigationLink(value: NavigationDestination.SettingsDestination(.Global)) {
+                NavigationLink(value: NavigationDestination.settingsDestination(.global)) {
                     Label("Settings", systemImage: "gear")
                 }
                 .labelStyle(.titleAndIcon)
@@ -80,9 +74,9 @@ struct DevicePicker: View {
         } label: {
             if let device {
                 Group {
-                    Text(Image(systemName: "circle.fill")).font(.system(size: CIRCLE_ICON_SIZE))
+                    Text(Image(systemName: "circle.fill")).font(.system(size: circleIconSize))
                         .foregroundColor(deviceStatusColor)
-                        .baselineOffset(BASELINE_OFFSET) +
+                        .baselineOffset(globalBaselineOffset) +
                         Text(" ").font(.body) +
                         Text(device.name).font(.body)
                 }.multilineTextAlignment(.center)

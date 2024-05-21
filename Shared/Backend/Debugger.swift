@@ -116,7 +116,7 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
 
     var devices: [DeviceAppEntity] = []
     do {
-        devices = try await DeviceActor(modelContainer: container).allDeviceEntitiesIncludingDeleted()
+        devices = try await DataHandler(modelContainer: container).allDeviceEntitiesIncludingDeleted()
     } catch {
         debugErrors.append("Error Getting Devices: \n\(error)")
     }
@@ -165,7 +165,7 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
 
     var appLinks: [AppLinkAppEntity] = []
     do {
-        appLinks = try await AppLinkActor(modelContainer: container).allEntities()
+        appLinks = try await DataHandler(modelContainer: container).allAppEntities()
     } catch {
         debugErrors.append("Error Getting AppLinks: \n\(error)")
     }
@@ -188,7 +188,7 @@ private func getLogEntries(limit: Int = 50000) throws -> [LogEntry] {
     var logEntries: [LogEntry] = []
 
     do {
-        let sequence = try logStore.getEntries(with: .reverse, at: position)
+        let sequence = try logStore.getEntries(with: .reverse, at: position, matching: NSPredicate(format: "subsystem != 'com.apple.network'"))
         for entry in sequence.prefix(limit) {
             if let logEntry = entry as? OSLogEntryLog, logEntries.count < limit {
                 logEntries.append(LogEntry(entry: logEntry))
