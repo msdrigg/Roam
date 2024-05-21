@@ -1,9 +1,10 @@
 import SwiftUI
+import SwiftData
 
 enum NavigationDestination: Hashable {
     case settingsDestination(SettingsDestination)
     case aboutDestination
-    case deviceSettingsDestination(Device)
+    case deviceSettingsDestination(PersistentIdentifier)
     case keyboardShortcutDestinaion
     case messageDestination
 }
@@ -32,9 +33,9 @@ struct SettingsNavigationWrapper<Content>: View where Content: View {
                         #if !APPCLIP
                             AboutView()
                         #endif
-                    case let .deviceSettingsDestination(device):
+                    case let .deviceSettingsDestination(deviceId):
                         #if !APPCLIP
-                            DeviceDetailView(device: device) {
+                            DeviceDetailView(deviceId: deviceId) {
                                 if path.count > 0 {
                                     path.removeLast()
                                 }

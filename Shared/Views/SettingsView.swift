@@ -130,7 +130,7 @@ struct SettingsView: View {
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
-                                NavigationLink(value: NavigationDestination.deviceSettingsDestination(device)) {
+                                NavigationLink(value: NavigationDestination.deviceSettingsDestination(device.persistentModelID)) {
                                     Label("Edit", systemImage: "pencil")
                                 }
                             }
@@ -442,19 +442,16 @@ struct SettingsView: View {
     @ViewBuilder
     var addDeviceButton: some View {
         Button("Add a device manually", systemImage: "plus") {
-            let newDevice = Device(
-                name: "New device",
-                location: "http://192.168.0.1:8060/",
-                lastSelectedAt: Date.now,
-                udn: "roam:newdevice-\(UUID().uuidString)"
-            )
-            do {
-                modelContext.insert(newDevice)
-                Self.logger.info("Added new empty device \(String(describing: newDevice.persistentModelID))")
-                try modelContext.save()
-                path.append(NavigationDestination.deviceSettingsDestination(newDevice))
-            } catch {
-                Self.logger.error("Error inserting new device \(error)")
+            Task {
+                let persistentId = await Task.detached {
+                    return await createDataHandler()?.addOrReplaceDevice(location: "http://192.168.0.1:8060/", friendlyDeviceName: "New device", udn: "roam:newdevice-\(UUID().uuidString)"
+                    )
+                }.value
+                
+                Self.logger.info("Added new empty device \(String(describing: persistentId))")
+                if let id = persistentId {
+                    path.append(NavigationDestination.deviceSettingsDestination(id))
+                }
             }
         }
     }
@@ -464,7 +461,7 @@ struct DeviceListItem: View {
     @Bindable var device: Device
 
     var body: some View {
-        NavigationLink(value: NavigationDestination.deviceSettingsDestination(device)) {
+        NavigationLink(value: NavigationDestination.deviceSettingsDestination(device.persistentModelID)) {
             HStack(alignment: .center) {
                 VStack(alignment: .center) {
                     DataImage(from: device.deviceIcon, fallback: "tv")
@@ -528,11 +525,16 @@ struct DeviceDetailView: View {
     
     @Environment(\.createDataHandler) private var createDataHandler
 
-    @Bindable var device: Device
+    var deviceId: PersistentIdentifier
     @State var deviceName: String = ""
     @State var deviceIP: String = ""
 
     @State var showHeadphonesModeDescription: Bool = false
+    
+    var device: Device? {
+        modelContext.existingDevice(for: deviceId)
+    }
+    
 
     var dismiss: () -> Void
 
@@ -553,9 +555,9 @@ struct DeviceDetailView: View {
                         Self.logger.info("Deleting device")
                         Task.detached {
                             do {
-                                try await createDataHandler()?.delete(device.persistentModelID)
+                                try await createDataHandler()?.delete(deviceId)
                                 Self.logger
-                                    .info("Deleted device with id \(String(describing: device.persistentModelID))")
+                                    .info("Deleted device with id \(String(describing: deviceId))")
                             } catch {
                                 Self.logger.error("Error deleting device \(error)")
                             }
@@ -576,9 +578,9 @@ struct DeviceDetailView: View {
                     }, label: {
                         LabeledContent("Supports headphones mode") {
                             HStack(spacing: 8) {
-                                if device.supportsDatagram == true {
+                                if device?.supportsDatagram == true {
                                     Label("Supported", systemImage: "headphones").labelStyle(.badge(.green))
-                                } else if device.supportsDatagram == false {
+                                } else if device?.supportsDatagram == false {
                                     Label("Not supported", systemImage: "headphones").labelStyle(.badge(.red))
                                 } else {
                                     Label("Support unknown", systemImage: "headphones").labelStyle(.badge(.yellow))
@@ -592,13 +594,13 @@ struct DeviceDetailView: View {
                     .buttonStyle(.plain)
 
                     if showHeadphonesModeDescription {
-                        if device.supportsDatagram == true {
+                        if device?.supportsDatagram == true {
                             Text(
                                 "Your Roku device supports streaming audio directly to Roam. Click the headphones button in the main view to see it in action!"
                             )
                             .foregroundStyle(.secondary)
                             .font(.caption)
-                        } else if device.supportsDatagram == false {
+                        } else if device?.supportsDatagram == false {
                             Text(
                                 "Some Roku devices support streaming audio directly to Roam. Unfortunately yours does not support this. To see which devices support this check out https://www.roku.com/products/compare"
                             )
@@ -617,33 +619,33 @@ struct DeviceDetailView: View {
 
             Section("Info") {
                 LabeledContent("Id") {
-                    Text(device.udn)
+                    Text(device?.udn ?? "--")
                 }
                 LabeledContent("Last Selected") {
-                    Text(device.lastSelectedAt?.formatted() ?? "Never")
+                    Text(device?.lastSelectedAt?.formatted() ?? "Never")
                 }
                 LabeledContent("Last Online") {
-                    Text(device.lastOnlineAt?.formatted() ?? "Never")
+                    Text(device?.lastOnlineAt?.formatted() ?? "Never")
                 }
 
                 LabeledContent("Power State") {
-                    Text(device.powerMode ?? "--")
+                    Text(device?.powerMode ?? "--")
                 }
 
                 LabeledContent("Network State") {
-                    Text(device.networkType ?? "--")
+                    Text(device?.networkType ?? "--")
                 }
 
                 LabeledContent("Wifi MAC") {
-                    Text(device.wifiMAC ?? "--")
+                    Text(device?.wifiMAC ?? "--")
                 }
 
                 LabeledContent("Ethernet MAC") {
-                    Text(device.ethernetMAC ?? "--")
+                    Text(device?.ethernetMAC ?? "--")
                 }
 
                 LabeledContent("RTCP Port") {
-                    if let rtcpPort = device.rtcpPort {
+                    if let rtcpPort = device?.rtcpPort {
                         Text("\(rtcpPort)")
                     } else {
                         Text("Unknown")
@@ -655,32 +657,38 @@ struct DeviceDetailView: View {
             }
         }
         .formStyle(.grouped)
-        .onChange(of: device.name) { _, new in
-            deviceName = new
+        .onChange(of: device?.name) { _, new in
+            if let new = new {
+                deviceName = new
+            }
         }
-        .onChange(of: device.location) { _, new in
-            let host = getHost(from: new)
-            Self.logger.info("Seeing host \(host) in change")
-            deviceIP = host
+        .onChange(of: device?.location) { _, new in
+            if let new = new {
+                let host = getHost(from: new)
+                Self.logger.info("Seeing host \(host) in change")
+                deviceIP = host
+            }
         }
         .onAppear {
-            deviceName = device.name
-            let host = getHost(from: device.location)
+            deviceName = device?.name ?? "New device"
+            let host = getHost(from: device?.location ?? "192.168.0.1")
             Self.logger.info("Seeing host \(host) in appear")
 
             deviceIP = host
         }
         .onDisappear {
             Task.detached {
-                await saveDevice(
-                    existingDeviceId: device.persistentModelID,
-                    existingUDN: device.udn,
-                    newIP: deviceIP,
-                    newDeviceName: deviceName,
-                    dataHandler: DataHandler(
-                        modelContainer: modelContext.container
+                if let device = device {
+                    await saveDevice(
+                        existingDeviceId: device.persistentModelID,
+                        existingUDN: device.udn,
+                        newIP: deviceIP,
+                        newDeviceName: deviceName,
+                        dataHandler: DataHandler(
+                            modelContainer: modelContext.container
+                        )
                     )
-                )
+                }
             }
         }
         #if !os(tvOS)
@@ -697,8 +705,8 @@ struct DeviceDetailView: View {
                     Self.logger.info("Deleting device")
                     Task.detached {
                         do {
-                            try await createDataHandler()?.delete(device.persistentModelID)
-                            Self.logger.info("Deleted device with id \(String(describing: device.persistentModelID))")
+                            try await createDataHandler()?.delete(deviceId)
+                            Self.logger.info("Deleted device with id \(String(describing: deviceId))")
                         } catch {
                             Self.logger.error("Error deleting device \(error)")
                         }
@@ -770,7 +778,7 @@ public extension Binding {
 }
 
 #Preview("Device Detail") {
-    DeviceDetailView(device: getTestingDevices()[0]) {}
+    DeviceDetailView(deviceId: getTestingDevices()[0].persistentModelID) {}
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }
 #endif

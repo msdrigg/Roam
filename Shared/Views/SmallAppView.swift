@@ -17,7 +17,10 @@ import SwiftUI
             }
             let cappedApps = Array(apps.prefix(4))
             let rowCount = rows
-            let rowSize = cappedApps.count / rowCount
+            var rowSize = cappedApps.count / rowCount
+            if rowSize == 0 {
+                rowSize = 1
+            }
             var rows: [[AppLinkAppEntity?]] = []
 
             for i in stride(from: 0, to: cappedApps.count, by: rowSize) {
