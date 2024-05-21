@@ -246,20 +246,22 @@ struct MessageView: View {
         var body: some View {
             Button(action: {
                 NSApp.orderFrontCharacterPalette(nil)
-            }) {
+            }, label: {
                 Image(systemName: "face.smiling")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 24, height: 24)
                     .foregroundColor(Color.gray)
-            }
+            })
             .buttonStyle(PlainButtonStyle())
         }
     }
 
 #endif
 
+#if DEBUG
 #Preview("Message View") {
     MessageView()
         .modelContainer(previewContainer)
 }
+#endif

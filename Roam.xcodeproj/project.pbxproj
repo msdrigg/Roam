@@ -77,6 +77,7 @@
 		AF2F54EF2BCE58EF00BAE156 /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
 		AF2F54F02BCE58EF00BAE156 /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
 		AF2F54F12BCE58EF00BAE156 /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
+		AF3203132BFD334800C03FE3 /* LaunchAppIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68F2ADDE4AA0036EC90 /* LaunchAppIntent.swift */; };
 		AF3503682BB493F4004F4337 /* RoamClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = AF3503572BB493F3004F4337 /* RoamClip.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF35038F2BB499F3004F4337 /* RoamWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF27400B2AE02C25007C6208 /* RoamWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF3503942BB499FA004F4337 /* libwebp in Frameworks */ = {isa = PBXBuildFile; platformFilters = (watchos, ); productRef = AF3503932BB499FA004F4337 /* libwebp */; };
@@ -1173,6 +1174,7 @@
 				AF8EF4F62BB60AF0002A4D6D /* DataHelpers.swift in Sources */,
 				AF8EF5062BB60B45002A4D6D /* NotificationBanner.swift in Sources */,
 				AF8EF4F72BB60AF0002A4D6D /* UserDefaultKeys.swift in Sources */,
+				AF3203132BFD334800C03FE3 /* LaunchAppIntent.swift in Sources */,
 				AFF6DE0F2BCF0326002C13FC /* Message.swift in Sources */,
 				AF8EF5112BB60D43002A4D6D /* BinaryHeap.swift in Sources */,
 				AF8EF5122BB60D43002A4D6D /* OpusDecoder.swift in Sources */,
@@ -1575,7 +1577,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240425.7846322.1;
+				CURRENT_PROJECT_VERSION = 20240521.9250421.3;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1599,7 +1601,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.30;
+				MARKETING_VERSION = 1.31;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1649,7 +1651,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240425.7846322.1;
+				CURRENT_PROJECT_VERSION = 20240521.9250421.3;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1667,7 +1669,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.30;
+				MARKETING_VERSION = 1.31;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = auto;

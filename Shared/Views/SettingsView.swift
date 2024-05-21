@@ -761,6 +761,7 @@ public extension Binding {
     }
 }
 
+#if DEBUG
 #Preview("Device List") {
     @State var path: [NavigationDestination] = []
     return SettingsView(path: $path, destination: .global)
@@ -772,3 +773,4 @@ public extension Binding {
     DeviceDetailView(device: getTestingDevices()[0]) {}
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }
+#endif

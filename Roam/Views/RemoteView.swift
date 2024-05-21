@@ -215,7 +215,7 @@ struct RemoteView: View {
             SettingsNavigationWrapper(path: $appDelegate.navigationPath) {
                 remotePage
             }
-            .task(priority: .userInitiated) {
+            .task {
                 while true {
                     if Task.isCancelled {
                         return
@@ -378,7 +378,11 @@ struct RemoteView: View {
                                 Spacer()
                                 DevicePicker(
                                     devices: devices,
-                                    device: $manuallySelectedDevice.withDefault(selectedDevice)
+                                    device: Binding(get: {
+                                        selectedDevice
+                                    }, set: {
+                                        manuallySelectedDevice = $0
+                                    })
                                 )
                                 .font(.body)
                             }
@@ -521,7 +525,11 @@ struct RemoteView: View {
                         ToolbarItem(placement: .navigation) {
                             DevicePicker(
                                 devices: devices,
-                                device: $manuallySelectedDevice.withDefault(selectedDevice)
+                                device: Binding(get: {
+                                    selectedDevice
+                                }, set: {
+                                    manuallySelectedDevice = $0
+                                })
                             )
                             .font(.body)
                         }
@@ -529,7 +537,11 @@ struct RemoteView: View {
                         ToolbarItem(placement: .topBarTrailing) {
                             DevicePicker(
                                 devices: devices,
-                                device: $manuallySelectedDevice.withDefault(selectedDevice)
+                                device: Binding(get: {
+                                    selectedDevice
+                                }, set: {
+                                    manuallySelectedDevice = $0
+                                })
                             )
                             .font(.body)
                         }
@@ -939,7 +951,9 @@ struct RemoteView: View {
     }
 }
 
+#if DEBUG
 #Preview("Remote horizontal") {
     RemoteView()
         .modelContainer(previewContainer)
 }
+#endif

@@ -42,6 +42,7 @@
         }
     }
 
+#if DEBUG
     #Preview(as: WidgetFamily.systemMedium) {
         MediumRemoteWidget()
     } timeline: {
@@ -51,5 +52,5 @@
             apps: getTestingAppLinks().map { $0.toAppEntityWithIcon() }
         )
     }
-
+#endif
 #endif
