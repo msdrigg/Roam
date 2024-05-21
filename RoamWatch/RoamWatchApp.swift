@@ -19,6 +19,7 @@ struct RoamWatch: App {
             WatchAppView()
         }
         .modelContainer(sharedModelContainer)
+        .environment(\.createDataHandler, dataHandlerCreator())
     }
 }
 
@@ -86,6 +87,7 @@ struct WatchAppView: View {
 
     @State var navPath = NavigationPath()
 
+    @MainActor
     var mainBody: some View {
         NavigationStack {
             TabView {

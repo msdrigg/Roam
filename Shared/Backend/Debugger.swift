@@ -116,7 +116,7 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
 
     var devices: [DeviceAppEntity] = []
     do {
-        devices = try await DeviceActor(modelContainer: container).allDeviceEntitiesIncludingDeleted()
+        devices = try await DataHandler(modelContainer: container).allDeviceEntitiesIncludingDeleted()
     } catch {
         debugErrors.append("Error Getting Devices: \n\(error)")
     }
@@ -165,7 +165,7 @@ func getDebugInfo(container: ModelContainer) async -> DebugInfo {
 
     var appLinks: [AppLinkAppEntity] = []
     do {
-        appLinks = try await AppLinkActor(modelContainer: container).allEntities()
+        appLinks = try await DataHandler(modelContainer: container).allAppEntities()
     } catch {
         debugErrors.append("Error Getting AppLinks: \n\(error)")
     }

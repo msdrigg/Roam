@@ -59,6 +59,7 @@ struct RemoteView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.openWindow) var openWindow
+    @Environment(\.createDataHandler) var createDataHandler
 
     @EnvironmentObject private var appDelegate: RoamAppDelegate
 
@@ -143,8 +144,8 @@ struct RemoteView: View {
 
     @Namespace var animation
 
-    var deviceActor: DeviceActor {
-        DeviceActor(modelContainer: modelContext.container)
+    var dataHandler: DataHandler {
+        DataHandler(modelContainer: modelContext.container)
     }
 
     var deviceStatusColor: Color {
@@ -223,15 +224,18 @@ struct RemoteView: View {
                     descriptor.fetchLimit = 1
 
                     let lastMessage = try? modelContext.fetch(descriptor).last
-                    let container = modelContext.container
+                    let lastMessageId = lastMessage?.id
                     Self.logger.info("Refreshing messages with last message \(String(describing: lastMessage?.id))")
                     if lastMessage != nil {
-                        let results = await refreshMessages(
-                            modelContainer: container,
-                            latestMessageId: lastMessage?.id,
-                            viewed: false
-                        )
-                        Self.logger.info("Sleeping for an hour after getting \(results) messages")
+                        let createDataHandler = createDataHandler
+                        Task.detached {
+                            if let results = await createDataHandler()?.refreshMessages(
+                                latestMessageId: lastMessageId,
+                                viewed: false
+                            ) {
+                                Self.logger.info("Sleeping for an hour after getting \(results) messages")
+                            }
+                        }
                     } else {
                         Self.logger.info("Not refreshing messages because no lastMessageId")
                     }
@@ -661,7 +665,7 @@ struct RemoteView: View {
                     existingUDN: newDevice.udn,
                     newIP: location,
                     newDeviceName: name,
-                    deviceActor: DeviceActor(
+                    deviceActor: DataHandler(
                         modelContainer: modelContext.container
                     )
                 )
@@ -869,19 +873,15 @@ struct RemoteView: View {
             donateAppLaunchIntent(app)
         #endif
         incrementButtonPressCount(.inputAV1)
-        Task {
+        Task.detached {
             do {
                 try await ecpSession?.openApp(app)
             } catch {
                 Self.logger.error("Error opening app \(app.id): \(error)")
             }
         }
-        Task {
-            do {
-                try await DeviceActor(modelContainer: modelContext.container).setSelectedApp(app.modelId)
-            } catch {
-                Self.logger.error("Error marking app \(app.id) as selected")
-            }
+        Task.detached {
+            await DataHandler(modelContainer: self.modelContext.container).setSelectedApp(app.modelId)
         }
     }
 

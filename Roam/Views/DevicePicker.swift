@@ -18,9 +18,7 @@ struct DevicePicker: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
-    var deviceActor: DeviceActor {
-        DeviceActor(modelContainer: modelContext.container)
-    }
+    @Environment(\.createDataHandler) private var createDataHandler
 
     let devices: [Device]
     @Binding var device: Device?
@@ -39,13 +37,9 @@ struct DevicePicker: View {
                     set: {
                         device = $0
                         if let pid = $0?.persistentModelID {
-                            Task {
-                                do {
-                                    try? await Task.sleep(duration: 0.5)
-                                    try await deviceActor.setSelectedDevice(pid)
-                                } catch {
-                                    Self.logger.error("Error setting selected device \(error)")
-                                }
+                            Task.detached {
+                                try? await Task.sleep(duration: 0.5)
+                                await createDataHandler()?.setSelectedDevice(pid)
                             }
                         }
                     }
