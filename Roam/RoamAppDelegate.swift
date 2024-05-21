@@ -163,8 +163,8 @@ func sendDeviceTokenToServer(_ token: String) async {
             let lastMessage = try? context.fetch(descriptor).last
 
             let latestMessageId = lastMessage?.id
-            Task {
-                await refreshMessages(modelContainer: modelContainer, latestMessageId: latestMessageId, viewed: false)
+            Task.detached {
+                await DataHandler(modelContainer: getSharedModelContainer()).refreshMessages(latestMessageId: latestMessageId, viewed: false)
             }
             completionHandler(.badge)
         }

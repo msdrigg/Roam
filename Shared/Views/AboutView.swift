@@ -116,8 +116,10 @@ struct AboutView: View {
     }
 }
 
+#if DEBUG
 #Preview("About") {
     AboutView()
         .previewLayout(.fixed(width: 100.0, height: 300.0))
         .modelContainer(previewContainer)
 }
+#endif

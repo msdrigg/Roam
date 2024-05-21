@@ -19,6 +19,7 @@ import WidgetKit
         }
     }
 
+#if DEBUG
     #Preview("AppWidgetMid", as: WidgetFamily.systemSmall) {
         SmallAppWidget()
     } timeline: {
@@ -33,6 +34,7 @@ import WidgetKit
             apps: []
         )
     }
+#endif
 #endif
 
 #if !os(macOS)
@@ -50,6 +52,7 @@ import WidgetKit
         }
     }
 
+#if DEBUG
     #Preview("AppWidgetSmall", as: WidgetFamily.accessoryRectangular) {
         SmallerAppWidget()
     } timeline: {
@@ -64,4 +67,5 @@ import WidgetKit
             apps: []
         )
     }
+#endif
 #endif

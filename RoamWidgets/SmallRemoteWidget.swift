@@ -57,6 +57,7 @@ import WidgetKit
         }
     }
 
+#if DEBUG
     #Preview(as: WidgetFamily.systemSmall) {
         SmallDpadWidget()
     } timeline: {
@@ -87,6 +88,7 @@ import WidgetKit
         )
     }
 #endif
+#endif
 
 #if !os(macOS)
     struct SmallVolumeWidget: Widget {
@@ -107,6 +109,7 @@ import WidgetKit
         }
     }
 
+#if DEBUG
     #Preview(as: WidgetFamily.accessoryRectangular) {
         SmallVolumeWidget()
     } timeline: {
@@ -121,4 +124,5 @@ import WidgetKit
             apps: []
         )
     }
+#endif
 #endif
