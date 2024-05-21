@@ -30,7 +30,7 @@ public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Se
     }
 }
 
-#if !os(tvOS) && !APPCLIP
+#if !os(tvOS)
     extension AppLinkAppEntity: AppEntity {
         public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "TV App")
         public static var defaultQuery = AppLinkAppEntityQuery()
@@ -41,18 +41,18 @@ public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Se
             public init() {}
 
             public func entities(for identifiers: [AppLinkAppEntity.ID]) async throws -> [AppLinkAppEntity] {
-                let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-                return try await appLinkActor.entities(for: identifiers, deviceUid: launchAppIntent?.device.udn)
+                let appLinkActor = DataHandler(modelContainer: getSharedModelContainer())
+                return try await appLinkActor.appEntities(for: identifiers, deviceUid: launchAppIntent?.device.udn)
             }
 
             func entities(matching string: String) async throws -> [AppLinkAppEntity] {
-                let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-                return try await appLinkActor.entities(matching: string, deviceUid: launchAppIntent?.device.udn)
+                let appLinkActor = DataHandler(modelContainer: getSharedModelContainer())
+                return try await appLinkActor.appEntities(matching: string, deviceUid: launchAppIntent?.device.udn)
             }
 
             public func suggestedEntities() async throws -> [AppLinkAppEntity] {
-                let appLinkActor = AppLinkActor(modelContainer: getSharedModelContainer())
-                return try await appLinkActor.entities(deviceUid: launchAppIntent?.device.udn)
+                let appLinkActor = DataHandler(modelContainer: getSharedModelContainer())
+                return try await appLinkActor.appEntities(deviceUid: launchAppIntent?.device.udn)
             }
         }
 
@@ -74,10 +74,11 @@ public extension AppLink {
 
 public func launchApp(app: AppLinkAppEntity, device: DeviceAppEntity?) async throws {
     let modelContainer = getSharedModelContainer()
+    let deviceActor = DataHandler(modelContainer: modelContainer)
 
     var targetDevice = device
     if targetDevice == nil {
-        targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
+        targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
     }
 
     if let targetDevice {

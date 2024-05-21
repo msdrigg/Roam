@@ -12,7 +12,7 @@ private let logger = Logger(
 // Optional: Send the device token to your server
 func sendDeviceTokenToServer(_ token: String) async {
     do {
-        try await sendMessage(message: "", apnsToken: token)
+        try await sendMessage(message: nil, apnsToken: token)
     } catch {
         logger.error("Error sending apns token to server \(error)")
     }
@@ -33,7 +33,7 @@ func sendDeviceTokenToServer(_ token: String) async {
             UNUserNotificationCenter.current().delegate = self
         }
 
-        func showAboutPanel() {
+        @MainActor func showAboutPanel() {
             if aboutBoxWindowController == nil {
                 let styleMask: NSWindow.StyleMask = [.closable, .miniaturizable, .titled]
                 let window = NSWindow(
@@ -73,8 +73,8 @@ func sendDeviceTokenToServer(_ token: String) async {
             #if os(macOS)
                 messagingWindowOpenTrigger = UUID()
             #else
-                if navigationPath.last != NavigationDestination.MessageDestination {
-                    navigationPath.append(NavigationDestination.MessageDestination)
+                if navigationPath.last != NavigationDestination.messageDestination {
+                    navigationPath.append(NavigationDestination.messageDestination)
                 }
             #endif
             completionHandler()
@@ -98,8 +98,9 @@ func sendDeviceTokenToServer(_ token: String) async {
             let lastMessage = try? context.fetch(descriptor).last
 
             let latestMessageId = lastMessage?.id
-            Task {
-                await refreshMessages(modelContainer: modelContainer, latestMessageId: latestMessageId, viewed: false)
+            Task.detached {
+                let dataHandler = DataHandler(modelContainer: self.modelContainer)
+                await dataHandler.refreshMessages(latestMessageId: latestMessageId, viewed: false)
             }
             completionHandler(.badge)
         }
@@ -139,8 +140,8 @@ func sendDeviceTokenToServer(_ token: String) async {
             didReceive _: UNNotificationResponse,
             withCompletionHandler completionHandler: @escaping () -> Void
         ) {
-            if navigationPath.last != NavigationDestination.MessageDestination {
-                navigationPath.append(NavigationDestination.MessageDestination)
+            if navigationPath.last != NavigationDestination.messageDestination {
+                navigationPath.append(NavigationDestination.messageDestination)
             }
             completionHandler()
         }

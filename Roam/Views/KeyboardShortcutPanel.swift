@@ -9,10 +9,6 @@ struct KeyboardShortcut: Identifiable {
     }
 }
 
-enum KeyboardShortcutDestination {
-    case Global
-}
-
 let shortcuts: [KeyboardShortcut] = [
     KeyboardShortcut(title: "Back", keys: "⌘◀"),
     KeyboardShortcut(title: "Power", keys: "⌘⏎"),

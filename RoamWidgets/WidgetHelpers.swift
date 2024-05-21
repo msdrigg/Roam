@@ -28,35 +28,40 @@ struct SimpleRemoteControlProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: DeviceChoiceIntent, in _: Context) async -> DeviceChoiceTimelineEntity {
-        let device = if configuration.manuallySelectDevice, let device = configuration.device {
-            device
-        } else {
-            await fetchSelectedDevice(modelContainer: modelContainer)
+        let modelContainer = getSharedModelContainer()
+        let deviceActor = DataHandler(modelContainer: modelContainer)
+
+        var targetDevice = configuration.selectedDevice
+        if targetDevice == nil {
+            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
         }
-        let apps: [AppLinkAppEntity] = if let udn = device?.udn {
-            await fetchSelectedAppLinks(modelContainer: modelContainer, deviceId: udn)
+        
+        let apps: [AppLinkAppEntity] = if let udn = targetDevice?.udn {
+            (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
         } else {
             []
         }
 
-        let entry = DeviceChoiceTimelineEntity(date: Date(), device: device, apps: apps)
+        let entry = DeviceChoiceTimelineEntity(date: Date(), device: targetDevice, apps: apps)
         return entry
     }
 
     func timeline(for configuration: DeviceChoiceIntent, in _: Context) async -> Timeline<DeviceChoiceTimelineEntity> {
-        let device = if configuration.manuallySelectDevice, let device = configuration.device {
-            device
-        } else {
-            await fetchSelectedDevice(modelContainer: modelContainer)
+        let modelContainer = getSharedModelContainer()
+        let deviceActor = DataHandler(modelContainer: modelContainer)
+
+        var targetDevice = configuration.selectedDevice
+        if targetDevice == nil {
+            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
         }
 
-        let apps: [AppLinkAppEntity] = if let udn = device?.udn {
-            await fetchSelectedAppLinks(modelContainer: modelContainer, deviceId: udn)
+        let apps: [AppLinkAppEntity] = if let udn = targetDevice?.udn {
+            (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
         } else {
             []
         }
-        let entryNow = DeviceChoiceTimelineEntity(date: Date.now, device: device, apps: apps)
-        let entryLater = DeviceChoiceTimelineEntity(date: Date.now + 86400, device: device, apps: apps)
+        let entryNow = DeviceChoiceTimelineEntity(date: Date.now, device: targetDevice, apps: apps)
+        let entryLater = DeviceChoiceTimelineEntity(date: Date.now + 86400, device: targetDevice, apps: apps)
         let timeline = Timeline(entries: [entryNow, entryLater], policy: .atEnd)
         return timeline
     }
@@ -83,14 +88,17 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: DeviceAndAppChoiceIntent, in _: Context) async -> DeviceChoiceTimelineEntity {
-        let device = if configuration.manuallySelectDevice, let device = configuration.device {
-            device
-        } else {
-            await fetchSelectedDevice(modelContainer: modelContainer)
+        let modelContainer = getSharedModelContainer()
+        let deviceActor = DataHandler(modelContainer: modelContainer)
+
+        var targetDevice = configuration.selectedDevice
+        if targetDevice == nil {
+            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
         }
+        
         var apps: [AppLinkAppEntity] = []
-        if let udn = device?.udn {
-            var loadedApps = await fetchSelectedAppLinks(modelContainer: modelContainer, deviceId: udn)
+        if let udn = targetDevice?.udn {
+            var loadedApps = (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
             if configuration.manuallySelectApps {
                 if let app1 = configuration.app1 {
                     loadedApps.insert(app1, at: 0)
@@ -108,22 +116,24 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
             apps = loadedApps
         }
 
-        let entry = DeviceChoiceTimelineEntity(date: Date(), device: device, apps: apps)
+        let entry = DeviceChoiceTimelineEntity(date: Date(), device: targetDevice, apps: apps)
         return entry
     }
 
     func timeline(for configuration: DeviceAndAppChoiceIntent,
                   in _: Context) async -> Timeline<DeviceChoiceTimelineEntity>
     {
-        let device = if configuration.manuallySelectDevice, let device = configuration.device {
-            device
-        } else {
-            await fetchSelectedDevice(modelContainer: modelContainer)
+        let modelContainer = getSharedModelContainer()
+        let deviceActor = DataHandler(modelContainer: modelContainer)
+
+        var targetDevice = configuration.selectedDevice
+        if targetDevice == nil {
+            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
         }
 
         var apps: [AppLinkAppEntity] = []
-        if let udn = device?.udn {
-            var loadedApps = await fetchSelectedAppLinks(modelContainer: modelContainer, deviceId: udn)
+        if let udn = targetDevice?.udn {
+            var loadedApps = (try? await deviceActor.appEntities(deviceUid: udn)) ?? []
             if configuration.manuallySelectApps {
                 if let app1 = configuration.app1 {
                     loadedApps.insert(app1, at: 0)
@@ -140,8 +150,8 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
             }
             apps = loadedApps
         }
-        let entryNow = DeviceChoiceTimelineEntity(date: Date.now, device: device, apps: apps)
-        let entryLater = DeviceChoiceTimelineEntity(date: Date.now + 86400, device: device, apps: apps)
+        let entryNow = DeviceChoiceTimelineEntity(date: Date.now, device: targetDevice, apps: apps)
+        let entryLater = DeviceChoiceTimelineEntity(date: Date.now + 86400, device: targetDevice, apps: apps)
         let timeline = Timeline(entries: [entryNow, entryLater], policy: .atEnd)
         return timeline
     }

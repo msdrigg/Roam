@@ -52,7 +52,7 @@ enum RtcpPacket {
         }
 
         let lengthData = data.prefix(2)
-        guard let _ = UInt16(bigEndian: lengthData) else {
+        if UInt16(bigEndian: lengthData) == nil {
             return nil
         }
 
@@ -93,19 +93,19 @@ enum RtcpPacket {
         case let .receiverReport(inner):
             packetData = inner.packetData()
             subtypeData = inner.subtypeData()
-            packetType = RtcpReceiverReport.PACKET_TYPE
+            packetType = RtcpReceiverReport.packetType
         case let .bye(inner):
             packetData = inner.packetData()
             subtypeData = inner.subtypeData()
-            packetType = RtcpBye.PACKET_TYPE
+            packetType = RtcpBye.packetType
         case let .senderReport(inner):
             packetData = inner.packetData()
             subtypeData = inner.subtypeData()
-            packetType = RtcpSenderReport.PACKET_TYPE
+            packetType = RtcpSenderReport.packetType
         case let .appSpecific(inner):
             packetData = inner.packetData()
             subtypeData = inner.subtypeData()
-            packetType = RtcpAppSpecific.PACKET_TYPE
+            packetType = RtcpAppSpecific.packetType
         case let .unknown(inner):
             packetData = inner.data
             subtypeData = inner.subtypeData
@@ -113,8 +113,8 @@ enum RtcpPacket {
         }
 
         // First byte: Version, Padding and Subtype
-        let V_P_ST: UInt8 = (2 << 6) | (0 << 5) | subtypeData
-        packet.append(V_P_ST)
+        let vPSt : UInt8 = (2 << 6) | (0 << 5) | subtypeData
+        packet.append(vPSt)
 
         // Second byte: Packet Type
         packet.append(packetType)
@@ -140,7 +140,7 @@ struct RtcpReceiverReport {
     let reportBlocks: [ReceiverReportBlock]
     let ssrc: UInt32
 
-    static let PACKET_TYPE: UInt8 = 201
+    static let packetType: UInt8 = 201
 
     func subtypeData() -> UInt8 {
         UInt8(reportBlocks.count)
@@ -163,7 +163,7 @@ struct RtcpReceiverReport {
 struct RtcpBye {
     let ssrc: [UInt32]
 
-    static let PACKET_TYPE: UInt8 = 203
+    static let packetType: UInt8 = 203
 
     func subtypeData() -> UInt8 {
         UInt8(ssrc.count)
@@ -193,15 +193,11 @@ struct RtcpBye {
 struct ReceiverReportBlock {}
 
 struct RtcpSenderReport {
-    static let PACKET_TYPE: UInt8 = 200
+    static let packetType: UInt8 = 200
     let data: Data
 
     func subtypeData() -> UInt8 {
         UInt8.zero
-    }
-
-    init(data: Data) {
-        self.data = data
     }
 
     func packetData() -> Data {
@@ -216,7 +212,7 @@ enum RtcpAppSpecific {
     case vdly(RtcpVdly)
     case other(RtcpUnknownApp)
 
-    static let PACKET_TYPE: UInt8 = 204
+    static let packetType: UInt8 = 204
 
     init?(subtypeData: UInt8, packet: Data) {
         logger
@@ -293,7 +289,7 @@ enum RtcpAppSpecific {
             packetData = inner.packetContent
         }
         // SSRC/CSRC (assuming you have a value for it)
-        packet.append(GLOBAL_SSRC.toData())
+        packet.append(globalSSRC.toData())
 
         packet.append(nameData)
 
@@ -304,12 +300,12 @@ enum RtcpAppSpecific {
     }
 }
 
-let GLOBAL_SSRC: UInt32 = 0
-let RTCP_VERSION: UInt8 = 2
-let RTCP_PADDING: UInt8 = 0
-let RTCP_TYPE_APP: UInt8 = 204
-let RTCP_TYPE_RECEIVER_REPORT: UInt8 = 201
-let RTCP_TYPE_SENDER_REPORT: UInt8 = 200
+let globalSSRC: UInt32 = 0
+let rtcpVersion: UInt8 = 2
+let rtcpPadding: UInt8 = 0
+let rtcpTypeApp: UInt8 = 204
+let rtcpTypeReceiverReport: UInt8 = 201
+let rtcpTypeSenderReport: UInt8 = 200
 
 struct RtcpVdly {
     let delayMicroseconds: UInt32

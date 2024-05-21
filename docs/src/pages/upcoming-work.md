@@ -4,6 +4,25 @@ hide_table_of_contents: true
 
 # Upcoming Roam Updates
 
+## Data modeling (Ongoing)
+
+- Figure out what causes data leak in case of long-running private listening after TV shuts off...
+
+## User requested features
+
+- Add user-defined keyboard shortcuts
+   - Allow selecting an item and then clicking keys+modifiers to update shortcut
+   - Disable keyboard shortcuts on keyboard shortcut editor
+
+## TipKit
+
+- Add tips for private listening
+- Add tips for keyboard shortcuts
+- Add tips for messaging the dev?
+- Add tips for features that don't work when there is no API key (message developer, share diagnostics)
+- Add tip for setting up global keyboard shortcuts via macos app
+- https://fatbobman.com/en/posts/mastering-tipkit-advance/
+
 ## Improve Testing
 
 -   UI Tests

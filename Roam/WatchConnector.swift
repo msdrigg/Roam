@@ -31,7 +31,7 @@
                 Task {
                     do {
                         let container = getSharedModelContainer()
-                        let devices = try await DeviceActor(modelContainer: container).allDeviceEntities()
+                        let devices = try await DataHandler(modelContainer: container).allDeviceEntities()
                         DispatchQueue.main.async {
                             self.transferDevices(devices: devices)
                         }
@@ -47,7 +47,7 @@
             Task {
                 do {
                     let container = getSharedModelContainer()
-                    let devices = try await DeviceActor(modelContainer: container).allDeviceEntities()
+                    let devices = try await DataHandler(modelContainer: container).allDeviceEntities()
                     DispatchQueue.main.async {
                         self.transferDevices(devices: devices)
                     }
@@ -89,7 +89,6 @@
                     WatchConnectivity.logger.info("Cancelling ongoing transfer because we are creating a new one")
                     self.session?.outstandingUserInfoTransfers.last?.cancel()
                 }
-                let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
                 do {
                     try session.updateApplicationContext(deviceMap)
                 } catch {
@@ -97,7 +96,8 @@
                 }
 
                 session.sendMessage(deviceMap, replyHandler: { reply in
-                    Task {
+                    Task.detached {
+                        let deviceActor = DataHandler(modelContainer: getSharedModelContainer())
                         for device in transferingDevices {
                             await deviceActor.sentToWatch(deviceId: device)
                         }
@@ -120,14 +120,14 @@
             if let error {
                 WatchConnectivity.logger.error("WCSession activated with error: \(error)")
                 Task {
-                    await DeviceActor(modelContainer: getSharedModelContainer()).watchPossiblyDead()
+                    await DataHandler(modelContainer: getSharedModelContainer()).watchPossiblyDead()
                 }
             } else {
                 WatchConnectivity.logger.info("WCSession activated no error")
                 Task {
                     do {
                         let container = getSharedModelContainer()
-                        let devices = try await DeviceActor(modelContainer: container).allDeviceEntities()
+                        let devices = try await DataHandler(modelContainer: container).allDeviceEntities()
 
                         DispatchQueue.main.async {
                             self.transferDevices(devices: devices)
@@ -143,7 +143,7 @@
             WatchConnectivity.logger.info("WatchConnectivity session became inactive")
 
             Task {
-                await DeviceActor(modelContainer: getSharedModelContainer()).watchPossiblyDead()
+                await DataHandler(modelContainer: getSharedModelContainer()).watchPossiblyDead()
             }
         }
 
@@ -151,7 +151,7 @@
             WatchConnectivity.logger.info("WatchConnectivity session deactivated")
 
             Task {
-                await DeviceActor(modelContainer: getSharedModelContainer()).watchPossiblyDead()
+                await DataHandler(modelContainer: getSharedModelContainer()).watchPossiblyDead()
             }
         }
     }

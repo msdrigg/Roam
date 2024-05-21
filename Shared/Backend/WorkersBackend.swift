@@ -4,7 +4,8 @@ import SwiftData
 
 private let globalBackendURL = "https://backend.roam.msd3.io"
 // private let globalBackendURL = "http://192.168.8.133:8787"
-private let logger = Logger(
+
+nonisolated(unsafe) private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
     category: "WorkersBackend"
 )
@@ -86,7 +87,7 @@ struct MessageModelResponse: Decodable {
     }
 }
 
-public func getMessages(after: String?) async throws -> [Message] {
+func getMessages(after: String?) async throws -> [MessageModelResponse] {
     let userId = getSystemInstallID()
 
     var url = "\(globalBackendURL)/messages/\(userId)"
@@ -112,10 +113,10 @@ public func getMessages(after: String?) async throws -> [Message] {
     }
 
     let messages = try JSONDecoder().decode([MessageModelResponse].self, from: data)
-    return messages.map { Message(id: $0.id, message: $0.message, author: $0.author) }
+    return messages
 }
 
-public func sendMessage(message: String, apnsToken: String?) async throws {
+public func sendMessage(message: String?, apnsToken: String?) async throws {
     guard let url = URL(string: "\(globalBackendURL)/new-message") else {
         throw URLError(.badURL)
     }
@@ -129,7 +130,7 @@ public func sendMessage(message: String, apnsToken: String?) async throws {
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
     let messageRequest = MessageRequest(
-        content: message,
+        content: message ?? "",
         title: "Message from \(userId)",
         apnsToken: apnsToken,
         userId: userId,

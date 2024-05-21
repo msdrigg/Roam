@@ -40,7 +40,7 @@ struct AppListView: View {
                             Self.logger.error("Error opening app \(app.id): \(error)")
                         }
                     }
-                }) {
+                }, label: {
                     Label {
                         Text(app.name)
                     } icon: {
@@ -51,7 +51,7 @@ struct AppListView: View {
                             .shadow(radius: 4)
                     }
                     .labelStyle(AppIconLabelStyle())
-                }
+                })
                 .sensoryFeedback(.impact, trigger: appPressCount(app.id))
             }
             if apps.isEmpty {

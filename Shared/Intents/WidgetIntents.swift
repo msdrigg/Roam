@@ -28,6 +28,14 @@ import os
                 }
             }
         }
+        
+        public var selectedDevice: DeviceAppEntity? {
+            if (!manuallySelectDevice) {
+                return nil
+            }
+            
+            return device
+        }
     }
 
     @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
@@ -95,6 +103,14 @@ import os
                 }
             }
         }
+        
+        public var selectedDevice: DeviceAppEntity? {
+            if (!manuallySelectDevice) {
+                return nil
+            }
+            
+            return device
+        }
     }
 
     @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
@@ -152,10 +168,12 @@ import os
     public func clickButton(button: RemoteButton, device: DeviceAppEntity?) async throws {
         logger.debug("Pressing widget button \(button.apiValue ?? "nil") on device \(device?.name ?? "nil")")
         let modelContainer = getSharedModelContainer()
+        
+        let deviceActor = DataHandler(modelContainer: modelContainer)
 
         var targetDevice = device
         if targetDevice == nil {
-            targetDevice = await fetchSelectedDevice(modelContainer: modelContainer)
+            targetDevice = await deviceActor.fetchSelectedDeviceAppEntity()
         }
 
         guard let targetDevice else {

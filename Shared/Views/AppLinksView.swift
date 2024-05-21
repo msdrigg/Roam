@@ -2,17 +2,17 @@ import SwiftData
 import SwiftUI
 
 #if os(tvOS) || os(visionOS)
-    let GRID_WIDTH: CGFloat = 100
-    let GRID_SPACING: CGFloat = 20
-    let GRID_HEIGHT: CGFloat = 130
+    let gridWidth: CGFloat = 100
+    let gridSpacing: CGFloat = 20
+    let gridHeight: CGFloat = 130
 #elseif os(visionOS)
-    let GRID_WIDTH: CGFloat = 80
-    let GRID_SPACING: CGFloat = 20
-    let GRID_HEIGHT: CGFloat = 130
+    let gridWidth: CGFloat = 80
+    let gridSpacing: CGFloat = 20
+    let gridHeight: CGFloat = 130
 #else
-    let GRID_WIDTH: CGFloat = 60
-    let GRID_SPACING: CGFloat = 10
-    let GRID_HEIGHT: CGFloat = 80
+    let gridWidth: CGFloat = 60
+    let gridSpacing: CGFloat = 10
+    let gridHeight: CGFloat = 80
 #endif
 
 struct AppLinksView: View {
@@ -54,10 +54,15 @@ struct AppLinksView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     Spacer()
                     LazyHGrid(rows: Array(repeating:
-                        GridItem(.fixed(CGFloat(GRID_WIDTH))), count: rows), spacing: GRID_SPACING)
+                        GridItem(.fixed(CGFloat(gridWidth))), count: rows), spacing: gridSpacing)
                     {
                         ForEach(Array(cachedAppLinks.enumerated()), id: \.element.id) { _, app in
                             AppLinkButton(app: app, action: handleOpenApp)
+                                .scrollTransition(.interactive) { content, phase in
+                                    content
+                                        .scaleEffect(phase != .identity ? 0.7 : 1)
+                                        .opacity(phase != .identity ? 0.5 : 1)
+                                }
                         }
                     }
                     .scrollTargetLayout()
@@ -65,17 +70,17 @@ struct AppLinksView: View {
                         minWidth: geometry.frame(in: .global).width,
                         minHeight: geometry.frame(in: .global).height
                     )
-
                     #if os(macOS)
                     .captureVerticalScrollWheel()
                     #endif
                     Spacer()
                 }
+                .scrollClipDisabled()
                 .scrollTargetBehavior(.viewAligned)
                 .safeAreaPadding(.horizontal, 4)
             }
         }
-        .frame(height: GRID_HEIGHT * CGFloat(rows))
+        .frame(height: gridHeight * CGFloat(rows))
         .onAppear {
             cachedAppLinks = appLinks
         }
@@ -94,12 +99,12 @@ struct AppLinkButton: View {
     var body: some View {
         Button(action: {
             action(app.toAppEntity())
-        }) {
+        }, label: {
             VStack {
                 DataImage(from: app.icon, fallback: "questionmark.app")
                     .resizable().aspectRatio(contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .frame(width: GRID_WIDTH)
+                    .frame(width: gridWidth)
                     .shadow(radius: 4)
 
                 Text(app.name)
@@ -110,21 +115,21 @@ struct AppLinkButton: View {
                 #endif
                     .truncationMode(.tail)
                     .lineLimit(1)
-                    .frame(maxWidth: GRID_WIDTH)
+                    .frame(maxWidth: gridWidth)
             }
-        }
+        })
         .buttonStyle(.plain)
     }
 }
 
 #Preview {
     AppLinksView(deviceId: nil, rows: 1, handleOpenApp: { _ in })
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }
 
 #Preview {
     AppLinksView(deviceId: nil, rows: 2, handleOpenApp: { _ in })
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
         .previewLayout(.fixed(width: 100.0, height: 300.0))
 }

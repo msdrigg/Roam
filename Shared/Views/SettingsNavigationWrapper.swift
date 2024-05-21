@@ -1,16 +1,16 @@
 import SwiftUI
 
 enum NavigationDestination: Hashable {
-    case SettingsDestination(SettingsDestination)
-    case AboutDestination
-    case DeviceSettingsDestination(Device)
-    case KeyboardShortcutDestinaion
-    case MessageDestination
+    case settingsDestination(SettingsDestination)
+    case aboutDestination
+    case deviceSettingsDestination(Device)
+    case keyboardShortcutDestinaion
+    case messageDestination
 }
 
 enum SettingsDestination {
-    case Global
-    case Debugging
+    case global
+    case debugging
 }
 
 struct SettingsNavigationWrapper<Content>: View where Content: View {
@@ -24,16 +24,15 @@ struct SettingsNavigationWrapper<Content>: View where Content: View {
             content()
                 .navigationDestination(for: NavigationDestination.self) { globalDestination in
                     switch globalDestination {
-                    case let .SettingsDestination(destination):
+                    case let .settingsDestination(destination):
                         #if !APPCLIP
                             SettingsView(path: $path, destination: destination)
                         #endif
-                    case .AboutDestination:
+                    case .aboutDestination:
                         #if !APPCLIP
                             AboutView()
                         #endif
-                    case let .DeviceSettingsDestination(device):
-                        let _ = print("Getting nav to settings dest")
+                    case let .deviceSettingsDestination(device):
                         #if !APPCLIP
                             DeviceDetailView(device: device) {
                                 if path.count > 0 {
@@ -41,11 +40,11 @@ struct SettingsNavigationWrapper<Content>: View where Content: View {
                                 }
                             }
                         #endif
-                    case .KeyboardShortcutDestinaion:
+                    case .keyboardShortcutDestinaion:
                         #if !os(watchOS)
                             KeyboardShortcutPanel()
                         #endif
-                    case .MessageDestination:
+                    case .messageDestination:
                         #if !os(watchOS)
                             MessageView()
                         #endif

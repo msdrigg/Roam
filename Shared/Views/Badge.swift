@@ -70,5 +70,5 @@ extension LabelStyle where Self == BadgeLabelStyle {
     Label("Test Badge!", systemImage: "keyboard")
         .labelStyle(.badge(Color.green))
         .previewLayout(.fixed(width: 100.0, height: 300.0))
-        .modelContainer(devicePreviewContainer)
+        .modelContainer(previewContainer)
 }

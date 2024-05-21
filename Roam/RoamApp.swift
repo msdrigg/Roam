@@ -27,7 +27,6 @@ struct RoamApp: App {
             Window("Roam", id: "main") {
                 RemoteView()
             }
-            .modelContainer(sharedModelContainer)
             .defaultSize(width: 400, height: 1000)
             .defaultPosition(.trailing)
             .windowToolbarStyle(.unifiedCompact(showsTitle: false))
@@ -44,7 +43,7 @@ struct RoamApp: App {
                         #if os(macOS)
                             openWindow(id: "keyboard-shortcuts")
                         #else
-                            navigationPath.append(NavigationDestination.KeyboardShortcutDestinaion)
+                            navigationPath.append(NavigationDestination.keyboardShortcutDestinaion)
                         #endif
                     }
                     .keyboardShortcut("k")
@@ -53,7 +52,7 @@ struct RoamApp: App {
                         #if os(macOS)
                             openWindow(id: "messages")
                         #else
-                            navigationPath.append(NavigationDestination.MessageDestination)
+                            navigationPath.append(NavigationDestination.messageDestination)
                         #endif
                     }
                     .keyboardShortcut("j")
@@ -64,7 +63,7 @@ struct RoamApp: App {
                         #if os(macOS)
                             openWindow(id: "keyboard-shortcuts")
                         #else
-                            navigationPath.append(NavigationDestination.KeyboardShortcutDestinaion)
+                            navigationPath.append(NavigationDestination.keyboardShortcutDestinaion)
                         #endif
                     }
                     .keyboardShortcut("k")
@@ -73,12 +72,14 @@ struct RoamApp: App {
                         #if os(macOS)
                             openWindow(id: "messages")
                         #else
-                            navigationPath.append(NavigationDestination.MessageDestination)
+                            navigationPath.append(NavigationDestination.messageDestination)
                         #endif
                     }
                     .keyboardShortcut("j")
                 }
             }
+            .modelContainer(sharedModelContainer)
+            .environment(\.createDataHandler, dataHandlerCreator())
         #else
             WindowGroup {
                 RemoteView()
@@ -91,6 +92,7 @@ struct RoamApp: App {
             .defaultSize(width: 400, height: 1000)
             #endif
             .modelContainer(sharedModelContainer)
+            .environment(\.createDataHandler, dataHandlerCreator())
         #endif
 
         #if os(macOS)
@@ -100,10 +102,13 @@ struct RoamApp: App {
             }
             .windowResizability(.contentSize)
             .modelContainer(sharedModelContainer)
+            .environment(\.createDataHandler, dataHandlerCreator())
 
             Window("Keyboard Shortcuts", id: "keyboard-shortcuts") {
                 KeyboardShortcutPanel()
             }
+            .modelContainer(sharedModelContainer)
+            .environment(\.createDataHandler, dataHandlerCreator())
         #endif
 
         #if os(macOS)
@@ -111,6 +116,7 @@ struct RoamApp: App {
                 MacSettings()
             }
             .modelContainer(sharedModelContainer)
+            .environment(\.createDataHandler, dataHandlerCreator())
             .windowToolbarStyle(.unified(showsTitle: true))
         #endif
     }

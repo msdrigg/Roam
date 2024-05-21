@@ -4,7 +4,6 @@
     import os
 
     enum VolumeClicked: String, CaseIterable {
-        // swiftlint:disable:next identifier_name
         case up
         case down
     }
