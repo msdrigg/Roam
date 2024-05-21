@@ -96,6 +96,8 @@
 		AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF42442D2BB1118700334AAF /* SchemaFile.swift */; };
 		AF42442F2BB1118700334AAF /* SchemaFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF42442D2BB1118700334AAF /* SchemaFile.swift */; };
 		AF4244302BB1118700334AAF /* SchemaFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF42442D2BB1118700334AAF /* SchemaFile.swift */; };
+		AF44021C2BFBEF2500004C15 /* LinkedTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF44021B2BFBEF2500004C15 /* LinkedTextView.swift */; };
+		AF44021D2BFBEF2500004C15 /* LinkedTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF44021B2BFBEF2500004C15 /* LinkedTextView.swift */; };
 		AF5ED8D52AE984E9007DB2B8 /* WidgetColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */; };
 		AF5ED8DE2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */; };
 		AF5ED8DF2AE98C85007DB2B8 /* BindingExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8DD2AE98C85007DB2B8 /* BindingExtensions.swift */; };
@@ -232,7 +234,6 @@
 		AFE6249E2BDCAA5000F4992E /* DataActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataActor.swift */; };
 		AFE6249F2BDCAA5000F4992E /* DataActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataActor.swift */; };
 		AFE624A02BDCAA5000F4992E /* DataActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataActor.swift */; };
-		AFE624A12BDD929700F4992E /* WorkersBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* WorkersBackend.swift */; };
 		AFE89A2D2B9E793E0078387C /* Debugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE89A2C2B9E793E0078387C /* Debugger.swift */; };
 		AFE89A2E2B9EBBD30078387C /* Debugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE89A2C2B9E793E0078387C /* Debugger.swift */; };
 		AFECDE1A2AE184FE003F6676 /* XMLCoder in Frameworks */ = {isa = PBXBuildFile; productRef = AFECDE192AE184FE003F6676 /* XMLCoder */; };
@@ -396,6 +397,7 @@
 		AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePicker.swift; sourceTree = "<group>"; };
 		AF3D62D62AE6F703006AB8E9 /* OpusDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpusDecoder.swift; sourceTree = "<group>"; };
 		AF42442D2BB1118700334AAF /* SchemaFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaFile.swift; sourceTree = "<group>"; };
+		AF44021B2BFBEF2500004C15 /* LinkedTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedTextView.swift; sourceTree = "<group>"; };
 		AF4829722AD4C83D008E05FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AF56E3B02AD97AB100F5E6E0 /* AppLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLink.swift; sourceTree = "<group>"; };
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
@@ -530,6 +532,7 @@
 				AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */,
 				AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */,
 				AFF6DE102BCF0740002C13FC /* MessagingView.swift */,
+				AF44021B2BFBEF2500004C15 /* LinkedTextView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1084,7 +1087,6 @@
 				AF205B272AE02D0100041CDF /* NetworkHelpers.swift in Sources */,
 				AF205B2B2AE02D1C00041CDF /* ButtonPressIntents.swift in Sources */,
 				AF24805A2BDB42F600EF47AE /* TestData.swift in Sources */,
-				AFE624A12BDD929700F4992E /* WorkersBackend.swift in Sources */,
 				AFD9C4DF2AE9801400C4079C /* SmallAppView.swift in Sources */,
 				AF205B1F2AE02CAF00041CDF /* MediumRemoteWidget.swift in Sources */,
 				AF19CA3D2AE6BFDF00A42DFF /* DeviceApi.swift in Sources */,
@@ -1165,6 +1167,7 @@
 				AF8EF4FD2BB60B15002A4D6D /* LatencyListener.swift in Sources */,
 				AF8EF4EE2BB60AB5002A4D6D /* ECPSession.swift in Sources */,
 				AF8EF4DE2BB60A15002A4D6D /* RoamApp.swift in Sources */,
+				AF44021D2BFBEF2500004C15 /* LinkedTextView.swift in Sources */,
 				AF8EF5202BB61AD6002A4D6D /* DiscoveryActor.swift in Sources */,
 				AF8EF4F52BB60AF0002A4D6D /* NetworkMonitor.swift in Sources */,
 				AF8EF4F62BB60AF0002A4D6D /* DataHelpers.swift in Sources */,
@@ -1235,6 +1238,7 @@
 				AF0C828C2AEB494D00CBE7F8 /* VolumeSliderView.swift in Sources */,
 				AF19CA142AE4471200A42DFF /* AsyncHelpers.swift in Sources */,
 				AFA165C02AE92F92003F45ED /* AboutView.swift in Sources */,
+				AF44021C2BFBEF2500004C15 /* LinkedTextView.swift in Sources */,
 				AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */,
 				AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */,
 				AF19CA1E2AE4517600A42DFF /* RTCP.swift in Sources */,
@@ -1400,6 +1404,7 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,4";
@@ -1444,6 +1449,7 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = WIDGET;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,4";

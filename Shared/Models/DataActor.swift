@@ -13,7 +13,7 @@ nonisolated(unsafe) private let logger = Logger(
 
 
 @ModelActor
-public actor DataHandler{
+public actor DataHandler {
     static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: String(describing: DataHandler.self)
@@ -82,8 +82,8 @@ public actor DataHandler{
         DataHandler.logger.info("Updated device at \(location)")
     }
 
-    func addOrReplaceDevice(location: String, friendlyDeviceName: String, udn: String) -> PersistentIdentifier {
-        if var device = deviceForUdn(udn: udn) {
+    func addOrReplaceDevice(location: String, friendlyDeviceName: String, udn: String) -> PersistentIdentifier? {
+        if let device = deviceForUdn(udn: udn) {
             device.location = location
             device.name = friendlyDeviceName
             do {
@@ -108,7 +108,8 @@ public actor DataHandler{
             DataHandler.logger.info("Added device \(String(describing: device.persistentModelID))")
             return device.persistentModelID
         } catch {
-            DataHandler.logger.warning("Error adding device at \(location)")
+            DataHandler.logger.warning("Error adding device at \(location), \(error)")
+            return nil
         }
     }
 
@@ -196,6 +197,11 @@ public actor DataHandler{
         }
         return nil
     }
+    
+    func deviceEntityForUdn(udn: String) -> DeviceAppEntity? {
+        return deviceForUdn(udn: udn)?.toAppEntity()
+    }
+
 
     func deviceExists(id: String) -> Bool {
         deviceForUdn(udn: id) != nil
@@ -273,7 +279,7 @@ extension DataHandler {
 
 }
 
-private extension ModelContext {
+extension ModelContext {
     func existingDevice(for id: PersistentIdentifier) -> Device? {
         if let registered: Device = registeredModel(for: id) {
             if registered.isDeleted {
@@ -282,7 +288,7 @@ private extension ModelContext {
             return registered
         }
 
-        var fetchDescriptor = FetchDescriptor<Device>(
+        let fetchDescriptor = FetchDescriptor<Device>(
             predicate: #Predicate {
                 $0.persistentModelID == id && $0.deletedAt == nil
             }
@@ -298,6 +304,7 @@ private extension ModelContext {
             return model
         } catch {
             logger.info("Error getting device for id \(id.described()): \(error)")
+            return nil
         }
     }
 
@@ -309,7 +316,7 @@ private extension ModelContext {
             return registered
         }
 
-        var fetchDescriptor = FetchDescriptor<AppLink>(
+        let fetchDescriptor = FetchDescriptor<AppLink>(
             predicate: #Predicate {
                 $0.persistentModelID == id
             }
@@ -324,6 +331,7 @@ private extension ModelContext {
             return data
         } catch {
             logger.info("Error getting app for id \(id.described()): \(error)")
+            return nil
         }
     }
 }
@@ -401,8 +409,163 @@ extension DataHandler {
 }
 
 extension DataHandler {
-    public func refreshMessages(modelContainer: ModelContainer, latestMessageId: String?, viewed: Bool) async -> Int {
-        let modelContext = ModelContext(modelContainer)
+    func refreshDevice(_ id: PersistentIdentifier) async {
+        guard let location = (modelContext.existingDevice(for: id))?.location else {
+            DataHandler.logger.error("Trying to refresh device that doeesn't exist \(String(describing: id))")
+            return
+        }
+
+        guard let deviceInfo = await fetchDeviceInfo(location: location) else {
+            DataHandler.logger.info("Failed to get device info \(location)")
+            return
+        }
+
+        if let device = modelContext.existingDevice(for: id) {
+            if device.udn.starts(with: "roam:newdevice-") {
+                device.udn = deviceInfo.udn
+            } else if deviceInfo.udn != device.udn {
+                return
+            }
+
+            device.lastOnlineAt = Date.now
+
+            let udn: String? = device.udn
+            let deviceApps = (try? modelContext.fetch(
+                FetchDescriptor<AppLink>(
+                    predicate: #Predicate {
+                        $0.deviceUid == udn
+                    }
+                )
+            )) ?? []
+
+            if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -minRescanInterval,
+               deviceApps.allSatisfy({ $0.icon != nil }), deviceApps.count > 0
+            {
+                try? modelContext.save()
+                DataHandler.logger.info("Returning early from refresh")
+                return
+            }
+            device.lastScannedAt = Date.now
+
+            device.ethernetMAC = deviceInfo.ethernetMac
+            device.wifiMAC = deviceInfo.wifiMac
+            device.networkType = deviceInfo.networkType
+            device.powerMode = deviceInfo.powerMode
+            if device.name == "New device" {
+                if let newName = deviceInfo.friendlyDeviceName {
+                    device.name = newName
+                }
+            }
+
+            try? modelContext.save()
+        }
+
+        DataHandler.logger.info("Refreshing capabilities and apps")
+
+        var capabilities: DeviceCapabilities?
+        do {
+            capabilities = try await fetchDeviceCapabilities(location: location)
+        } catch {
+            DataHandler.logger.error("Error getting capabilities \(error)")
+        }
+
+        var apps: [AppLinkAppEntity]?
+        do {
+            apps = try await fetchDeviceApps(location: location)
+        } catch {
+            DataHandler.logger.error("Error getting device apps \(error)")
+        }
+
+        var deviceNeedsIcon = false
+        var appsNeedingIcons: [String] = []
+        if let device = try? modelContext.existingDevice(for: id) {
+            deviceNeedsIcon = device.deviceIcon == nil
+            if let capabilities {
+                device.rtcpPort = capabilities.rtcpPort
+                device.supportsDatagram = capabilities.supportsDatagram
+            }
+
+            let udn: String = device.udn
+            let deviceApps = (try? modelContext.fetch(
+                FetchDescriptor<AppLink>(
+                    predicate: #Predicate {
+                        $0.deviceUid == udn
+                    }
+                )
+            )) ?? []
+
+            if let apps {
+                // Remove apps from device that aren't in fetchedApps
+                var deviceApps = deviceApps.filter { app in
+                    apps.contains { $0.id == app.id }
+                }
+
+                // Add new apps to device
+                for app in apps where !deviceApps.contains(where: { $0.id == app.id }) {
+                    let al = AppLink(id: app.id, type: app.type, name: app.name, deviceUid: device.udn)
+                    modelContext.insert(al)
+                    deviceApps.append(al)
+                }
+
+                // Fetch icons for apps in deviceApps
+                for app in deviceApps where app.icon == nil {
+                    appsNeedingIcons.append(app.id)
+                }
+            }
+
+            try? modelContext.save()
+        }
+
+        var deviceIcon: Data?
+        if deviceNeedsIcon {
+            DataHandler.logger.info("Getting icon for device \(location)")
+            do {
+                deviceIcon = try await tryFetchDeviceIcon(location: location)
+            } catch {
+                DataHandler.logger.warning("Error getting device icon \(error)")
+            }
+        }
+
+        var appIcons: [String: Data] = [:]
+        for appId in appsNeedingIcons {
+            do {
+                DataHandler.logger.error("Getting device app icon for id \(appId)")
+                let iconData = try await fetchAppIcon(location: location, appId: appId)
+                appIcons[appId] = iconData
+            } catch {
+                DataHandler.logger.error("Error getting device app icon \(error)")
+            }
+        }
+
+        if let device = modelContext.existingDevice(for: id) {
+            let udn: String? = device.udn
+
+            let deviceApps = (try? modelContext.fetch(
+                FetchDescriptor<AppLink>(
+                    predicate: #Predicate {
+                        $0.deviceUid == udn
+                    }
+                )
+            )) ?? []
+
+            if let icon = deviceIcon {
+                device.deviceIcon = icon
+            }
+            for app in appIcons {
+                if let deviceApp = deviceApps.first(where: { $0.id == app.key }) {
+                    deviceApp.icon = app.value
+                }
+            }
+            try? modelContext.save()
+        }
+    }
+
+}
+
+#if !WIDGET
+extension DataHandler {
+    @discardableResult
+    public func refreshMessages(latestMessageId: String?, viewed: Bool) async -> Int {
         do {
             var count = 0
             do {
@@ -447,167 +610,17 @@ extension DataHandler {
         }
     }
 }
+#endif
 
 
 // TODO: Refactor this into something reasonable
-
-func refreshDevice(_ id: PersistentIdentifier) async {
-    guard let location = (modelContext.existingDevice(for: id))?.location else {
-        DataHandler.logger.error("Trying to refresh device that doeesn't exist \(String(describing: id))")
-        return
-    }
-
-    guard let deviceInfo = await fetchDeviceInfo(location: location) else {
-        DataHandler.logger.info("Failed to get device info \(location)")
-        return
-    }
-
-    if let device = modelContext.existingDevice(for: id) {
-        if device.udn.starts(with: "roam:newdevice-") {
-            device.udn = deviceInfo.udn
-        } else if deviceInfo.udn != device.udn {
-            return
-        }
-
-        device.lastOnlineAt = Date.now
-
-        let udn: String? = device.udn
-        let deviceApps = (try? modelContext.fetch(
-            FetchDescriptor<AppLink>(
-                predicate: #Predicate {
-                    $0.deviceUid == udn
-                }
-            )
-        )) ?? []
-
-        if (device.lastScannedAt?.timeIntervalSinceNow) ?? -10000 > -minRescanInterval,
-           deviceApps.allSatisfy({ $0.icon != nil }), deviceApps.count > 0
-        {
-            try? modelContext.save()
-            DataHandler.logger.info("Returning early from refresh")
-            return
-        }
-        device.lastScannedAt = Date.now
-
-        device.ethernetMAC = deviceInfo.ethernetMac
-        device.wifiMAC = deviceInfo.wifiMac
-        device.networkType = deviceInfo.networkType
-        device.powerMode = deviceInfo.powerMode
-        if device.name == "New device" {
-            if let newName = deviceInfo.friendlyDeviceName {
-                device.name = newName
-            }
-        }
-
-        try? modelContext.save()
-    }
-
-    DataHandler.logger.info("Refreshing capabilities and apps")
-
-    var capabilities: DeviceCapabilities?
-    do {
-        capabilities = try await fetchDeviceCapabilities(location: location)
-    } catch {
-        DataHandler.logger.error("Error getting capabilities \(error)")
-    }
-
-    var apps: [AppLinkAppEntity]?
-    do {
-        apps = try await fetchDeviceApps(location: location)
-    } catch {
-        DataHandler.logger.error("Error getting device apps \(error)")
-    }
-
-    var deviceNeedsIcon = false
-    var appsNeedingIcons: [String] = []
-    if let device = try? modelContext.existingDevice(for: id) {
-        deviceNeedsIcon = device.deviceIcon == nil
-        if let capabilities {
-            device.rtcpPort = capabilities.rtcpPort
-            device.supportsDatagram = capabilities.supportsDatagram
-        }
-
-        let udn: String = device.udn
-        let deviceApps = (try? modelContext.fetch(
-            FetchDescriptor<AppLink>(
-                predicate: #Predicate {
-                    $0.deviceUid == udn
-                }
-            )
-        )) ?? []
-
-        if let apps {
-            // Remove apps from device that aren't in fetchedApps
-            var deviceApps = deviceApps.filter { app in
-                apps.contains { $0.id == app.id }
-            }
-
-            // Add new apps to device
-            for app in apps where !deviceApps.contains(where: { $0.id == app.id }) {
-                let al = AppLink(id: app.id, type: app.type, name: app.name, deviceUid: device.udn)
-                modelContext.insert(al)
-                deviceApps.append(al)
-            }
-
-            // Fetch icons for apps in deviceApps
-            for app in deviceApps where app.icon == nil {
-                appsNeedingIcons.append(app.id)
-            }
-        }
-
-        try? modelContext.save()
-    }
-
-    var deviceIcon: Data?
-    if deviceNeedsIcon {
-        DataHandler.logger.info("Getting icon for device \(location)")
-        do {
-            deviceIcon = try await tryFetchDeviceIcon(location: location)
-        } catch {
-            DataHandler.logger.warning("Error getting device icon \(error)")
-        }
-    }
-
-    var appIcons: [String: Data] = [:]
-    for appId in appsNeedingIcons {
-        do {
-            DataHandler.logger.error("Getting device app icon for id \(appId)")
-            let iconData = try await fetchAppIcon(location: location, appId: appId)
-            appIcons[appId] = iconData
-        } catch {
-            DataHandler.logger.error("Error getting device app icon \(error)")
-        }
-    }
-
-    if let device = modelContext.existingDevice(for: id) {
-        let udn: String? = device.udn
-
-        let deviceApps = (try? modelContext.fetch(
-            FetchDescriptor<AppLink>(
-                predicate: #Predicate {
-                    $0.deviceUid == udn
-                }
-            )
-        )) ?? []
-
-        if let icon = deviceIcon {
-            device.deviceIcon = icon
-        }
-        for app in appIcons {
-            if let deviceApp = deviceApps.first(where: { $0.id == app.key }) {
-                deviceApp.icon = app.value
-            }
-        }
-        try? modelContext.save()
-    }
-}
 
 func saveDevice(
     existingDeviceId modelId: PersistentIdentifier,
     existingUDN: String,
     newIP deviceIP: String,
     newDeviceName deviceName: String,
-    deviceActor: DeviceActor
+    deviceActor: DataHandler
 ) async {
     // Try to get device id
     // Watchos can't check tcp connection, so just do the request

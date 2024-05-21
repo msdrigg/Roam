@@ -22,7 +22,7 @@ struct DevicePicker: View {
     @Binding var showingPicker: Bool
     @State var navPath: [NavigationDestination] = []
 
-    @State var deviceActor: DeviceActor!
+    @State var deviceActor: DataHandler!
 
     var deviceStatusColor: Color {
         device?.isOnline() ?? false ? Color.green : Color.secondary
@@ -106,7 +106,7 @@ struct DevicePicker: View {
         }
         .onAppear {
             let modelContainer = modelContext.container
-            deviceActor = DeviceActor(modelContainer: modelContainer)
+            deviceActor = DataHandler(modelContainer: modelContainer)
         }
     }
 }

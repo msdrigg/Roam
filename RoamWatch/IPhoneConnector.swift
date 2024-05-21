@@ -59,9 +59,9 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
             WatchConnectivity.logger.info("Trying to add devices \(deviceMap)")
             Task {
                 let modelContainer = getSharedModelContainer()
-                let deviceActor = DeviceActor(modelContainer: modelContainer)
+                let deviceActor = DataHandler(modelContainer: modelContainer)
                 for device in deviceMap {
-                    if let existingDevice = await deviceActor.existingDevice(id: device.key) {
+                    if let existingDevice = await deviceActor.deviceEntityForUdn(udn: device.key) {
                         WatchConnectivity.logger
                             .info("Device aleady exists, only updating name, location \(device.key)")
                         if let location = device.value["location"] {
@@ -76,19 +76,15 @@ class WatchConnectivity: NSObject, WCSessionDelegate {
                         }
                         continue
                     }
-                    do {
-                        if let location = device.value["location"] {
-                            let name = device.value["name"] ?? "New device"
-                            let pid = try await deviceActor.addOrReplaceDevice(
-                                location: location,
-                                friendlyDeviceName: name,
-                                udn: device.key
-                            )
+                    if let location = device.value["location"] {
+                        let name = device.value["name"] ?? "New device"
+                        if let pid = await deviceActor.addOrReplaceDevice(
+                            location: location,
+                            friendlyDeviceName: name,
+                            udn: device.key
+                        ) {
                             await deviceActor.refreshDevice(pid)
                         }
-                    } catch {
-                        WatchConnectivity.logger
-                            .error("Unable to add new device \(device.key), \(device.value) with error \(error)")
                     }
                 }
             }

@@ -59,10 +59,10 @@ struct SettingsView: View {
     @State private var scanningActor: DeviceDiscoveryActor!
     @State private var isScanning: Bool = false
 
-    @State private var deviceActor: DeviceActor!
-
     @State private var tabSelection = 0
     @State private var showWatchOSNote = false
+    
+    @Environment(\.createDataHandler) private var createDataHandler
 
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
@@ -113,10 +113,10 @@ struct SettingsView: View {
                         #if !os(watchOS)
                             .contextMenu {
                                 Button(role: .destructive) {
-                                    Task {
+                                    Task.detached {
                                         do {
                                             Self.logger.error("HI")
-                                            try await deviceActor.delete(device.persistentModelID)
+                                            try await createDataHandler()?.delete(device.persistentModelID)
                                             Self.logger
                                                 .info(
                                                     "Deleted device with id \(String(describing: device.persistentModelID))"
@@ -138,9 +138,9 @@ struct SettingsView: View {
                         #if !os(tvOS)
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
-                                Task {
+                                Task.detached {
                                     do {
-                                        try await deviceActor.delete(device.persistentModelID)
+                                        try await createDataHandler()?.delete(device.persistentModelID)
                                     } catch {
                                         Self.logger.error("Error deleting device \(error)")
                                     }
@@ -153,11 +153,11 @@ struct SettingsView: View {
                         #endif
                     }
                     .onDelete { indexSet in
-                        Task {
+                        Task.detached {
                             do {
                                 for index in indexSet {
                                     if let model = devices[safe: index] {
-                                        try await deviceActor.delete(model.persistentModelID)
+                                        try await createDataHandler()?.delete(model.persistentModelID)
                                     }
                                 }
                             } catch {
@@ -400,7 +400,6 @@ struct SettingsView: View {
         .onAppear {
             let modelContainer = modelContext.container
             scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
-            deviceActor = DeviceActor(modelContainer: modelContainer)
 
             modelContext.processPendingChanges()
         }
@@ -526,7 +525,8 @@ struct DeviceDetailView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var scanningActor: DeviceDiscoveryActor!
-    @State private var deviceActor: DeviceActor!
+    
+    @Environment(\.createDataHandler) private var createDataHandler
 
     @Bindable var device: Device
     @State var deviceName: String = ""
@@ -551,9 +551,9 @@ struct DeviceDetailView: View {
                     Button("Delete", systemImage: "trash", role: .destructive, action: {
                         // Don't block the dismiss waiting for save
                         Self.logger.info("Deleting device")
-                        Task {
+                        Task.detached {
                             do {
-                                try await deviceActor.delete(device.persistentModelID)
+                                try await createDataHandler()?.delete(device.persistentModelID)
                                 Self.logger
                                     .info("Deleted device with id \(String(describing: device.persistentModelID))")
                             } catch {
@@ -671,13 +671,13 @@ struct DeviceDetailView: View {
             deviceIP = host
         }
         .onDisappear {
-            Task {
+            Task.detached {
                 await saveDevice(
                     existingDeviceId: device.persistentModelID,
                     existingUDN: device.udn,
                     newIP: deviceIP,
                     newDeviceName: deviceName,
-                    deviceActor: DeviceActor(
+                    deviceActor: DataHandler(
                         modelContainer: modelContext.container
                     )
                 )
@@ -695,9 +695,9 @@ struct DeviceDetailView: View {
                 Button("Delete", systemImage: "trash", role: .destructive, action: {
                     // Don't block the dismiss waiting for save
                     Self.logger.info("Deleting device")
-                    Task {
+                    Task.detached {
                         do {
-                            try await deviceActor.delete(device.persistentModelID)
+                            try await createDataHandler()?.delete(device.persistentModelID)
                             Self.logger.info("Deleted device with id \(String(describing: device.persistentModelID))")
                         } catch {
                             Self.logger.error("Error deleting device \(error)")
@@ -713,7 +713,6 @@ struct DeviceDetailView: View {
         .onAppear {
             let modelContainer = modelContext.container
             scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
-            deviceActor = DeviceActor(modelContainer: modelContainer)
         }
 
         #if os(macOS)

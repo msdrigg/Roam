@@ -51,6 +51,7 @@ struct MessageView: View {
     @Environment(\.colorScheme) var colorScheme
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.createDataHandler) private var createDataHandler
 
     var messages: [Message] {
         ([Message(
@@ -71,7 +72,7 @@ struct MessageView: View {
                                 HStack {
                                     if message.author == .me {
                                         Spacer()
-                                        Text(message.message)
+                                        LinkedText(message.message)
                                             .padding(.vertical, 6)
                                             .padding(.horizontal, 10)
                                             .background(Color.accentColor.opacity(0.5))
@@ -81,9 +82,8 @@ struct MessageView: View {
                                             .cornerRadius(15)
                                             .frame(maxWidth: geometry.size.width * 2 / 3, alignment: .trailing)
                                             .padding(.trailing, 10)
-
                                     } else {
-                                        Text(message.message)
+                                        LinkedText(message.message)
                                             .padding(.vertical, 6)
                                             .padding(.horizontal, 10)
                                             .background(Color.gray.opacity(0.5))
@@ -100,6 +100,7 @@ struct MessageView: View {
                     #if !os(visionOS)
                     .scrollDismissesKeyboard(.interactively)
                     #endif
+                    .textSelection(.enabled)
                     .onChange(of: messages.count) { _, _ in
                         if let id = messages.last?.persistentModelID {
                             print("Scrolling here \(messages.last?.id ?? "")")
@@ -182,11 +183,13 @@ struct MessageView: View {
             let latestMessageId = messages.last { $0.fetchedBackend == true }?.id
 
             if latestMessageId != nil {
-                let result = await refreshMessages(
-                    modelContainer: modelContext.container,
-                    latestMessageId: latestMessageId,
-                    viewed: true
-                )
+                let createDataHandler = self.createDataHandler;
+                let result = await Task.detached {
+                    return await createDataHandler()?.refreshMessages(
+                        latestMessageId: latestMessageId,
+                        viewed: true
+                    ) ?? 0
+                }.value
                 logger.info("Got results \(result)")
 
                 if result > 0 {
@@ -207,14 +210,22 @@ struct MessageView: View {
     func sendTypedMessage() {
         logger.info("Sending message \"\(messageText)\"")
         let messageCopy = messageText
+        let createDataHandler = self.createDataHandler;
+        let latestMessageId = messages.last { $0.fetchedBackend == true }?.id;
         Task {
             do {
-                try await sendMessage(message: messageCopy, apnsToken: nil)
-                if await refreshMessages(
-                    modelContainer: modelContext.container,
-                    latestMessageId: messages.last { $0.fetchedBackend == true }?.id,
-                    viewed: true
-                ) > 0 {
+                try await Task.detached {
+                    try await sendMessage(message: messageCopy, apnsToken: nil)
+                }.value
+                
+                let result = await Task.detached {
+                    return await createDataHandler()?.refreshMessages(
+                        latestMessageId: latestMessageId,
+                        viewed: true
+                    ) ?? 0
+                }.value
+                
+                if result > 0 {
                     refreshResetId = UUID()
                 }
             } catch {

@@ -6,16 +6,10 @@ hide_table_of_contents: true
 
 ## Data modeling (Ongoing)
 
-- Switch to all-background data updates
-- Only query data on main thread with @Query
-- Audit everywhere modelContext is accessed outside of data actor
 - Figure out what causes data leak in case of long-running private listening after TV shuts off...
 
 ## User requested features
 
-- Make text selectable and links clickable in chat
-- Add floating window
-   - Possibly meaning task bar icon?
 - Add user-defined keyboard shortcuts
    - Allow selecting an item and then clicking keys+modifiers to update shortcut
    - Disable keyboard shortcuts on keyboard shortcut editor

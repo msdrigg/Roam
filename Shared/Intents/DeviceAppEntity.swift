@@ -10,18 +10,18 @@ public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Enc
         public init() {}
 
         public func entities(for identifiers: [DeviceAppEntity.ID]) async throws -> [DeviceAppEntity] {
-            let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
+            let deviceActor = DataHandler(modelContainer: getSharedModelContainer())
 
-            return try await deviceActor.entities(for: identifiers)
+            return try await deviceActor.deviceEntities(for: identifiers)
         }
 
         public func entities(matching string: String) async throws -> [DeviceAppEntity] {
-            let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
-            return try await deviceActor.entities(matching: string)
+            let deviceActor = DataHandler(modelContainer: getSharedModelContainer())
+            return try await deviceActor.deviceEntities(matching: string)
         }
 
         public func suggestedEntities() async throws -> [DeviceAppEntity] {
-            let deviceActor = DeviceActor(modelContainer: getSharedModelContainer())
+            let deviceActor = DataHandler(modelContainer: getSharedModelContainer())
             return try await deviceActor.allDeviceEntities()
         }
     }

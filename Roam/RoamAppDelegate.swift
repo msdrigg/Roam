@@ -33,7 +33,7 @@ func sendDeviceTokenToServer(_ token: String) async {
             UNUserNotificationCenter.current().delegate = self
         }
 
-        func showAboutPanel() {
+        @MainActor func showAboutPanel() {
             if aboutBoxWindowController == nil {
                 let styleMask: NSWindow.StyleMask = [.closable, .miniaturizable, .titled]
                 let window = NSWindow(
@@ -98,8 +98,9 @@ func sendDeviceTokenToServer(_ token: String) async {
             let lastMessage = try? context.fetch(descriptor).last
 
             let latestMessageId = lastMessage?.id
-            Task {
-                await refreshMessages(modelContainer: modelContainer, latestMessageId: latestMessageId, viewed: false)
+            Task.detached {
+                let dataHandler = DataHandler(modelContainer: self.modelContainer)
+                await dataHandler.refreshMessages(latestMessageId: latestMessageId, viewed: false)
             }
             completionHandler(.badge)
         }
