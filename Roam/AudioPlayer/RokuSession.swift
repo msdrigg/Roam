@@ -21,6 +21,7 @@ let globalHugeFixedVDLYMS: UInt32 = 1200
 
 enum HeadphonesModeError: Error, LocalizedError {
     case badURL
+    case AudioStreamingTimeout
 }
 
 func listenContinually(ecpSession: ECPSession, location: String, rtcpPort: UInt16?) async throws {
@@ -482,7 +483,29 @@ actor RTPSession {
                         await rtpAudioPlayer.stop()
                     }
                 }
-
+//                var lastTimer: Date?
+//
+//                while !Task.isCancelled {
+//                    if lastTimer == nil {
+//                        lastTimer = Date.now
+//                    }
+//                    Self.logger.info("Checking for new packets \(-(lastTimer?.timeIntervalSince1970 ?? 1)) \(lastTimer?.timeIntervalSinceNow ?? -1)")
+//                    
+//                    if let lrt = await rtpAudioPlayer.lastRender() {
+//                        if let (pcmBuffer, audioTime) = await decoder.nextPacket(atTime: lrt) {
+//                            Self.logger.info("Scheduling packet at \(audioTime)")
+//                            await rtpAudioPlayer.scheduleAudioBytes(buffer: pcmBuffer, atTime: audioTime)
+//                            lastTimer = Date.now
+//                        }
+//                    }
+//                    
+//                    try? await Task.sleep(nanoseconds: 1000 * 1000 * 10)
+//                    
+//                    if let lastTimer, -lastTimer.timeIntervalSinceNow > 8 {
+//                        Self.logger.warning("Stopping audio because last packet received \(lastTimer) seconds ago")
+//                        throw HeadphonesModeError.AudioStreamingTimeout
+//                    }
+//                }
                 for await _ in AsyncTimerSequence.repeating(every: .milliseconds(10), tolerance: .microseconds(10)) {
                     Task {
                         if let lrt = await rtpAudioPlayer.lastRender() {
@@ -492,6 +515,7 @@ actor RTPSession {
                         }
                     }
                 }
+
             }
 
             taskGroup.addTask {

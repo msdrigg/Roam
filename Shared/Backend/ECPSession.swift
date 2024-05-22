@@ -59,9 +59,7 @@ actor ECPSession {
             try await establishConnectionAndAuthenticate()
         } catch {
             Self.logger.error("Failed to establish connection and authenticate. Cancelling...: \(error)")
-            try catchObjc {
-                webSocketTask.cancel()
-            }
+            webSocketTask.cancel()
             throw error
         }
     }

@@ -3,7 +3,7 @@ import SwiftData
 public let mainAppGroup = "group.com.msdrigg.roam.models"
 
 public class GlobalModelContainer {
-    static let sharedModelContainer = testingContainer
+    static let sharedModelContainer = demandSharedModelContainer()
 }
 
 public func getSharedModelContainer() -> ModelContainer {

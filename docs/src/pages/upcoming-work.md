@@ -4,8 +4,11 @@ hide_table_of_contents: true
 
 # Upcoming Roam Updates
 
-## Data modeling (Ongoing)
+## Bug Fixes
 
+- Figure out if the loop of calls to `nextPacket` make sense.
+    - Instead of looping every 10ms and hoping the timing is correct, should I instead be looping over received packets and trying to schedule them at host time `10ms * globalSequenceNumber + startHostTime` and sampleTime to `sequenceNumber * Int64(lastSampleTime.sampleRate) / packetsPerSec + startSampleTime`
+    - Then I can switch from a `for await` loop over the clock to a `while !Task.isCancelled` loop with a `Task.sleep` in it.
 - Figure out what causes data leak in case of long-running private listening after TV shuts off...
 
 ## User requested features

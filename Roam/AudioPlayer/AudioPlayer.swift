@@ -104,7 +104,7 @@ actor OpusDecoderWithJitterBuffer {
                 if let destroyed = nextPacket {
                     Self.logger
                         .error(
-                            "Destroying packet \(destroyed.sequenceNumber) when lastPacket \(self.lastPacketNumber) next paacket \(np.sequenceNumber)"
+                            "Destroying packet \(destroyed.sequenceNumber) when lastPacket \(self.lastPacketNumber) next packet \(np.sequenceNumber)"
                         )
                 }
                 nextPacket = jitterBuffer.remove()
@@ -120,7 +120,7 @@ actor OpusDecoderWithJitterBuffer {
 
         // Need to get schedule time for when to schedule the packet
         let sampleTime = AVAudioTime(
-            hostTime: secondsToMachTime(0.01) + lastSampleTime.hostTime,
+            hostTime: secondsToMachTime(Double(globalPacketSizeMS) / 1000) + lastSampleTime.hostTime,
             sampleTime: lastSampleTime.sampleTime + Int64(lastSampleTime.sampleRate) / packetsPerSec,
             atRate: lastSampleTime.sampleRate
         )
@@ -132,7 +132,6 @@ actor OpusDecoderWithJitterBuffer {
         do {
             if let np = nextPacket {
                 nextPcm = try opusDecoder.decode(np.payload)
-//                Self.logger.info("Getting decoded packet \(nextPcm.frameLength) \(nextPcm)")
             } else {
                 nextPcm = try opusDecoder.decode_loss_concealment(sampleCount: Int64(globalClockRate) / packetsPerSec)
                 Self.logger.error("Getting loss concealment packet for sqNo \(self.lastPacketNumber)")

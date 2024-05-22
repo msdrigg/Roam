@@ -19,10 +19,6 @@
 		AF05B4712BFDA49D00FA3783 /* ObjcErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */; };
 		AF05B4722BFDA49E00FA3783 /* ObjcErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */; };
 		AF05B4732BFDA49E00FA3783 /* ObjcErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */; };
-		AF05B4752BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
-		AF05B4762BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
-		AF05B4772BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
-		AF05B4782BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
 		AF06AAD82BA3798E002C8FAF /* libwebp in Frameworks */ = {isa = PBXBuildFile; platformFilters = (tvos, ); productRef = AF06AAD72BA3798E002C8FAF /* libwebp */; };
 		AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
 		AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
@@ -75,8 +71,6 @@
 		AF2480592BDB42F600EF47AE /* TestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2480572BDB42F600EF47AE /* TestData.swift */; };
 		AF24805A2BDB42F600EF47AE /* TestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2480572BDB42F600EF47AE /* TestData.swift */; };
 		AF24805B2BDB42F600EF47AE /* TestData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2480572BDB42F600EF47AE /* TestData.swift */; };
-		AF24805D2BDB475A00EF47AE /* DebugImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */; };
-		AF2480612BDB476B00EF47AE /* DebugImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */; };
 		AF26A22B2AF1A2B90070250F /* SmallAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD9C4DC2AE9800500C4079C /* SmallAppView.swift */; };
 		AF27400C2AE02C25007C6208 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FD2ADF2FEC005FC338 /* WidgetKit.framework */; };
 		AF27400D2AE02C25007C6208 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF95B6FF2ADF2FEC005FC338 /* SwiftUI.framework */; };
@@ -362,7 +356,7 @@
 		AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultKeys.swift; sourceTree = "<group>"; };
 		AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionHelpers.swift; sourceTree = "<group>"; };
 		AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjcErrors.swift; sourceTree = "<group>"; };
-		AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.objc.preprocessed; path = ObjcErrorsInternal.h; sourceTree = "<group>"; };
+		AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjcErrorsInternal.h; sourceTree = "<group>"; };
 		AF05B4792BFDA63100FA3783 /* Bridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Bridge.h; sourceTree = "<group>"; };
 		AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AccentColor.xcassets; sourceTree = "<group>"; };
 		AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeSliderView.swift; sourceTree = "<group>"; };
@@ -983,7 +977,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
-				AF2480612BDB476B00EF47AE /* DebugImages.xcassets in Resources */,
 				AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */,
 				AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */,
 			);
@@ -1012,7 +1005,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
-				AF24805D2BDB475A00EF47AE /* DebugImages.xcassets in Resources */,
 				AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */,
 				AFC24F052AD0E5A2002AB66C /* AppIcon.xcassets in Resources */,
 			);
@@ -1081,7 +1073,6 @@
 				AF0C82982AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF8EF51E2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
 				AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */,
-				AF05B4762BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AFD9C4EB2AE980BD00C4079C /* AsyncHelpers.swift in Sources */,
 				AFD9C4FC2AE983C700C4079C /* AsyncSemaphore.swift in Sources */,
 				AF0C82A82AEC0C2C00CBE7F8 /* Shortcuts.swift in Sources */,
@@ -1132,7 +1123,6 @@
 				AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */,
 				AF0C82932AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF842A5D2BA554E5005D52D2 /* CaptureScrollWheelModifier.swift in Sources */,
-				AF05B4772BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AF19CA152AE4471200A42DFF /* AsyncHelpers.swift in Sources */,
 				AF205B262AE02D0100041CDF /* Device.swift in Sources */,
 			);
@@ -1199,7 +1189,6 @@
 				AF8EF5122BB60D43002A4D6D /* OpusDecoder.swift in Sources */,
 				AF8EF5132BB60D43002A4D6D /* AudioPlayer.swift in Sources */,
 				AF8EF5142BB60D43002A4D6D /* RTP.swift in Sources */,
-				AF05B4782BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AF8EF5152BB60D43002A4D6D /* RTCP.swift in Sources */,
 				AF8EF4F82BB60AF0002A4D6D /* AsyncHelpers.swift in Sources */,
 				AF8EF4F92BB60AF0002A4D6D /* NetworkHelpers.swift in Sources */,
@@ -1284,7 +1273,6 @@
 				AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */,
 				AFF6DE0D2BCF0326002C13FC /* Message.swift in Sources */,
 				AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */,
-				AF05B4752BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 				AF8EF51D2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
 				AF19CA2E2AE692E600A42DFF /* AsyncBufferedChannel.swift in Sources */,
@@ -1599,7 +1587,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240521.9250421.3;
+				CURRENT_PROJECT_VERSION = 20240522.9513245.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1623,7 +1611,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.31;
+				MARKETING_VERSION = 1.32;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1674,7 +1662,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20240521.9250421.3;
+				CURRENT_PROJECT_VERSION = 20240522.9513245.0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO;
@@ -1692,7 +1680,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.31;
+				MARKETING_VERSION = 1.32;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = auto;
