@@ -183,7 +183,7 @@ public actor DataHandler {
         await deleteInPast()
     }
 
-    private func deviceForUdn(udn: String) -> Device? {
+    private func deviceForUdnUnchecked(udn: String) -> Device? {
         var matchingIds = FetchDescriptor<Device>(
             predicate: #Predicate {
                 $0.deletedAt == nil && $0.udn == udn
@@ -191,6 +191,7 @@ public actor DataHandler {
         )
         matchingIds.fetchLimit = 1
         matchingIds.includePendingChanges = true
+        matchingIds.propertiesToFetch = [\.udn, \.location, \.lastOnlineAt, \.lastSelectedAt, \.name, \.deletedAt, \.lastSentToWatch, \.lastScannedAt, \.ethernetMAC, \.rtcpPort, \.supportsDatagram, \.wifiMAC, \.networkType, \.powerMode]
         do {
             let matchingIds = try modelContext.fetchIdentifiers(matchingIds)
 
@@ -203,6 +204,19 @@ public actor DataHandler {
             DataHandler.logger.error("Error checking if device exists \(udn): \(error)")
         }
         return nil
+    }
+    
+    private func deviceForUdn(udn: String) -> Device? {
+        var result: Device? = nil
+        do {
+           try catchObjc {
+                result = deviceForUdnUnchecked(udn: udn)
+            }
+        } catch {
+            Self.logger.warning("Objc error getting device \(error)")
+        }
+
+        return result
     }
     
     func deviceEntityForUdn(udn: String) -> DeviceAppEntity? {

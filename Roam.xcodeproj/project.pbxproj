@@ -15,6 +15,14 @@
 		AF0042852AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
 		AF0042862AEABA9D0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
 		AF0042872AEABA9F0051BB1E /* CollectionHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */; };
+		AF05B4702BFDA49900FA3783 /* ObjcErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */; };
+		AF05B4712BFDA49D00FA3783 /* ObjcErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */; };
+		AF05B4722BFDA49E00FA3783 /* ObjcErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */; };
+		AF05B4732BFDA49E00FA3783 /* ObjcErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */; };
+		AF05B4752BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
+		AF05B4762BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
+		AF05B4772BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
+		AF05B4782BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */ = {isa = PBXBuildFile; fileRef = AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */; };
 		AF06AAD82BA3798E002C8FAF /* libwebp in Frameworks */ = {isa = PBXBuildFile; platformFilters = (tvos, ); productRef = AF06AAD72BA3798E002C8FAF /* libwebp */; };
 		AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
 		AF0C82892AEB463300CBE7F8 /* AccentColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */; };
@@ -353,6 +361,9 @@
 /* Begin PBXFileReference section */
 		AF0042742AE9BD8F0051BB1E /* UserDefaultKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultKeys.swift; sourceTree = "<group>"; };
 		AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionHelpers.swift; sourceTree = "<group>"; };
+		AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjcErrors.swift; sourceTree = "<group>"; };
+		AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.objc.preprocessed; path = ObjcErrorsInternal.h; sourceTree = "<group>"; };
+		AF05B4792BFDA63100FA3783 /* Bridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Bridge.h; sourceTree = "<group>"; };
 		AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AccentColor.xcassets; sourceTree = "<group>"; };
 		AF0C828B2AEB494D00CBE7F8 /* VolumeSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeSliderView.swift; sourceTree = "<group>"; };
 		AF0C828F2AEBF2A200CBE7F8 /* ECPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECPSession.swift; sourceTree = "<group>"; };
@@ -662,6 +673,8 @@
 				AF0042842AEABA9D0051BB1E /* CollectionHelpers.swift */,
 				AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */,
 				AFCF22DF2B2A6A720048FFD9 /* NetworkMonitor.swift */,
+				AF05B46F2BFDA49900FA3783 /* ObjcErrors.swift */,
+				AF05B4742BFDA4CD00FA3783 /* ObjcErrorsInternal.h */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -679,6 +692,7 @@
 				AF56E3AF2AD97AA300F5E6E0 /* Models */,
 				AF56E3BB2AD9865400F5E6E0 /* Utils */,
 				AFD590D52AEC787700189620 /* ModelContainer.swift */,
+				AF05B4792BFDA63100FA3783 /* Bridge.h */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -1067,12 +1081,14 @@
 				AF0C82982AEBFBD500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF8EF51E2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
 				AF5ED8E32AE992D1007DB2B8 /* AppListView.swift in Sources */,
+				AF05B4762BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AFD9C4EB2AE980BD00C4079C /* AsyncHelpers.swift in Sources */,
 				AFD9C4FC2AE983C700C4079C /* AsyncSemaphore.swift in Sources */,
 				AF0C82A82AEC0C2C00CBE7F8 /* Shortcuts.swift in Sources */,
 				AFD9C4E32AE9808E00C4079C /* DeviceAppEntity.swift in Sources */,
 				AFD9C4E82AE980AA00C4079C /* RemoteButtonAppEnum.swift in Sources */,
 				AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */,
+				AF05B4712BFDA49D00FA3783 /* ObjcErrors.swift in Sources */,
 				AFD9C4E62AE980A500C4079C /* ButtonPressIntents.swift in Sources */,
 				AFD9C4E52AE980A000C4079C /* WidgetIntents.swift in Sources */,
 				AFD590D22AEC692700189620 /* IPhoneConnector.swift in Sources */,
@@ -1084,6 +1100,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF05B4722BFDA49E00FA3783 /* ObjcErrors.swift in Sources */,
 				AFD9C4F22AE9828600C4079C /* SmallRemoteView.swift in Sources */,
 				AF205B272AE02D0100041CDF /* NetworkHelpers.swift in Sources */,
 				AF205B2B2AE02D1C00041CDF /* ButtonPressIntents.swift in Sources */,
@@ -1115,6 +1132,7 @@
 				AFC4A65D2AE8AF16005DAC6C /* AppLinksView.swift in Sources */,
 				AF0C82932AEBFA7500CBE7F8 /* StatelessDeviceAPI.swift in Sources */,
 				AF842A5D2BA554E5005D52D2 /* CaptureScrollWheelModifier.swift in Sources */,
+				AF05B4772BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AF19CA152AE4471200A42DFF /* AsyncHelpers.swift in Sources */,
 				AF205B262AE02D0100041CDF /* Device.swift in Sources */,
 			);
@@ -1162,6 +1180,7 @@
 				AF8EF4F32BB60AE8002A4D6D /* SchemaFile.swift in Sources */,
 				AF7107202BD00D9400384691 /* RoamAppDelegate.swift in Sources */,
 				AF8EF4F42BB60AE8002A4D6D /* AppLink.swift in Sources */,
+				AF05B4732BFDA49E00FA3783 /* ObjcErrors.swift in Sources */,
 				AF8EF5022BB60B31002A4D6D /* ButtonGrid.swift in Sources */,
 				AF8EF4F02BB60ADA002A4D6D /* AppLinkAppEntity.swift in Sources */,
 				AF8EF4ED2BB60AB5002A4D6D /* DeviceApi.swift in Sources */,
@@ -1180,6 +1199,7 @@
 				AF8EF5122BB60D43002A4D6D /* OpusDecoder.swift in Sources */,
 				AF8EF5132BB60D43002A4D6D /* AudioPlayer.swift in Sources */,
 				AF8EF5142BB60D43002A4D6D /* RTP.swift in Sources */,
+				AF05B4782BFDA53100FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AF8EF5152BB60D43002A4D6D /* RTCP.swift in Sources */,
 				AF8EF4F82BB60AF0002A4D6D /* AsyncHelpers.swift in Sources */,
 				AF8EF4F92BB60AF0002A4D6D /* NetworkHelpers.swift in Sources */,
@@ -1207,6 +1227,7 @@
 				AF70BB092BA7CBC1009A06EC /* PaddedHoverButtonStyle.swift in Sources */,
 				AF3AD55D2AE299BD00E2D780 /* DevicePicker.swift in Sources */,
 				AF779BF02BA4D82600231BC5 /* Badge.swift in Sources */,
+				AF05B4702BFDA49900FA3783 /* ObjcErrors.swift in Sources */,
 				AF779BF32BA4D91E00231BC5 /* CaptureScrollWheelModifier.swift in Sources */,
 				AF3EEF972AE0206E00B661F3 /* BinaryHeap.swift in Sources */,
 				AFED424A2AEE8F3B0023D684 /* VolumeListener.swift in Sources */,
@@ -1263,6 +1284,7 @@
 				AF3AD5532AE28F7400E2D780 /* ButtonGrid.swift in Sources */,
 				AFF6DE0D2BCF0326002C13FC /* Message.swift in Sources */,
 				AF42442E2BB1118700334AAF /* SchemaFile.swift in Sources */,
+				AF05B4752BFDA53000FA3783 /* ObjcErrorsInternal.h in Sources */,
 				AF3EEF952AE0206E00B661F3 /* AudioPlayer.swift in Sources */,
 				AF8EF51D2BB60EAF002A4D6D /* SettingsNavigationWrapper.swift in Sources */,
 				AF19CA2E2AE692E600A42DFF /* AsyncBufferedChannel.swift in Sources */,
@@ -1607,6 +1629,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = auto;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Bridge.h;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
@@ -1675,6 +1698,7 @@
 				SDKROOT = auto;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OBJC_BRIDGING_HEADER = Shared/Bridge.h;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
