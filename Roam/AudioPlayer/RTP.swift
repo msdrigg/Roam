@@ -2,7 +2,7 @@ import Foundation
 import Opus
 import RTP
 
-struct RtpPacket: Comparable {
+struct RtpPacket: Comparable, Sendable {
     static func < (lhs: RtpPacket, rhs: RtpPacket) -> Bool {
         lhs.sequenceNumber > rhs.sequenceNumber
     }

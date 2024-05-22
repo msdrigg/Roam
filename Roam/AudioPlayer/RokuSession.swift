@@ -432,7 +432,7 @@ actor RTPSession {
 
     func streamAudio() async throws {
         #if !os(macOS)
-            setupSessionForAudioPlayback()
+            await setupSessionForAudioPlayback()
             defer {
                 do {
                     try AVAudioSession.sharedInstance().setActive(false)
@@ -533,6 +533,7 @@ actor RTPSession {
     }
 
     #if !os(macOS)
+    @MainActor
         func setupSessionForAudioPlayback() {
             // Retrieve the shared audio session.
             let audioSession = AVAudioSession.sharedInstance()

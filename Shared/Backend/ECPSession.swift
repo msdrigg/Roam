@@ -49,15 +49,19 @@ actor ECPSession {
     }
 
     public func configure() async throws {
-        webSocketTask = session.webSocketTask(with: url, protocols: ["ecp-2"])
-        webSocketTask.resume()
+        try catchObjc {
+            webSocketTask = session.webSocketTask(with: url, protocols: ["ecp-2"])
+            webSocketTask.resume()
+        }
         requestIdCounter = 0
 
         do {
             try await establishConnectionAndAuthenticate()
         } catch {
             Self.logger.error("Failed to establish connection and authenticate. Cancelling...: \(error)")
-            webSocketTask.cancel()
+            try catchObjc {
+                webSocketTask.cancel()
+            }
             throw error
         }
     }
