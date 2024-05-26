@@ -4,7 +4,7 @@ import DiscordClient, { DiscordFile, DiscordMessage, Thread } from "./discord";
 
 export interface Env {
 	ROAM_KV: KVNamespace;
-	APNS_DURABLE_OBJECT: DurableObjectNamespace<APNSDurableObject>;
+	APNS_DURABLE_OBJECT: DurableObjectNamespace<InternalDurableObject>;
 
 	// Secrets
 	DISCORD_TOKEN: string;
@@ -79,16 +79,11 @@ async function sendMessage(message: {
 
 	console.log("Handling new message request", title, content, apnsToken, userId);
 
-	let threadId = await env.ROAM_KV.get(`threadId:${userId}`);
-	console.log(`Existing thread ID: ${threadId}`)
+	let stub = env.APNS_DURABLE_OBJECT.get(env.APNS_DURABLE_OBJECT.idFromName("apns"));
+	let threadId = await stub.getOrCreateThreadIdForUser(userId);
 
-	if (threadId) {
-		if (content) {
-			await discordClient.sendMessage(threadId, content)
-		}
-	} else {
-		threadId = await discordClient.createThread(title || `New message from ${userId}`, content || "");
-		await env.ROAM_KV.put(`threadId:${userId}`, threadId);
+	if (content) {
+		await discordClient.sendMessage(threadId, content)
 	}
 
 	if (attachment) {
@@ -160,12 +155,30 @@ async function checkAlerts(env: Env) {
 	}
 }
 
-export class APNSDurableObject extends DurableObject {
+export class InternalDurableObject extends DurableObject {
 	discordClient: DiscordClient;
+	ROAM_KV: KVNamespace;
 
 	constructor(state: DurableObjectState, env: Env) {
 		super(state, env);
 		this.discordClient = new DiscordClient(env.DISCORD_TOKEN, env.DISCORD_HELP_CHANNEL, env.DISCORD_GUILD_ID);
+		this.ROAM_KV = env.ROAM_KV;
+	}
+
+	async getOrCreateThreadIdForUser(userId: string): Promise<string> {
+		let threadId = await this.ctx.storage.get(`threadId:${userId}`);
+		console.log(`Existing thread ID: ${threadId}`)
+
+		if (threadId) {
+			return threadId as string;
+		}
+		let newThreadId = await this.ROAM_KV.get(`threadId:${userId}`);
+		if (!newThreadId) {
+			newThreadId = await this.discordClient.createThread(`New message from ${userId}`, ":ninja:");
+		}
+
+		await this.ctx.storage.put(`threadId:${userId}`, newThreadId);
+		return newThreadId;
 	}
 
 	async consumeMessagesForApns(): Promise<{ threads: Thread[], latestMessageId: string }> {

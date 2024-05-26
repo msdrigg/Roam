@@ -169,7 +169,7 @@ class DiscordClient {
             name: title,
             auto_archive_duration: autoArchiveDuration,
             message: {
-                content: message
+                content: message || ":ninja:"
             }
         };
 

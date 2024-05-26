@@ -25,3 +25,9 @@ class_name = "APNSDurableObject"
 [[migrations]]
 tag = "v1"                          # Should be unique for each entry
 new_classes = ["APNSDurableObject"]
+
+[[migrations]]
+tag = "v2"
+renamed_classes = [
+    { from = "APNSDurableObject", to = "InternalDurableObject" },
+] # Array of rename directives
