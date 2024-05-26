@@ -17,6 +17,7 @@ private let logger = Logger(
 )
 
 func requestNotificationPermission() {
+    logger.info("Requesting notification permission")
     UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
         if granted {
             logger.info("Notification permission granted.")
@@ -31,8 +32,8 @@ func getNotificationSettings() {
     UNUserNotificationCenter.current().getNotificationSettings { settings in
         guard settings.authorizationStatus == .authorized else { return }
         DispatchQueue.main.async {
+            logger.info("Registering for remote notifications")
             #if os(macOS)
-                logger.info("Registering for remote notifications")
                 NSApplication.shared.registerForRemoteNotifications()
             #elseif !os(watchOS)
                 UIApplication.shared.registerForRemoteNotifications()
@@ -48,6 +49,7 @@ struct MessageView: View {
     @State private var refreshInterval: TimeInterval = 20
     @State private var refreshResetId = UUID()
     @AppStorage("hasSentFirstMessage") private var hasSentFirstMessage: Bool = false
+    @AppStorage("lastApnsRequestTime") private var lastApnsRequestTime: Double = -1
     @Environment(\.colorScheme) var colorScheme
 
     @Environment(\.modelContext) private var modelContext
@@ -156,6 +158,15 @@ struct MessageView: View {
                 UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
             }
         }
+        .task(id: hasSentFirstMessage) {
+            if (!hasSentFirstMessage) {
+                return
+            }
+            if (lastApnsRequestTime < Date.now.timeIntervalSince1970 - 3600 * 24) {
+                lastApnsRequestTime = Date.now.timeIntervalSince1970
+                requestNotificationPermission()
+            }
+        }
         .navigationTitle("Messages")
         .task(id: refreshResetId) {
             refreshInterval = 10
@@ -232,6 +243,7 @@ struct MessageView: View {
         }
         if !hasSentFirstMessage {
             // Request notification permissions on first message
+            lastApnsRequestTime = Date.now.timeIntervalSince1970
             requestNotificationPermission()
         }
 

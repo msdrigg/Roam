@@ -76,7 +76,6 @@ struct AppLinksView: View {
                     Spacer()
                 }
                 .scrollClipDisabled()
-                .scrollTargetBehavior(.viewAligned)
                 .safeAreaPadding(.horizontal, 4)
             }
         }
