@@ -31,6 +31,8 @@ func sendDeviceTokenToServer(_ token: String) async {
         override init() {
             super.init()
             UNUserNotificationCenter.current().delegate = self
+            logger.info("Setting Notifications delegate to self")
+            
         }
 
         @MainActor func showAboutPanel() {
@@ -50,6 +52,15 @@ func sendDeviceTokenToServer(_ token: String) async {
             }
             aboutBoxWindowController?.showWindow(aboutBoxWindowController?.window)
         }
+        
+        func applicationDidFinishLaunching(_ notification: Notification) {
+            let hasSentFirstMessage = UserDefaults.standard.bool(forKey: "hasSentFirstMessage")
+            if hasSentFirstMessage {
+                UserDefaults.standard.setValue(Date.now.timeIntervalSince1970, forKey: "lastApnsRequestTime")
+                requestNotificationPermission()
+            }
+
+        }
 
         func application(_: NSApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
             let tokenParts = deviceToken.map { data -> String in
@@ -63,29 +74,24 @@ func sendDeviceTokenToServer(_ token: String) async {
                 UserDefaults.standard.set(true, forKey: "hasSentFirstMessage")
             }
         }
-
+        
+        func application(_ application: NSApplication, didReceiveRemoteNotification userInfo: [String : Any]) {
+            logger.info("Received remote notification")
+            refreshMessages()
+        }
+        
         func userNotificationCenter(
             _: UNUserNotificationCenter,
             didReceive _: UNNotificationResponse,
             withCompletionHandler completionHandler: @escaping () -> Void
         ) {
             logger.info("didReceive notification. Showing Messages...")
-            #if os(macOS)
-                messagingWindowOpenTrigger = UUID()
-            #else
-                if navigationPath.last != NavigationDestination.messageDestination {
-                    navigationPath.append(NavigationDestination.messageDestination)
-                }
-            #endif
+            refreshMessages()
+            messagingWindowOpenTrigger = UUID()
             completionHandler()
         }
-
-        func userNotificationCenter(
-            _: UNUserNotificationCenter,
-            willPresent _: UNNotification,
-            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-        ) {
-            logger.info("WillPresent notification. Refreshing messages...")
+        
+        func refreshMessages() {
             let context = ModelContext(modelContainer)
             var descriptor = FetchDescriptor<Message>(
                 predicate: #Predicate {
@@ -102,6 +108,16 @@ func sendDeviceTokenToServer(_ token: String) async {
                 let dataHandler = DataHandler(modelContainer: self.modelContainer)
                 await dataHandler.refreshMessages(latestMessageId: latestMessageId, viewed: false)
             }
+
+        }
+
+        func userNotificationCenter(
+            _: UNUserNotificationCenter,
+            willPresent _: UNNotification,
+            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+        ) {
+            logger.info("WillPresent notification. Refreshing messages...")
+            refreshMessages()
             completionHandler(.badge)
         }
 
@@ -120,6 +136,11 @@ func sendDeviceTokenToServer(_ token: String) async {
         override init() {
             super.init()
             UNUserNotificationCenter.current().delegate = self
+        }
+        
+        func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+            logger.info("Received remote notifications")
+            requestMessages(fetchCompletionHandler: completionHandler)
         }
 
         func application(_: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -140,17 +161,14 @@ func sendDeviceTokenToServer(_ token: String) async {
             didReceive _: UNNotificationResponse,
             withCompletionHandler completionHandler: @escaping () -> Void
         ) {
+            logger.info("didReceive notification. Showing Messages...")
             if navigationPath.last != NavigationDestination.messageDestination {
                 navigationPath.append(NavigationDestination.messageDestination)
             }
             completionHandler()
         }
-
-        func userNotificationCenter(
-            _: UNUserNotificationCenter,
-            willPresent _: UNNotification,
-            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-        ) {
+        
+        func requestMessages(fetchCompletionHandler completionHandler: ((UIBackgroundFetchResult) -> Void)? = nil) {
             let context = ModelContext(modelContainer)
             var descriptor = FetchDescriptor<Message>(
                 predicate: #Predicate {
@@ -163,14 +181,37 @@ func sendDeviceTokenToServer(_ token: String) async {
             let lastMessage = try? context.fetch(descriptor).last
 
             let latestMessageId = lastMessage?.id
-            Task.detached {
-                await DataHandler(modelContainer: getSharedModelContainer()).refreshMessages(latestMessageId: latestMessageId, viewed: false)
+            Task {
+                let refreshResult = await DataHandler(modelContainer: getSharedModelContainer()).refreshMessages(latestMessageId: latestMessageId, viewed: false)
+                if refreshResult > 0 {
+                    completionHandler?(.newData)
+                } else {
+                    completionHandler?(.noData)
+                }
             }
-            completionHandler(.badge)
         }
 
+        func userNotificationCenter(
+            _: UNUserNotificationCenter,
+            willPresent _: UNNotification,
+            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+        ) {
+            logger.info("willPresent notification. Refreshing...")
+            requestMessages()
+            completionHandler(.badge)
+        }
+        
+        func applicationDidFinishLaunching(_ application: UIApplication) {
+            let hasSentFirstMessage = UserDefaults.standard.bool(forKey: "hasSentFirstMessage")
+            if hasSentFirstMessage {
+                UserDefaults.standard.setValue(Date.now.timeIntervalSince1970, forKey: "lastApnsRequestTime")
+                requestNotificationPermission()
+            }
+        }
+
+
         func application(_: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-            logger.error("Failed to register with Error \(error)")
+            logger.error("Failed to register for remote notifications with Error \(error)")
         }
     }
 #endif

@@ -15,16 +15,17 @@ export type DiscordFile = {
     data: ArrayBuffer;
 }
 
+export type Thread = {
+    id: string;
+    name: string;
+    lastMessageId: string;
+}
+
 type ApiError = {
     code: number;
     message: string;
 }
 
-type Thread = {
-    id: string;
-    name: string;
-    lastMessageId: string;
-}
 
 class DiscordClient {
     private baseUrl: string = 'https://discord.com/api/v10';

@@ -1,8 +1,10 @@
+import { DurableObject } from "cloudflare:workers";
 import { APNSAuthKey, sendPushNotification } from "./apns";
-import DiscordClient, { DiscordFile, DiscordMessage } from "./discord";
+import DiscordClient, { DiscordFile, DiscordMessage, Thread } from "./discord";
 
 export interface Env {
 	ROAM_KV: KVNamespace;
+	APNS_DURABLE_OBJECT: DurableObjectNamespace<APNSDurableObject>;
 
 	// Secrets
 	DISCORD_TOKEN: string;
@@ -107,25 +109,21 @@ async function checkAlerts(env: Env) {
 	console.log("Checking alerts");
 	let discordClient = new DiscordClient(env.DISCORD_TOKEN, env.DISCORD_HELP_CHANNEL, env.DISCORD_GUILD_ID);
 
-	let latestMessageId = await env.ROAM_KV.get("latestMessageId");
+	let id = env.APNS_DURABLE_OBJECT.idFromName("apns");
+	let stub = env.APNS_DURABLE_OBJECT.get(id);
 
-	let threads = await discordClient.getActiveThreadsUpdatedSince(latestMessageId);
+	let { threads, latestMessageId } = await stub.consumeMessagesForApns();
 
-	let latestOverallMessageId = Math.max(latestMessageId ? parseInt(latestMessageId) : 0,
-		...threads.map(thread => parseInt(thread.lastMessageId))
-	);
+	console.log(`Found ${threads.length} active threads since ${latestMessageId}. Last Message Ids: ${threads.map(thread => thread.lastMessageId)}`);
 
-	if (latestOverallMessageId > 0 && (!latestMessageId || latestOverallMessageId > parseInt(latestMessageId))) {
-		console.log(`Found new messages since ${latestMessageId}`);
-
-		await env.ROAM_KV.put("latestMessageId", latestOverallMessageId.toString());
-	}
 
 	let apnsKey: APNSAuthKey = {
 		keyId: env.APNS_KEY_ID,
 		teamId: env.APNS_TEAM_ID,
 		privateKey: env.APNS_PRIVATE_KEY,
 	}
+
+	let pushesSent = 0;
 
 	for (let thread of threads) {
 		let apnsToken = await env.ROAM_KV.get(`apnsToken:${thread.id}`);
@@ -139,7 +137,13 @@ async function checkAlerts(env: Env) {
 		let messages = (await discordClient.getMessagesInThread(thread.id, latestMessageId))
 			.filter((message) => message.content && message.type in [0, 19, 20, 21] && !message.content.startsWith("!HiddenMessage"));
 
+		console.log(`Found ${messages.length} messages in thread ${thread.id} since ${latestMessageId}. Last Message Ids: ${messages.map(message => message.id)}`);
+
 		for (let message of messages) {
+			if (pushesSent >= 5) {
+				console.warn("Reached push limit, stopping");
+				break;
+			}
 			if (message.author.id === env.DISCORD_BOT_ID) {
 				console.log("Skipping message from bot");
 				// Don't notify on messages from the bot
@@ -148,10 +152,33 @@ async function checkAlerts(env: Env) {
 			try {
 				console.log(`Sending push notification for message: ${message.content} to ${apnsToken} with bundle ID ${env.ROAM_BUNDLE_ID}`)
 				await sendPushNotification("Message from roam", message.content, apnsKey, apnsToken, env.ROAM_BUNDLE_ID);
+				pushesSent++;
 			} catch (e) {
 				console.error(`Error sending push notification: ${e}`);
 			}
 		}
+	}
+}
+
+export class APNSDurableObject extends DurableObject {
+	discordClient: DiscordClient;
+
+	constructor(state: DurableObjectState, env: Env) {
+		super(state, env);
+		this.discordClient = new DiscordClient(env.DISCORD_TOKEN, env.DISCORD_HELP_CHANNEL, env.DISCORD_GUILD_ID);
+	}
+
+	async consumeMessagesForApns(): Promise<{ threads: Thread[], latestMessageId: string }> {
+		let latestMessageId = await this.ctx.storage.get("latestMessageId") as string ?? null;
+
+		let threads = await this.discordClient.getActiveThreadsUpdatedSince(latestMessageId ? String(latestMessageId) : null);
+
+		let latestOverallMessageId = [latestMessageId, ...threads.map(thread => thread.lastMessageId)]
+			.reduce((max, current) => max.localeCompare(current) > 0 ? max : current);
+
+		await this.ctx.storage.put("latestMessageId", latestOverallMessageId);
+
+		return { threads, latestMessageId: latestMessageId ? latestMessageId : "0" };
 	}
 }
 

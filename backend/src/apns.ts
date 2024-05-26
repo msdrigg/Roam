@@ -109,7 +109,7 @@ export async function sendPushNotification(title: string, body: string, key: APN
         }
     });
 
-    const response = await fetch(`https://api.development.push.apple.com/3/device/${deviceToken}`, {
+    const response = await fetch(`https://api.push.apple.com/3/device/${deviceToken}`, {
         method: 'POST',
         headers: {
             'authorization': `bearer ${jwt}`,
@@ -124,6 +124,38 @@ export async function sendPushNotification(title: string, body: string, key: APN
         throw new Error(`Failed to send push notification: ${errorData}`);
     }
 
+    await sendBackgroundPushNotification(key, deviceToken, bundleId);
+
     console.log('Push notification sent successfully!');
+}
+
+export async function sendBackgroundPushNotification(key: APNSAuthKey, deviceToken: string, bundleId: string) {
+    const jwt = await createJwt(key);
+    console.log("JWT: ", jwt)
+    const payload = JSON.stringify({
+        aps: {
+            "content-available": 1
+        }
+    });
+
+    const response = await fetch(`https://api.push.apple.com/3/device/${deviceToken}`, {
+        method: 'POST',
+        headers: {
+            'authorization': `bearer ${jwt}`,
+            'apns-topic': bundleId,
+            'content-type': 'application/json', 'apns-push-type': 'background',
+            'apns-priority': '5',
+            'apns-expiration': '0'
+
+        },
+        body: payload
+    });
+
+    if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to send background push notification: ${errorData}`);
+    }
+
+    console.log('Background push notification sent successfully!');
 }
 
