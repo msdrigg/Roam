@@ -95,8 +95,7 @@ async function sendMessage(message: {
 	await maybeSendDeviceInfo(env, userId, threadId, installationInfo, discordClient);
 
 	if (apnsToken) {
-		await env.ROAM_KV.put(`apnsToken:${threadId}`, apnsToken);
-		await env.ROAM_KV.put(`apnsToken:${userId}`, apnsToken);
+		await stub.storeApnsToken(threadId, userId, apnsToken);
 	}
 }
 
@@ -121,7 +120,8 @@ async function checkAlerts(env: Env) {
 	let pushesSent = 0;
 
 	for (let thread of threads) {
-		let apnsToken = await env.ROAM_KV.get(`apnsToken:${thread.id}`);
+		let stub = env.APNS_DURABLE_OBJECT.get(env.APNS_DURABLE_OBJECT.idFromName("apns"));
+		let apnsToken = await stub.getApnsTokenForThread(thread.id);
 		if (!apnsToken) {
 			console.log(`No APNS token found for thread ${thread.id}`);
 			continue;
@@ -163,6 +163,43 @@ export class InternalDurableObject extends DurableObject {
 		super(state, env);
 		this.discordClient = new DiscordClient(env.DISCORD_TOKEN, env.DISCORD_HELP_CHANNEL, env.DISCORD_GUILD_ID);
 		this.ROAM_KV = env.ROAM_KV;
+	}
+
+	async getApnsTokenForThread(threadId: string): Promise<string | null> {
+		let apnsToken = await this.ctx.storage.get(`apnsToken:${threadId}`);
+		console.log(`Existing APNS token: ${apnsToken}`)
+
+		if (apnsToken) {
+			return apnsToken as string;
+		}
+		let newApnsToken = await this.ROAM_KV.get(`apnsToken:${threadId}`);
+		if (!newApnsToken) {
+			return null;
+		}
+
+		await this.ctx.storage.put(`apnsToken:${threadId}`, newApnsToken);
+		return newApnsToken;
+	}
+
+	async storeApnsToken(threadId: string, userId: string, apnsToken: string): Promise<void> {
+		await this.ctx.storage.put(`apnsToken:${threadId}`, apnsToken);
+		await this.ctx.storage.put(`apnsToken:${userId}`, apnsToken);
+	}
+
+	async getThreadIdForUser(userId: string): Promise<string | null> {
+		let threadId = await this.ctx.storage.get(`threadId:${userId}`);
+		console.log(`Existing thread ID: ${threadId}`)
+
+		if (threadId) {
+			return threadId as string;
+		}
+		let newThreadId = await this.ROAM_KV.get(`threadId:${userId}`);
+		if (!newThreadId) {
+			return null;
+		}
+
+		await this.ctx.storage.put(`threadId:${userId}`, newThreadId);
+		return newThreadId;
 	}
 
 	async getOrCreateThreadIdForUser(userId: string): Promise<string> {
@@ -215,7 +252,9 @@ export default {
 			if (!userId) {
 				return new Response("Bad request", { status: 400 });
 			}
-			let threadId = await env.ROAM_KV.get(`threadId:${userId}`);
+
+			let stub = env.APNS_DURABLE_OBJECT.get(env.APNS_DURABLE_OBJECT.idFromName("apns"));
+			let threadId = await stub.getThreadIdForUser(userId);
 
 			let queryParams = new URL(request.url).searchParams;
 			let after = queryParams.get("after") || null;
