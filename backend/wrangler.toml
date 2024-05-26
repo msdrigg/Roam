@@ -4,11 +4,9 @@ main = "src/index.ts"
 compatibility_date = "2024-04-05"
 logpush = true
 
-[placement]
-mode = "smart"
-
 [triggers]
 crons = ["* * * * *"]
+
 [[kv_namespaces]]
 binding = "ROAM_KV"
 id = "76a07aba72194475a5d6c33c147718a4"
