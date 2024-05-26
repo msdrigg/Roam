@@ -103,6 +103,58 @@ async function sendMessage(message: {
 	}
 }
 
+async function checkAlerts(env: Env) {
+	console.log("Checking alerts");
+	let discordClient = new DiscordClient(env.DISCORD_TOKEN, env.DISCORD_HELP_CHANNEL, env.DISCORD_GUILD_ID);
+
+	let latestMessageId = await env.ROAM_KV.get("latestMessageId");
+
+	let threads = await discordClient.getActiveThreadsUpdatedSince(latestMessageId);
+
+	let latestOverallMessageId = Math.max(latestMessageId ? parseInt(latestMessageId) : 0,
+		...threads.map(thread => parseInt(thread.lastMessageId))
+	);
+
+	if (latestOverallMessageId > 0 && (!latestMessageId || latestOverallMessageId > parseInt(latestMessageId))) {
+		console.log(`Found new messages since ${latestMessageId}`);
+
+		await env.ROAM_KV.put("latestMessageId", latestOverallMessageId.toString());
+	}
+
+	let apnsKey: APNSAuthKey = {
+		keyId: env.APNS_KEY_ID,
+		teamId: env.APNS_TEAM_ID,
+		privateKey: env.APNS_PRIVATE_KEY,
+	}
+
+	for (let thread of threads) {
+		let apnsToken = await env.ROAM_KV.get(`apnsToken:${thread.id}`);
+		if (!apnsToken) {
+			console.log(`No APNS token found for thread ${thread.id}`);
+			continue;
+		} else {
+			console.log(`APNS token ${apnsToken} found for thread ${thread.id}`);
+		}
+
+		let messages = (await discordClient.getMessagesInThread(thread.id, latestMessageId))
+			.filter((message) => message.content && message.type in [0, 19, 20, 21] && !message.content.startsWith("!HiddenMessage"));
+
+		for (let message of messages) {
+			if (message.author.id === env.DISCORD_BOT_ID) {
+				console.log("Skipping message from bot");
+				// Don't notify on messages from the bot
+				continue;
+			}
+			try {
+				console.log(`Sending push notification for message: ${message.content} to ${apnsToken} with bundle ID ${env.ROAM_BUNDLE_ID}`)
+				await sendPushNotification("Message from roam", message.content, apnsKey, apnsToken, env.ROAM_BUNDLE_ID);
+			} catch (e) {
+				console.error(`Error sending push notification: ${e}`);
+			}
+		}
+	}
+}
+
 
 export default {
 	async fetch(request, env, _ctx): Promise<Response> {
@@ -181,59 +233,17 @@ export default {
 			return new Response("OK", { status: 200 });
 		}
 
+		if (pathSegments[0] === "alert") {
+			await checkAlerts(env);
+			return new Response("OK", { status: 200 });
+		}
+
 		return new Response("Not found", { status: 404 });
 	},
 
 	async scheduled(_event, env, _ctx) {
 		console.log("Handling scheduled event")
-		let discordClient = new DiscordClient(env.DISCORD_TOKEN, env.DISCORD_HELP_CHANNEL, env.DISCORD_GUILD_ID);
-
-		let latestMessageId = await env.ROAM_KV.get("latestMessageId");
-
-		let threads = await discordClient.getActiveThreadsUpdatedSince(latestMessageId);
-
-		let latestOverallMessageId = Math.max(latestMessageId ? parseInt(latestMessageId) : 0,
-			...threads.map(thread => parseInt(thread.lastMessageId))
-		);
-
-		if (latestOverallMessageId > 0 && (!latestMessageId || latestOverallMessageId > parseInt(latestMessageId))) {
-			console.log(`Found new messages since ${latestMessageId}`);
-
-			await env.ROAM_KV.put("latestMessageId", latestOverallMessageId.toString());
-		}
-
-		let apnsKey: APNSAuthKey = {
-			keyId: env.APNS_KEY_ID,
-			teamId: env.APNS_TEAM_ID,
-			privateKey: env.APNS_PRIVATE_KEY,
-		}
-
-		for (let thread of threads) {
-			let apnsToken = await env.ROAM_KV.get(`apnsToken:${thread.id}`);
-			if (!apnsToken) {
-				console.log(`No APNS token found for thread ${thread.id}`);
-				continue;
-			} else {
-				console.log(`APNS token ${apnsToken} found for thread ${thread.id}`);
-			}
-
-			let messages = (await discordClient.getMessagesInThread(thread.id, latestMessageId))
-				.filter((message) => message.content && message.type in [0, 19, 20, 21] && !message.content.startsWith("!HiddenMessage"));
-
-			for (let message of messages) {
-				if (message.author.id === env.DISCORD_BOT_ID) {
-					console.log("Skipping message from bot");
-					// Don't notify on messages from the bot
-					continue;
-				}
-				try {
-					console.log(`Sending push notification for message: ${message.content} to ${apnsToken} with bundle ID ${env.ROAM_BUNDLE_ID}`)
-					await sendPushNotification("Message from roam", message.content, apnsKey, apnsToken, env.ROAM_BUNDLE_ID);
-				} catch (e) {
-					console.error(`Error sending push notification: ${e}`);
-				}
-			}
-		}
+		await checkAlerts(env);
 	},
 } satisfies ExportedHandler<Env>;
 
