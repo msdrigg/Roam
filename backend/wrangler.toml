@@ -17,3 +17,11 @@ ROAM_BUNDLE_ID = "com.msdrigg.roam"
 [[r2_buckets]]
 binding = 'ROAM_DIAGNOSTIC_BUCKET' # <~ valid JavaScript variable name
 bucket_name = 'roam-diagnostics'
+
+[[durable_objects.bindings]]
+name = "APNS_DURABLE_OBJECT"
+class_name = "APNSDurableObject"
+
+[[migrations]]
+tag = "v1"                          # Should be unique for each entry
+new_classes = ["APNSDurableObject"]
