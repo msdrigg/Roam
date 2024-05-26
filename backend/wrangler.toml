@@ -20,7 +20,7 @@ bucket_name = 'roam-diagnostics'
 
 [[durable_objects.bindings]]
 name = "APNS_DURABLE_OBJECT"
-class_name = "APNSDurableObject"
+class_name = "InternalDurableObject"
 
 [[migrations]]
 tag = "v1"                          # Should be unique for each entry
