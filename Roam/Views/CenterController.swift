@@ -14,10 +14,10 @@ struct CenterController: View {
     @State private var pressCount: [RemoteButton: Int] = [:]
 
     var body: some View {
-        let buttons: [(String?, RemoteButton, String)?] = [
-            nil, ("chevron.up", .up, "Up"), nil,
-            ("chevron.left", .left, "Left"), (nil, .select, "Ok"), ("chevron.right", .right, "Right"),
-            nil, ("chevron.down", .down, "Down"), nil,
+        let buttons: [(String?, RemoteButton, String, CustomKeyboardShortcut.Key)?] = [
+            nil, ("chevron.up", .up, "Up", .up), nil,
+            ("chevron.left", .left, "Left", .left), (nil, .select, "Ok", .ok), ("chevron.right", .right, "Right", .right),
+            nil, ("chevron.down", .down, "Down", .down), nil,
         ]
         return VStack(alignment: .center) {
             Grid(horizontalSpacing: globalButtonSpacing / 5, verticalSpacing: globalButtonSpacing / 5) {
@@ -48,6 +48,9 @@ struct CenterController: View {
                                             }
                                     }
                                 })
+                                #if !os(tvOS) && !os(watchOS)
+                                .customKeyboardShortcut(button.3)
+                                #endif
                                 .buttonStyle(.borderedProminent)
                                 #if !os(visionOS)
                                     .sensoryFeedback(.impact, trigger: pressCounter(button.1))

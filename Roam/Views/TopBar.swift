@@ -12,7 +12,7 @@ struct TopBar: View {
                     .frame(width: globalButtonWidth, height: globalButtonHeight)
             })
             #if !os(tvOS) && !os(watchOS)
-            .keyboardShortcut(.leftArrow)
+            .customKeyboardShortcut(.back)
             #endif
             #if !os(visionOS)
             .sensoryFeedback(.impact, trigger: pressCounter(.back))
@@ -28,7 +28,7 @@ struct TopBar: View {
             #endif
                 .symbolEffect(.bounce, value: pressCounter(.power))
             #if !os(tvOS) && !os(watchOS)
-                .keyboardShortcut(.return)
+                .customKeyboardShortcut(.power)
             #endif
 
             Button(action: { action(.home) }, label: {
@@ -36,7 +36,7 @@ struct TopBar: View {
                     .frame(width: globalButtonWidth, height: globalButtonHeight)
             })
             #if !os(tvOS) && !os(watchOS)
-            .keyboardShortcut("h")
+            .customKeyboardShortcut(.home)
             #endif
             #if !os(visionOS)
             .sensoryFeedback(.impact, trigger: pressCounter(.home))

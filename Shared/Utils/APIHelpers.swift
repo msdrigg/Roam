@@ -1,6 +1,9 @@
 import SwiftUI
 
 func getKeypressForKey(key: Character) -> String {
+    if key == KeyEquivalent.return.character {
+        print("Getting abcabc return")
+    }
     // All of these keys are gauranteed to have api values
     #if !os(watchOS)
         let keyMap: [Character: String] = [

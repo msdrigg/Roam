@@ -8,16 +8,16 @@ struct ButtonGrid: View {
     let disabled: Set<RemoteButton>
 
     var body: some View {
-        let buttonRows: [[(String, String, RemoteButton, KeyEquivalent?)]] = [
-            [("Replay", "arrow.uturn.backward", .instantReplay, nil),
-             ("Options", "asterisk", .options, nil),
-             ("Headphones mode", "headphones", .headphonesMode, nil)],
-            [("Rewind", "backward", .rewind, nil),
-             ("Play/Pause", "playpause", .playPause, "p"),
-             ("Fast Forward", "forward", .fastForward, nil)],
-            [("Volume Down", "speaker.minus", .volumeDown, .downArrow),
-             ("Mute", "speaker.slash", .mute, "m"),
-             ("Volume Up", "speaker.plus", .volumeUp, .upArrow)],
+        let buttonRows: [[(String, String, RemoteButton, CustomKeyboardShortcut.Key)]] = [
+            [("Replay", "arrow.uturn.backward", .instantReplay, .instantReplay),
+             ("Options", "asterisk", .options, .options),
+             ("Headphones mode", "headphones", .headphonesMode, .headphonesMode)],
+            [("Rewind", "backward", .rewind, .rewind),
+             ("Play/Pause", "playpause", .playPause, .playPause),
+             ("Fast Forward", "forward", .fastForward, .fastForward)],
+            [("Volume Down", "speaker.minus", .volumeDown, .volumeDown),
+             ("Mute", "speaker.slash", .mute, .mute),
+             ("Volume Up", "speaker.plus", .volumeUp, .volumeUp)],
         ]
         return Grid(horizontalSpacing: globalButtonSpacing, verticalSpacing: globalButtonSpacing) {
             ForEach(buttonRows, id: \.first?.0) { row in
@@ -34,12 +34,7 @@ struct ButtonGrid: View {
                         #endif
                             .symbolEffect(.bounce, value: pressCounter(button.2))
                         #if !os(tvOS) && !os(watchOS)
-                            if let shortcut = button.3 {
-                                view
-                                    .keyboardShortcut(shortcut)
-                            } else {
-                                view
-                            }
+                            view .customKeyboardShortcut(button.3)
                         #else
                             view
                         #endif

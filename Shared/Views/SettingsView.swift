@@ -256,7 +256,7 @@ struct SettingsView: View {
                             Label("Keyboard shortcuts", systemImage: "keyboard")
                         })
                         .buttonStyle(.plain)
-                        .keyboardShortcut("k")
+                        .customKeyboardShortcut(.keyboardShortcuts)
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
@@ -655,6 +655,9 @@ struct DeviceDetailView: View {
                 .focusable()
                 #endif
             }
+        }
+        .onSubmit {
+            dismiss()
         }
         .formStyle(.grouped)
         .onChange(of: device?.name) { _, new in
