@@ -507,7 +507,7 @@ struct RemoteView: View {
                 }
             }
             #endif
-            .onKeyDown({ key in pressKey(key) }, enabled: !showKeyboardEntry)
+            .onKeyDown({ key in pressKey(key.key) }, enabled: !showKeyboardEntry)
             .disabled(selectedDevice == nil)
             .padding(.horizontal, 20)
             .padding(.top, 20)

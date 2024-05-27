@@ -10,13 +10,14 @@
     )
 
     struct OnKeyPressModifier: ViewModifier {
-        let onKeyPress: (KeyEquivalent) -> Void
+        let onKeyPress: (KeyboardShortcut) -> Void
         let enabled: Bool
+        let captureShortcuts: Bool
 
         func body(content: Content) -> some View {
             if enabled {
                 content.overlay(
-                    KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
+                    KeyHandlingViewRepresentable(onKeyPress: onKeyPress, captureShortcuts: captureShortcuts)
                         .allowsHitTesting(false)
                 )
             } else {
@@ -26,26 +27,29 @@
     }
 
     extension View {
-        func onKeyDown(_ onKeyPress: @escaping (KeyEquivalent) -> Void, enabled: Bool = true) -> some View {
-            modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled))
+        func onKeyDown(_ onKeyPress: @escaping (KeyboardShortcut) -> Void, enabled: Bool = true, captureShortcuts: Bool = false) -> some View {
+            modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled, captureShortcuts: captureShortcuts))
         }
     }
 
     struct KeyHandlingViewRepresentable: NSViewRepresentable {
-        var onKeyPress: (KeyEquivalent) -> Void
+        var onKeyPress: (KeyboardShortcut) -> Void
+        var captureShortcuts: Bool
 
         func makeNSView(context _: Context) -> KeyHandlingView {
-            KeyHandlingView(onKeyPress: onKeyPress)
+            KeyHandlingView(onKeyPress: onKeyPress, captureShortcuts: captureShortcuts)
         }
 
         func updateNSView(_: KeyHandlingView, context _: Context) {}
 
         class KeyHandlingView: NSView {
-            var onKeyPress: (KeyEquivalent) -> Void
+            var onKeyPress: (KeyboardShortcut) -> Void
             var observerTokens: [Any] = []
+            var captureShortcuts: Bool
 
-            init(onKeyPress: @escaping (KeyEquivalent) -> Void) {
+            init(onKeyPress: @escaping (KeyboardShortcut) -> Void, captureShortcuts: Bool) {
                 self.onKeyPress = onKeyPress
+                self.captureShortcuts = captureShortcuts
                 super.init(frame: .zero)
                 setupObservers()
                 becomeFirstResponder()
@@ -74,6 +78,17 @@
                 }
 
                 onKeyPress(ke)
+            }
+            
+            override func performKeyEquivalent(with event: NSEvent) -> Bool {
+                if !captureShortcuts {
+                    return false
+                }
+                if let ke = getKeyEquivalent(from: event) {
+                    onKeyPress(ke)
+                }
+                
+                return true
             }
 
             override func viewDidMoveToWindow() {
@@ -118,25 +133,27 @@
         }
     }
 
-    func getKeyEquivalent(from event: NSEvent) -> KeyEquivalent? {
+    func getKeyEquivalent(from event: NSEvent) -> KeyboardShortcut? {
         guard event.type == .keyDown else { return nil }
 
         if let specialKey = specialKeyMapping(forKeyCode: event.keyCode) {
-            return specialKey
+            return KeyboardShortcut(specialKey, modifiers: mapModifierFlags(event.modifierFlags))
         }
 
         let characters: String
         if let regularCharacters = event.characters {
             characters = regularCharacters
         } else if let keyEquivalent = specialKeyMapping(forKeyCode: event.keyCode) {
-            return keyEquivalent
+            return KeyboardShortcut(keyEquivalent, modifiers: mapModifierFlags(event.modifierFlags))
         } else {
             return nil
         }
 
         guard let firstCharacter = characters.first else { return nil }
 
-        return KeyEquivalent(firstCharacter)
+        let ke = KeyEquivalent(firstCharacter)
+        
+        return KeyboardShortcut(ke, modifiers: mapModifierFlags(event.modifierFlags))
     }
 
     private func specialKeyMapping(forKeyCode keyCode: UInt16) -> KeyEquivalent? {
@@ -158,5 +175,31 @@
         default: nil
         }
     }
+
+    private func mapModifierFlags(_ flags: NSEvent.ModifierFlags) -> EventModifiers {
+        var modifiers = EventModifiers()
+
+        if flags.contains(.shift) {
+            modifiers.insert(.shift)
+        }
+        if flags.contains(.control) {
+            modifiers.insert(.control)
+        }
+        if flags.contains(.option) {
+            modifiers.insert(.option)
+        }
+        if flags.contains(.command) {
+            modifiers.insert(.command)
+        }
+        if flags.contains(.capsLock) {
+            modifiers.insert(.capsLock)
+        }
+        if flags.contains(.function) {
+            modifiers.insert(.function)
+        }
+
+        return modifiers
+    }
+
 
 #endif

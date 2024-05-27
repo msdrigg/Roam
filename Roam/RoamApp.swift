@@ -46,7 +46,7 @@ struct RoamApp: App {
                             navigationPath.append(NavigationDestination.keyboardShortcutDestinaion)
                         #endif
                     }
-                    .keyboardShortcut("k")
+                    .customKeyboardShortcut(.keyboardShortcuts)
 
                     Button("Chat with Developer", systemImage: "message") {
                         #if os(macOS)
@@ -55,7 +55,7 @@ struct RoamApp: App {
                             navigationPath.append(NavigationDestination.messageDestination)
                         #endif
                     }
-                    .keyboardShortcut("j")
+                    .customKeyboardShortcut(.chatWithDeveloper)
                 }
 
                 CommandGroup(after: .singleWindowList) {
@@ -66,8 +66,7 @@ struct RoamApp: App {
                             navigationPath.append(NavigationDestination.keyboardShortcutDestinaion)
                         #endif
                     }
-                    .keyboardShortcut("k")
-
+                    .customKeyboardShortcut(.keyboardShortcuts)
                     Button("Chat with Developer", systemImage: "message") {
                         #if os(macOS)
                             openWindow(id: "messages")
@@ -75,7 +74,7 @@ struct RoamApp: App {
                             navigationPath.append(NavigationDestination.messageDestination)
                         #endif
                     }
-                    .keyboardShortcut("j")
+                    .customKeyboardShortcut(.chatWithDeveloper)
                 }
             }
             .modelContainer(sharedModelContainer)
@@ -107,6 +106,7 @@ struct RoamApp: App {
             Window("Keyboard Shortcuts", id: "keyboard-shortcuts") {
                 KeyboardShortcutPanel()
             }
+            .windowResizability(.contentSize)
             .modelContainer(sharedModelContainer)
             .environment(\.createDataHandler, dataHandlerCreator())
         #endif

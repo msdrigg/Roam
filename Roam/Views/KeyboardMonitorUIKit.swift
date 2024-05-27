@@ -10,7 +10,7 @@
     )
 
     struct OnKeyPressModifier: ViewModifier {
-        let onKeyPress: (KeyEquivalent) -> Void
+        let onKeyPress: (KeyboardShortcut) -> Void
         let enabled: Bool
 
         func body(content: Content) -> some View {
@@ -26,13 +26,13 @@
     }
 
     extension View {
-        func onKeyDown(_ onKeyPress: @escaping (KeyEquivalent) -> Void, enabled: Bool = true) -> some View {
+        func onKeyDown(_ onKeyPress: @escaping (KeyboardShortcut) -> Void, enabled: Bool = true) -> some View {
             modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled))
         }
     }
 
     struct KeyHandlingViewRepresentable: UIViewRepresentable {
-        var onKeyPress: (KeyEquivalent) -> Void
+        var onKeyPress: (KeyboardShortcut) -> Void
 
         func makeUIView(context _: Context) -> KeyHandlingUIView {
             KeyHandlingUIView(onKeyPress: onKeyPress)
@@ -42,9 +42,9 @@
     }
 
     class KeyHandlingUIView: UIView {
-        var onKeyPress: (KeyEquivalent) -> Void
+        var onKeyPress: (KeyboardShortcut) -> Void
 
-        init(onKeyPress: @escaping (KeyEquivalent) -> Void) {
+        init(onKeyPress: @escaping (KeyboardShortcut) -> Void) {
             self.onKeyPress = onKeyPress
             super.init(frame: .zero)
             isUserInteractionEnabled = true
@@ -80,18 +80,21 @@
         }
     }
 
-    func getKeyEquivalent(_ key: UIKey) -> KeyEquivalent? {
+    @MainActor
+    func getKeyEquivalent(_ key: UIKey) -> KeyboardShortcut? {
         if let specialKey = specialKeyMapping(key: key) {
-            return specialKey
+            return KeyboardShortcut(specialKey, modifiers: mapModifierFlags(key.modifierFlags))
         }
 
         guard let firstCharacter = key.characters.first else {
             return nil
         }
 
-        return KeyEquivalent(firstCharacter)
+        let ke = KeyEquivalent(firstCharacter)
+        return KeyboardShortcut(ke, modifiers: mapModifierFlags(key.modifierFlags))
     }
 
+    @MainActor
     private func specialKeyMapping(key: UIKey) -> KeyEquivalent? {
         switch key.keyCode {
         case UIKeyboardHIDUsage.keyboardLeftArrow: .leftArrow
@@ -110,5 +113,28 @@
         default: nil
         }
     }
+
+    private func mapModifierFlags(_ flags: UIKeyModifierFlags) -> EventModifiers {
+        var modifiers = EventModifiers()
+
+        if flags.contains(.shift) {
+            modifiers.insert(.shift)
+        }
+        if flags.contains(.control) {
+            modifiers.insert(.control)
+        }
+        if flags.contains(.alternate) {
+            modifiers.insert(.option)
+        }
+        if flags.contains(.command) {
+            modifiers.insert(.command)
+        }
+        if flags.contains(.alphaShift) {
+            modifiers.insert(.capsLock)
+        }
+
+        return modifiers
+    }
+
 
 #endif
