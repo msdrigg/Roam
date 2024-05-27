@@ -82,9 +82,9 @@ struct RoamApp: App {
         #else
             WindowGroup {
                 RemoteView()
-                #if os(visionOS)
+#if os(visionOS)
                     .frame(minWidth: 400, minHeight: 950)
-                #endif
+#endif
             }
             #if os(visionOS)
             .windowResizability(.contentMinSize)

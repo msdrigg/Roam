@@ -29,15 +29,14 @@ struct ButtonGrid: View {
                         })
                         .disabled(disabled.contains(button.2))
                         .symbolEffect(.pulse, isActive: enabled.contains(button.2))
+                        .symbolEffect(.bounce, value: pressCounter(button.2))
                         #if !os(visionOS)
                             .sensoryFeedback(.impact, trigger: pressCounter(button.2))
                         #endif
-                            .symbolEffect(.bounce, value: pressCounter(button.2))
-                        #if !os(tvOS) && !os(watchOS)
-                            view .customKeyboardShortcut(button.3)
-                        #else
                             view
-                        #endif
+#if !os(tvOS) && !os(watchOS)
+                            .customKeyboardShortcut(button.3)
+#endif
                     }
                 }
             }
