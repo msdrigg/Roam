@@ -11,12 +11,6 @@ hide_table_of_contents: true
     - Then I can switch from a `for await` loop over the clock to a `while !Task.isCancelled` loop with a `Task.sleep` in it.
 - Figure out what causes data leak in case of long-running private listening after TV shuts off...
 
-## User requested features
-
-- Add user-defined keyboard shortcuts
-   - Allow selecting an item and then clicking keys+modifiers to update shortcut
-   - Disable keyboard shortcuts on keyboard shortcut editor
-
 ## TipKit
 
 - Add tips for private listening
