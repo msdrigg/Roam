@@ -106,7 +106,6 @@ struct CustomKeyboardShortcut: Identifiable, Codable {
             }
         }
         if let key {
-            print("Getting new repr \(key.printableRepresentation) and \(key.character) and \(key.character.utf8)")
             keyBuilder.append(key.printableRepresentation)
         }
         return keyBuilder
@@ -312,7 +311,7 @@ struct KeyboardShortcutPanel: View {
         }
     }
     
-    @FocusState private var focusedShortcut: CustomKeyboardShortcut.Key?
+    @State private var focusedShortcut: CustomKeyboardShortcut.Key?
 
     @ViewBuilder
     var body: some View {
@@ -321,7 +320,7 @@ struct KeyboardShortcutPanel: View {
             Text("Select a row below to change the shortcut, or right click it to reset the shortcut back to its original state")
                 .foregroundStyle(.secondary)
                 .swipeActions(edge: .trailing) {
-                    Button(role: .destructive, action: {
+                    Button(role: .cancel, action: {
                         for shortcut in shortcuts {
                             shortcut.reset()
                         }
@@ -330,7 +329,7 @@ struct KeyboardShortcutPanel: View {
                     })
                 }
                 .contextMenu {
-                    Button(role: .destructive, action: {
+                    Button(role: .cancel, action: {
                         for shortcut in shortcuts {
                             shortcut.reset()
                         }
@@ -342,7 +341,7 @@ struct KeyboardShortcutPanel: View {
             Text("Select a row below to change the shortcut, or swipe to reset")
                 .foregroundStyle(.secondary)
                 .swipeActions(edge: .trailing) {
-                    Button(role: .destructive, action: {
+                    Button(role: .cancel, action: {
                         for shortcut in shortcuts {
                             shortcut.reset()
                         }
@@ -351,7 +350,7 @@ struct KeyboardShortcutPanel: View {
                     })
                 }
                 .contextMenu {
-                    Button(role: .destructive, action: {
+                    Button(role: .cancel, action: {
                         for shortcut in shortcuts {
                             shortcut.reset()
                         }
@@ -361,28 +360,31 @@ struct KeyboardShortcutPanel: View {
                 }
 
             #endif
-            ForEach(shortcuts) { shortcut in
-                ShortcutDisplay(shortcut.title)
-                .padding(3)
-                .contentShape(RoundedRectangle(cornerRadius: 8.0))
-                .focusable()
-                .focused($focusedShortcut, equals: shortcut.title)
+            ForEach(shortcuts, id: \.id) { shortcut in
+                Button(action: {
+                    focusedShortcut = shortcut.title
+                }, label: {
+                    ShortcutDisplay(shortcut.title)
+                        .padding(6)
+                        .contentShape(RoundedRectangle(cornerRadius: 8.0))
+                })
+                .buttonStyle(.plain)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.accentColor.secondary, lineWidth: 4)
                         .opacity(focusedShortcut == shortcut.title ? 1 : 0)
-                        .scaleEffect(focusedShortcut == shortcut.title ? 1 : 1.1)
+                        .scaleEffect(focusedShortcut == shortcut.title ? 1 : 1.04)
                         .animation(focusedShortcut == shortcut.title ? .easeIn(duration: 0.2) : .easeOut(duration: 0.0), value: focusedShortcut == shortcut.title)
                 )
                 .swipeActions(edge: .trailing) {
-                    Button(role: .destructive, action: {
+                    Button(role: .cancel, action: {
                         shortcut.reset()
                     }, label: {
                         Label("Reset", systemImage: "arrow.uturn.backward")
                     })
                 }
                 .contextMenu {
-                    Button(role: .destructive, action: {
+                    Button(role: .cancel, action: {
                         shortcut.reset()
                     }, label: {
                         Label("Reset", systemImage: "arrow.uturn.backward")
@@ -390,11 +392,19 @@ struct KeyboardShortcutPanel: View {
                 }
             }
         }
+        #if os(macOS)
         .onKeyDown({ key in
             if let focusedShortcut {
                 CustomKeyboardShortcut(title: focusedShortcut, shortcut: KeyboardShortcut(key.key, modifiers: key.modifiers)).persist()
             }
         }, captureShortcuts: true)
+        #else
+        .onKeyDown({ key in
+            if let focusedShortcut {
+                CustomKeyboardShortcut(title: focusedShortcut, shortcut: KeyboardShortcut(key.key, modifiers: key.modifiers)).persist()
+            }
+        })
+        #endif
         .formStyle(.grouped)
         .navigationTitle("Keyboard Shortcuts")
                 .frame(maxWidth: 500)
