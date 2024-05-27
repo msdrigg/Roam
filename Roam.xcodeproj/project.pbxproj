@@ -536,8 +536,8 @@
 				AF3AD55C2AE299BD00E2D780 /* DevicePicker.swift */,
 				AFA9F8982B1D29E000829B7C /* KeyboardShortcutPanel.swift */,
 				AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */,
-				AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */,
 				AFF6DE102BCF0740002C13FC /* MessagingView.swift */,
+				AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */,
 				AF44021B2BFBEF2500004C15 /* LinkedTextView.swift */,
 			);
 			path = Views;

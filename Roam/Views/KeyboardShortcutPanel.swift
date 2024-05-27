@@ -19,9 +19,10 @@ struct CustomKeyboardShortcutModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         if let key = shortcut?.key, let modifiers = shortcut?.modifiers {
-            return AnyView(content.keyboardShortcut(key, modifiers: modifiers))
+            print("Setting ks with key \(key) with modifiers \(modifiers) could be \(EventModifiers.command)")
+            return content.keyboardShortcut(KeyboardShortcut(key, modifiers: modifiers) as KeyboardShortcut?)
         } else {
-            return AnyView(content)
+            return content.keyboardShortcut(nil)
         }
     }
 }
@@ -73,7 +74,7 @@ struct CustomKeyboardShortcut: Identifiable, Codable {
         title.rawValue
     }
     
-    init(title: CustomKeyboardShortcut.Key, key: KeyEquivalent, modifiers: EventModifiers) {
+    init(title: CustomKeyboardShortcut.Key, key: KeyEquivalent?, modifiers: EventModifiers) {
         self.title = title
         self.key = key
         self.modifiers = modifiers
@@ -88,7 +89,7 @@ struct CustomKeyboardShortcut: Identifiable, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decode(CustomKeyboardShortcut.Key.self, forKey: .title)
-        key = try container.decode(KeyEquivalent.self, forKey: .key)
+        key = try? container.decode(KeyEquivalent.self, forKey: .key)
         let modifiersRawValue = try container.decode(Int.self, forKey: .modifiers)
         modifiers = EventModifiers(rawValue: modifiersRawValue)
     }
@@ -327,6 +328,16 @@ struct KeyboardShortcutPanel: View {
                     }, label: {
                         Label("Reset All", systemImage: "arrow.uturn.backward")
                     })
+                    Button(role: .cancel, action: {
+                        for shortcut in shortcuts {
+                            let scClone = CustomKeyboardShortcut(title: shortcut.title, key: nil, modifiers: [])
+                            scClone.persist()
+                            
+                        }
+                    }, label: {
+                        Label("Clear All", systemImage: "xmark")
+                    })
+
                 }
                 .contextMenu {
                     Button(role: .cancel, action: {
@@ -336,11 +347,21 @@ struct KeyboardShortcutPanel: View {
                     }, label: {
                         Label("Reset All", systemImage: "arrow.uturn.backward")
                     })
+                    Button(role: .cancel, action: {
+                        for shortcut in shortcuts {
+                            let scClone = CustomKeyboardShortcut(title: shortcut.title, key: nil, modifiers: [])
+                            scClone.persist()
+                            
+                        }
+                    }, label: {
+                        Label("Clear All", systemImage: "xmark")
+                    })
+
                 }
             #else
             Text("Select a row below to change the shortcut, or swipe to reset")
                 .foregroundStyle(.secondary)
-                .swipeActions(edge: .trailing) {
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .cancel, action: {
                         for shortcut in shortcuts {
                             shortcut.reset()
@@ -348,6 +369,16 @@ struct KeyboardShortcutPanel: View {
                     }, label: {
                         Label("Reset All", systemImage: "arrow.uturn.backward")
                     })
+                    Button(role: .cancel, action: {
+                        for shortcut in shortcuts {
+                            let scClone = CustomKeyboardShortcut(title: shortcut.title, key: nil, modifiers: [])
+                            scClone.persist()
+                            
+                        }
+                    }, label: {
+                        Label("Clear All", systemImage: "xmark")
+                    })
+
                 }
                 .contextMenu {
                     Button(role: .cancel, action: {
@@ -357,6 +388,16 @@ struct KeyboardShortcutPanel: View {
                     }, label: {
                         Label("Reset All", systemImage: "arrow.uturn.backward")
                     })
+                    Button(role: .cancel, action: {
+                        for shortcut in shortcuts {
+                            let scClone = CustomKeyboardShortcut(title: shortcut.title, key: nil, modifiers: [])
+                            scClone.persist()
+                            
+                        }
+                    }, label: {
+                        Label("Clear All", systemImage: "xmark")
+                    })
+
                 }
 
             #endif
@@ -382,12 +423,25 @@ struct KeyboardShortcutPanel: View {
                     }, label: {
                         Label("Reset", systemImage: "arrow.uturn.backward")
                     })
+                    Button(role: .cancel, action: {
+                        let scClone = CustomKeyboardShortcut(title: shortcut.title, key: nil, modifiers: [])
+                        scClone.persist()
+                    }, label: {
+                        Label("Clear", systemImage: "xmark")
+                    })
+
                 }
                 .contextMenu {
                     Button(role: .cancel, action: {
                         shortcut.reset()
                     }, label: {
                         Label("Reset", systemImage: "arrow.uturn.backward")
+                    })
+                    Button(role: .cancel, action: {
+                        let scClone = CustomKeyboardShortcut(title: shortcut.title, key: nil, modifiers: [])
+                        scClone.persist()
+                    }, label: {
+                        Label("Clear", systemImage: "xmark")
                     })
                 }
             }
