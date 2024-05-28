@@ -32,7 +32,7 @@ func sendDeviceTokenToServer(_ token: String) async {
             super.init()
             UNUserNotificationCenter.current().delegate = self
             logger.info("Setting Notifications delegate to self")
-            
+
         }
 
         @MainActor func showAboutPanel() {
@@ -127,11 +127,85 @@ func sendDeviceTokenToServer(_ token: String) async {
     }
 #else
     import UIKit
+    import Combine
+
+    final class UserDefaultsPublisher: Sendable {
+        static let shared = UserDefaultsPublisher()
+
+        func publisher<T: Decodable>(for key: String) -> AnyPublisher<T, Never> {
+            return NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification, object: UserDefaults.standard)
+                .map { _ in
+                    guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+                    return try? PropertyListDecoder().decode(T.self, from: data)
+                }
+                .compactMap { $0 }
+                .eraseToAnyPublisher()
+        }
+    }
+
+    extension EventModifiers {
+        var uiKeyModifierFlagsRepresentation: UIKeyModifierFlags {
+            var flags = UIKeyModifierFlags()
+            if self.contains(.shift) {
+                flags.insert(.shift)
+            }
+            if self.contains(.control) {
+                flags.insert(.control)
+            }
+            if self.contains(.option) {
+                flags.insert(.alternate)
+            }
+            if self.contains(.command) {
+                flags.insert(.command)
+            }
+            if self.contains(.capsLock) {
+                flags.insert(.alphaShift)
+            }
+            return flags
+        }
+    }
+
+extension UIApplication {
+    func findFirstResponder() -> UIResponder? {
+        return self.keyWindow?.rootViewController?.findFirstResponder()
+    }
+}
+
+extension UIViewController {
+    func findFirstResponder() -> UIResponder? {
+        if self.isFirstResponder {
+            return self
+        }
+        for view in self.view.subviews {
+            if let responder = view.findFirstResponder() {
+                return responder
+            }
+        }
+        return nil
+    }
+}
+
+extension UIView {
+    func findFirstResponder() -> UIResponder? {
+        if self.isFirstResponder {
+            return self
+        }
+        for subview in self.subviews {
+            if let responder = subview.findFirstResponder() {
+                return responder
+            }
+        }
+        return nil
+    }
+}
+
 
     class RoamAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
         private var modelContainer: ModelContainer = getSharedModelContainer()
 
         @Published var navigationPath: [NavigationDestination] = []
+        
+        private var cancellables: Set<AnyCancellable> = []
 
         override init() {
             super.init()
@@ -201,15 +275,16 @@ func sendDeviceTokenToServer(_ token: String) async {
             completionHandler(.badge)
         }
         
-        func applicationDidFinishLaunching(_ application: UIApplication) {
+        func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
             let hasSentFirstMessage = UserDefaults.standard.bool(forKey: "hasSentFirstMessage")
             if hasSentFirstMessage {
                 UserDefaults.standard.setValue(Date.now.timeIntervalSince1970, forKey: "lastApnsRequestTime")
                 requestNotificationPermission()
             }
+
+            return true
         }
-
-
+        
         func application(_: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
             logger.error("Failed to register for remote notifications with Error \(error)")
         }

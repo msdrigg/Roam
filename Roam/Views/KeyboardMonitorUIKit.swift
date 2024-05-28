@@ -11,72 +11,129 @@
 
     struct OnKeyPressModifier: ViewModifier {
         let onKeyPress: (KeyboardShortcut) -> Void
+        let onKeyboardShortcut: ((CustomKeyboardShortcut.Key) -> Void)?
         let enabled: Bool
 
+        @AllCustomKeyboardShortcuts private var allKeyboardShortcuts: [CustomKeyboardShortcut]
+
         func body(content: Content) -> some View {
-            if enabled {
-                content.overlay(
-                    KeyHandlingViewRepresentable(onKeyPress: onKeyPress)
-                        .allowsHitTesting(false)
-                )
-            } else {
-                content
+            if !enabled {
+                return AnyView(content)
             }
+
+            return AnyView(KeyPressableContainer(content: content, onKeyPress: onKeyPress, onKeyboardShortcut: onKeyboardShortcut, keyboardShortcuts: allKeyboardShortcuts)
+                .onChange(of: allKeyboardShortcuts) {oldValue, newValue in
+                    print("Changing from \(oldValue) to \(newValue)")
+                })
         }
     }
 
     extension View {
-        func onKeyDown(_ onKeyPress: @escaping (KeyboardShortcut) -> Void, enabled: Bool = true) -> some View {
-            modifier(OnKeyPressModifier(onKeyPress: onKeyPress, enabled: enabled))
+        func onKeyDown(_ onKeyPress: @escaping (KeyboardShortcut) -> Void, onKeyboardShortcut: ((CustomKeyboardShortcut.Key) -> Void)? = nil, enabled: Bool = true) -> some View {
+            modifier(OnKeyPressModifier(onKeyPress: onKeyPress, onKeyboardShortcut: onKeyboardShortcut, enabled: enabled))
         }
     }
 
-    struct KeyHandlingViewRepresentable: UIViewRepresentable {
-        var onKeyPress: (KeyboardShortcut) -> Void
+    private struct KeyPressableContainer<Content: View>: UIViewControllerRepresentable {
+        let content: Content
+        let onKeyPress: (KeyboardShortcut) -> Void
+        let onKeyboardShortcut: ((CustomKeyboardShortcut.Key) -> Void)?
+        let keyboardShortcuts: [CustomKeyboardShortcut]
 
-        func makeUIView(context _: Context) -> KeyHandlingUIView {
-            KeyHandlingUIView(onKeyPress: onKeyPress)
+        @MainActor func makeUIViewController(context: Context) -> KeyPressableViewController<Content> {
+            let viewController = KeyPressableViewController<Content>()
+            viewController.onKeyPress = onKeyPress
+            viewController.onKeyboardShortcut = onKeyboardShortcut
+            if viewController.onKeyboardShortcut != nil {
+                viewController.keyboardShortcuts = keyboardShortcuts
+            } else {
+                viewController.keyboardShortcuts = nil
+            }
+
+            let hostingController = UIHostingController(rootView: content)
+            viewController.addChild(hostingController)
+            viewController.view.addSubview(hostingController.view)
+            hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                hostingController.view.topAnchor.constraint(equalTo: viewController.view.topAnchor),
+                hostingController.view.bottomAnchor.constraint(equalTo: viewController.view.bottomAnchor),
+                hostingController.view.leadingAnchor.constraint(equalTo: viewController.view.leadingAnchor),
+                hostingController.view.trailingAnchor.constraint(equalTo: viewController.view.trailingAnchor)
+            ])
+            hostingController.didMove(toParent: viewController)
+            viewController.hostingController = hostingController
+
+            return viewController
         }
 
-        func updateUIView(_: KeyHandlingUIView, context _: Context) {}
+        func updateUIViewController(_ uiViewController: KeyPressableViewController<Content>, context: Context) {
+            uiViewController.keyboardShortcuts = keyboardShortcuts
+            uiViewController.onKeyPress = onKeyPress
+            uiViewController.onKeyboardShortcut = onKeyboardShortcut
+            if uiViewController.onKeyboardShortcut == nil {
+                uiViewController.keyboardShortcuts = nil
+            }
+            if let hc = uiViewController.hostingController {
+                hc.rootView = content
+            }
+        }
     }
 
-    class KeyHandlingUIView: UIView {
-        var onKeyPress: (KeyboardShortcut) -> Void
+    private class KeyPressableViewController<Content: View>: UIViewController {
+        var onKeyPress: ((KeyboardShortcut) -> Void)?
+        var onKeyboardShortcut: ((CustomKeyboardShortcut.Key) -> Void)?
+        var keyboardShortcuts: [CustomKeyboardShortcut]?
 
-        init(onKeyPress: @escaping (KeyboardShortcut) -> Void) {
-            self.onKeyPress = onKeyPress
-            super.init(frame: .zero)
-            isUserInteractionEnabled = true
-            becomeFirstResponder()
+        weak var hostingController: UIHostingController<Content>?
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                self?.becomeFirstResponder()
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            view.backgroundColor = .clear
+        }
+
+        override var keyCommands: [UIKeyCommand]? {
+            let commands = keyboardShortcuts?.compactMap { ks in
+                ks.getUIKeyCommand(action: #selector(handleKeyPress(_:)))
+            }
+            return commands
+        }
+
+        override var canBecomeFirstResponder: Bool {
+            return true
+        }
+
+        override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+            var handled = false
+            if let press = presses.first, let key = press.key {
+                if let ke = getKeyEquivalent(key) {
+                    for shortcut in keyboardShortcuts ?? [] {
+                        if shortcut.key == ke.key && shortcut.modifiers == ke.modifiers {
+                            logger.info("Not handling key press because found shortcut with title \(shortcut.title)")
+                            super.pressesBegan(presses, with: event)
+                            return
+                        }
+                    }
+                    logger.info("Handling key press \(ke.key.printableRepresentation)")
+                    onKeyPress?(ke)
+                    handled = true
+                }
+            }
+            
+            if !handled {
+                super.pressesBegan(presses, with: event)
             }
         }
 
-        @available(*, unavailable)
-        required init?(coder _: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            becomeFirstResponder()
-        }
-
-        override func resignFirstResponder() -> Bool {
-            logger.info("Asked to resign first responder. Returning false")
-            return false
-        }
-
-        override var canBecomeFirstResponder: Bool { true }
-
-        override func pressesBegan(_ presses: Set<UIPress>, with _: UIPressesEvent?) {
-            guard let press = presses.first, let key = press.key else { return }
-            if let ke = getKeyEquivalent(key) {
-                onKeyPress(ke)
+        @objc func handleKeyPress(_ command: UIKeyCommand) {
+            logger.info("Getting keyboard shortcut \(command.title) \(String(describing: command.input))")
+            if let key = CustomKeyboardShortcut.Key(rawValue: command.title) {
+                onKeyboardShortcut?(key)
             }
+        }
+
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            becomeFirstResponder()
         }
     }
 
@@ -135,6 +192,4 @@
 
         return modifiers
     }
-
-
 #endif

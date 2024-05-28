@@ -32,6 +32,9 @@ Roam offers everything you want and nothing you don't
         -   If your app is crashing, also make sure your analytics are turned on in Settings -> Privacy & Security -> Analytics & Improvments
             -   Turn on "Share iPhone & Watch Analytics" and then turn on "Share With App Developers" so apple will report to me when your app crashes
     -   If it's a request for a new feature, you can send an email directly (roam-support@msd3.io) or chat with me directly in the Roam app (Settings -> Chat with Developer)
+-   Why don't the arrow keys sometimes work on iPad?
+    -   This is caused because iPadOS sometimes takes control of the arrow keys and uses them for navigating the screen buttons before we can detect them
+    -   You can work arround this by going into Settings -> Accessiblity -> Keyboards and disabling "Full Keyboard Access" or alternatively going to Settings -> Accessiblity -> Keyboards -> Full Keyboard Access -> Commands -> Basic and disabling the "Move Up", "Move Down", "Move Left" and "Move Right" commands
 
 ## Other Resources
 
