@@ -40,39 +40,23 @@ struct RoamApp: App {
                 }
                 CommandGroup(after: .help) {
                     Button("Keyboard Shortcuts", systemImage: "keyboard") {
-                        #if os(macOS)
-                            openWindow(id: "keyboard-shortcuts")
-                        #else
-                            navigationPath.append(NavigationDestination.keyboardShortcutDestinaion)
-                        #endif
+                        openWindow(id: "keyboard-shortcuts")
                     }
                     .customKeyboardShortcut(.keyboardShortcuts)
 
                     Button("Chat with Developer", systemImage: "message") {
-                        #if os(macOS)
-                            openWindow(id: "messages")
-                        #else
-                            navigationPath.append(NavigationDestination.messageDestination)
-                        #endif
+                        openWindow(id: "messages")
                     }
                     .customKeyboardShortcut(.chatWithDeveloper)
                 }
 
                 CommandGroup(after: .singleWindowList) {
                     Button("Keyboard Shortcuts", systemImage: "keyboard") {
-                        #if os(macOS)
-                            openWindow(id: "keyboard-shortcuts")
-                        #else
-                            navigationPath.append(NavigationDestination.keyboardShortcutDestinaion)
-                        #endif
+                        openWindow(id: "keyboard-shortcuts")
                     }
                     .customKeyboardShortcut(.keyboardShortcuts)
                     Button("Chat with Developer", systemImage: "message") {
-                        #if os(macOS)
-                            openWindow(id: "messages")
-                        #else
-                            navigationPath.append(NavigationDestination.messageDestination)
-                        #endif
+                        openWindow(id: "messages")
                     }
                     .customKeyboardShortcut(.chatWithDeveloper)
                 }

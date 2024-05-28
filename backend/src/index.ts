@@ -82,6 +82,10 @@ async function sendMessage(message: {
 	let stub = env.APNS_DURABLE_OBJECT.get(env.APNS_DURABLE_OBJECT.idFromName("apns"));
 	let threadId = await stub.getOrCreateThreadIdForUser(userId);
 
+	if (apnsToken) {
+		await stub.storeApnsToken(threadId, userId, apnsToken);
+	}
+
 	if (content) {
 		await discordClient.sendMessage(threadId, content)
 	}
@@ -90,12 +94,8 @@ async function sendMessage(message: {
 		await discordClient.sendAttachment(threadId, attachment)
 	}
 
-
-
-	await maybeSendDeviceInfo(env, userId, threadId, installationInfo, discordClient);
-
-	if (apnsToken) {
-		await stub.storeApnsToken(threadId, userId, apnsToken);
+	if (content || attachment) {
+		await maybeSendDeviceInfo(env, userId, threadId, installationInfo, discordClient);
 	}
 }
 

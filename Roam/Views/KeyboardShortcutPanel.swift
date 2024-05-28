@@ -19,10 +19,13 @@ struct CustomKeyboardShortcutModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         if let key = shortcut?.key, let modifiers = shortcut?.modifiers {
-            print("Setting ks with key \(key) with modifiers \(modifiers) could be \(EventModifiers.command)")
-            return content.keyboardShortcut(KeyboardShortcut(key, modifiers: modifiers) as KeyboardShortcut?)
+            #if os(macOS)
+            return AnyView(content.keyboardShortcut(KeyboardShortcut(key, modifiers: modifiers)))
+            #else
+            return AnyView(content)
+            #endif
         } else {
-            return content.keyboardShortcut(nil)
+            return AnyView(content)
         }
     }
 }
@@ -66,7 +69,107 @@ struct KeyboardShortcutStorage: DynamicProperty {
     }
 }
 
-struct CustomKeyboardShortcut: Identifiable, Codable {
+@propertyWrapper
+struct AllCustomKeyboardShortcuts: DynamicProperty {
+    @KeyboardShortcutStorage(.back) private var backShortcut
+    @KeyboardShortcutStorage(.power) private var powerShortcut
+    @KeyboardShortcutStorage(.home) private var homeShortcut
+    @KeyboardShortcutStorage(.volumeDown) private var volumeDownShortcut
+    @KeyboardShortcutStorage(.volumeUp) private var volumeUpShortcut
+    @KeyboardShortcutStorage(.mute) private var muteShortcut
+    @KeyboardShortcutStorage(.playPause) private var playPauseShortcut
+    @KeyboardShortcutStorage(.ok) private var okShortcut
+    @KeyboardShortcutStorage(.left) private var leftShortcut
+    @KeyboardShortcutStorage(.right) private var rightShortcut
+    @KeyboardShortcutStorage(.up) private var upShortcut
+    @KeyboardShortcutStorage(.down) private var downShortcut
+    @KeyboardShortcutStorage(.keyboardShortcuts) private var keyboardShortcutsShortcut
+    @KeyboardShortcutStorage(.chatWithDeveloper) private var chatWithDeveloperShortcut
+    @KeyboardShortcutStorage(.options) private var optionsShortcut
+    @KeyboardShortcutStorage(.headphonesMode) private var headphonesModeShortcut
+    @KeyboardShortcutStorage(.instantReplay) private var instantReplayShortcut
+    @KeyboardShortcutStorage(.fastForward) private var fastForwardShortcut
+    @KeyboardShortcutStorage(.rewind) private var rewindShortcut
+
+    var wrappedValue: [CustomKeyboardShortcut] {
+        [
+            backShortcut,
+            powerShortcut,
+            homeShortcut,
+            volumeDownShortcut,
+            volumeUpShortcut,
+            muteShortcut,
+            playPauseShortcut,
+            okShortcut,
+            leftShortcut,
+            rightShortcut,
+            upShortcut,
+            downShortcut,
+            keyboardShortcutsShortcut,
+            chatWithDeveloperShortcut,
+            optionsShortcut,
+            headphonesModeShortcut,
+            instantReplayShortcut,
+            fastForwardShortcut,
+            rewindShortcut
+        ].compactMap { $0 }
+    }
+
+    var projectedValue: Binding<[CustomKeyboardShortcut]> {
+        Binding(
+            get: {
+                [
+                    backShortcut,
+                    powerShortcut,
+                    homeShortcut,
+                    volumeDownShortcut,
+                    volumeUpShortcut,
+                    muteShortcut,
+                    playPauseShortcut,
+                    okShortcut,
+                    leftShortcut,
+                    rightShortcut,
+                    upShortcut,
+                    downShortcut,
+                    keyboardShortcutsShortcut,
+                    chatWithDeveloperShortcut,
+                    optionsShortcut,
+                    headphonesModeShortcut,
+                    instantReplayShortcut,
+                    fastForwardShortcut,
+                    rewindShortcut
+                ].compactMap { $0 }
+            },
+            set: { newShortcuts in
+                for shortcut in newShortcuts {
+                    switch shortcut.title {
+                    case .back: backShortcut = shortcut
+                    case .power: powerShortcut = shortcut
+                    case .home: homeShortcut = shortcut
+                    case .volumeDown: volumeDownShortcut = shortcut
+                    case .volumeUp: volumeUpShortcut = shortcut
+                    case .mute: muteShortcut = shortcut
+                    case .playPause: playPauseShortcut = shortcut
+                    case .ok: okShortcut = shortcut
+                    case .left: leftShortcut = shortcut
+                    case .right: rightShortcut = shortcut
+                    case .up: upShortcut = shortcut
+                    case .down: downShortcut = shortcut
+                    case .keyboardShortcuts: keyboardShortcutsShortcut = shortcut
+                    case .chatWithDeveloper: chatWithDeveloperShortcut = shortcut
+                    case .options: optionsShortcut = shortcut
+                    case .headphonesMode: headphonesModeShortcut = shortcut
+                    case .instantReplay: instantReplayShortcut = shortcut
+                    case .fastForward: fastForwardShortcut = shortcut
+                    case .rewind: rewindShortcut = shortcut
+                    }
+                }
+            }
+        )
+    }
+}
+
+struct CustomKeyboardShortcut: Identifiable, Codable, Equatable {
     let title: CustomKeyboardShortcut.Key
     let key: KeyEquivalent?
     let modifiers: EventModifiers
@@ -112,22 +215,30 @@ struct CustomKeyboardShortcut: Identifiable, Codable {
         return keyBuilder
     }
 
-    static var defaults: [Key: KeyboardShortcut] = [
-        .back: KeyboardShortcut(.leftArrow, modifiers: .command),
-        .power: KeyboardShortcut(.return, modifiers: .command),
-        .home: KeyboardShortcut(KeyEquivalent("h"), modifiers: .command),
-        .volumeDown: KeyboardShortcut(.downArrow, modifiers: .command),
-        .volumeUp: KeyboardShortcut(.upArrow, modifiers: .command),
-        .mute: KeyboardShortcut(KeyEquivalent("m"), modifiers: .command),
-        .playPause: KeyboardShortcut(KeyEquivalent("p"), modifiers: .command),
-        .ok: KeyboardShortcut(.return, modifiers: .shift),
-        .left: KeyboardShortcut(.leftArrow, modifiers: []),
-        .right: KeyboardShortcut(.rightArrow, modifiers: []),
-        .up: KeyboardShortcut(.upArrow, modifiers: []),
-        .down: KeyboardShortcut(.downArrow, modifiers: []),
-        .keyboardShortcuts: KeyboardShortcut(KeyEquivalent("k"), modifiers: .command),
-        .chatWithDeveloper: KeyboardShortcut(KeyEquivalent("j"), modifiers: .command)
-    ]
+    static var defaults: [Key: KeyboardShortcut]  {
+        var items: [Key: KeyboardShortcut] = [
+            .back: KeyboardShortcut(.leftArrow, modifiers: .command),
+            .power: KeyboardShortcut(.return, modifiers: .command),
+            .volumeDown: KeyboardShortcut(.downArrow, modifiers: .command),
+            .volumeUp: KeyboardShortcut(.upArrow, modifiers: .command),
+            .mute: KeyboardShortcut(KeyEquivalent("m"), modifiers: .command),
+            .home: KeyboardShortcut(KeyEquivalent("h"), modifiers: [.command, .shift]),
+            .playPause: KeyboardShortcut(KeyEquivalent("p"), modifiers: .command),
+            .ok: KeyboardShortcut(.return, modifiers: .shift),
+            .left: KeyboardShortcut(.leftArrow, modifiers: []),
+            .right: KeyboardShortcut(.rightArrow, modifiers: []),
+            .up: KeyboardShortcut(.upArrow, modifiers: []),
+            .down: KeyboardShortcut(.downArrow, modifiers: []),
+            .keyboardShortcuts: KeyboardShortcut(KeyEquivalent("k"), modifiers: .command),
+            .chatWithDeveloper: KeyboardShortcut(KeyEquivalent("j"), modifiers: .command)
+        ]
+        
+        #if os(macOS)
+        items.updateValue(KeyboardShortcut(KeyEquivalent("h"), modifiers: .command), forKey: .home)
+        #endif
+        
+        return items
+    }
     
     enum CodingKeys: String, CodingKey {
         case title
@@ -169,7 +280,7 @@ struct CustomKeyboardShortcut: Identifiable, Codable {
         }
     }
 
-    public enum Key: String, CaseIterable, Codable {
+    public enum Key: String, CaseIterable, Codable, CustomStringConvertible {
         case back = "Back"
         case power = "Power"
         case home = "Home"
@@ -189,7 +300,151 @@ struct CustomKeyboardShortcut: Identifiable, Codable {
         case instantReplay = "Instant Replay"
         case fastForward = "Fast Forward"
         case rewind = "Rewind"
+
+        var defaultsKey: String {
+            return "keyboard-shortcut-\(rawValue)"
+        }
+        
+        public var description: String {
+            rawValue
+        }
+        
+        
+        public init?(remoteButton: RemoteButton) {
+            switch remoteButton {
+            case .back:
+                self = .back
+            case .power:
+                self = .power
+            case .home:
+                self = .home
+            case .volumeDown:
+                self = .volumeDown
+            case .volumeUp:
+                self = .volumeUp
+            case .mute:
+                self = .mute
+            case .playPause:
+                self = .playPause
+            case .select:
+                self = .ok
+            case .left:
+                self = .left
+            case .right:
+                self = .right
+            case .up:
+                self = .up
+            case .down:
+                self = .down
+            case .options:
+                self = .options
+            case .headphonesMode:
+                self = .headphonesMode
+            case .instantReplay:
+                self = .instantReplay
+            case .fastForward:
+                self = .fastForward
+            case .rewind:
+                self = .rewind
+            default:
+                return nil
+            }
+        }
+        
+        public var matchingRemoteButton: RemoteButton? {
+            switch self {
+            case .back:
+                return .back
+            case .power:
+                return .power
+            case .home:
+                return .home
+            case .volumeDown:
+                return .volumeDown
+            case .volumeUp:
+                return .volumeUp
+            case .mute:
+                return .mute
+            case .playPause:
+                return .playPause
+            case .ok:
+                return .select
+            case .left:
+                return .left
+            case .right:
+                return .right
+            case .up:
+                return .up
+            case .down:
+                return .down
+            case .keyboardShortcuts:
+                return nil
+            case .chatWithDeveloper:
+                return nil
+            case .options:
+                return .options
+            case .headphonesMode:
+                return .headphonesMode
+            case .instantReplay:
+                return .instantReplay
+            case .fastForward:
+                return .fastForward
+            case .rewind:
+                return .rewind
+            }
+        }
     }
+
+#if !os(macOS)
+    @MainActor
+    public func getUIKeyCommand(action: Selector) -> UIKeyCommand? {
+        guard let key = self.key else {
+            return nil
+        }
+        let input: String?
+
+        switch key {
+        case .upArrow:
+            input = UIKeyCommand.inputUpArrow
+        case .downArrow:
+            input = UIKeyCommand.inputDownArrow
+        case .leftArrow:
+            input = UIKeyCommand.inputLeftArrow
+        case .rightArrow:
+            input = UIKeyCommand.inputRightArrow
+        case .escape:
+            input = UIKeyCommand.inputEscape
+        case .home:
+            input = UIKeyCommand.inputHome
+        case .end:
+            input = UIKeyCommand.inputEnd
+        case .pageUp:
+            input = UIKeyCommand.inputPageUp
+        case .pageDown:
+            input = UIKeyCommand.inputPageDown
+        case .tab:
+            input = "\t"
+        case .return:
+            input = "\r"
+        case .delete:
+            input = UIKeyCommand.inputDelete
+        default:
+            input = String(key.character)
+        }
+        guard let input else {
+            return nil
+        }
+
+        var command = UIKeyCommand(input: input, modifierFlags: self.modifiers.uiKeyModifierFlagsRepresentation, action: action)
+        command.discoverabilityTitle = title.rawValue
+        command.title = title.rawValue
+        command.wantsPriorityOverSystemBehavior = true
+        command.allowsAutomaticMirroring = false
+        command.allowsAutomaticLocalization = false
+
+        return command
+    }
+#endif
 }
 
 extension KeyEquivalent: Codable {
@@ -296,9 +551,9 @@ struct ShortcutDisplay: View {
             
 #if os(macOS)
             if shortcut?.key?.isPrintableCharacter == true && shortcut?.modifiers.contains(.command) == false {
-                Text("Letters, numbers, and punctuation often don't work as keyboard shortcuts without a command modifier (⌘)")
+                Text("Having letters, numbers, or punctuation as keyboard shortcuts without a command modifier (⌘) can interfere with keyboard text entry on the roku TV")
                     .font(.caption)
-                    .foregroundStyle(.red.opacity(0.6))
+                    .foregroundStyle(.yellow.opacity(0.6))
             }
 #endif
         }
@@ -461,7 +716,9 @@ struct KeyboardShortcutPanel: View {
         #endif
         .formStyle(.grouped)
         .navigationTitle("Keyboard Shortcuts")
+        #if os(macOS)
                 .frame(maxWidth: 500)
+        #endif
     }
 }
 
