@@ -13,11 +13,12 @@
         let onKeyPress: (KeyboardShortcut) -> Void
         let enabled: Bool
         let captureShortcuts: Bool
+        @AllCustomKeyboardShortcuts private var allKeyboardShortcuts: [CustomKeyboardShortcut]
 
         func body(content: Content) -> some View {
             if enabled {
                 content.overlay(
-                    KeyHandlingViewRepresentable(onKeyPress: onKeyPress, captureShortcuts: captureShortcuts)
+                    KeyHandlingViewRepresentable(onKeyPress: onKeyPress, captureShortcuts: captureShortcuts, keyboardShortcuts: allKeyboardShortcuts)
                         .allowsHitTesting(false)
                 )
             } else {
@@ -35,21 +36,24 @@
     struct KeyHandlingViewRepresentable: NSViewRepresentable {
         var onKeyPress: (KeyboardShortcut) -> Void
         var captureShortcuts: Bool
+        var keyboardShortcuts: [CustomKeyboardShortcut]
 
         func makeNSView(context _: Context) -> KeyHandlingView {
-            KeyHandlingView(onKeyPress: onKeyPress, captureShortcuts: captureShortcuts)
+            KeyHandlingView(onKeyPress: onKeyPress, captureShortcuts: captureShortcuts, keyboardShorctus: keyboardShortcuts)
         }
 
         func updateNSView(_: KeyHandlingView, context _: Context) {}
 
         class KeyHandlingView: NSView {
             var onKeyPress: (KeyboardShortcut) -> Void
+            var keyboardShortcuts: [CustomKeyboardShortcut]
             var observerTokens: [Any] = []
             var captureShortcuts: Bool
 
-            init(onKeyPress: @escaping (KeyboardShortcut) -> Void, captureShortcuts: Bool) {
+            init(onKeyPress: @escaping (KeyboardShortcut) -> Void, captureShortcuts: Bool, keyboardShorctus: [CustomKeyboardShortcut]) {
                 self.onKeyPress = onKeyPress
                 self.captureShortcuts = captureShortcuts
+                self.keyboardShortcuts = keyboardShorctus
                 super.init(frame: .zero)
                 setupObservers()
                 becomeFirstResponder()
@@ -73,11 +77,20 @@
             override var acceptsFirstResponder: Bool { true }
 
             override func keyDown(with event: NSEvent) {
-                guard let ke = getKeyEquivalent(from: event) else {
+                if let ke = getKeyEquivalent(from: event) {
+                    for shortcut in keyboardShortcuts {
+                        if shortcut.key == ke.key && shortcut.modifiers == ke.modifiers {
+                            logger.info("Not handling key press because found shortcut with title \(shortcut.title)")
+                            super.keyDown(with: event)
+                            return
+                        }
+                    }
+                    
+                    onKeyPress(ke)
                     return
                 }
-
-                onKeyPress(ke)
+                
+                super.keyDown(with: event)
             }
             
             override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -86,9 +99,10 @@
                 }
                 if let ke = getKeyEquivalent(from: event) {
                     onKeyPress(ke)
+                    return true
                 }
                 
-                return true
+                return false
             }
 
             override func viewDidMoveToWindow() {
