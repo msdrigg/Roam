@@ -53,7 +53,7 @@
                 self.customVolumeSlider = customVolumeSlider
             }
 
-            @objc func valueChanged(_ sender: UISlider) {
+            @MainActor @objc func valueChanged(_ sender: UISlider) {
                 customVolumeSlider.volume = sender.value
             }
 
