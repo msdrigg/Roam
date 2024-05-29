@@ -12,7 +12,7 @@ A Roku remote that puts users first
 -   Headphones mode (a.k.a. private listening) support on Mac, iPad, iPhone, VisionOS, and Apple TV (play the audio from your TV through your device)
 -   Discover devices on your local network as soon as you open the app
 -   Intuitive design with apple's native SwiftUI design system
--   Fast and lightweight, less than 5 MB on all devices and opens in less than half a second!
+-   Fast and lightweight, less than 8 MB on all devices and opens in less than half a second!
 
 ![Roam Logo](./docs/static/img/screenshots.png)
 
