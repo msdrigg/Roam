@@ -16,7 +16,7 @@ Roam offers everything you want and nothing you don't
 -   Headphones mode (a.k.a. private listening) support on Mac, iPad, iPhone, VisionOS, and Apple TV (play the audio from your TV through your device)
 -   Discover devices on your local network as soon as you open the app
 -   Intuitive design with apple's native SwiftUI design system
--   Fast and lightweight, less than 5 MB on all devices and opens in less than half a second!
+-   Fast and lightweight, less than 8 MB on all devices and opens in less than half a second!
 -   Open source (https://github.com/msdrigg/roam)
 
 ## Common Issues
