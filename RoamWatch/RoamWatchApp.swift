@@ -85,21 +85,38 @@ struct WatchAppView: View {
         }
     }
 
-    @State var navPath = NavigationPath()
+    @State var navPath: [NavigationDestination] = []
 
     @MainActor
     var mainBody: some View {
-        NavigationStack {
+        SettingsNavigationWrapper(path: $navPath) {
             TabView {
+                if selectedDevice == nil {
+                    VStack {
+                        Button(action: {
+                            navPath.append(NavigationDestination.settingsDestination(.global))
+                        }, label: {
+                            Label("Setup a device to get started :)", systemImage: "gear")
+                                .frame(maxWidth: .infinity)
+                        })
+                        
+                        Spacer()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.roundedRectangle)
+                    .labelStyle(.titleAndIcon)
+                }
+                
                 ButtonGridView(device: selectedDevice?.toAppEntity(), controls: DPAD)
+                    .disabled(selectedDevice == nil)
 
                 ButtonGridView(device: selectedDevice?.toAppEntity(), controls: CONTROLS)
+                    .disabled(selectedDevice == nil)
 
                 if let device = selectedDevice {
                     AppListViewWrapper(device: device.toAppEntity())
                 }
             }
-            .disabled(selectedDevice == nil)
             .navigationTitle(selectedDevice?.name ?? "No device")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -116,25 +133,6 @@ struct WatchAppView: View {
                 let modelContainer = modelContext.container
                 scanningActor = DeviceDiscoveryActor(modelContainer: modelContainer)
                 modelContext.processPendingChanges()
-            }
-            .overlay {
-                if selectedDevice == nil {
-                    VStack(spacing: 2) {
-                        Spacer().frame(maxHeight: 120)
-                        Button(action: { showDeviceList = true }, label: {
-                            Label("Setup a device to get started :)", systemImage: "gear")
-                                .frame(maxWidth: .infinity)
-                                .font(.subheadline)
-                                .padding(8)
-                                .background(Color("AccentColor"))
-                                .cornerRadius(6)
-                                .padding(.horizontal, 4)
-                        })
-                        .shadow(radius: 4)
-                    }
-                    .buttonStyle(.plain)
-                    .labelStyle(.titleAndIcon)
-                }
             }
         }
     }
@@ -197,3 +195,12 @@ struct AppListViewWrapper: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    WatchAppView()
+        .modelContainer(testingContainer)
+        .environment(\.createDataHandler, dataHandlerCreator())
+
+}
+#endif
