@@ -218,22 +218,20 @@ struct SettingsView: View {
             #if os(watchOS)
                 Button("WatchOS Note", systemImage: "info.circle.fill", action: { showWatchOSNote = true })
                     .sheet(isPresented: $showWatchOSNote) {
-                        NavigationStack {
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(
-                                        "Unfortunately, WatchOS prevents us from discovering TV's on the local network."
-                                    )
-                                    .font(.caption).foregroundStyle(.secondary)
-                                    Text(
-                                        "To work around this limitation, first discover devices on the iPhone app and then the devices will be transfered in the background from the iPhone to the watch (or you can manually add the TV if you can get it's IP address)."
-                                    )
-                                    .font(.caption).foregroundStyle(.secondary)
-                                    Text(
-                                        "Please be patient, because I don't have an apple watch so I can't test how effective this is. Please reach out if you aren't able to get this to work :). You can email me at roam-support@msd3.io"
-                                    )
-                                    .font(.caption).foregroundStyle(.secondary)
-                                }
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(
+                                    "Unfortunately, WatchOS prevents us from discovering TV's on the local network."
+                                )
+                                .font(.caption).foregroundStyle(.secondary)
+                                Text(
+                                    "To work around this limitation, first discover devices on the iPhone app and then the devices will be transfered in the background from the iPhone to the watch (or you can manually add the TV if you can get it's IP address)."
+                                )
+                                .font(.caption).foregroundStyle(.secondary)
+                                Text(
+                                    "Please be patient, because I don't have an apple watch so I can't test how effective this is. Please reach out if you aren't able to get this to work :). You can email me at roam-support@msd3.io"
+                                )
+                                .font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -442,15 +440,16 @@ struct SettingsView: View {
     @ViewBuilder
     var addDeviceButton: some View {
         Button("Add a device manually", systemImage: "plus") {
-            Task {
-                let persistentId = await Task.detached {
-                    return await createDataHandler()?.addOrReplaceDevice(location: "http://192.168.0.1:8060/", friendlyDeviceName: "New device", udn: "roam:newdevice-\(UUID().uuidString)"
-                    )
-                }.value
+            Task.detached {
+                let persistentId = await createDataHandler()?.addOrReplaceDevice(location: "http://192.168.0.1:8060/", friendlyDeviceName: "New device", udn: "roam:newdevice-\(UUID().uuidString)"
+                )
                 
-                Self.logger.info("Added new empty device \(String(describing: persistentId))")
-                if let id = persistentId {
-                    path.append(NavigationDestination.deviceSettingsDestination(id))
+                
+                await MainActor.run {
+                    Self.logger.info("Added new empty device \(String(describing: persistentId))")
+                    if let id = persistentId {
+                        path.append(NavigationDestination.deviceSettingsDestination(id))
+                    }
                 }
             }
         }

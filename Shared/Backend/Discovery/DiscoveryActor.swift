@@ -86,6 +86,9 @@ actor DeviceDiscoveryActor {
 
                     for ipAddress in range {
                         idx += 1
+                        if Task.isCancelled {
+                            break
+                        }
                         taskGroup.addTask {
                             try? await sem.waitUnlessCancelled()
                             if Task.isCancelled {
@@ -100,6 +103,9 @@ actor DeviceDiscoveryActor {
 
                             if await !canConnectTCP(location: location, timeout: 1.2, interface: iface.nwInterface) {
                                 // This device is a potential item
+                                return
+                            }
+                            if Task.isCancelled {
                                 return
                             }
 

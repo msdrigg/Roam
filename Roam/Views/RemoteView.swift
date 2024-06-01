@@ -418,11 +418,39 @@ struct RemoteView: View {
                             .offset(y: -20)
                             .padding(.bottom, -16)
                     }
+                    
+#if !APPCLIP
+                    if selectedDevice == nil {
+                            #if os(macOS)
+                                SettingsLink {
+                                    Label("Setup a device to get started :)", systemImage: "gear")
+                                        .padding(8)
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .labelStyle(.titleAndIcon)
+                                .padding(.vertical, 8)
+
+                            #else
+                                NavigationLink(value: NavigationDestination.settingsDestination(.global)) {
+                                    Label("Setup a device to get started :)", systemImage: "gear")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .labelStyle(.titleAndIcon)
+                                .padding(.vertical, 8)
+                                .padding(.top, isHorizontal ? 30 : 0)
+                            #endif
+                    }
+#endif
+
 
                     if isHorizontal {
                         horizontalBody()
+                            .disabled(selectedDevice == nil)
                     } else {
                         verticalBody()
+                            .disabled(selectedDevice == nil)
                     }
 
                     if hideUIForKeyboardEntry {
@@ -431,16 +459,24 @@ struct RemoteView: View {
                         if verticalSizeClass != .compact {
                             if unreadMessages.count > 0 {
                                 NotificationBanner(message: "Scott chatted you back", onClick: {
-                                    #if os(macOS)
-                                        openWindow(id: "messages")
-                                    #else
-                                        appDelegate.navigationPath.append(NavigationDestination.messageDestination)
-                                    #endif
+#if os(macOS)
+                                    openWindow(id: "messages")
+#else
+                                    appDelegate.navigationPath.append(NavigationDestination.messageDestination)
+#endif
                                 }, level: .info)
                             }
                             networkConnectivityBanner
                             Spacer().frame(maxHeight: 10)
                         }
+#if APPCLIP
+                        if selectedDevice == nil {
+                                NotificationBanner(message: "Scanning for devices...", level: .info)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .padding(.bottom, 10)
+                        }
+#endif
                     }
                 }
                 Spacer()
@@ -508,7 +544,6 @@ struct RemoteView: View {
                 }
             }
             #endif
-            .disabled(selectedDevice == nil)
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, 10)
@@ -556,45 +591,6 @@ struct RemoteView: View {
                             .font(.body)
                         }
                     #endif
-                }
-            #endif
-            #if !APPCLIP
-                .overlay {
-                    if selectedDevice == nil {
-                        VStack(spacing: 2) {
-                            Spacer()
-                            #if os(macOS)
-                                SettingsLink {
-                                    Label("Setup a device to get started :)", systemImage: "gear")
-                                        .frame(maxWidth: .infinity)
-                                        .font(.callout)
-                                        .padding(16)
-                                        .background(Color("AccentColor"))
-                                        .cornerRadius(6)
-                                        .padding(.horizontal, 40)
-                                }
-                                .shadow(radius: 4)
-
-                            #else
-                                NavigationLink(value: NavigationDestination.settingsDestination(.global)) {
-                                    Label("Setup a device to get started :)", systemImage: "gear")
-                                        .frame(maxWidth: .infinity)
-                                        .font(.callout)
-                                        .padding(16)
-                                        .background(Color("AccentColor"))
-                                        .cornerRadius(6)
-                                        .padding(.horizontal, 40)
-                                }
-                                .shadow(radius: 4)
-                            #endif
-
-                            Spacer()
-                            Spacer()
-                            Spacer()
-                        }
-                        .buttonStyle(.plain)
-                        .labelStyle(.titleAndIcon)
-                    }
                 }
             #endif
                 .onAppear {
@@ -740,6 +736,7 @@ struct RemoteView: View {
                 Spacer()
 
                 VStack(alignment: .center) {
+                    
                     // Row with Back and Home buttons
                     TopBar(pressCounter: buttonPressCount, action: pressButton)
                         .matchedGeometryEffect(id: "topBar", in: animation)

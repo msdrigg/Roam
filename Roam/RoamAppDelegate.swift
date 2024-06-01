@@ -216,7 +216,7 @@ extension UIView {
             logger.info("Received remote notifications")
             requestMessages(fetchCompletionHandler: completionHandler)
         }
-
+        
         func application(_: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
             let tokenParts = deviceToken.map { data -> String in
                 String(format: "%02.2hhx", data)
