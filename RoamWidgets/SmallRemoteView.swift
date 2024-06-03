@@ -43,6 +43,7 @@ struct SmallRemoteView: View {
                 }
             }
         }
+        .environment(\.layoutDirection, .leftToRight)
         .fontDesign(.rounded)
         .font(.body.bold())
         .buttonBorderShape(.roundedRectangle)

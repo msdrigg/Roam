@@ -15,20 +15,20 @@
 
                 VStack(alignment: .center, spacing: 10) {
                     Spacer()
-                    Text("Roam")
+                    Text("Roam", comment: "App name")
                         .font(.title)
                         .foregroundStyle(.accent)
 
                     HStack(spacing: 4) {
                         Spacer()
-                        Text("App Version")
-                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "--")")
+                        Text("App Version", comment: "Version label in About page for the app")
+                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "--")", comment: "Translate directly as \"%@\"")
                         Spacer()
                     }
                     .font(.headline)
                     HStack(spacing: 4) {
                         Spacer()
-                        Text("Build Version")
+                        Text("Build Version", comment: "Version label in About page for the app")
                         Text("\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "--")")
                         Spacer()
                     }
@@ -38,9 +38,9 @@
                     Spacer().frame(maxHeight: 10)
 
                     VStack(alignment: .center, spacing: 5) {
-                        Text("Made with ❤️ by Scott Driggers")
+                        Text("Made with ❤️ by Scott Driggers", comment: "Text description within the About View for the app")
 
-                        Link("roam-support@msd3.io", destination: URL(string: "mailto:roam-support@msd3.io")!)
+                        Link(String(localized: "roam-support@msd3.io", comment: "Support email (not localizable)"), destination: URL(string: "mailto:roam-support@msd3.io")!)
                     }
                     .font(.footnote)
 

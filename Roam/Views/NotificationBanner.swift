@@ -1,13 +1,14 @@
 import SwiftUI
+import Foundation
 
 struct NotificationBanner: View {
-    let message: String
+    let message: LocalizedStringResource
     let level: Level
     let onClick: (() -> Void)?
 
     @Environment(\.colorScheme) private var colorScheme
 
-    init(message: String, onClick: (() -> Void)? = nil, level: Level = .error) {
+    init(message: LocalizedStringResource, onClick: (() -> Void)? = nil, level: Level = .error) {
         self.message = message
         self.onClick = onClick
         self.level = level
@@ -61,17 +62,19 @@ struct NotificationBanner: View {
     }
 }
 
+#if DEBUG
 #Preview("Clickable") {
-    NotificationBanner(message: "Message (clickable)", onClick: {})
+    NotificationBanner(message: "\("Message (clickable)")", onClick: {})
         .padding()
 }
 
 #Preview("Not clickable") {
-    NotificationBanner(message: "Message (not clickable)")
+    NotificationBanner(message: LocalizedStringResource("\("Message (not clickable)")"))
         .padding()
 }
 
 #Preview("Info") {
-    NotificationBanner(message: "Message (not clickable)", level: .info)
+    NotificationBanner(message: "\("Message (not clickable)")", level: .info)
         .padding()
 }
+#endif

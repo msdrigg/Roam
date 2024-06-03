@@ -35,7 +35,7 @@ struct RoamApp: App {
                     Button(action: {
                         appDelegate.showAboutPanel()
                     }, label: {
-                        Text("About Roam")
+                        Text("About Roam", comment: "Button to open the about page of the Roam app")
                     })
                 }
                 CommandGroup(after: .help) {
@@ -44,7 +44,7 @@ struct RoamApp: App {
                     }
                     .customKeyboardShortcut(.keyboardShortcuts)
 
-                    Button("Chat with Developer", systemImage: "message") {
+                    Button("Chat with the Developer", systemImage: "message") {
                         openWindow(id: "messages")
                     }
                     .customKeyboardShortcut(.chatWithDeveloper)
@@ -55,7 +55,7 @@ struct RoamApp: App {
                         openWindow(id: "keyboard-shortcuts")
                     }
                     .customKeyboardShortcut(.keyboardShortcuts)
-                    Button("Chat with Developer", systemImage: "message") {
+                    Button("Chat with the Developer", systemImage: "message") {
                         openWindow(id: "messages")
                     }
                     .customKeyboardShortcut(.chatWithDeveloper)
@@ -79,7 +79,7 @@ struct RoamApp: App {
         #endif
 
         #if os(macOS)
-            Window("Messages", id: "messages") {
+            Window(String(localized: "Messages", comment: "Window header for the messages window"), id: "messages") {
                 MessageView()
                     .frame(width: 400)
             }

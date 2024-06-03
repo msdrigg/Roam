@@ -45,7 +45,7 @@ func sendDeviceTokenToServer(_ token: String) async {
                     defer: false
                 )
                 window.center()
-                window.title = "About Roam"
+                window.title = String(localized: "About Roam", comment: "Window title on the about page of the Roam app")
                 window.contentView = NSHostingView(rootView: ExternalAboutView())
                 aboutBoxWindowController = NSWindowController(window: window)
                 aboutBoxWindowController?.showWindow(nil)
@@ -165,11 +165,6 @@ func sendDeviceTokenToServer(_ token: String) async {
         }
     }
 
-extension UIApplication {
-    func findFirstResponder() -> UIResponder? {
-        return self.keyWindow?.rootViewController?.findFirstResponder()
-    }
-}
 
 extension UIViewController {
     func findFirstResponder() -> UIResponder? {
@@ -190,8 +185,25 @@ extension UIView {
         if self.isFirstResponder {
             return self
         }
+        if let next = self.next, next.isFirstResponder {
+            return next
+        }
+
         for subview in self.subviews {
             if let responder = subview.findFirstResponder() {
+                return responder
+            }
+        }
+        return nil
+    }
+    
+    func findFocused() -> UIView? {
+        if self.isFocused{
+            return self
+        }
+
+        for subview in self.subviews {
+            if let responder = subview.findFocused() {
                 return responder
             }
         }
@@ -230,6 +242,7 @@ extension UIView {
             }
         }
 
+        #if !os(tvOS)
         func userNotificationCenter(
             _: UNUserNotificationCenter,
             didReceive _: UNNotificationResponse,
@@ -241,6 +254,7 @@ extension UIView {
             }
             completionHandler()
         }
+        #endif
         
         func requestMessages(fetchCompletionHandler completionHandler: ((UIBackgroundFetchResult) -> Void)? = nil) {
             let context = ModelContext(modelContainer)
@@ -282,7 +296,28 @@ extension UIView {
                 requestNotificationPermission()
             }
 
+            Task {
+                while true {
+                    try? await Task.sleep(nanoseconds: 5 * 1000 * 1000 * 1000)
+                    guard let scenes = UIApplication.shared.connectedScenes as? Set<UIWindowScene> else { return }
+
+                    for scene in scenes {
+                        for window in scene.windows where window.isKeyWindow {
+                            print("Responder chain for window:")
+                            var responder: UIResponder? = window.findFirstResponder()
+                            if responder == nil {
+                                print("No first repsonder")
+                            }
+                            while let currentResponder = responder {
+                                print("\t\(currentResponder)")
+                                responder = currentResponder.next
+                            }
+                        }
+                    }
+                }
+            }
             return true
+            
         }
         
         func application(_: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {

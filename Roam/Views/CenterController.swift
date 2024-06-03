@@ -16,7 +16,7 @@ struct CenterController: View {
     var body: some View {
         let buttons: [(String?, RemoteButton, String, CustomKeyboardShortcut.Key)?] = [
             nil, ("chevron.up", .up, "Up", .up), nil,
-            ("chevron.left", .left, "Left", .left), (nil, .select, "Ok", .ok), ("chevron.right", .right, "Right", .right),
+            ("chevron.left", .left, "Left", .left), (nil, .select, String(localized: "Ok", comment: "Center button on a remote. Meaning select/enter. Must be 3 characters or less, or a symbol if not possible"), .ok), ("chevron.right", .right, "Right", .right),
             nil, ("chevron.down", .down, "Down", .down), nil,
         ]
         return VStack(alignment: .center) {
@@ -63,6 +63,7 @@ struct CenterController: View {
                 }
             }
             .frame(maxWidth: globalButtonWidth * 3 + 6, maxHeight: globalButtonHeight * 3 + 6)
+            .environment(\.layoutDirection, .leftToRight)
         }
         .id("controllerGrid")
     }

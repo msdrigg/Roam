@@ -5,15 +5,15 @@ import os
 #if !os(tvOS)
     @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
     public struct DeviceChoiceIntent: AppIntent, WidgetConfigurationIntent {
-        public static var title: LocalizedStringResource = "Choose a device"
-        public static var description = IntentDescription("Choose which device to target")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Choose a device", comment: "Configuration title for a settings page")
+        public static var description = IntentDescription(LocalizedStringResource("Choose which device to target", comment: "Configuration description for a settings page"))
 
         public init() {}
 
-        @Parameter(title: "Manually select which device to remote control", default: false)
+        @Parameter(title: LocalizedStringResource("Manually select which device to remote control", comment: "Configuration field title controlling whether or not devices are manually selected"), default: false)
         public var manuallySelectDevice: Bool
 
-        @Parameter(title: "Device")
+        @Parameter(title: LocalizedStringResource("Device", comment: "Configuration field title for a device selection field"))
         public var device: DeviceAppEntity?
 
         public static var parameterSummary: some ParameterSummary {
@@ -40,30 +40,30 @@ import os
 
     @available(iOS 17.0, macOS 14.0, watchOS 10.0, *)
     public struct DeviceAndAppChoiceIntent: AppIntent, WidgetConfigurationIntent {
-        public static var title: LocalizedStringResource = "Choose a device and apps"
-        public static var description = IntentDescription("Choose which device to target, and select apps to view")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Choose a device and apps", comment: "Configuration title for a settings page")
+        public static var description = IntentDescription(LocalizedStringResource("Choose which device to target and select apps to view", comment: "Configuration description for a settings page"))
 
         public init() {}
 
-        @Parameter(title: "Manually select which device to remote control", default: false)
+        @Parameter(title: LocalizedStringResource("Manually select which device to remote control", comment: "Configuration field title controlling whether or not devices are manually selected"), default: false)
         public var manuallySelectDevice: Bool
 
-        @Parameter(title: "Device")
+        @Parameter(title: LocalizedStringResource("Device", comment: "Configuration field title for a device selection field"))
         public var device: DeviceAppEntity?
 
-        @Parameter(title: "Manually select which apps to show", default: false)
+        @Parameter(title: LocalizedStringResource("Manually select which apps to show", comment: "Configuration field title controlling whether or not apps are manually selected"), default: false)
         public var manuallySelectApps: Bool
 
-        @Parameter(title: "App 1")
+        @Parameter(title: LocalizedStringResource("App 1", comment: "Configuration field title for selecting the first app"))
         public var app1: AppLinkAppEntity?
 
-        @Parameter(title: "App 2")
+        @Parameter(title: LocalizedStringResource("App 2", comment: "Configuration field title for selecting the second app"))
         public var app2: AppLinkAppEntity?
 
-        @Parameter(title: "App 3")
+        @Parameter(title: LocalizedStringResource("App 3", comment: "Configuration field title for selecting the third app"))
         public var app3: AppLinkAppEntity?
 
-        @Parameter(title: "App 4")
+        @Parameter(title: LocalizedStringResource("App 4", comment: "Configuration field title for selecting the fourth app"))
         public var app4: AppLinkAppEntity?
 
         public static var parameterSummary: some ParameterSummary {
@@ -121,16 +121,16 @@ import os
         )
 
         public static let intentClassName = "ButtonPressIntent"
-
-        public static var title: LocalizedStringResource = "Press a button"
-        public static var description = IntentDescription("Press a button on the connected device")
+        
+        public static var title: LocalizedStringResource = LocalizedStringResource("Press a button", comment: "Configuration title for a button press action")
+        public static var description = IntentDescription(LocalizedStringResource("Press a button on the connected device", comment: "Configuration description for a button press action"))
 
         public init() {}
 
-        @Parameter(title: "Device")
+        @Parameter(title: LocalizedStringResource("Device", comment: "Configuration field title for a device selection field"))
         var device: DeviceAppEntity?
 
-        @Parameter(title: "Button")
+        @Parameter(title: LocalizedStringResource("Button", comment: "Configuration field title for a button selection field"))
         var button: RemoteButtonAppEnum
 
         public static var parameterSummary: some ParameterSummary {
@@ -140,7 +140,7 @@ import os
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: (\.$button, \.$device)) { button, device in
                 DisplayRepresentation(
-                    title: "Press \(button) on \(device!)"
+                    title: LocalizedStringResource("Press \(button) on \(device!)", comment: "Title for a shortcut action")
                 )
             }
         }

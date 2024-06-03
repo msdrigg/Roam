@@ -23,7 +23,7 @@ struct SimpleRemoteControlProvider: AppIntentTimelineProvider {
 
     func recommendations() -> [AppIntentRecommendation<DeviceChoiceIntent>] {
         [
-            AppIntentRecommendation(intent: DeviceChoiceIntent(), description: Text("Control your Roku!")),
+            AppIntentRecommendation(intent: DeviceChoiceIntent(), description: Text("Control your Roku!", comment: "Siri spotlight recommendation")),
         ]
     }
 
@@ -83,7 +83,7 @@ struct AppChoiceRemoteControlProvider: AppIntentTimelineProvider {
 
     func recommendations() -> [AppIntentRecommendation<DeviceAndAppChoiceIntent>] {
         [
-            AppIntentRecommendation(intent: DeviceAndAppChoiceIntent(), description: Text("Control your Roku!")),
+            AppIntentRecommendation(intent: DeviceAndAppChoiceIntent(), description: Text("Control your Roku!", comment: "Siri spotlight recommendation")),
         ]
     }
 

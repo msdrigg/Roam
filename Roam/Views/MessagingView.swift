@@ -102,7 +102,9 @@ struct MessageView: View {
                     #if !os(visionOS)
                     .scrollDismissesKeyboard(.interactively)
                     #endif
+                    #if !os(tvOS)
                     .textSelection(.enabled)
+                    #endif
                     .onChange(of: messages.count) { _, _ in
                         if let id = messages.last?.persistentModelID {
                             withAnimation {
@@ -121,7 +123,7 @@ struct MessageView: View {
                 .padding(.horizontal, 12)
 
                 HStack(alignment: .bottom, spacing: 10) {
-                    TextField("Message", text: $messageText, axis: .vertical)
+                    TextField(String(localized: "Message", comment: "Text entry field for a new message"), text: $messageText, axis: .vertical)
                         .onSubmit {
                             sendTypedMessage()
                         }
@@ -141,7 +143,7 @@ struct MessageView: View {
                         EmojiPicker().padding(.bottom, 2)
                     #else
                         Button(action: sendTypedMessage) {
-                            Label("Send", systemImage: "arrow.up")
+                            Label(String(localized: "Send", comment: "Label on a button to send a message"), systemImage: "arrow.up")
                         }
                         .buttonBorderShape(.circle)
                         .buttonStyle(.borderedProminent)
@@ -152,11 +154,13 @@ struct MessageView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 16)
             }
+            #if !os(tvOS)
             .onAppear {
                 UNUserNotificationCenter.current().setBadgeCount(0)
                 UNUserNotificationCenter.current().removeAllDeliveredNotifications()
                 UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
             }
+            #endif
         }
         .task(id: hasSentFirstMessage) {
             if (!hasSentFirstMessage) {
@@ -167,7 +171,7 @@ struct MessageView: View {
                 requestNotificationPermission()
             }
         }
-        .navigationTitle("Messages")
+        .navigationTitle(String(localized: "Messages", comment: "Window header for the messages window"))
         .task(id: refreshResetId) {
             refreshInterval = 10
             await handleRefresh()
@@ -176,8 +180,8 @@ struct MessageView: View {
         .frame(minHeight: 200)
         .frame(width: 400)
         #endif
-        .navigationTitle("Messages")
-        #if !os(macOS)
+        .navigationTitle(String(localized: "Messages", comment: "Window header for the messages window"))
+        #if !os(macOS) && !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
         #endif
     }
