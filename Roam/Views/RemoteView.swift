@@ -109,8 +109,6 @@ struct RemoteView: View {
         #endif
     }
 
-    @FocusState private var focused: Bool
-
     #if os(iOS)
         @State var windowScene: UIWindowScene?
     #endif
@@ -618,22 +616,22 @@ struct RemoteView: View {
         }
         #if os(macOS)
         .onKeyDown({ key in pressKey(key.key) }, enabled: !showKeyboardEntry)
-        #elseif !os(tvOS)
-        .onKeyDown({ key in pressKey(key.key) }, onKeyboardShortcut: { keyboardShortcut in
-            if let rb = keyboardShortcut.matchingRemoteButton {
-                pressButton(rb)
-                return
-            }
-            
-            if keyboardShortcut == .chatWithDeveloper {
-                appDelegate.navigationPath.append(.messageDestination)
-            } else if keyboardShortcut == .keyboardShortcuts {
-                appDelegate.navigationPath.append(.keyboardShortcutDestinaion)
-            } else {
-                Self.logger.warning("Unknown function for keyboard shortcut \(keyboardShortcut)")
-            }
-        }, enabled: !showKeyboardEntry)
-        .focusable()
+//        #elseif !os(tvOS)
+//        .onKeyDown({ key in pressKey(key.key) }, onKeyboardShortcut: { keyboardShortcut in
+//            if let rb = keyboardShortcut.matchingRemoteButton {
+//                pressButton(rb)
+//                return
+//            }
+//            
+//            if keyboardShortcut == .chatWithDeveloper {
+//                appDelegate.navigationPath.append(.messageDestination)
+//            } else if keyboardShortcut == .keyboardShortcuts {
+//                appDelegate.navigationPath.append(.keyboardShortcutDestinaion)
+//            } else {
+//                Self.logger.warning("Unknown function for keyboard shortcut \(keyboardShortcut)")
+//            }
+//        }, enabled: !showKeyboardEntry)
+//        .focusable()
         #endif
         .font(.title2)
         .fontDesign(.rounded)
