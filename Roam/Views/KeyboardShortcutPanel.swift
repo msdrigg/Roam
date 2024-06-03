@@ -739,12 +739,12 @@ struct KeyboardShortcutPanel: View {
                 CustomKeyboardShortcut(title: focusedShortcut, shortcut: KeyboardShortcut(key.key, modifiers: key.modifiers)).persist()
             }
         }, captureShortcuts: true)
-        #elseif !os(tvOS)
-        .onKeyDown({ key in
-            if let focusedShortcut {
-                CustomKeyboardShortcut(title: focusedShortcut, shortcut: KeyboardShortcut(key.key, modifiers: key.modifiers)).persist()
-            }
-        })
+//        #elseif !os(tvOS)
+//        .onKeyDown({ key in
+//            if let focusedShortcut {
+//                CustomKeyboardShortcut(title: focusedShortcut, shortcut: KeyboardShortcut(key.key, modifiers: key.modifiers)).persist()
+//            }
+//        })
         #endif
         .formStyle(.grouped)
         .navigationTitle("Keyboard Shortcuts")

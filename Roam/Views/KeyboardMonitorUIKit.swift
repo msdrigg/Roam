@@ -25,14 +25,14 @@
             return AnyView(KeyPressableContainer(content: content, onKeyPress: onKeyPress, onKeyboardShortcut: onKeyboardShortcut, keyboardShortcuts: allKeyboardShortcuts)
                 .focusable()
                 .focused($isFocused)
-                .onAppear {
-                    isFocused = true
-                }
-                .onChange(of: isFocused) { _, nv in
-                    if nv == false {
-                        isFocused = true
-                    }
-                }
+//                .onAppear {
+//                    isFocused = true
+//                }
+//                .onChange(of: isFocused) { _, nv in
+//                    if nv == false {
+//                        isFocused = true
+//                    }
+//                }
                 .onChange(of: allKeyboardShortcuts) {oldValue, newValue in
                     logger.info("KS Changing from \(oldValue) to \(newValue)")
                 })

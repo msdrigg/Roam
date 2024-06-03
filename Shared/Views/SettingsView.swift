@@ -655,7 +655,7 @@ struct DeviceDetailView: View {
 
                 LabeledContent(String(localized: "RTCP Port", comment: "Settings label for the device's RTCP port")) {
                     if let rtcpPort = device?.rtcpPort {
-                        Text("\(rtcpPort)", comment: "Translate directly as \"%u\"")
+                        Text(verbatim: "\(rtcpPort)")
                     } else {
                         Text("Unknown", comment: "Placeholder for unknown information")
                     }
