@@ -65,13 +65,18 @@ struct AboutView: View {
     var body: some View {
         List {
             Section {
-                LabeledContent("App Version") {
+                LabeledContent(String(localized: "App Version", comment: "Version label in about page for the app")) {
+                    Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "--")")
+                }
+                .focusable()
+                
+                LabeledContent(String(localized: "Build Version", comment: "Version label in about page for the app")) {
                     Text(Bundle.main.infoDictionary?["CURRENT_PROJECT_VERSION"] as? String ?? "--")
                 }
                 .focusable()
             }
 
-            Section("Dependencies") {
+            Section(String(localized: "Licenses", comment: "Section heading in an about page")) {
                 licenseIterator
             }
         }

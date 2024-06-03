@@ -7,8 +7,8 @@ import SwiftData
     public struct PlayIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigratedAppIntent, PredictableIntent {
         public static let intentClassName = "PlayIntent"
 
-        public static var title: LocalizedStringResource = "Press play"
-        public static var description = IntentDescription("Play or pause the media on the connected device")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Press play", comment: "Title for play intent")
+        public static var description = IntentDescription(LocalizedStringResource("Play or pause the media on the connected device", comment: "Description for play intent"))
 
         public init() {}
 
@@ -22,7 +22,7 @@ import SwiftData
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: \.$device) { device in
                 DisplayRepresentation(
-                    title: "Press play on \(device!)"
+                    title: LocalizedStringResource("Press play on \(device!)", comment: "Label on a configuration parameter")
                 )
             }
         }
@@ -37,21 +37,21 @@ import SwiftData
     public struct OkIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigratedAppIntent, PredictableIntent {
         public static let intentClassName = "OkIntent"
 
-        public static var title: LocalizedStringResource = "Click Ok"
-        public static var description = IntentDescription("Click Ok on the device")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Click Ok", comment: "Title for Ok intent")
+        public static var description = IntentDescription(LocalizedStringResource("Click Ok on the device", comment: "Description for Ok intent"))
         public init() {}
 
         @Parameter(title: "Device")
         public var device: DeviceAppEntity?
 
         public static var parameterSummary: some ParameterSummary {
-            Summary("Click on on \(\.$device)")
+            Summary("Click Ok on \(\.$device)")
         }
 
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: \.$device) { device in
                 DisplayRepresentation(
-                    title: "Click Ok on \(device!)"
+                    title: LocalizedStringResource("Click Ok on \(device!)", comment: "Label on a configuration parameter")
                 )
             }
         }
@@ -68,8 +68,8 @@ import SwiftData
 
         public static let intentClassName = "MuteIntent"
 
-        public static var title: LocalizedStringResource = "Toggle Mute"
-        public static var description = IntentDescription("Mute or unmote the device")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Toggle Mute", comment: "Title for mute intent")
+        public static var description = IntentDescription(LocalizedStringResource("Mute or unmute the device", comment: "Description for mute intent"))
         public init() {}
 
         @Parameter(title: "Device")
@@ -82,7 +82,7 @@ import SwiftData
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: \.$device) { device in
                 DisplayRepresentation(
-                    title: "Toggle volume mute on \(device!)"
+                    title: LocalizedStringResource("Toggle volume mute on \(device!)", comment: "Label on a configuration parameter")
                 )
             }
         }
@@ -99,8 +99,8 @@ import SwiftData
     {
         public static let intentClassName = "VolumeUpIntent"
 
-        public static var title: LocalizedStringResource = "Increase volume"
-        public static var description = IntentDescription("Increase the volume on the device")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Increase volume", comment: "Title for volume up intent")
+        public static var description = IntentDescription(LocalizedStringResource("Increase the volume on the device", comment: "Description for volume up intent"))
         public init() {}
 
         @Parameter(title: "Device")
@@ -113,7 +113,7 @@ import SwiftData
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: \.$device) { device in
                 DisplayRepresentation(
-                    title: "Increase the volume on \(device!)"
+                    title: LocalizedStringResource("Increase the volume on \(device!)", comment: "Label on a configuration parameter")
                 )
             }
         }
@@ -130,8 +130,8 @@ import SwiftData
     {
         public static let intentClassName = "VolumeDownIntent"
 
-        public static var title: LocalizedStringResource = "Lower volume"
-        public static var description = IntentDescription("Lower the volume on the device")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Lower volume", comment: "Title for volume down intent")
+        public static var description = IntentDescription(LocalizedStringResource("Lower the volume on the device", comment: "Description for volume down intent"))
         public init() {}
 
         @Parameter(title: "Device")
@@ -144,7 +144,7 @@ import SwiftData
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: \.$device) { device in
                 DisplayRepresentation(
-                    title: "Lower the volume on \(device!)"
+                    title: LocalizedStringResource("Lower the volume on \(device!)", comment: "Label on a configuration parameter")
                 )
             }
         }
@@ -159,8 +159,9 @@ import SwiftData
     public struct PowerIntent: AppIntent, WidgetConfigurationIntent, CustomIntentMigratedAppIntent, PredictableIntent {
         public static let intentClassName = "PowerIntent"
 
-        public static var title: LocalizedStringResource = "Toggle Power"
-        public static var description = IntentDescription("Power on or off the device")
+        public static var title: LocalizedStringResource = LocalizedStringResource("Toggle Power", comment: "Title for power intent")
+        public static var description = IntentDescription(LocalizedStringResource("Power on or off the device", comment: "Description for power intent"))
+        
         public init() {}
 
         @Parameter(title: "Device")
@@ -173,7 +174,7 @@ import SwiftData
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: \.$device) { device in
                 DisplayRepresentation(
-                    title: "Power on or off \(device!)"
+                    title: LocalizedStringResource("Power on or off \(device!)", comment: "Label on a configuration parameter")
                 )
             }
         }

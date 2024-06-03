@@ -1,4 +1,4 @@
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
     import Foundation
     import OSLog
     import SwiftUI
@@ -13,6 +13,7 @@
         let onKeyPress: (KeyboardShortcut) -> Void
         let onKeyboardShortcut: ((CustomKeyboardShortcut.Key) -> Void)?
         let enabled: Bool
+        @FocusState private var isFocused: Bool
 
         @AllCustomKeyboardShortcuts private var allKeyboardShortcuts: [CustomKeyboardShortcut]
 
@@ -22,8 +23,18 @@
             }
 
             return AnyView(KeyPressableContainer(content: content, onKeyPress: onKeyPress, onKeyboardShortcut: onKeyboardShortcut, keyboardShortcuts: allKeyboardShortcuts)
+                .focusable()
+                .focused($isFocused)
+                .onAppear {
+                    isFocused = true
+                }
+                .onChange(of: isFocused) { _, nv in
+                    if nv == false {
+                        isFocused = true
+                    }
+                }
                 .onChange(of: allKeyboardShortcuts) {oldValue, newValue in
-                    print("Changing from \(oldValue) to \(newValue)")
+                    logger.info("KS Changing from \(oldValue) to \(newValue)")
                 })
         }
     }
@@ -97,15 +108,16 @@
             }
             return commands
         }
-
+        
         override var canBecomeFirstResponder: Bool {
             return true
         }
 
         override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+            print("Getting PBPB")
             var handled = false
-            if let press = presses.first, let key = press.key {
-                if let ke = getKeyEquivalent(key) {
+            for press in presses {
+                if let key = press.key, let ke = getKeyEquivalent(key) {
                     for shortcut in keyboardShortcuts ?? [] {
                         if shortcut.key == ke.key && shortcut.modifiers == ke.modifiers {
                             logger.info("Not handling key press because found shortcut with title \(shortcut.title)")
@@ -123,6 +135,10 @@
                 super.pressesBegan(presses, with: event)
             }
         }
+        
+        override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+            print("Getting PEPE")
+        }
 
         @objc func handleKeyPress(_ command: UIKeyCommand) {
             logger.info("Getting keyboard shortcut \(command.title) \(String(describing: command.input))")
@@ -134,6 +150,30 @@
         override func didMove(toParent parent: UIViewController?) {
             super.didMove(toParent: parent)
             becomeFirstResponder()
+        }
+        
+        override func resignFirstResponder() -> Bool {
+            return false
+        }
+        
+        override func viewDidAppear(_ animated: Bool) {
+            print("Becoming first responder pleaseeee")
+            super.viewDidAppear(animated)
+            becomeFirstResponder()
+            print("FR \(self.isFirstResponder)")
+            print("FOCUSABLE \(UIFocusDebugger.checkFocusability(for:view))")
+            
+            Task {
+                while true {
+                    try? await Task.sleep(nanoseconds: 5 * 1000 * 1000 * 1000)
+                    print("Checking focus chain")
+                    
+                    let focusView = view.findFocused()
+                    
+                    print("Focused view \(String(describing: focusView))")
+                }
+            }
+
         }
     }
 

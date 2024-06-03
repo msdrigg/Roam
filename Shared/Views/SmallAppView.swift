@@ -46,7 +46,7 @@ import SwiftUI
                                             .clipShape(RoundedRectangle(cornerRadius: 8))
                                             .shadow(radius: 4)
 
-                                        Text(" \(app.name) ")
+                                        Text(app.name)
                                             .font(.caption2)
                                             .lineLimit(1)
                                             .truncationMode(.tail)
@@ -65,7 +65,7 @@ import SwiftUI
                                         .fill(Color.gray.opacity(0.5))
                                         .shadow(radius: 4)
 
-                                    Text("App")
+                                    Text("App", comment: "Placeholder label for an app")
                                         .font(.caption2)
                                         .lineLimit(1)
                                         .truncationMode(.tail)

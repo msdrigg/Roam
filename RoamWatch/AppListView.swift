@@ -55,7 +55,7 @@ struct AppListView: View {
                 .sensoryFeedback(.impact, trigger: appPressCount(app.id))
             }
             if apps.isEmpty {
-                Text("No apps")
+                Text("No apps", comment: "Text indicator that there are no apps available")
                     .foregroundStyle(.secondary)
             }
         }

@@ -96,7 +96,7 @@ struct WatchAppView: View {
                         Button(action: {
                             navPath.append(NavigationDestination.settingsDestination(.global))
                         }, label: {
-                            Label("Setup a device to get started :)", systemImage: "gear")
+                            Label(String(localized: "Setup a device to get started :)", comment: "Label on a button to open the device setup page"), systemImage: "gear")
                                 .frame(maxWidth: .infinity)
                         })
                         

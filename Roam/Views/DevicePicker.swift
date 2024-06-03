@@ -66,7 +66,7 @@ struct DevicePicker: View {
                 }
                 .labelStyle(.titleAndIcon)
             #elseif APPCLIP
-                Button("Download the full app", systemImage: "app.gift") {
+            Button(String(localized: "Download the full app", comment: "Text on a button to download the app from the app store"), systemImage: "app.gift") {
                     openURL(URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!)
                 }
                 .labelStyle(.titleAndIcon)
@@ -77,7 +77,7 @@ struct DevicePicker: View {
                     Text(Image(systemName: "circle.fill")).font(.system(size: circleIconSize))
                         .foregroundColor(deviceStatusColor)
                         .baselineOffset(globalBaselineOffset) +
-                        Text(" ").font(.body) +
+                    Text(" ", comment: "Empty space").font(.body) +
                         Text(device.name).font(.body)
                 }.multilineTextAlignment(.center)
                     .lineLimit(1)

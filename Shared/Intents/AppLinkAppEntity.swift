@@ -32,7 +32,7 @@ public struct AppLinkAppEntity: Identifiable, Equatable, Hashable, Encodable, Se
 
 #if !os(tvOS)
     extension AppLinkAppEntity: AppEntity {
-        public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "TV App")
+        public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: LocalizedStringResource("TV App", comment: "TV App Selection option"))
         public static var defaultQuery = AppLinkAppEntityQuery()
 
         public struct AppLinkAppEntityQuery: EntityQuery {
@@ -98,8 +98,8 @@ enum ApiError: Swift.Error, CustomLocalizedStringResourceConvertible {
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .noSavedDevices: "No saved devices"
-        case .deviceNotConnectable: "Couldn't connect to the device"
+        case .noSavedDevices: LocalizedStringResource("No saved devices", comment: "Error message description")
+        case .deviceNotConnectable: LocalizedStringResource("Couldn't connect to the device", comment: "Error message description")
         }
     }
 }

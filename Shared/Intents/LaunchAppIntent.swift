@@ -10,12 +10,12 @@ import Intents
         public static let intentClassName = "LaunchAppIntent"
 
         public static var title: LocalizedStringResource = "Launch App"
-        static var description = IntentDescription("Launch app on the device")
+        static var description = IntentDescription(LocalizedStringResource("Launch app on the device", comment: "Description on a siri shortcut"))
 
-        @Parameter(title: "Device")
+        @Parameter(title: LocalizedStringResource("Device", comment: "Description on a configuration field"))
         public var device: DeviceAppEntity?
 
-        @Parameter(title: "App")
+        @Parameter(title: LocalizedStringResource("App", comment: "Description on a configuration field"))
         public var app: AppLinkAppEntity
 
         public static var parameterSummary: some ParameterSummary {
@@ -25,13 +25,13 @@ import Intents
         public static var predictionConfiguration: some IntentPredictionConfiguration {
             IntentPrediction(parameters: (\.$app, \.$device)) { app, device in
                 DisplayRepresentation(
-                    title: "Launch \(app) on \(device!)"
+                    title: LocalizedStringResource("Launch \(app) on \(device!)", comment: "Title on a siri shortcut")
                 )
             }
 
             IntentPrediction(parameters: \.$app) { app in
                 DisplayRepresentation(
-                    title: "Launch \(app) on the current device"
+                    title: LocalizedStringResource("Launch \(app) on the current device", comment: "Title on a siri shortcut")
                 )
             }
         }

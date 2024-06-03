@@ -105,7 +105,7 @@ struct SettingsView: View {
         Form {
             Section {
                 if devices.isEmpty {
-                    Text("No devices")
+                    Text("No devices", comment: "Placeholder for a device selector when there aren't any devices")
                         .foregroundStyle(Color.secondary)
                 } else {
                     ForEach(devices, id: \.displayHash) { device in
@@ -128,10 +128,10 @@ struct SettingsView: View {
                                     }
 
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    Label(String(localized: "Delete", comment: "Label on a button to delete a device"), systemImage: "trash")
                                 }
                                 NavigationLink(value: NavigationDestination.deviceSettingsDestination(device.persistentModelID)) {
-                                    Label("Edit", systemImage: "pencil")
+                                    Label(String(localized: "Edit", comment: "Label on a button to edit a device"), systemImage: "pencil")
                                 }
                             }
                         #endif
@@ -182,7 +182,7 @@ struct SettingsView: View {
                 #endif
             } header: {
                 HStack {
-                    Text("Devices")
+                    Text("Devices", comment: "Header in device selection menu")
                     #if os(macOS)
                         Spacer()
                         if isScanning {
@@ -216,20 +216,23 @@ struct SettingsView: View {
             }
 
             #if os(watchOS)
-                Button("WatchOS Note", systemImage: "info.circle.fill", action: { showWatchOSNote = true })
+            Button(String(localized: "WatchOS Note", comment: "Description on a button to see info about watchOS limitations"), systemImage: "info.circle.fill", action: { showWatchOSNote = true })
                     .sheet(isPresented: $showWatchOSNote) {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(
-                                    "Unfortunately, WatchOS prevents us from discovering TV's on the local network."
+                                    "Unfortunately, WatchOS prevents us from discovering TV's on the local network.",
+                                    comment: "WatchOS indicator showing that watchOS can't auto-discover TV's due to network restrictions"
                                 )
                                 .font(.caption).foregroundStyle(.secondary)
                                 Text(
-                                    "To work around this limitation, first discover devices on the iPhone app and then the devices will be transfered in the background from the iPhone to the watch (or you can manually add the TV if you can get it's IP address)."
+                                    "To work around this limitation, first discover devices on the iPhone app and then the devices will be transferred in the background from the iPhone to the watch (or you can manually add the TV if you can get it's IP address).",
+                                    comment: "Description of watchOS discovery alternatives"
                                 )
                                 .font(.caption).foregroundStyle(.secondary)
                                 Text(
-                                    "Please be patient, because I don't have an apple watch so I can't test how effective this is. Please reach out if you aren't able to get this to work :). You can email me at roam-support@msd3.io"
+                                    "Please be patient, because I don't have an apple watch so I can't test how effective this is. Please reach out if you aren't able to get this to work :). You can email me at roam-support@msd3.io",
+                                    comment: "Description of watchOS discovery alternatives"
                                 )
                                 .font(.caption).foregroundStyle(.secondary)
                             }
@@ -238,20 +241,20 @@ struct SettingsView: View {
             #endif
 
             #if !os(watchOS)
-                Section("Behavior") {
+                Section(String(localized: "Behavior", comment: "Settings section label")) {
                     #if os(iOS)
-                        Toggle("Use volume buttons to control TV volume", isOn: $controlVolumeWithHWButtons)
+                        Toggle(String(localized: "Use volume buttons to control TV volume", comment: "Label on a settings toggle"), isOn: $controlVolumeWithHWButtons)
                     #endif
 
-                    Toggle("Scan for devices automatically", isOn: $scanIpAutomatically)
+                    Toggle(String(localized: "Scan for devices automatically", comment: "Label on a settings toggle"), isOn: $scanIpAutomatically)
                 }
             #endif
 
-            Section("Other") {
+            Section(String(localized: "Other", comment: "Settings section label")) {
                 #if !os(tvOS) && !os(watchOS)
                     HStack {
                         NavigationLink(value: NavigationDestination.keyboardShortcutDestinaion, label: {
-                            Label("Keyboard shortcuts", systemImage: "keyboard")
+                            Label(String(localized: "Keyboard shortcuts", comment: "Label on a link to open the keyboard shortcuts window"), systemImage: "keyboard")
                         })
                         .buttonStyle(.plain)
                         .customKeyboardShortcut(.keyboardShortcuts)
@@ -260,12 +263,13 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                 #endif
+                #if !os(tvOS)
                 if majorActionsCount > 5 {
                     ShareLink(
                         item: URL(string: "https://apps.apple.com/us/app/roam-a-better-remote-for-roku/id6469834197")!
                     ) {
                         HStack {
-                            Label("Gift Roam to a friend", systemImage: "app.gift")
+                            Label(String(localized: "Gift Roam to a friend", comment: "Description on a button to share the link to this application"), systemImage: "app.gift")
                             Spacer()
                         }
                     }
@@ -275,6 +279,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                     #endif
                 }
+#endif
 
                 #if !os(watchOS)
                     Button(action: {
@@ -286,10 +291,12 @@ struct SettingsView: View {
                     }, label: {
                         HStack {
                             if unreadMessages.count > 0 {
-                                Label("Chat with the developer", systemImage: "message")
+                                Label(String(localized: "Chat with the Developer", comment: "Label on a button to open the chat window"), systemImage: "message")
+                                #if !os(tvOS)
                                     .badge(unreadMessages.count)
+                                #endif
                             } else {
-                                Label("Chat with the developer", systemImage: "message")
+                                Label(String(localized: "Chat with the Developer", comment: "Label on a button to open the chat window"), systemImage: "message")
                             }
                             Spacer()
                         }
@@ -307,7 +314,7 @@ struct SettingsView: View {
                 Button(action: { reportDebugLogs() }) {
                     HStack {
                         Label(
-                            reportingDebugLogs ? "Collecting Diagnostics..." : "Share diagnostics",
+                            reportingDebugLogs ? String(localized: "Collecting Diagnostics...", comment: "Description on a button that is collecting app diagnostics") : String(localized: "Share diagnostics", comment: "Label on a button to share app diagnostics"),
                             systemImage: "square.and.arrow.up"
                         )
                         Spacer()
@@ -327,33 +334,33 @@ struct SettingsView: View {
                     set: { if !$0 { debugLogReportID = nil } }
                 )) {
                     VStack {
-                        Text("Your diagnostic report has been created with ID  \"\(debugLogReportID ?? "unknown")\"")
+                        Text("Your diagnostic report has been created with ID \"\(debugLogReportID ?? "unknown")\"", comment: "Success indicator on a diagnostic report flow")
                             .font(.headline)
                             .padding(.bottom, 2)
-                        Text("Please send an email to roam-support@msd3.io including the report ID any other feedback")
+                        Text("Please send an email to roam-support@msd3.io including the report ID any other feedback", comment: "Caption on a diagnostic report flow")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.bottom, 2)
                         HStack {
                             #if !os(tvOS)
-                                ShareLink(item: """
+                                ShareLink(item: String(localized: """
                                 Hi Roam Support (roam-support@msd3.io),
 
                                 <Add Feedback Here>
 
                                 ---
-                                Debug Info Link: https://roam-logs-eyebrows.s3.us-east-1.amazonaws.com/\(debugLogReportID ??
+                                Debug ID \(debugLogReportID ??
                                     "unknown")
-                                """, subject: Text("Roam Feedback")) {
-                                    Label("Open Email Template", systemImage: "square.and.arrow.up")
+                                """, comment: "Email body template for a support email"), subject: Text("Roam Feedback", comment: "Subject line in email requesting help")) {
+                                    Label(String(localized: "Open Email Template", comment: "Label on a button to open an email"), systemImage: "square.and.arrow.up")
                                 }
                             #endif
-                            Button("Close", systemImage: "xmark", role: .destructive) { debugLogReportID = nil }
+                            Button(String(localized: "Close", comment: "Label on a button to close a menu"), systemImage: "xmark", role: .destructive) { debugLogReportID = nil }
                         }
 
                         #if os(macOS)
-                            Text("Press [esc] to close")
+                            Text("Press [esc] to close", comment: "Footnote indicating the escape key can be used to close a dialog")
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -364,7 +371,7 @@ struct SettingsView: View {
             }
 
             Section {
-                NavigationLink("About", value: NavigationDestination.aboutDestination)
+                NavigationLink(String(localized: "About", comment: "Text on a navigation link to the about page"), value: NavigationDestination.aboutDestination)
             }
         }
         .onAppear {
@@ -392,7 +399,7 @@ struct SettingsView: View {
         }
         #endif
         #if !os(watchOS) && !os(tvOS)
-        .navigationTitle("Settings")
+        .navigationTitle(String(localized: "Settings", comment: "Navigation title on the settings page"))
         #endif
         .formStyle(.grouped)
         .onAppear {
@@ -421,7 +428,7 @@ struct SettingsView: View {
         @ViewBuilder
         var scanDevicesButton: some View {
             Button(
-                isScanning ? "Scanning for devices..." : "Scan for devices",
+                isScanning ? String(localized: "Scanning for devices...", comment: "Indicator on a button showing devices are being scanned for on the network") : String(localized: "Scan for devices", comment: "Text on a button to scan for devices on the network"),
                 systemImage: isScanning ? "rays" : "arrow.clockwise"
             ) {
                 Task {
@@ -439,7 +446,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     var addDeviceButton: some View {
-        Button("Add a device manually", systemImage: "plus") {
+        Button(String(localized: "Add a device manually", comment: "Label on a button to add a device"), systemImage: "plus") {
             Task.detached {
                 let persistentId = await createDataHandler()?.addOrReplaceDevice(location: "http://192.168.0.1:8060/", friendlyDeviceName: "New device", udn: "roam:newdevice-\(UUID().uuidString)"
                 )
@@ -489,11 +496,11 @@ struct DeviceListItem: View {
                         Text(getHost(from: device.location)).foregroundStyle(Color.secondary).lineLimit(1)
                         #if !os(watchOS)
                             if device.supportsDatagram == true {
-                                Label("Supported", systemImage: "headphones").labelStyle(.badge(.green))
+                                Label(String(localized: "Supported", comment: "Label indicating headphones mode is supported"), systemImage: "headphones").labelStyle(.badge(.green))
                             } else if device.supportsDatagram == false {
-                                Label("Not supported", systemImage: "headphones").labelStyle(.badge(.red))
+                                Label(String(localized: "Not Supported", comment: "Label indicating headphones mode is not supported"), systemImage: "headphones").labelStyle(.badge(.red))
                             } else {
-                                Label("Support unknown", systemImage: "headphones").labelStyle(.badge(.yellow))
+                                Label(String(localized: "Support Unknown", comment: "Label indicating headphones mode support is possible but not indicated"), systemImage: "headphones").labelStyle(.badge(.yellow))
                             }
                         #endif
                     }
@@ -539,17 +546,17 @@ struct DeviceDetailView: View {
 
     var body: some View {
         Form {
-            Section("Parameters") {
-                TextField("Name", text: $deviceName)
+            Section(String(localized: "Parameters", comment: "Settings section title indicating device parameters")) {
+                TextField(String(localized: "Name", comment: "Settings field label for the device name"), text: $deviceName)
                     .frame(maxWidth: .infinity)
-                TextField("IP Address", text: $deviceIP)
+                TextField(String(localized: "IP Address", comment: "Settings field label for the device's IP address"), text: $deviceIP)
                     .frame(maxWidth: .infinity)
                 #if os(tvOS)
-                    Button("Save", systemImage: "checkmark", action: {
+                    Button(String(localized: "Save", comment: "Text on a button to save the device settings"), systemImage: "checkmark", action: {
                         dismiss()
                     })
 
-                    Button("Delete", systemImage: "trash", role: .destructive, action: {
+                    Button(String(localized: "Delete", comment: "Text on a button to delete the device"), systemImage: "trash", role: .destructive, action: {
                         // Don't block the dismiss waiting for save
                         Self.logger.info("Deleting device")
                         Task.detached {
@@ -569,20 +576,20 @@ struct DeviceDetailView: View {
             }
 
             #if !os(watchOS)
-                Section("Private listening") {
+            Section(String(localized: "Headphones Mode", comment: "Settings section label for headphones mode")) {
                     Button(action: {
                         withAnimation {
                             showHeadphonesModeDescription = !showHeadphonesModeDescription
                         }
                     }, label: {
-                        LabeledContent("Supports headphones mode") {
+                        LabeledContent(String(localized: "Supports headphones mode", comment: "Settings label for headphones mode support")) {
                             HStack(spacing: 8) {
                                 if device?.supportsDatagram == true {
-                                    Label("Supported", systemImage: "headphones").labelStyle(.badge(.green))
+                                    Label(String(localized: "Supported", comment: "Label indicating headphones mode is supported"), systemImage: "headphones").labelStyle(.badge(.green))
                                 } else if device?.supportsDatagram == false {
-                                    Label("Not supported", systemImage: "headphones").labelStyle(.badge(.red))
+                                    Label(String(localized: "Not Supported", comment: "Label indicating headphones mode is not supported"), systemImage: "headphones").labelStyle(.badge(.red))
                                 } else {
-                                    Label("Support unknown", systemImage: "headphones").labelStyle(.badge(.yellow))
+                                    Label(String(localized: "Support Unknown", comment: "Label indicating headphones mode support is possible but not indicated"), systemImage: "headphones").labelStyle(.badge(.yellow))
                                 }
 
                                 Image(systemName: "info.circle")
@@ -595,19 +602,22 @@ struct DeviceDetailView: View {
                     if showHeadphonesModeDescription {
                         if device?.supportsDatagram == true {
                             Text(
-                                "Your Roku device supports streaming audio directly to Roam. Click the headphones button in the main view to see it in action!"
+                                "Your Roku device supports streaming audio directly to Roam. Click the headphones button in the main view to see it in action!",
+                                comment: "Descriptive caption in a device settings page"
                             )
                             .foregroundStyle(.secondary)
                             .font(.caption)
                         } else if device?.supportsDatagram == false {
                             Text(
-                                "Some Roku devices support streaming audio directly to Roam. Unfortunately yours does not support this. To see which devices support this check out https://www.roku.com/products/compare"
+                                "Some Roku devices support streaming audio directly to Roam. Unfortunately yours does not support this. To see which devices support this check out https://www.roku.com/products/compare",
+                                comment: "Descriptive caption in a device settings page"
                             )
                             .foregroundStyle(.secondary)
                             .font(.caption)
                         } else {
                             Text(
-                                "Some Roku devices support streaming audio directly to Roam. Roam hasn't been able to check for support on this device. Click the headphones button in the main view to see if it works for you or visit https://www.roku.com/products/compare to see which devices do support this feature."
+                                "Some Roku devices support streaming audio directly to Roam. Roam hasn't been able to check for support on this device. Click the headphones button in the main view to see if it works for you or visit https://www.roku.com/products/compare to see which devices do support this feature.",
+                                comment: "Descriptive caption in a device settings page"
                             )
                             .foregroundStyle(.secondary)
                             .font(.caption)
@@ -616,38 +626,38 @@ struct DeviceDetailView: View {
                 }
             #endif
 
-            Section("Info") {
-                LabeledContent("Id") {
+            Section(String(localized: "Info", comment: "Settings section title for the Info section")) {
+                LabeledContent(String(localized: "Id", comment: "Settings label for the device's id")) {
                     Text(device?.udn ?? "--")
                 }
-                LabeledContent("Last Selected") {
-                    Text(device?.lastSelectedAt?.formatted() ?? "Never")
+                LabeledContent(String(localized: "Last Selected", comment: "Settings label for the device's last selection time")) {
+                    Text(device?.lastSelectedAt?.formatted() ?? String(localized: "Never", comment: "Label indicating a device was never connected"))
                 }
-                LabeledContent("Last Online") {
-                    Text(device?.lastOnlineAt?.formatted() ?? "Never")
+                LabeledContent(String(localized: "Last Online", comment: "Settings label for the device's last online time")) {
+                    Text(device?.lastOnlineAt?.formatted() ?? String(localized: "Never", comment: "Label indicating a device was never connected"))
                 }
 
-                LabeledContent("Power State") {
+                LabeledContent(String(localized: "Power State", comment: "Settings label for the device's current power state")) {
                     Text(device?.powerMode ?? "--")
                 }
 
-                LabeledContent("Network State") {
+                LabeledContent(String(localized: "Network State", comment: "Settings label for the device's current network state")) {
                     Text(device?.networkType ?? "--")
                 }
 
-                LabeledContent("Wifi MAC") {
+                LabeledContent(String(localized: "WiFi MAC", comment: "Settings label for the device's WiFi MAC address")) {
                     Text(device?.wifiMAC ?? "--")
                 }
 
-                LabeledContent("Ethernet MAC") {
+                LabeledContent(String(localized: "Ethernet MAC", comment: "Settings label for the device's Ethernet MAC address")) {
                     Text(device?.ethernetMAC ?? "--")
                 }
 
-                LabeledContent("RTCP Port") {
+                LabeledContent(String(localized: "RTCP Port", comment: "Settings label for the device's RTCP port")) {
                     if let rtcpPort = device?.rtcpPort {
-                        Text("\(rtcpPort)")
+                        Text("\(rtcpPort)", comment: "Translate directly as \"%u\"")
                     } else {
-                        Text("Unknown")
+                        Text("Unknown", comment: "Placeholder for unknown information")
                     }
                 }
                 #if os(tvOS)
@@ -696,13 +706,13 @@ struct DeviceDetailView: View {
         #if !os(tvOS)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Save", systemImage: "checkmark", action: {
+                Button(String(localized: "Save", comment: "Text on a button to save the device settings"), systemImage: "checkmark", action: {
                     dismiss()
                 })
             }
 
             ToolbarItem(placement: .destructiveAction) {
-                Button("Delete", systemImage: "trash", role: .destructive, action: {
+                Button(String(localized: "Delete", comment: "Text on a button to delete the device"), systemImage: "trash", role: .destructive, action: {
                     // Don't block the dismiss waiting for save
                     Self.logger.info("Deleting device")
                     Task.detached {

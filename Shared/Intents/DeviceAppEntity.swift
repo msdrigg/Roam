@@ -4,7 +4,7 @@ import SwiftData
 
 @available(iOS 16.0, macOS 13.0, watchOS 9.0, tvOS 16.0, *)
 public struct DeviceAppEntity: AppEntity, Equatable, Identifiable, Hashable, Encodable {
-    public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Device")
+    public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: LocalizedStringResource("Device", comment: "TV Device Selection Option"))
 
     public struct DeviceAppEntityQuery: EntityQuery {
         public init() {}

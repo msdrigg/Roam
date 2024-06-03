@@ -21,7 +21,7 @@ import AppIntents
                     "Unpause with \(.applicationName)",
                     "Unpause \(\.$device) with \(.applicationName)",
                 ],
-                shortTitle: "Play/Pause",
+                shortTitle: LocalizedStringResource("Play/Pause", comment: "Siri shortcut to play/pause"),
                 systemImageName: "playpause"
             )
             AppShortcut(
@@ -38,7 +38,7 @@ import AppIntents
                     "Shutdown the TV with \(.applicationName)",
                     "Shutdown \(\.$device) with \(.applicationName)",
                 ],
-                shortTitle: "Power",
+                shortTitle: LocalizedStringResource("Power", comment: "Siri shortcut to power on/off the device"),
                 systemImageName: "power"
             )
             AppShortcut(
@@ -51,7 +51,7 @@ import AppIntents
                     "Unmute \(.applicationName)",
                     "Unmute \(\.$device) with \(.applicationName)",
                 ],
-                shortTitle: "Mute/Unmute",
+                shortTitle: LocalizedStringResource("Mute/Unmute", comment: "Siri shortcut to mute/unmute the device"),
                 systemImageName: "speaker.slash"
             )
             AppShortcut(
@@ -64,7 +64,7 @@ import AppIntents
                     "Turn volume down with \(.applicationName)",
                     "Turn volume down on \(\.$device) with \(.applicationName)",
                 ],
-                shortTitle: "Volume down",
+                shortTitle: LocalizedStringResource("Volume Down", comment: "Siri shortcut to turn the volume down"),
                 systemImageName: "speaker.minus"
             )
             AppShortcut(
@@ -77,7 +77,7 @@ import AppIntents
                     "Turn volume up with \(.applicationName)",
                     "Turn volume up on \(\.$device) with \(.applicationName)",
                 ],
-                shortTitle: "Volume up",
+                shortTitle: LocalizedStringResource("Volume Up", comment: "Siri shortcut to turn the volume up"),
                 systemImageName: "speaker.plus"
             )
             AppShortcut(
@@ -92,7 +92,7 @@ import AppIntents
                     "Confirm with \(.applicationName)",
                     "Confirm on \(\.$device) with \(.applicationName)",
                 ],
-                shortTitle: "Select",
+                shortTitle: LocalizedStringResource("Select", comment: "Siri shortcut to select/confirm"),
                 systemImageName: "checkmark"
             )
             AppShortcut(
@@ -103,7 +103,7 @@ import AppIntents
                     "Press a button on TV with \(.applicationName)",
                     "Press a button on Roku with \(.applicationName)",
                 ],
-                shortTitle: "Press Any Button",
+                shortTitle: LocalizedStringResource("Press Any Button", comment: "Siri shortcut to press any button"),
                 systemImageName: "button.programmable"
             )
             AppShortcut(
@@ -121,7 +121,7 @@ import AppIntents
                     "Launch app on TV with \(.applicationName)",
                     "Launch app on Roku with \(.applicationName)",
                 ],
-                shortTitle: "Launch App",
+                shortTitle: LocalizedStringResource("Launch App", comment: "Siri shortcut to launch an app"),
                 systemImageName: "apps.iphone.landscape"
             )
         }

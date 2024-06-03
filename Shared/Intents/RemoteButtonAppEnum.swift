@@ -1,7 +1,7 @@
 import AppIntents
 
 enum RemoteButtonAppEnum: String, AppEnum {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = .init(stringLiteral: "RemoteButtonAppEnum")
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = TypeDisplayRepresentation(name: LocalizedStringResource("Remote Button", comment: "A type of button that can perform an action"))
 
     case up = "Up"
     case left = "Left"

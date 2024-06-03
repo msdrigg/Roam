@@ -59,7 +59,9 @@ struct RemoteView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) var scenePhase
+    #if !os(tvOS)
     @Environment(\.openWindow) var openWindow
+    #endif
     @Environment(\.createDataHandler) var createDataHandler
 
     @EnvironmentObject private var appDelegate: RoamAppDelegate
@@ -377,7 +379,7 @@ struct RemoteView: View {
                                         showKeyboardEntry = !showKeyboardEntry
                                     }
                                 }, label: {
-                                    Label("", systemImage: "keyboard")
+                                    Label("Keyboard", systemImage: "keyboard")
                                 })
                                 .labelStyle(.iconOnly)
                                 .disabled(selectedDevice == nil)
@@ -404,7 +406,7 @@ struct RemoteView: View {
 
                     if verticalSizeClass == .compact, !hideUIForKeyboardEntry {
                         if unreadMessages.count > 0 {
-                            NotificationBanner(message: "Scott chatted you back", onClick: {
+                            NotificationBanner(message: LocalizedStringResource("The developer chatted you back", comment: "Notification indicator that there was is message response waiting to be read"), onClick: {
                                 #if os(macOS)
                                     openWindow(id: "messages")
                                 #else
@@ -423,7 +425,7 @@ struct RemoteView: View {
                     if selectedDevice == nil {
                             #if os(macOS)
                                 SettingsLink {
-                                    Label("Setup a device to get started :)", systemImage: "gear")
+                                    Label(String(localized: "Setup a device to get started :)", comment: "Label on a button to open the device setup page"), systemImage: "gear")
                                         .padding(8)
                                         .frame(maxWidth: .infinity)
                                 }
@@ -433,7 +435,7 @@ struct RemoteView: View {
 
                             #else
                                 NavigationLink(value: NavigationDestination.settingsDestination(.global)) {
-                                    Label("Setup a device to get started :)", systemImage: "gear")
+                                    Label(String(localized: "Setup a device to get started :)", comment: "Label on a button to open the device setup page"), systemImage: "gear")
                                         .frame(maxWidth: .infinity)
                                 }
                                 .buttonStyle(.borderedProminent)
@@ -458,7 +460,7 @@ struct RemoteView: View {
                     } else {
                         if verticalSizeClass != .compact {
                             if unreadMessages.count > 0 {
-                                NotificationBanner(message: "Scott chatted you back", onClick: {
+                                NotificationBanner(message: LocalizedStringResource("The developer chatted you back", comment: "Notification indicator that there was is message response waiting to be read"), onClick: {
 #if os(macOS)
                                     openWindow(id: "messages")
 #else
@@ -471,7 +473,7 @@ struct RemoteView: View {
                         }
 #if APPCLIP
                         if selectedDevice == nil {
-                                NotificationBanner(message: "Scanning for devices...", level: .info)
+                            NotificationBanner(message: LocalizedStringResource("Scanning for devices...", comment: "Notification indicator that devices are getting scanned for"), level: .info)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 8)
                                 .padding(.bottom, 10)
@@ -557,7 +559,7 @@ struct RemoteView: View {
                                     showKeyboardEntry = !showKeyboardEntry
                                 }
                             }) {
-                                Label("Keyboard", systemImage: "keyboard")
+                                Label(String(localized: "Keyboard", comment: "Label on a button to open the keyboard"), systemImage: "keyboard")
                                     .controlSize(.large)
                             }
                             .labelStyle(.iconOnly)
@@ -616,7 +618,7 @@ struct RemoteView: View {
         }
         #if os(macOS)
         .onKeyDown({ key in pressKey(key.key) }, enabled: !showKeyboardEntry)
-        #else
+        #elseif !os(tvOS)
         .onKeyDown({ key in pressKey(key.key) }, onKeyboardShortcut: { keyboardShortcut in
             if let rb = keyboardShortcut.matchingRemoteButton {
                 pressButton(rb)
@@ -631,6 +633,7 @@ struct RemoteView: View {
                 Self.logger.warning("Unknown function for keyboard shortcut \(keyboardShortcut)")
             }
         }, enabled: !showKeyboardEntry)
+        .focusable()
         #endif
         .font(.title2)
         .fontDesign(.rounded)
@@ -709,9 +712,9 @@ struct RemoteView: View {
     @ViewBuilder
     var networkConnectivityBanner: some View {
         if networkMonitor.networkConnection == .none {
-            NotificationBanner(message: "No network connection")
+            NotificationBanner(message: LocalizedStringResource("No network connection", comment: "Warning indicator message that there is no network connection"))
         } else if networkMonitor.networkConnection == .remote || networkMonitor.networkConnection == .other {
-            NotificationBanner(message: "No WiFi connection detected", level: .warning)
+            NotificationBanner(message: LocalizedStringResource("No WiFi connection detected", comment: "Warning indicator message that there is no WiFi network connection"), level: .warning)
         }
     }
 

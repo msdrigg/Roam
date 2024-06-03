@@ -13,7 +13,7 @@
         let leaving: Bool
 
         var body: some View {
-            TextFieldContainer("Enter some text...", text: $str, onDelete: {
+            TextFieldContainer(String(localized: "Enter some text...", comment: "Placeholder for a text field"), text: $str, onDelete: {
                 onKeyPress(.delete)
             }, onDone: {
                 withAnimation {
