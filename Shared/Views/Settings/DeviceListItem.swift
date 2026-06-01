@@ -28,21 +28,20 @@ struct DeviceListItem: View {
                             .frame(width: circleSize, height: circleSize)
                         Text(device.name).lineLimit(1)
                     }
-                    WrappingHStack(
-                        alignment: .bottomLeading,
-                        horizontalSpacing: 12,
-                        verticalSpacing: 12,
-                        fitContentWidth: true
+                    HStack(
+                        alignment: .bottom,
+                        spacing: 12,
                     ) {
                         Text(getHostPortDisplay(from: device.location)).foregroundStyle(Color.secondary).lineLimit(1)
 #if !os(watchOS)
                         if device.supportsDatagram == true {
-                            Label(String(localized: "Supported", comment: "Label indicating headphones mode is supported"), systemImage: "headphones").labelStyle(.badge(.green))
+                            Label(String(localized: "Supported", comment: "Label indicating headphones mode is supported"), systemImage: "headphones").labelStyle(.badge(.green, iconOnly: true))
                         } else if device.supportsDatagram == false {
-                            Label(String(localized: "Not Supported", comment: "Label indicating headphones mode is not supported"), systemImage: "headphones").labelStyle(.badge(.red))
+                            // swiftlint:disable:next line_length
+                            Label(String(localized: "Not Supported", comment: "Label indicating headphones mode is not supported"), systemImage: "headphones.slash").labelStyle(.badge(.red, iconOnly: true))
                         } else {
                             // swiftlint:disable:next line_length
-                            Label(String(localized: "Support Unknown", comment: "Label indicating headphones mode support is possible but not indicated"), systemImage: "headphones").labelStyle(.badge(.yellow))
+                            Label(String(localized: "Support Unknown", comment: "Label indicating headphones mode support is possible but not indicated"), systemImage: "headphones").labelStyle(.badge(.yellow, iconOnly: true))
                         }
                         if device.supportsAudioSettings == false {
                             Label(
@@ -51,7 +50,7 @@ struct DeviceListItem: View {
                                     comment: "Badge shown when a Roku device cannot accept volume commands from Roam"
                                 ),
                                 systemImage: "speaker.slash"
-                            ).labelStyle(.badge(.red))
+                            ).labelStyle(.badge(.red, iconOnly: true))
                         }
 #endif
                     }

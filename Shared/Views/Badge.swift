@@ -3,12 +3,17 @@ import SwiftUI
 struct BadgeLabelStyle: LabelStyle {
     @ScaledMetric(relativeTo: .footnote) private var iconWidth = 10.0
     var color: Color = .blue
+    /// When true, the badge shows only its icon (the title is kept on the
+    /// `Label` for accessibility but not drawn) to save horizontal space.
+    var iconOnly: Bool = false
 
     func makeBody(configuration: Configuration) -> some View {
-        HStack(alignment: .center, spacing: iconWidth) {
+        HStack(alignment: .center, spacing: iconOnly ? 0 : iconWidth) {
             configuration.icon
                 .frame(width: iconWidth)
-            configuration.title
+            if !iconOnly {
+                configuration.title
+            }
         }
         #if os(visionOS)
         .padding(.horizontal, 10)
@@ -28,6 +33,10 @@ struct BadgeLabelStyle: LabelStyle {
 extension LabelStyle where Self == BadgeLabelStyle {
     static func badge(_ color: Color) -> BadgeLabelStyle {
         BadgeLabelStyle(color: color)
+    }
+
+    static func badge(_ color: Color, iconOnly: Bool) -> BadgeLabelStyle {
+        BadgeLabelStyle(color: color, iconOnly: iconOnly)
     }
 }
 

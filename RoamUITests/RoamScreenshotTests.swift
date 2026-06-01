@@ -230,12 +230,17 @@ final class RoamUITestsScreenshotTests: XCTestCase {
 #elseif os(macOS)
     @MainActor
     func captureScreenshots(locale: Locale) async throws {
-        // macOS captures are driven directly by the app via the
-        // `-ScreenshotSavePath` launch arg (see scripts/sync-metadata.py and
-        // Roam/ScreenshotCapture.swift). The XCTest path is bypassed because
-        // xcodebuild reliably hangs after macOS UI tests and XCUI can't
-        // reach the app's window from the headless test runner.
-        print("Skipping XCTest captures for macOS \(locale.identifier) — handled by app self-capture")
+        // macOS captures are driven from a Tart-managed macOS guest VM —
+        // see scripts/sync-metadata.py and scripts/tart_screenshots.py.
+        // The Python orchestrator boots a VM with a 2880x1800 display,
+        // mounts a host-built Roam.app via a shared folder, launches it
+        // inside the guest, and uses `screencapture` over SSH to grab
+        // the guest framebuffer (full display for most states, or just
+        // the menu-bar region for the MenuBarExtra state — coordinates
+        // come from the app's `-MenuBarExtraReportPath` JSON report
+        // emitted by Roam/ScreenshotCapture.swift). XCTest is bypassed
+        // because xcodebuild reliably hangs after macOS UI tests.
+        print("Skipping XCTest captures for macOS \(locale.identifier) — handled by Tart orchestrator")
     }
 #endif
 

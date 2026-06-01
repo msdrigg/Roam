@@ -186,6 +186,9 @@ struct MessageView: View {
 
     @ViewBuilder
     var bottomBar: some View {
+#if os(iOS)
+        iosBottomBar
+#else
         HStack(alignment: .bottom, spacing: 10) {
             AttachButton(handleAttachment: { attachment in
                 self.handleAttachment(attachment)
@@ -285,10 +288,96 @@ struct MessageView: View {
             Material.bar
         )
 #endif
+#endif
+    }
+
+#if os(iOS)
+    // MARK: - iOS floating input bar
+    //
+    // A liquid-glass capsule "input group" (paperclip Attach + text field) sits
+    // beside a separate liquid-glass prominent Send circle. The bar itself has no
+    // background — only the capsule and the circle carry glass — so it reads as
+    // two floating controls hovering above the keyboard.
+
+    @ViewBuilder
+    private var iosBottomBar: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            inputGroup
+            sendButton
+        }
+        .glassContainerIfSupported(spacing: 8)
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, keyboardIsShowing ? 8 : 4)
     }
 
     @ViewBuilder
+    private var inputGroup: some View {
+        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+        VStack(spacing: 0) {
+            if attachedFiles.count > 0 {
+                AttachmentRow(attachments: $attachedFiles)
+                    .environment(wrongAttemptsTracker)
+            }
+            HStack(alignment: .bottom, spacing: 2) {
+                AttachButton(
+                    handleAttachment: { attachment in
+                        self.handleAttachment(attachment)
+                    },
+                    systemImage: "paperclip",
+                    iconColor: .secondary,
+                    iconPointSize: 20
+                )
+                .padding(.leading, 12)
+                .padding(.bottom, 9)
+
+                TextField(
+                    String(localized: "Message", comment: "Text entry field for a new message"),
+                    text: $messageFieldText.animation(),
+                    axis: .vertical
+                )
+                .textFieldStyle(.plain)
+                .font(.body.leading(.loose))
+                .lineLimit(1 ... 8)
+                .scrollIndicators(.hidden)
+                .animation(nil, value: messageFieldText)
+                .onSubmit {
+                    sendTypedMessage()
+                }
+                .padding(.leading, 6)
+                .padding(.trailing, 16)
+                .padding(.vertical, 8)
+            }
+        }
+        .messageInputGlass(in: shape)
+    }
+
+    @ViewBuilder
+    private var sendButton: some View {
+        Button(action: sendTypedMessage) {
+            Image(systemName: "arrow.up")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 40, height: 40)
+        }
+        .buttonStyle(.plain)
+        .sendButtonGlass(tint: meColor)
+        .help(String(localized: "Send the message", comment: "Help text on a button to send a chat message"))
+    }
+#endif
+
+    @ViewBuilder
     var bodyContent: some View {
+#if os(iOS)
+        // The input bar floats in the bottom safe area so chat content scrolls
+        // *behind* its liquid glass rather than sitting on an opaque bar. The
+        // safe-area inset also keeps the last message clear of the bar and lifts
+        // the whole group above the keyboard when it appears.
+        messageList
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                bottomBar
+            }
+#else
         VStack(spacing: 0) {
             messageList
 
@@ -304,6 +393,7 @@ struct MessageView: View {
         .background(
             .thickMaterial
         )
+#endif
 #endif
     }
 
@@ -483,6 +573,35 @@ struct MessageView: View {
         self.lastSelfTypingTime = Date.distantPast
     }
 }
+
+#if os(iOS)
+private extension View {
+    /// Liquid glass for the message input capsule, with a frosted-material
+    /// fallback for the iOS 18–25 deployment range. Non-interactive so the glass
+    /// doesn't add a press reaction to the text-entry area.
+    @ViewBuilder
+    func messageInputGlass<S: Shape>(in shape: S) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: shape)
+        } else {
+            self
+                .background(.regularMaterial, in: shape)
+                .overlay(shape.stroke(Color.primary.opacity(0.08), lineWidth: 1))
+        }
+    }
+
+    /// Liquid glass for the prominent Send circle, tinted with the accent color.
+    /// Falls back to a solid accent fill on iOS 18–25.
+    @ViewBuilder
+    func sendButtonGlass(tint: Color) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.tint(tint).interactive(), in: Circle())
+        } else {
+            self.background(tint, in: Circle())
+        }
+    }
+}
+#endif
 
 #if DEBUG
 #Preview(

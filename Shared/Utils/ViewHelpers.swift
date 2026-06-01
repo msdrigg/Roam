@@ -335,6 +335,13 @@ extension View {
         self.applyBuilder {
             #if !os(iOS) && !os(watchOS) && !os(visionOS)
             if #available(macOS 15.0, *) {
+                // NB: don't special-case screenshot/UI-testing here. The
+                // `.thickMaterial` window backdrop composites correctly in
+                // the Tart screenshot VM (Tahoe guest, Dark appearance), so
+                // captures get the real translucent glass. An earlier
+                // workaround forced `Color.black` under `inUITestingContext()`
+                // for an older VM that couldn't composite it — that produced
+                // an opaque black window and is no longer needed.
                 $0.containerBackground(.thickMaterial, for: .window)
             } else {
                 $0

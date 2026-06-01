@@ -7,16 +7,26 @@ import enum
 import gzip
 import hashlib
 import json
+import atexit
 import os
 import re
+import shlex
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import time
 from httpx import AsyncClient, Response
 import httpx
 import jwt
+
+# Sibling module — pulled in lazily inside `_get_or_create_tart_vm` so the
+# rest of the script still imports cleanly on machines without tart/sshpass
+# installed (e.g. when only running metadata sync, no screenshot capture).
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _THIS_DIR not in sys.path:
+    sys.path.insert(0, _THIS_DIR)
 
 # The script now supports:
 # 2. Running UI tests to capture screenshots and uploading them to App Store Connect
@@ -585,7 +595,7 @@ class LocalizedMetadata:
 # `_get_*_screenshots` from returning stale files when the pipeline has
 # moved on (e.g. switching macOS from xcresult-recovery to direct app
 # launch, or adding new visionOS Keyboard/Settings states).
-SCREENSHOT_SCHEMA_VERSION = "2026-05-20-v5"
+SCREENSHOT_SCHEMA_VERSION = "2026-05-28-v6-tart"
 
 
 def _ensure_cache_schema(cache_root: str) -> None:
@@ -1080,6 +1090,213 @@ def _collect_locale_screenshots(
     return [path for _, _, path in found[:max_count]]
 
 
+# ---------- Tart-backed macOS capture helpers ----------
+
+# Cached across all (locale, state) calls inside one script run. The VM
+# boot and Roam build are expensive (~minutes) so we reuse them.
+_TART_VM = None
+_TART_OUTPUT_DIR: str | None = None
+
+
+def _get_or_create_tart_vm():
+    """Return the cached TartVM, booting + provisioning it on first call.
+
+    Honors `TART_BASE_IMAGE` and `TART_VM_NAME` env vars (overrides for
+    the defaults in tart_screenshots.py).
+    """
+    global _TART_VM, _TART_OUTPUT_DIR
+    if _TART_VM is not None:
+        return _TART_VM
+
+    from tart_screenshots import (
+        BASE_IMAGE_DEFAULT,
+        DISPLAY_DEFAULT,
+        TartVM,
+        VM_NAME_DEFAULT,
+        build_roam_app,
+        ensure_dependencies,
+    )
+
+    ensure_dependencies()
+
+    app_path = build_roam_app()
+    host_app_dir = os.path.dirname(app_path)
+
+    _TART_OUTPUT_DIR = tempfile.mkdtemp(prefix="roam-tart-out-")
+    base_image = os.environ.get("TART_BASE_IMAGE", BASE_IMAGE_DEFAULT)
+    vm_name = os.environ.get("TART_VM_NAME", VM_NAME_DEFAULT)
+
+    vm = TartVM(
+        name=vm_name,
+        base_image=base_image,
+        display=DISPLAY_DEFAULT,
+        host_app_dir=host_app_dir,
+        host_output_dir=_TART_OUTPUT_DIR,
+    )
+    vm.bring_up()
+    vm.install_roam_app()
+
+    atexit.register(_teardown_tart_vm)
+    _TART_VM = vm
+    return vm
+
+
+def _teardown_tart_vm() -> None:
+    global _TART_VM, _TART_OUTPUT_DIR
+    vm = _TART_VM
+    if vm is not None:
+        try:
+            vm.kill_roam()
+        except Exception as e:
+            print(f"  Warning: kill_roam during teardown failed: {e}")
+        try:
+            vm.stop()
+        except Exception as e:
+            print(f"  Warning: stopping Tart VM failed: {e}")
+    if _TART_OUTPUT_DIR and os.path.isdir(_TART_OUTPUT_DIR):
+        shutil.rmtree(_TART_OUTPUT_DIR, ignore_errors=True)
+    _TART_VM = None
+    _TART_OUTPUT_DIR = None
+
+
+def _wait_for_menubar_report(
+    host_report_path: str, timeout: float = 12.0
+) -> dict | None:
+    """Poll a host-side path for the JSON report the app writes after it
+    opens the MenuBarExtra popover. Returns parsed JSON or None on
+    timeout / parse error."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if os.path.isfile(host_report_path) and os.path.getsize(host_report_path) > 0:
+            try:
+                with open(host_report_path) as fh:
+                    return json.load(fh)
+            except (OSError, json.JSONDecodeError):
+                pass
+        time.sleep(0.25)
+    return None
+
+
+def _zoom_menubar_to_app_desktop(png_path: str, report: dict) -> bool:
+    """Crop+zoom a *full-display* MenuBarExtra capture into the top-right —
+    so the real menu bar and the open popover fill most of the frame — then
+    resize to the exact 2880x1800 APP_DESKTOP slot, in place.
+
+    Why this and not the old crop-then-upscale path: the previous approach
+    `screencapture -R`'d only the tiny icon+popover region (a few hundred
+    native px) and then sips-upscaled it ~2–4x to fill 2880x1800, which
+    pixelated badly. Here every output pixel comes from the native-res
+    full-display screenshot, and the crop is sized so the upscale stays
+    mild (≤ MAX_UPSCALE), keeping the menu-bar UI crisp while still
+    showing it large against the real macOS desktop.
+
+    Coordinates come from the app's `-MenuBarExtraReportPath` report
+    (`iconFrame`/`popoverFrame`/`displayFrame`, AppKit bottom-origin screen
+    *points*). We map them to top-origin *pixels* using the screenshot's
+    own width vs. the reported logical width, so it stays correct
+    regardless of the guest's backing scale factor.
+
+    Returns True if the zoom was applied. Returns False (leaving the
+    un-zoomed full-display PNG, itself a valid crisp 2880x1800 desktop
+    shot) when the report lacks the frames needed to frame the popover, or
+    no image tool is available.
+    """
+    target_w, target_h = 2880, 1800
+    aspect = target_w / target_h  # 1.6 (the APP_DESKTOP slot ratio)
+    MAX_UPSCALE = 2.0  # never blow native pixels up by more than this
+
+    icon = report.get("iconFrame")
+    popover = report.get("popoverFrame")
+    display = report.get("displayFrame")
+    if icon is None or display is None:
+        print(
+            "  Warning: MenuBarExtra report missing iconFrame/displayFrame "
+            f"(error: {report.get('error')!r}); keeping full-display capture"
+        )
+        return False
+    if popover is None:
+        # Without the popover frame we can't frame the open remote; the
+        # full-display shot (menu bar icon in real context) is the safe,
+        # already-crisp fallback.
+        print(
+            "  Warning: MenuBarExtra popover frame not reported "
+            f"(error: {report.get('error')!r}); keeping full-display capture"
+        )
+        return False
+
+    png_dims = _read_png_dimensions(png_path)
+    if png_dims is None:
+        print(f"  Warning: could not read dims of {png_path}; keeping full-display capture")
+        return False
+    png_w, png_h = png_dims
+
+    disp_w_pt = display.get("width", 0)
+    disp_h_pt = display.get("height", 0)
+    if disp_w_pt <= 0 or disp_h_pt <= 0:
+        return False
+    # points -> screenshot pixels (derive from the screenshot itself so it's
+    # right even if the captured framebuffer differs from the logical size).
+    scale = png_w / disp_w_pt
+
+    # Union of icon + popover in bottom-origin points.
+    ux0 = min(icon["x"], popover["x"])
+    ux1 = max(icon["x"] + icon["width"], popover["x"] + popover["width"])
+    u_bottom_pt = min(icon["y"], popover["y"])  # lowest edge (bottom-origin)
+    union_cx_px = ((ux0 + ux1) / 2.0) * scale
+    # The popover's bottom edge in top-origin pixels (deepest point we need
+    # to keep in frame). The crop is anchored at the very top of the screen
+    # (y=0) so the menu bar stays visible.
+    popover_bottom_px = (disp_h_pt - u_bottom_pt) * scale
+
+    margin_px = 0.06 * png_h  # breathing room below the popover
+    crop_bottom = min(popover_bottom_px + margin_px, float(png_h))
+
+    # Width that holds the target aspect for that height, but widened if
+    # needed so the upscale never exceeds MAX_UPSCALE (a wider crop = less
+    # upscale, popover slightly smaller in frame). Then clamp to the image.
+    crop_w = max(crop_bottom * aspect, target_w / MAX_UPSCALE)
+    crop_w = min(crop_w, float(png_w))
+    crop_h = min(crop_w / aspect, float(png_h))
+
+    # Center horizontally on the popover, anchored at the top, clamped in.
+    left = max(0.0, min(union_cx_px - crop_w / 2.0, png_w - crop_w))
+    left_i, top_i = int(round(left)), 0
+    w_i = min(int(round(crop_w)), png_w - left_i)
+    h_i = min(int(round(crop_h)), png_h - top_i)
+    if w_i <= 0 or h_i <= 0:
+        print(f"  Warning: MenuBarExtra crop degenerate ({w_i}x{h_i}); keeping full-display capture")
+        return False
+
+    tool = "magick" if shutil.which("magick") else ("convert" if shutil.which("convert") else None)
+    if tool is None:
+        print(
+            "  Warning: ImageMagick (magick/convert) not found; cannot zoom "
+            "the MenuBarExtra capture — keeping full-display shot. "
+            "Install with `brew install imagemagick`."
+        )
+        return False
+
+    proc = subprocess.run(
+        [tool, png_path,
+         "-crop", f"{w_i}x{h_i}+{left_i}+{top_i}", "+repage",
+         "-filter", "Lanczos",
+         "-resize", f"{target_w}x{target_h}!",
+         png_path],
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        print(
+            "  Warning: ImageMagick zoom of MenuBarExtra failed: "
+            f"{proc.stderr.decode('utf-8', errors='replace')}; keeping full-display shot"
+        )
+        return False
+    print(
+        f"  Zoomed MenuBarExtra: crop {w_i}x{h_i}+{left_i}+{top_i} "
+        f"(upscale {target_w / w_i:.2f}x) -> {target_w}x{target_h}"
+    )
+    return True
+
+
 class MetadataManager:
     workspace_path: str
     screenshot_update_platforms: list[Platform]
@@ -1449,16 +1666,23 @@ class MetadataManager:
                 f"{camera.stderr.decode('utf-8', errors='replace').strip()}"
             )
 
-    def _get_mac_screenshots_via_direct_launch(
+    def _get_mac_screenshots_via_tart(
         self, device_name: str, locale_id: str
     ) -> str | None:
         """
-        Capture macOS screenshots by launching the Roam.app directly with
-        `-ScreenshotSavePath`. The app (see Roam/ScreenshotCapture.swift)
-        builds its own borderless NSWindow sized 1440x900 logical points,
-        snapshots its contentView at 2880x1800 pixels, and exits. This
-        bypasses xcodebuild's post-test hang and the AX permission gap
-        that blocked XCUITest's window-element capture in earlier runs.
+        Capture macOS screenshots inside a Tart-managed macOS guest VM so
+        the host display stays free for normal work while screenshots
+        run. The host builds Roam.app once (cached across locales),
+        the VM mounts it via a read-only shared folder, and each state
+        is captured by running `screencapture` over SSH and copying the
+        PNG back through a writable shared folder.
+
+        For the MenuBarExtra state we capture the whole native-res desktop
+        (with the popover open) and then crop+zoom into the top-right so the
+        menu bar and popover fill most of the frame — coordinates come from
+        the app's `-MenuBarExtraReportPath` JSON report. Because every output
+        pixel comes from the full-res screenshot (only a mild upscale), the
+        menu-bar UI stays crisp; see `_zoom_menubar_to_app_desktop`.
         """
         import uuid as _uuid
 
@@ -1468,152 +1692,134 @@ class MetadataManager:
         )
         device_subdir = os.path.join(export_dir, "Mac")
 
-        # Reuse cached captures.
         if os.path.isdir(device_subdir):
             for f in os.listdir(device_subdir):
                 if f.lower().endswith((".png", ".jpg", ".jpeg")):
                     print(
-                        f"Reusing cached macOS screenshots for {locale_id} ({device_subdir})"
+                        f"Reusing cached macOS screenshots for {locale_id} "
+                        f"({device_subdir})"
                     )
                     return export_dir
         os.makedirs(device_subdir, exist_ok=True)
 
-        # Find the most-recent Debug build of Roam.app for macOS.
-        derived_data = os.path.expanduser("~/Library/Developer/Xcode/DerivedData")
-        candidates: list[str] = []
-        if os.path.isdir(derived_data):
-            for entry in os.listdir(derived_data):
-                if entry.startswith("Roam-"):
-                    candidate = os.path.join(
-                        derived_data, entry, "Build", "Products", "Debug", "Roam.app"
-                    )
-                    if os.path.isdir(candidate):
-                        candidates.append(candidate)
-        if not candidates:
-            print(
-                "Cannot find a Debug build of Roam.app for macOS — run "
-                "`xcodebuild build -scheme Roam -destination 'platform=macOS' "
-                "-configuration Debug` once first."
-            )
+        try:
+            vm = _get_or_create_tart_vm()
+        except Exception as e:
+            print(f"  Error bringing up Tart VM: {e}")
             return None
-        app_path = max(candidates, key=os.path.getmtime)
-        binary = os.path.join(app_path, "Contents", "MacOS", "Roam")
-        bundle_id = "com.msdrigg.roam"
-        # ScreenshotCapture writes to the sandbox container by default when
-        # the requested path is a bare filename — relative paths resolve
-        # against the app's current working directory, which inside the
-        # sandbox is `~/Library/Containers/<bundle>/Data/`.
-        sandbox_data_dir = os.path.expanduser(
-            f"~/Library/Containers/{bundle_id}/Data"
-        )
 
-        underscore_locale = locale_id.replace("-", "_")
-        common_args = [
-            "-AppleLanguages", f"({locale_id})",
-            "-AppleLocale", underscore_locale,
-            # Force-off showMenuBar so the SwiftUI Window scene doesn't
-            # route into menubar-only mode (where the main scene never
-            # auto-opens). ScreenshotCapture creates its own NSWindow
-            # regardless, but suppressing the MenuBarExtra also reduces
-            # clutter in the macOS process tree.
-            "-showMenuBar", "NO",
-        ]
+        from tart_screenshots import GUEST_SHARED_ROOT, SHARE_OUT
 
-        # (state_index, attachment_name, extra_launch_args, settle_seconds).
-        # macOS doesn't have an iOS-style keyboard overlay, so we capture
-        # ScreenScanning, Primary, and Settings instead.
+        # (state_index, attachment_name, extra_launch_args, settle_seconds,
+        #  capture_kind). capture_kind is "full" for whole-display captures
+        # and "menubar" for the cropped menu-bar capture.
         states = [
-            (4, "ScreenScanning", ["-DataTesting"], 6.0),
+            (4, "ScreenScanning",
+             ["-DataTesting"], 8.0, "full"),
             (1, "Primary", [
-                "-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting"
-            ], 7.0),
+                "-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting",
+            ], 9.0, "full"),
             (7, "Settings", [
                 "-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting",
                 "-OpenSettings",
-            ], 6.0),
+            ], 8.0, "full"),
+            # `-showMenuBar YES` must be present at launch so the
+            # MenuBarExtra scene is inserted at initial scene-graph build.
+            # Flipping it at runtime crashes the app (SwiftUI scene-update
+            # recursion) — see Roam/ScreenshotCapture.swift.
+            (6, "MenuBarExtra", [
+                "-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting",
+                "-showMenuBar", "YES",
+                "-OpenMenuBarExtra",
+            ], 9.0, "menubar"),
         ]
 
         captured_any = False
-        for state_index, state_name, extra_args, settle in states:
-            # Filename uses the same {locale}{index}{name}_0_{UUID} layout
-            # _collect_locale_screenshots looks for.
+        for state_index, state_name, extra_args, settle, capture_kind in states:
             uid = _uuid.uuid4().hex.upper()
             fn = f"{locale_id}{state_index}{state_name}_0_{uid}.png"
-            # Tell the app to write to this filename — it resolves to
-            # `sandbox_data_dir/fn`. Pre-clean any stale file with the same
-            # name from a prior crash so we don't accidentally re-publish it.
-            stale = os.path.join(sandbox_data_dir, fn)
-            try:
-                os.remove(stale)
-            except FileNotFoundError:
-                pass
+            dst = os.path.join(device_subdir, fn)
 
-            # Kill any prior Roam process so launch args take effect on a
-            # fresh process. -9 avoids the macOS app's normal terminate
-            # hooks blocking us.
-            subprocess.run(
-                ["pkill", "-9", "-f", f"{app_path}/Contents/MacOS/Roam"],
-                capture_output=True,
-            )
-            time.sleep(0.5)
-
-            cmd = [
-                binary,
-                *common_args, *extra_args,
-                "-ScreenshotSavePath", fn,
-                "-ScreenshotSettleSeconds", str(settle),
-            ]
-            # Bound each launch so a hung capture can't stall the matrix.
-            # waitForTargetWindow adds up to 8s on top of settle.
-            wall_timeout = settle + 20.0
-            launched_at = time.time()
-            proc_stderr = ""
-            try:
-                proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                    text=True,
+            launch_args = list(extra_args)
+            report_guest_path: str | None = None
+            report_host_path: str | None = None
+            if capture_kind == "menubar":
+                report_basename = (
+                    f"menubar-report-{int(time.time() * 1000)}-"
+                    f"{_uuid.uuid4().hex[:8]}.json"
                 )
-                try:
-                    _, proc_stderr = proc.communicate(timeout=wall_timeout)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    _, proc_stderr = proc.communicate()
-                    print(
-                        f"  Warning: Roam macOS launch for {locale_id} "
-                        f"{state_name} timed out after {wall_timeout:.0f}s"
-                    )
+                report_guest_path = (
+                    f"{GUEST_SHARED_ROOT}/{SHARE_OUT}/{report_basename}"
+                )
+                report_host_path = os.path.join(
+                    vm.host_output_dir, report_basename
+                )
+                launch_args += [
+                    "-MenuBarExtraReportPath", report_guest_path,
+                ]
+
+            try:
+                vm.launch_roam(launch_args, locale=locale_id)
             except Exception as e:
                 print(
-                    f"  Warning: failed to launch Roam for {locale_id} "
+                    f"  Warning: launch_roam failed for {locale_id} "
                     f"{state_name}: {e}"
                 )
                 continue
 
-            # Wait briefly for any in-flight file writes to flush (atomic
-            # rename should already have settled by now, but cheap insurance).
-            time.sleep(0.5)
+            time.sleep(settle)
 
-            src = os.path.join(sandbox_data_dir, fn)
-            if not os.path.isfile(src):
-                stderr_tail = "\n".join(proc_stderr.strip().splitlines()[-10:])
-                print(
-                    f"  Warning: no screenshot file at {src} for {locale_id} "
-                    f"{state_name} after {time.time() - launched_at:.1f}s"
+            # Center Roam's main window on the 2880x1800 desktop for the
+            # main-window states. SwiftUI brings it up at a restored/ideal
+            # frame that isn't centered; an AX resize gives a consistent,
+            # attractive presentation. Skip for Settings (its sheet sizes
+            # itself) and MenuBarExtra (no main window in play).
+            if state_name in ("ScreenScanning", "Primary"):
+                disp_w, disp_h = vm.display
+                win_w, win_h = 1440, 900
+                vm.resize_roam_window(
+                    x=(disp_w - win_w) // 2,
+                    y=(disp_h - win_h) // 2,
+                    width=win_w, height=win_h,
                 )
-                if stderr_tail:
-                    print(f"    Roam stderr tail:\n{stderr_tail}")
+                time.sleep(1.0)
+
+            try:
+                if capture_kind == "menubar":
+                    # The app opens the popover *before* writing the report,
+                    # so waiting for the report first guarantees the popover
+                    # is on screen when we grab the full native-res desktop.
+                    report = _wait_for_menubar_report(report_host_path)
+                    vm.screenshot_full_display(dst)
+                    if report is None:
+                        print(
+                            f"  Warning: no MenuBarExtra report appeared at "
+                            f"{report_host_path}; keeping full-display capture"
+                        )
+                    else:
+                        # Crop+zoom into the top-right (menu bar + popover);
+                        # leaves the full-display shot as-is on failure.
+                        if _zoom_menubar_to_app_desktop(dst, report):
+                            _strip_png_exif(dst)
+                        try:
+                            os.remove(report_host_path)
+                        except FileNotFoundError:
+                            pass
+                else:
+                    vm.screenshot_full_display(dst)
+            except Exception as e:
+                print(
+                    f"  Warning: capture failed for {locale_id} "
+                    f"{state_name}: {e}"
+                )
+                vm.kill_roam()
                 continue
-            dst = os.path.join(device_subdir, fn)
-            shutil.move(src, dst)
+
             captured_any = True
             print(f"  Captured macOS {state_name} for {locale_id} ({fn})")
+            vm.kill_roam()
+            time.sleep(0.5)
 
-        # Final cleanup.
-        subprocess.run(
-            ["pkill", "-9", "-f", f"{app_path}/Contents/MacOS/Roam"],
-            capture_output=True,
-        )
         return export_dir if captured_any else None
 
     def _get_device_screenshots(self, device_name: str, locale_id: str) -> str | None:
@@ -1644,13 +1850,13 @@ class MetadataManager:
         if "Vision" in device_name:
             return self._get_vision_screenshots_via_simctl(device_name, locale_id)
 
-        # macOS: bypass xcodebuild entirely. The app self-captures via
-        # `-ScreenshotSavePath` in its own NSWindow so we get
-        # APP_DESKTOP-acceptable 2880x1800 pixels of just the app, not the
-        # surrounding desktop. xcodebuild's reliable post-test hang made
-        # the XCTest path unusable; direct launch avoids the issue entirely.
+        # macOS: bypass xcodebuild entirely and run the captures inside a
+        # Tart-managed macOS guest VM (see scripts/tart_screenshots.py).
+        # The host display stays free; the guest renders at 2880x1800 and
+        # we `screencapture` the whole display (full-screen states) or
+        # the menu-bar region (MenuBarExtra state) over SSH.
         if device_name == "Mac" or "MacBook" in device_name:
-            return self._get_mac_screenshots_via_direct_launch(device_name, locale_id)
+            return self._get_mac_screenshots_via_tart(device_name, locale_id)
 
         tmp = tempfile.gettempdir()
         screenshots_dir = os.path.join(
@@ -1944,69 +2150,38 @@ class MetadataManager:
                             f"{resample.stderr.decode('utf-8', errors='replace')}"
                         )
 
-        # macOS XCUI captures the entire host display (e.g. 3456x2234 on a
-        # 16" MBP) since app.windows.firstMatch.screenshot() doesn't work
-        # reliably in the headless test runner. APP_DESKTOP accepts only
-        # specific 16:10 sizes (1280x800, 1440x900, 2560x1600, 2880x1800).
-        # Uniform-scale to width=2880 (or height=1800 for wider displays),
-        # then center-crop to 2880x1800. Roam is sized to 1440x900 logical
-        # points under -DataTesting (see RoamApp macOSWidth/macOSHeigth),
-        # which renders at 2880x1800 pixels — i.e. the Roam window dominates
-        # the captured screen, and the crop trims off the desktop edges.
-        if device_name == "Mac" or "MacBook" in device_name:
-            target_w, target_h = 2880, 1800
-            target_aspect = target_w / target_h
-            for root, _, files in os.walk(screenshots_dir_export):
-                for fname in files:
-                    if not fname.lower().endswith(".png"):
-                        continue
-                    fpath = os.path.join(root, fname)
-                    dims = _read_png_dimensions(fpath)
-                    if dims is None:
-                        continue
-                    if _dimensions_match(dims, "APP_DESKTOP"):
-                        continue
-                    src_aspect = dims[0] / dims[1]
-                    if src_aspect < target_aspect:
-                        new_w = target_w
-                        new_h = round(dims[1] * target_w / dims[0])
-                    else:
-                        new_h = target_h
-                        new_w = round(dims[0] * target_h / dims[1])
-                    resample = subprocess.run(
-                        [
-                            "sips",
-                            "--resampleHeightWidth", str(new_h), str(new_w),
-                            fpath, "--out", fpath,
-                        ],
-                        capture_output=True,
-                    )
-                    if resample.returncode != 0:
-                        print(
-                            f"  Warning: sips resample failed for {fpath}: "
-                            f"{resample.stderr.decode('utf-8', errors='replace')}"
-                        )
-                        continue
-                    crop = subprocess.run(
-                        [
-                            "sips",
-                            "--cropToHeightWidth", str(target_h), str(target_w),
-                            fpath, "--out", fpath,
-                        ],
-                        capture_output=True,
-                    )
-                    if crop.returncode == 0:
-                        print(
-                            f"Resized macOS capture {dims[0]}x{dims[1]} → "
-                            f"{target_w}x{target_h} ({fname}) for APP_DESKTOP"
-                        )
-                    else:
-                        print(
-                            f"  Warning: sips crop failed for {fpath}: "
-                            f"{crop.stderr.decode('utf-8', errors='replace')}"
-                        )
-
         return screenshots_dir_export
+
+
+def _clean_screenshot_cache(only_locales: set[str] | None) -> None:
+    """Remove the local screenshot capture cache so the next run regenerates
+    instead of reusing cached images. Captures live under
+    `$TMPDIR/auto-screenshots/<device>/<locale>.export|.xcresult`. With
+    `only_locales`, only the matching per-locale dirs are removed; otherwise
+    the whole cache is wiped."""
+    cache_root = os.path.join(tempfile.gettempdir(), "auto-screenshots")
+    if not os.path.isdir(cache_root):
+        print(f"--clean: no screenshot cache at {cache_root}")
+        return
+    if not only_locales:
+        shutil.rmtree(cache_root, ignore_errors=True)
+        print(f"--clean: removed screenshot cache {cache_root}")
+        return
+    removed = 0
+    for device in os.listdir(cache_root):
+        device_dir = os.path.join(cache_root, device)
+        if not os.path.isdir(device_dir):
+            continue
+        for entry in os.listdir(device_dir):
+            # entries look like "en-US.export" / "en-US.xcresult"
+            locale = entry.rsplit(".", 1)[0]
+            if locale in only_locales:
+                shutil.rmtree(os.path.join(device_dir, entry), ignore_errors=True)
+                removed += 1
+    print(
+        f"--clean: removed {removed} cached locale dir(s) for "
+        f"{sorted(only_locales)} under {cache_root}"
+    )
 
 
 async def main():
@@ -2046,10 +2221,82 @@ async def main():
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "--only-locales",
+        help=(
+            "Comma-separated BCP-47 locale ids to limit screenshot capture "
+            "and metadata updates to (e.g. 'en-US' or 'en-US,fr-FR'). "
+            "Useful for smoke-testing the capture pipeline against a "
+            "single locale before committing to the full matrix."
+        ),
+        default=None,
+    )
+    parser.add_argument(
+        "--clean",
+        help=(
+            "Delete previously-captured screenshots (the local "
+            "$TMPDIR/auto-screenshots cache) so the next run captures fresh "
+            "instead of reusing cached images. Honors --only-locales: with "
+            "it, only the matching locales' caches are removed. Used alone "
+            "(without --sync-screenshots) it just wipes the cache and exits."
+        ),
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "--mac-vm-setup",
+        help=(
+            "One-time interactive setup for the macOS Tart VM. Boots the VM "
+            "with a host window so you can click 'Allow' on the TCC "
+            "dialogs (sshd-session screen recording bypass + Roam local "
+            "network access). The grants persist on the VM disk and all "
+            "subsequent headless runs capture cleanly. Skips metadata + "
+            "screenshot upload entirely."
+        ),
+        action="store_true",
+        default=False,
+    )
     args = parser.parse_args()
+    only_locales: set[str] | None = None
+    if args.only_locales:
+        only_locales = {x.strip() for x in args.only_locales.split(",") if x.strip()}
 
     platforms = [Platform[platform] for platform in args.platform]
     sync_screenshots = args.sync_screenshots
+
+    # Interactive Tart VM setup short-circuits everything else.
+    if args.mac_vm_setup:
+        if Platform.macOS not in platforms:
+            raise ValueError("--mac-vm-setup requires --platform macOS")
+        from tart_screenshots import (
+            BASE_IMAGE_DEFAULT, DISPLAY_DEFAULT, TartVM, VM_NAME_DEFAULT,
+            build_roam_app, ensure_dependencies, run_interactive_setup,
+        )
+        ensure_dependencies()
+        app_path = build_roam_app()
+        host_app_dir = os.path.dirname(app_path)
+        host_output_dir = tempfile.mkdtemp(prefix="roam-tart-setup-")
+        vm = TartVM(
+            name=os.environ.get("TART_VM_NAME", VM_NAME_DEFAULT),
+            base_image=os.environ.get("TART_BASE_IMAGE", BASE_IMAGE_DEFAULT),
+            display=DISPLAY_DEFAULT,
+            host_app_dir=host_app_dir,
+            host_output_dir=host_output_dir,
+        )
+        try:
+            run_interactive_setup(vm)
+        finally:
+            shutil.rmtree(host_output_dir, ignore_errors=True)
+        return
+
+    # Clean the local screenshot cache if requested. Used alone (no
+    # --sync-screenshots) this is a pure cache wipe with nothing to upload,
+    # so exit before touching App Store Connect.
+    if args.clean:
+        _clean_screenshot_cache(only_locales)
+        if not sync_screenshots:
+            return
+
     skip_upload = args.skip_upload
 
     user_home = os.path.expanduser("~")
@@ -2122,6 +2369,8 @@ async def main():
                     print(
                         f"  Skipping {localization.locale}: no BCP-47 mapping defined"
                     )
+                    continue
+                if only_locales and locale_id not in only_locales:
                     continue
                 print(f"  Processing locale: {locale_id}")
 

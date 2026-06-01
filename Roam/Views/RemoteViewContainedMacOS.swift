@@ -5,6 +5,7 @@
     import os
     import StoreKit
     import SwiftUI
+    import TipKit
 
     let globalToolbarShrinkWidth: CGFloat = 300
 
@@ -40,6 +41,9 @@
         @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private
             var shouldScanIPRangeAutomatically = true
         @Namespace private var animation
+
+        private let keyboardShortcutsTip = KeyboardShortcutsRemoteTip()
+        private let pasteToPlayTip = PasteToPlayTip()
 
         private let isInMenuBar: Bool
 
@@ -90,7 +94,9 @@
         }
 
         private var noVolumeControls: Bool {
-            selectedDevice?.supportsAudioSettings == false
+            // Only disable volume controls when we know the device is not a TV.
+            // Enable for TVs (isTV == true) and when unknown (isTV == nil).
+            selectedDevice?.isTV == false
         }
 
         private var networkMonitor: NetworkMonitor {
@@ -529,9 +535,25 @@
                         .padding(.top, unreadMessages > 0 ? 6 : 12)
 
                     Spacer(minLength: 0)
+
+                    if !isInMenuBar && !inScreenshotTestingContext() {
+                        TipView(keyboardShortcutsTip)
+                            .customAccentColorTint()
+                        TipView(pasteToPlayTip)
+                            .customAccentColorTint()
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
+            }
+            .task {
+                // Once the keyboard tip is dismissed, allow the paste-to-play
+                // tip to appear afterwards so the two never overlap.
+                for await status in keyboardShortcutsTip.statusUpdates {
+                    if case .invalidated = status {
+                        PasteToPlayTip.keyboardTipDismissed = true
+                    }
+                }
             }
         }
 
@@ -705,6 +727,7 @@
 
         private func pressButton(_ button: RemoteButton) {
             incrementButtonPressCount(button)
+            KeyboardShortcutsRemoteTip.usedRemote.sendDonation()
             if globalMajorActions.contains(button) {
                 handleMajorUserAction()
             }
@@ -723,7 +746,10 @@
                 }
             }
             #if DEBUG
-                if Int.random(in: 1...20) == 1 {
+                // Deliberate crash-recovery exercise — never during UI/
+                // screenshot capture, where a random fatalError corrupts the
+                // run (the app launches dozens of times per locale sweep).
+                if Int.random(in: 1...20) == 1, !inUITestingContext() {
                     fatalError("Debug crash simulation")
                 }
             #endif
@@ -738,6 +764,7 @@
         private func pressKeyAsync(_ key: KeyEquivalent, modifiers: EventModifiers) async {
             let character = key.character
             Log.userInteraction.debug("Getting keyboard press \(character, privacy: .public)")
+            KeyboardShortcutsRemoteTip.usedRemote.sendDonation()
             if let button = RemoteButton.fromCharacter(character: character) {
                 incrementButtonPressCount(button)
                 if globalMajorActions.contains(button) {

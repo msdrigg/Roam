@@ -5,6 +5,16 @@ import UniformTypeIdentifiers
 struct AttachButton: View {
     let handleAttachment: (any PendingAttachment) -> Void
 
+    /// Defaults preserve the original macOS / watchOS / visionOS appearance.
+    /// iOS passes `paperclip` so the attach control reads as an "Attach" button
+    /// nested inside the message input group.
+    var systemImage: String = "plus.circle.fill"
+    var iconColor: Color = .gray
+    /// When set, the icon is rendered at this point size instead of the legacy
+    /// resizable fixed frame — used by the iOS paperclip so it sits cleanly
+    /// inside the text-field capsule.
+    var iconPointSize: CGFloat?
+
     @State var selectedPhotos: [PhotosPickerItem] = []
     @State var pickingPhotos: Bool = false
     @State private var photosPressCounter = 0
@@ -32,6 +42,24 @@ struct AttachButton: View {
                         selectedPhotos = []
                     }
                 }
+        }
+    }
+
+    @ViewBuilder
+    private var attachIcon: some View {
+        if let iconPointSize {
+            Image(systemName: systemImage)
+                .font(.system(size: iconPointSize))
+                .foregroundColor(iconColor)
+        } else {
+            Image(systemName: systemImage)
+                .resizable()
+#if os(macOS)
+                .frame(width: 20, height: 20)
+#else
+                .frame(width: 26, height: 26)
+#endif
+                .foregroundColor(iconColor)
         }
     }
 
@@ -76,20 +104,13 @@ struct AttachButton: View {
             Label {
                 Text("Add Attachment")
             } icon: {
-                Image(systemName: "plus.circle.fill")
-                    .resizable()
-#if os(macOS)
-                    .frame(width: 20, height: 20)
-#else
-                    .frame(width: 26, height: 26)
-#endif
-                    .foregroundColor(Color.gray)
+                attachIcon
             }
             .labelStyle(.iconOnly)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
-        .foregroundColor(Color.gray)
+        .foregroundColor(iconColor)
         .fileImporter(
             isPresented: $pickingFiles,
             allowedContentTypes: [UTType.image, UTType.json, UTType.text, UTType.pdf, UTType.movie, .archive],

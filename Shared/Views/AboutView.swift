@@ -38,8 +38,6 @@ let mainLicenses: [Dependency] = [
     // Vendored
     Dependency(name: "Swift-RTP", link: "https://github.com/alta/swift-rtp", licenseType: "MIT"),
     // Vendored
-    Dependency(name: "Wrapping HStack", link: "https://github.com/ksemianov/WrappingHStack", licenseType: "MIT"),
-    // Vendored
     Dependency(name: "Async Channels", link: "https://github.com/gh123man/Async-Channels", licenseType: "MIT"),
 ]
 

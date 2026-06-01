@@ -26,14 +26,12 @@ final class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotification
 
     @MainActor
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if MacScreenshotCapture.requestedSavePath != nil {
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-        }
-        // Drive macOS screenshot self-capture if requested. Owning a
-        // dedicated borderless NSWindow + NSHostingController gets us an
-        // exact 1440x900 contentView that snapshots cleanly at 2880x1800
-        // (APP_DESKTOP).
+        // Honor `-OpenMenuBarExtra` (see Roam/ScreenshotCapture.swift):
+        // forces showMenuBar on so SwiftUI installs the MenuBarExtra,
+        // clicks the status item to open the popover, and writes the
+        // resulting icon + popover screen frames to
+        // `-MenuBarExtraReportPath` for the Tart-driven screenshot
+        // orchestrator. No-op when neither launch arg is set.
         MacScreenshotCapture.scheduleIfRequested(appDelegate: self)
 
         let hasSentFirstMessage = UserDefaults.standard.bool(forKey: UserDefaultKeys.hasSentFirstMessage)

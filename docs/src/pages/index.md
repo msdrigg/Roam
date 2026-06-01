@@ -29,6 +29,14 @@ Roam offers everything you want and nothing you don't
     -   On iOS and iPadOS, there is a keyboard button at the top of the remote.
     -   watchOS does not have keyboard functionality at this time.
     -   Some Roku apps ignore keyboard input from remote apps. Prime Video is a known example where keyboard entry may not work because the Roku app does not accept it.
+-   Keyboard shortcuts
+    -   Roam maps hardware-keyboard keys to remote actions (directional buttons, select/OK, back, home, volume, mute, play/pause, and more). This is separate from on-screen text entry.
+    -   You can customize these shortcuts in **Settings -> Keyboard shortcuts** on Mac, iPhone, iPad and Vision Pro (watchOS does not have keyboard shortcuts).
+    -   Select a row to change its shortcut, right-click (Mac) or swipe (iPhone/iPad) a row to reset it, or use **Reset All** / **Clear All**. Default shortcuts use the Command (⌘) modifier.
+-   Paste a link to play (macOS)
+    -   On Mac, copy a video link, click the Roam window, and press **⌘V**. Roam opens the matching app on your Roku and starts playing that content.
+    -   Supported services include YouTube, Amazon Prime Video, Netflix, Disney+, Hulu, Max, Paramount+, Peacock, Tubi, Sling, and The Roku Channel.
+    -   If a TV text field is focused, ⌘V types the clipboard text into that field instead of opening a link.
 -   Headphones mode/private listening
     -   Private listening plays TV audio through your device on supported Roku devices.
     -   Private listening is supported in Roam on Mac, iPad, iPhone, VisionOS, and Apple TV, but it does not work on every Roku TV.
@@ -51,6 +59,7 @@ Roam offers everything you want and nothing you don't
 -   Why don't the arrow keys sometimes work on iPad?
     -   This is caused because iPadOS sometimes takes control of the arrow keys and uses them for navigating the screen buttons before we can detect them
     -   You can work arround this by going into Settings -> Accessiblity -> Keyboards and disabling "Full Keyboard Access" or alternatively going to Settings -> Accessiblity -> Keyboards -> Full Keyboard Access -> Commands -> Basic and disabling the "Move Up", "Move Down", "Move Left" and "Move Right" commands
+    -   You can also remap the directional shortcuts in Roam under **Settings -> Keyboard shortcuts**. Keeping a Command (⌘) modifier on a shortcut stops Full Keyboard Access from intercepting plain keys like the arrow keys.
 -   Why doesn't typing on my keyboard show up on the TV
     -   On some Roku Apps the app ignores hardware keyboard entry. You can test if this is a Roam bug or a bug in the app by trying to use the keyboard entry feature in the official Roku App and checking if this works
     -   On macOS, there is no keyboard button because the Mac keyboard works automatically with the TV when the Roam window is focused. On iOS and iPadOS, use the keyboard button at the top of the remote. watchOS does not support keyboard input at this time.
