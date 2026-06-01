@@ -18,15 +18,15 @@ serde = { version = "^1", features = ["derive"] }
 dotenvy = "^0.15"
 futures = "^0.3"
 anyhow = "^1"
-uuid = "^1.17"
+uuid = "^1.23"
 base64 = "^0.22"
 chrono = { version = "^0.4", default-features = false, features = ["serde"] }
 ahash = "^0.8"
 thiserror = "^2"
 serde_json = "^1"
-regex = "^1.11"
-object = { version = "0.36.7", default-features = false, features = ["read"] }
-zip = { version = "=4.6.1", default-features = false, features = ["deflate-flate2"] }
+regex = "^1.12"
+object = { version = "0.39.1", default-features = false, features = ["read"] }
+zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate2"] }
 
 clap = { version = "^4.5", features = ["derive", "env"] }
 clap_derive = { version = "^4.5" }
@@ -46,7 +46,7 @@ serenity = { version = "^0.12", default-features = false, features = [
     "rustls_backend",
     "model",
 ] }
-sqlx = { version = "^0.8", default-features = false, features = [
+sqlx = { version = "^0.9", default-features = false, features = [
     "runtime-tokio",
     "tls-rustls",
     "sqlite",
@@ -62,16 +62,16 @@ memmap2 = { version = "^0.9" }
 tokio-util = { version = "^0.7", features = ["io"] }
 portable-pty = "^0.9"
 samply-symbols = { version = "^0.24.1", features = ["send_futures"] }
-symbolic-common = "^12"
-symbolic-demangle = { version = "^12", features = ["swift", "cpp"] }
+symbolic-common = "^13"
+symbolic-demangle = { version = "^13", features = ["swift", "cpp"] }
 
 tracing = { version = "^0.1", features = ["attributes"] }
 tracing-subscriber = { version = "^0.3", features = ["env-filter"] }
-tracing-opentelemetry = "^0.31"
-opentelemetry = { version = "^0.30" }
-opentelemetry_sdk = { version = "^0.30", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "^0.30", features = ["grpc-tonic"] }
-opentelemetry-semantic-conventions = "^0.30"
+tracing-opentelemetry = "^0.33"
+opentelemetry = { version = "^0.32" }
+opentelemetry_sdk = { version = "^0.32", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "^0.32", features = ["grpc-tonic"] }
+opentelemetry-semantic-conventions = "^0.32"
 
 axum = { version = "^0.8", features = ["http2", "macros", "ws"] }
 axum-macros = "^0.5"
