@@ -1,0 +1,60 @@
+# Dependabot configuration.
+#
+# Scopes automated dependency updates to the manifests we actually ship/run.
+# The reverse-engineering research sandbox under docs/notes/ is intentionally
+# NOT listed here, so Dependabot will not open version-update PRs against it.
+#
+# Note: this file controls version-update (and security-update) PRs. It does not
+# retroactively dismiss existing Dependabot *alerts* for unlisted paths — those
+# are dismissed once in the Security tab (reason: "not used / inaccurate").
+version: 2
+updates:
+  # Rust — main backend
+  - package-ecosystem: cargo
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      backend-cargo:
+        patterns:
+          - "*"
+
+  # Rust — gateway
+  - package-ecosystem: cargo
+    directory: /backend-gateway
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      gateway-cargo:
+        patterns:
+          - "*"
+
+  # JavaScript — Docusaurus docs site
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      docs-npm:
+        patterns:
+          - "*"
+
+  # Python — helper scripts
+  - package-ecosystem: pip
+    directory: /scripts
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      scripts-pip:
+        patterns:
+          - "*"
+
+  # GitHub Actions workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
