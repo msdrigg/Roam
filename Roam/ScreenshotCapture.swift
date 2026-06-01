@@ -3,211 +3,307 @@ import AppKit
 import Foundation
 import SwiftUI
 
-/// Self-screenshot driver for macOS App Store captures.
+/// macOS screenshot helpers driven by launch arguments.
 ///
-/// Triggered by the `-ScreenshotSavePath <file>` launch argument. Builds a
-/// dedicated borderless NSWindow hosting the SwiftUI `RemoteView` (or
-/// `MacSettings` when `-OpenSettings` is set), sized so its contentView is
-/// 1440x900 logical points = 2880x1800 pixels on retina, which APP_DESKTOP
-/// accepts. After `-ScreenshotSettleSeconds` (default 4s), it snapshots the
-/// contentView's bitmap, writes the PNG to the requested path, and
-/// terminates the app so the Python orchestrator can move on.
+/// The capture itself is performed *outside* the app — the Python
+/// orchestrator (`scripts/sync-metadata.py` → `scripts/tart_screenshots.py`)
+/// runs `screencapture -x` (or `-R x,y,w,h` for menu-bar crops) inside a
+/// Tart-managed guest VM with a 2880x1800 display. The app's only job
+/// here is to render the requested state and, for the MenuBarExtra
+/// capture, click its status item open and report the icon + popover
+/// frames so the orchestrator can crop precisely.
 ///
-/// Why not use the production Window scene? macOS Roam pairs a `Window` with
-/// a `MenuBarExtra`; the SwiftUI coexistence treats the app as
-/// accessory-style and skips the main window's initial auto-show under
-/// terminal/headless launches (no LaunchServices interaction). Forcing the
-/// scene open requires private API. The dedicated NSWindow sidesteps all of
-/// it — at the cost of NavigationSplitView's NSSplitView sidebar List not
-/// fully realizing its content offscreen. Settings + the right-side remote
-/// render correctly; the sidebar is white in Primary/ScreenScanning, which
-/// is an acceptable trade-off for now.
+/// Recognized launch args (all optional):
+///   `-OpenMenuBarExtra`           — force `showMenuBar = true` so SwiftUI
+///                                   installs the `MenuBarExtra`, activate
+///                                   the app, then click the status item
+///                                   button to open the popover.
+///   `-MenuBarExtraReportPath <p>` — JSON file the app writes containing
+///                                   the icon's status-bar window frame,
+///                                   the popover window frame (when found),
+///                                   the main display frame, the backing
+///                                   scale factor, and a diagnostic dump
+///                                   of every NSApp.windows entry.
+///                                   Frames are AppKit bottom-origin
+///                                   screen points.
 enum MacScreenshotCapture {
-    /// Logical content size that matches App Store Connect's APP_DESKTOP
-    /// 2880x1800 acceptance on a retina display.
-    private static let targetContentSize = NSSize(width: 1440, height: 900)
+    static var wantsMenuBarExtra: Bool {
+        CommandLine.arguments.contains("-OpenMenuBarExtra")
+    }
 
-    /// Reads `-ScreenshotSavePath <path>` from the launch args. Returns nil
-    /// if the flag is absent or has no value.
-    static var requestedSavePath: String? {
+    static var menuBarExtraReportPath: String? {
         let args = CommandLine.arguments
-        guard let i = args.firstIndex(of: "-ScreenshotSavePath"),
+        guard let i = args.firstIndex(of: "-MenuBarExtraReportPath"),
               i + 1 < args.count else { return nil }
         return args[i + 1]
     }
 
-    /// Reads `-ScreenshotSettleSeconds <secs>` from launch args. Defaults to
-    /// 4.0s if missing or unparseable — enough for the test data store and
-    /// the device sidebar to render in most locales.
-    static var requestedSettleSeconds: Double {
-        let args = CommandLine.arguments
-        guard let i = args.firstIndex(of: "-ScreenshotSettleSeconds"),
-              i + 1 < args.count,
-              let v = Double(args[i + 1]) else { return 4.0 }
-        return v
-    }
-
-    /// Strong references survive past the .task autoreleasepool until the
-    /// screenshot is taken.
-    @MainActor private static var captureWindow: NSWindow?
-    @MainActor private static var captureHosting: NSViewController?
-    @MainActor private static var hasScheduled = false
-
     @MainActor
-    static func scheduleIfRequested(appDelegate: RoamAppDelegate) {
-        guard !hasScheduled else { return }
-        guard let path = requestedSavePath else { return }
-        hasScheduled = true
-        let settle = requestedSettleSeconds
-        let wantsSettings = CommandLine.arguments.contains("-OpenSettings")
-        buildAndPresentWindow(appDelegate: appDelegate, wantsSettings: wantsSettings)
+    static func scheduleIfRequested(appDelegate _: RoamAppDelegate) {
+        guard wantsMenuBarExtra else { return }
+
+        // NOTE: `showMenuBar` must already be true when the app's scene
+        // graph is first built — the orchestrator passes `-showMenuBar YES`
+        // as a launch argument so the @AppStorage reads true from the
+        // NSArgumentDomain. Do NOT flip it here at runtime: toggling the
+        // `MenuBarExtra(isInserted:)` binding after the scene graph exists
+        // sends SwiftUI into an infinite scene-update recursion
+        // (graphDidChange → scenesDidChange → … ) that overflows the stack
+        // and crashes the app.
+
+        // Activate so the popover attaches to the icon when clicked.
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(settle))
-            performAndExit(path: path)
+            await openMenuBarPopoverAndReport()
         }
     }
 
-    /// Constructs a borderless NSWindow with content size matching the
-    /// APP_DESKTOP target. Hosts either RemoteView or MacSettings depending
-    /// on launch state. Borderless avoids window chrome eating into the
-    /// capture; the content view's bitmap is exactly 2880x1800 px on retina.
     @MainActor
-    private static func buildAndPresentWindow(
-        appDelegate: RoamAppDelegate, wantsSettings: Bool
-    ) {
-        let window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: targetContentSize),
-            styleMask: [.borderless],
-            backing: .buffered, defer: false
-        )
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.appearance = NSAppearance(named: .darkAqua)
-        window.acceptsMouseMovedEvents = true
-
-        let content: NSView
-        if wantsSettings {
-            let hosting = NSHostingController(
-                rootView: AnyView(
-                    ZStack {
-                        Color.black.ignoresSafeArea()
-                        MacSettings().environmentObject(appDelegate)
-                    }
-                    .preferredColorScheme(.dark)
-                    .frame(width: targetContentSize.width, height: targetContentSize.height)
-                )
+    private static func openMenuBarPopoverAndReport() async {
+        // SwiftUI's `MenuBarExtra` installs its status item inside an
+        // `NSStatusBarWindow` that shows up in `NSApp.windows`. (The
+        // private `NSStatusBar._statusItems` accessor returns empty for
+        // SwiftUI-created items, so we match the window by class instead.)
+        let statusWindow = await waitForStatusBarWindow(timeout: 10.0)
+        guard let statusWindow else {
+            writeReport(
+                iconFrame: nil,
+                popoverFrame: nil,
+                error: "no NSStatusBarWindow appeared within 10s of -OpenMenuBarExtra"
             )
-            captureHosting = hosting
-            content = hosting.view
-        } else {
-            let hosting = NSHostingController(
-                rootView: AnyView(
-                    ZStack {
-                        Color.black.ignoresSafeArea()
-                        RemoteView().environmentObject(appDelegate)
-                    }
-                    .preferredColorScheme(.dark)
-                    .frame(width: targetContentSize.width, height: targetContentSize.height)
-                )
-            )
-            captureHosting = hosting
-            content = hosting.view
+            FileHandle.standardError.write(
+                Data("MENUBAR_ERROR: no NSStatusBarWindow appeared\n".utf8))
+            return
         }
-        content.frame = NSRect(origin: .zero, size: targetContentSize)
-        window.contentView = content
-        window.setContentSize(targetContentSize)
-        content.wantsLayer = true
-        content.layer?.backgroundColor = NSColor.black.cgColor
-        // NavigationSplitView's sidebar uses NSTableView/NSSplitView under
-        // the hood — `preferredColorScheme(.dark)` is a SwiftUI hint that
-        // doesn't propagate into the underlying AppKit chrome. Force dark
-        // appearance on the hosting view so the sidebar List background and
-        // text colors match the rest of the dark capture.
-        content.appearance = NSAppearance(named: .darkAqua)
+        // The status bar window's frame IS the icon's on-screen box.
+        let iconScreenFrame = statusWindow.frame
+        let windowsBeforeClick = snapshotVisibleWindowIdentities()
 
-        // Place fully inside the visible screen so NSScrollView /
-        // NSTableView in NavigationSplitView's sidebar get a real layout
-        // pass before we snapshot.
-        let screen = NSScreen.main ?? NSScreen.screens.first
-        if let visibleFrame = screen?.visibleFrame {
-            window.setFrameOrigin(NSPoint(
-                x: visibleFrame.minX,
-                y: visibleFrame.maxY - window.frame.height
+        // Click the status item button to open the .window-style popover.
+        if let content = statusWindow.contentView,
+           let button = firstButton(in: content) {
+            button.performClick(nil)
+        } else {
+            FileHandle.standardError.write(
+                Data("MENUBAR_WARN: no button in status window; reporting icon only\n".utf8))
+        }
+
+        // Poll up to ~3s for the popover window to appear below the icon.
+        let popoverFrame = await waitForPopover(
+            iconFrame: iconScreenFrame,
+            seen: windowsBeforeClick,
+            timeout: 3.0
+        )
+        writeReport(
+            iconFrame: iconScreenFrame,
+            popoverFrame: popoverFrame,
+            error: popoverFrame == nil
+                ? "popover window not detected after performClick"
+                : nil
+        )
+    }
+
+    // MARK: - Status bar window detection
+
+    @MainActor
+    private static func statusBarWindow() -> NSWindow? {
+        // Prefer the visible NSStatusBarWindow highest on screen (largest
+        // minY) on the main display — that's our menu-bar icon.
+        NSApp.windows
+            .filter { window in
+                guard window.isVisible else { return false }
+                return NSStringFromClass(type(of: window)).contains("StatusBarWindow")
+            }
+            .max(by: { $0.frame.minY < $1.frame.minY })
+    }
+
+    /// A freshly created status item window briefly sits at the screen
+    /// origin (frame y ≈ -24) before macOS lays out the menu bar and
+    /// places it at the top-right. Reading the frame before placement
+    /// gives bogus coordinates, so we wait until the window's top edge
+    /// reaches the menu bar band at the top of the main display.
+    @MainActor
+    private static func isPlacedInMenuBar(_ window: NSWindow) -> Bool {
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else {
+            return false
+        }
+        // AppKit is bottom-origin: the menu bar is at the top, so a placed
+        // status item's maxY is within a couple points of the screen's maxY.
+        return window.frame.maxY >= screen.frame.maxY - 4
+    }
+
+    @MainActor
+    private static func waitForStatusBarWindow(timeout: TimeInterval) async -> NSWindow? {
+        let pollInterval: TimeInterval = 0.25
+        let deadline = Date().addingTimeInterval(timeout)
+        var lastSeen: NSWindow?
+        while Date() < deadline {
+            if let window = statusBarWindow() {
+                lastSeen = window
+                if isPlacedInMenuBar(window) {
+                    return window
+                }
+            }
+            try? await Task.sleep(for: .seconds(pollInterval))
+        }
+        // Timed out waiting for placement — return whatever we last saw so
+        // the caller can still report (with possibly-imperfect coords)
+        // rather than failing outright.
+        return lastSeen
+    }
+
+    /// Depth-first search for the first NSButton in a view subtree — the
+    /// status item's clickable button lives inside the status bar window's
+    /// content view.
+    @MainActor
+    private static func firstButton(in view: NSView) -> NSButton? {
+        if let b = view as? NSButton { return b }
+        for sub in view.subviews {
+            if let b = firstButton(in: sub) { return b }
+        }
+        return nil
+    }
+
+    // MARK: - Popover detection
+
+    /// Identity of a window stable enough to diff snapshots across a click.
+    private struct WindowID: Hashable {
+        let pointer: UInt
+        let windowNumber: Int
+    }
+
+    @MainActor
+    private static func snapshotVisibleWindowIdentities() -> Set<WindowID> {
+        var set = Set<WindowID>()
+        for window in NSApp.windows where window.isVisible {
+            set.insert(WindowID(
+                pointer: UInt(bitPattern: ObjectIdentifier(window).hashValue),
+                windowNumber: window.windowNumber
             ))
         }
-        window.orderFrontRegardless()
-        window.makeKeyAndOrderFront(nil)
-        window.display()
-        captureWindow = window
-        NSApp.activate(ignoringOtherApps: true)
+        return set
     }
 
     @MainActor
-    private static func snapshot(_ view: NSView) -> Data? {
-        // Force layout + display so any pending SwiftUI passes finalize
-        // before snapshot.
-        view.layoutSubtreeIfNeeded()
-        view.displayIfNeeded()
-        guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else {
-            return nil
-        }
-        view.cacheDisplay(in: view.bounds, to: rep)
-        return rep.representation(using: NSBitmapImageRep.FileType.png, properties: [:])
-    }
-
-    @MainActor
-    private static func performAndExit(path: String) {
-        defer {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                NSApp.terminate(nil)
+    private static func waitForPopover(
+        iconFrame: NSRect,
+        seen: Set<WindowID>,
+        timeout: TimeInterval
+    ) async -> NSRect? {
+        let pollInterval: TimeInterval = 0.15
+        let deadline = Date().addingTimeInterval(timeout)
+        // The popover for .menuBarExtraStyle(.window) anchors just below
+        // the menu-bar icon — its top edge should be within ~30pt of the
+        // icon window's bottom edge.
+        let menuBarBottom = iconFrame.minY
+        let skipIDs: Set<String> = ["main", "about", "messages"]
+        while Date() < deadline {
+            for window in NSApp.windows {
+                guard window.isVisible else { continue }
+                let id = WindowID(
+                    pointer: UInt(bitPattern: ObjectIdentifier(window).hashValue),
+                    windowNumber: window.windowNumber
+                )
+                if seen.contains(id) { continue }
+                if let identifier = window.identifier?.rawValue,
+                   skipIDs.contains(identifier) { continue }
+                let cls = NSStringFromClass(type(of: window))
+                if cls.contains("StatusBarWindow") { continue }
+                // Must be in the menu-bar Y range — guard against picking
+                // unrelated SwiftUI helper windows that aren't the popover.
+                let gap = menuBarBottom - window.frame.maxY
+                if gap < -5 || gap > 60 { continue }
+                return window.frame
             }
+            try? await Task.sleep(for: .seconds(pollInterval))
         }
-        guard let window = captureWindow, let view = window.contentView else {
-            FileHandle.standardError.write(
-                Data("SCREENSHOT_ERROR: no capture window\n".utf8))
-            return
-        }
-        guard let data = snapshot(view) else {
-            FileHandle.standardError.write(
-                Data("SCREENSHOT_ERROR: snapshot encoding failed\n".utf8))
-            return
-        }
-        let url = resolveWritableURL(forRequested: path)
+        return nil
+    }
+
+    // MARK: - Report writing
+
+    @MainActor
+    private static func writeReport(
+        iconFrame: NSRect?, popoverFrame: NSRect?, error: String?
+    ) {
+        guard let path = menuBarExtraReportPath else { return }
+        let mainScreen = NSScreen.main ?? NSScreen.screens.first
+        let displayFrame = mainScreen?.frame ?? .zero
+        let scale = mainScreen?.backingScaleFactor ?? 1.0
+
+        var dict: [String: Any] = [
+            "displayFrame": rectDict(displayFrame),
+            "backingScaleFactor": Double(scale),
+            "windows": windowsDiagnostic(),
+            "statusBarWindows": statusBarWindowsDiagnostic(),
+        ]
+        if let iconFrame { dict["iconFrame"] = rectDict(iconFrame) }
+        if let popoverFrame { dict["popoverFrame"] = rectDict(popoverFrame) }
+        if let error { dict["error"] = error }
+
         do {
-            try FileManager.default.createDirectory(
+            let data = try JSONSerialization.data(
+                withJSONObject: dict, options: [.prettyPrinted, .sortedKeys]
+            )
+            let url = URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
+            try? FileManager.default.createDirectory(
                 at: url.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
             try data.write(to: url, options: .atomic)
             FileHandle.standardOutput.write(
-                Data("SCREENSHOT_WRITTEN: \(url.path)\n".utf8))
+                Data("MENUBAR_REPORT_WRITTEN: \(url.path)\n".utf8))
         } catch {
             FileHandle.standardError.write(
-                Data("SCREENSHOT_ERROR: write failed \(error)\n".utf8))
+                Data("MENUBAR_ERROR: write report failed: \(error)\n".utf8))
         }
     }
 
-    /// Resolve the final write destination. macOS Roam is sandboxed, so an
-    /// absolute path like `/tmp/foo.png` will be denied. First try the
-    /// literal requested path (works for paths inside the sandbox / data
-    /// container, e.g. resolves relative paths to the container root). If
-    /// the parent isn't writable, fall back to the app group container.
-    private static func resolveWritableURL(forRequested path: String) -> URL {
-        let expanded = (path as NSString).expandingTildeInPath
-        let direct = URL(fileURLWithPath: expanded)
-        let parent = direct.deletingLastPathComponent()
-        if FileManager.default.isWritableFile(atPath: parent.path) {
-            return direct
+    @MainActor
+    private static func windowsDiagnostic() -> [[String: Any]] {
+        var rows: [[String: Any]] = []
+        for window in NSApp.windows {
+            rows.append([
+                "class": NSStringFromClass(type(of: window)),
+                "identifier": window.identifier?.rawValue ?? "",
+                "isVisible": window.isVisible,
+                "windowNumber": window.windowNumber,
+                "frame": rectDict(window.frame),
+                "title": window.title,
+            ])
         }
-        let appGroup = "group.com.msdrigg.roam"
-        if let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroup
-        ) {
-            return container
-                .appendingPathComponent("screenshots", isDirectory: true)
-                .appendingPathComponent(direct.lastPathComponent)
+        return rows
+    }
+
+    @MainActor
+    private static func statusBarWindowsDiagnostic() -> [[String: Any]] {
+        var rows: [[String: Any]] = []
+        for window in NSApp.windows where
+            NSStringFromClass(type(of: window)).contains("StatusBarWindow") {
+            var row: [String: Any] = [
+                "frame": rectDict(window.frame),
+                "isVisible": window.isVisible,
+                "class": NSStringFromClass(type(of: window)),
+            ]
+            if let content = window.contentView,
+               let button = firstButton(in: content), let img = button.image {
+                row["imageName"] = img.name() ?? ""
+                row["imageAxDescription"] = img.accessibilityDescription ?? ""
+            }
+            rows.append(row)
         }
-        return direct
+        return rows
+    }
+
+    private static func rectDict(_ rect: NSRect) -> [String: Double] {
+        return [
+            "x": Double(rect.origin.x),
+            "y": Double(rect.origin.y),
+            "width": Double(rect.size.width),
+            "height": Double(rect.size.height),
+        ]
     }
 }
 #endif

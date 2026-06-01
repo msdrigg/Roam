@@ -189,10 +189,10 @@ struct DeviceDetailView: View {
                                     } else if device?.supportsDatagram == false {
                                         Label(
                                             String(
-                                                localized: "Not Supported",
+                                                localized: "No headphones mode",
                                                 comment:
                                                     "Label indicating headphones mode is not supported"
-                                            ), systemImage: "headphones"
+                                            ), systemImage: "headphones.slash"
                                         ).labelStyle(.badge(.red))
                                     } else {
                                         Label(

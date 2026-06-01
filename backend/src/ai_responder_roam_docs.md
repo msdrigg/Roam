@@ -56,6 +56,21 @@ Keyboard input and iPad arrows:
 - On iOS and iPadOS, users can open keyboard input from the keyboard button at the top of the remote.
 - watchOS does not have keyboard functionality at this time.
 
+Customizing keyboard shortcuts:
+
+- Roam's keyboard shortcuts (hardware-keyboard keys mapped to remote actions) can be customized inside the app at Settings -> Keyboard shortcuts. It is in the "Other" section of Roam settings.
+- Customizable keyboard shortcuts are available on macOS, iOS, iPadOS, and visionOS. watchOS does not have keyboard shortcuts.
+- This is separate from on-screen text entry. Shortcuts map keyboard keys to remote actions such as the directional buttons, OK/select, Back, Home, volume up/down, mute, and play/pause, plus app actions like Headphones Mode, Chat with the Developer, and Add Device.
+- In the Keyboard shortcuts panel, select a row to change its shortcut. On macOS, right-click a row to reset it; on iOS and iPadOS, swipe a row to reset it. There are also Reset All and Clear All buttons.
+- Default shortcuts use the Command (⌘) modifier. On iPad, keeping a ⌘ modifier on a shortcut helps avoid Full Keyboard Access intercepting plain keys such as the arrow keys.
+
+Paste a link to play (macOS):
+
+- On macOS, users can copy a video link, click the Roam window, and press ⌘V (paste). Roam parses the link and launches the matching app on the Roku to play that content.
+- Supported services include YouTube, Amazon Prime Video, Netflix, Disney+, Hulu, Max, Paramount+, Peacock, Tubi, Sling, and The Roku Channel. Other links may not be recognized.
+- This works only when no TV text field is focused. If a text entry field is active on the Roku, ⌘V types the clipboard text into that field instead of opening a link.
+- This paste-to-play behavior is macOS only.
+
 Feedback and diagnostics:
 
 - For bugs, ask the user to open Roam settings and use Send feedback so the app can generate a diagnostic report.

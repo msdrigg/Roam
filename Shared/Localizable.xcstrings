@@ -2912,7 +2912,7 @@
       }
     },
     "Add device" : {
-      "comment" : "Footer button under the sidebar device list to add a new device\nToolbar button on iPad sidebar to add a new device"
+      "comment" : "Footer button under the sidebar device list to add a new device"
     },
     "Add Device" : {
       "comment" : "Keyboard shortcut to show the Roam app",
@@ -17601,6 +17601,9 @@
           }
         }
       }
+    },
+    "No headphones mode" : {
+      "comment" : "Label indicating headphones mode is not supported"
     },
     "No network connection" : {
       "comment" : "Warning indicator message that there is no network connection",
