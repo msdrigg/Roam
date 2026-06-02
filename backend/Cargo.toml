@@ -31,15 +31,22 @@ zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate
 clap = { version = "^4.5", features = ["derive", "env"] }
 clap_derive = { version = "^4.5" }
 
-a2 = { version = "^0.10", features = [
-    "ring",
+# Apple Push Notification client. Uses the maintained `apns-h2` fork (rustls 0.23 +
+# aws-lc-rs) rather than the unmaintained `a2` crate, which dragged in the vulnerable
+# rustls-webpki 0.102 via rustls 0.22. Aliased as `a2` so call sites stay unchanged.
+a2 = { package = "apns-h2", git = "https://github.com/threema-ch/apns-h2", tag = "v0.11.0", default-features = false, features = [
+    "aws-lc-rs",
     "tracing",
-], default-features = false }
+] }
 reqwest = { version = "^0.12", default-features = false, features = [
     "json",
     "multipart",
     "rustls-tls",
 ] }
+# serenity 0.12 still pins tungstenite 0.21 (rustls 0.22) and reqwest 0.11 (rustls 0.21),
+# which transitively pull the vulnerable rustls-webpki 0.101/0.102. There is no fix until
+# serenity bumps tungstenite upstream — tracked at:
+# https://github.com/serenity-rs/serenity/issues/3557
 serenity = { version = "^0.12", default-features = false, features = [
     "client",
     "gateway",

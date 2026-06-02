@@ -6,6 +6,12 @@ COPY backend/. .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
+# apns-h2's default crypto provider (aws-lc-rs) builds aws-lc-sys from source, which
+# needs cmake on top of the C toolchain already present in the rust image. (The old
+# `a2` crate used ring, which did not require cmake.)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends cmake \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
 RUN cargo chef cook --release --recipe-path recipe.json
