@@ -46,10 +46,7 @@ impl ApnsClient {
             Cursor::new(pkey_bytes),
             key_id,
             team_id,
-            ClientConfig {
-                endpoint: Endpoint::Production,
-                ..ClientConfig::default()
-            },
+            ClientConfig::new(Endpoint::Production),
         )
         .context("Failed to create APNS client")?;
         Ok(Self {
@@ -65,22 +62,19 @@ impl ApnsClient {
         body: &str,
     ) -> Result<(), ApnsError> {
         let opt = NotificationOptions {
-            apns_id: None,
-            apns_expiration: None,
-            apns_collapse_id: None,
             apns_priority: Some(a2::Priority::Normal),
             apns_topic: Some(&self.topic),
-            apns_push_type: None,
+            ..Default::default()
         };
         let loc_key = get_loc_key(body);
         let mut notification_builder = a2::DefaultNotificationBuilder::new()
-            .set_category("DEVELOPER_RESPONSE")
-            .set_sound("default")
-            .set_title(title)
-            .set_title_loc_key(":message-from-roam-title:")
-            .set_body(body);
+            .category("DEVELOPER_RESPONSE")
+            .sound("default")
+            .title(title)
+            .title_loc_key(":message-from-roam-title:")
+            .body(body);
         if let Some(loc_key) = loc_key {
-            notification_builder = notification_builder.set_loc_key(loc_key);
+            notification_builder = notification_builder.loc_key(loc_key);
         }
         let notification_payload = notification_builder.build(device_token, opt);
 
@@ -101,17 +95,15 @@ impl ApnsClient {
         identifier: &str,
     ) -> Result<(), ApnsError> {
         let opt = NotificationOptions {
-            apns_id: None,
-            apns_expiration: None,
-            apns_collapse_id: None,
             apns_priority: Some(a2::Priority::High),
             apns_topic: Some(&self.topic),
             apns_push_type: Some(a2::PushType::Background),
+            ..Default::default()
         };
 
         let notification_payload = a2::DefaultNotificationBuilder::new()
-            .set_content_available()
-            .set_category(identifier)
+            .content_available()
+            .category(identifier)
             .build(device_token, opt);
 
         let result = self.client.send(notification_payload).await?;
