@@ -326,6 +326,7 @@ struct RoamApp: App {
                     #if os(iOS)
                         .task {
                             applyForceOrientationIfRequested()
+                            applyMinimumWindowSizeIfNeeded()
                         }
                     #endif
                     .onReceive(
@@ -444,33 +445,45 @@ struct RoamApp: App {
     }
 
     #if os(iOS)
-    @MainActor
-    private func applyForceOrientationIfRequested() {
-        let args = CommandLine.arguments
-        let mask: UIInterfaceOrientationMask
-        if args.contains("-ForceLandscapeLeft") {
-            mask = .landscapeLeft
-        } else if args.contains("-ForceLandscapeRight") {
-            mask = .landscapeRight
-        } else if args.contains("-ForceLandscape") {
-            mask = .landscape
-        } else if args.contains("-ForcePortrait") {
-            mask = .portrait
-        } else {
-            return
+        @MainActor
+        private func applyForceOrientationIfRequested() {
+            let args = CommandLine.arguments
+            let mask: UIInterfaceOrientationMask
+            if args.contains("-ForceLandscapeLeft") {
+                mask = .landscapeLeft
+            } else if args.contains("-ForceLandscapeRight") {
+                mask = .landscapeRight
+            } else if args.contains("-ForceLandscape") {
+                mask = .landscape
+            } else if args.contains("-ForcePortrait") {
+                mask = .portrait
+            } else {
+                return
+            }
+            // Xcode 26 iOS sim ignores XCUIDevice.shared.orientation when used from
+            // UI tests — the canvas rotates but the app's scene geometry doesn't
+            // follow. Drive the rotation app-side via requestGeometryUpdate so the
+            // app's window relayouts even when XCTest's orientation handling is
+            // broken. Used only under screenshot testing launch args.
+            guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+                return
+            }
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { error in
+                Log.lifecycle.error("requestGeometryUpdate failed: \(error, privacy: .public)")
+            }
         }
-        // Xcode 26 iOS sim ignores XCUIDevice.shared.orientation when used from
-        // UI tests — the canvas rotates but the app's scene geometry doesn't
-        // follow. Drive the rotation app-side via requestGeometryUpdate so the
-        // app's window relayouts even when XCTest's orientation handling is
-        // broken. Used only under screenshot testing launch args.
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
-            return
+        @MainActor
+        private func applyMinimumWindowSizeIfNeeded() {
+            guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+            for scene in UIApplication.shared.connectedScenes {
+                guard let windowScene = scene as? UIWindowScene,
+                    let restrictions = windowScene.sizeRestrictions
+                else { continue }
+                restrictions.minimumSize = CGSize(width: iPadMinWidth, height: iPadMinHeight)
+            }
         }
-        scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { error in
-            Log.lifecycle.error("requestGeometryUpdate failed: \(error, privacy: .public)")
-        }
-    }
+        private var iPadMinWidth: CGFloat { 460 }
+        private var iPadMinHeight: CGFloat { 782 }
     #endif
 
     // App Store Connect's APP_DESKTOP slot accepts 1280x800, 1440x900,
@@ -488,7 +501,7 @@ struct RoamApp: App {
     }
 
     var macOSMinWidth: CGFloat {
-        return 560
+        return 600
     }
 
     var macOSMaxWidth: CGFloat {
@@ -497,7 +510,7 @@ struct RoamApp: App {
     }
 
     var macOSMinHeight: CGFloat {
-        return 560
+        return 640
     }
 
     var macOSMaxHeight: CGFloat {
