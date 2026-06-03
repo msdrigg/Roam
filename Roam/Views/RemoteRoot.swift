@@ -159,6 +159,10 @@ struct RemoteRoot: View {
                     }
                 }
                 .scrollDisabled(visionOSKeyboardShown)
+                // Only rubber-band on an axis when the remote actually
+                // overflows the viewport. When it fits (the common case),
+                // this kills the empty bounce in both directions.
+                // .scrollBounceBehavior(.basedOnSize, axes: [.vertical, .horizontal])
                 .toolbar {
                     ToolbarItem(placement: .bottomOrnament) {
                         Button {
@@ -209,6 +213,10 @@ struct RemoteRoot: View {
                 // an external keyboard's auto-correct bar doesn't shift
                 // the remote layout.
                 .scrollDisabled(iPadKeyboardShown)
+                // Only rubber-band on an axis when the remote actually
+                // overflows the viewport. When it fits (the common case),
+                // this kills the empty bounce in both directions.
+                // .scrollBounceBehavior(.basedOnSize, axes: [.vertical, .horizontal])
                 .ignoresSafeArea(.keyboard, edges: iPadKeyboardShown ? [] : .all)
                 #endif
             }

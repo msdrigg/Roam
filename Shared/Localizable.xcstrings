@@ -2663,7 +2663,7 @@
       }
     },
     "Add a device manually" : {
-      "comment" : "Button shown in the empty sidebar to manually add a device\nLabel on a button to add a device\nLabel on a button to open the device setup page",
+      "comment" : "Button shown in the empty sidebar to manually add a device\nLabel on a button to add a device",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4075,7 +4075,7 @@
       }
     },
     "App Version" : {
-      "comment" : "Version label in about page for the app",
+      "comment" : "Version label in About page for the app\nVersion label in about page for the app",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5066,7 +5066,7 @@
       }
     },
     "Build Version" : {
-      "comment" : "Version label in about page for the app",
+      "comment" : "Version label in About page for the app\nVersion label in about page for the app",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5232,7 +5232,7 @@
       }
     },
     "Cancel" : {
-      "comment" : "Cancel button for the delete-device dialog"
+      "comment" : "Accessibility label for the close button on the Add Device sheet\nCancel button for the delete-device dialog"
     },
     "Cannot update device that is deleted." : {
       "localizations" : {
@@ -7554,6 +7554,9 @@
         }
       }
     },
+    "Copy a video link, click the Roam window, and press ⌘V. Roam opens the right app on your TV and plays it — works with YouTube, Amazon Prime, Netflix, and many others." : {
+
+    },
     "Couldn't connect to the device" : {
       "comment" : "Error message description",
       "localizations" : {
@@ -7803,7 +7806,7 @@
       }
     },
     "Delete" : {
-      "comment" : "Confirm button for deleting a device\nContext-menu action to delete a device\nLabel on a button to delete a device\nSwipe action to delete a device",
+      "comment" : "Confirm button for deleting a device\nContext-menu action to delete a device\nLabel on a button to delete a device",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8141,7 +8144,7 @@
       }
     },
     "Devices" : {
-      "comment" : "Header in device selection menu\nTitle of the device sidebar in the split-view layout\nTitle of the iPhone home screen listing all devices",
+      "comment" : "Title of the device sidebar in the split-view layout",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8719,7 +8722,7 @@
       }
     },
     "Edit" : {
-      "comment" : "Context-menu action to edit a device\nLabel on a button to edit a device\nSwipe action to edit a device",
+      "comment" : "Context-menu action to edit a device\nLabel on a button to edit a device",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -19272,6 +19275,9 @@
         }
       }
     },
+    "Paste a link to start watching" : {
+
+    },
     "Permissive Mode" : {
       "localizations" : {
         "ar" : {
@@ -23165,6 +23171,9 @@
         }
       }
     },
+    "Roam has a keyboard shortcut for every remote button — press ⌘K to see and change them all. You can also type to enter text on the TV and use the arrow keys to navigate, separate from the button shortcuts." : {
+
+    },
     "Roam Help" : {
       "localizations" : {
         "ar" : {
@@ -23744,7 +23753,7 @@
       }
     },
     "Roku Apps" : {
-      "comment" : "Label on a widget for interactions with my application\nSiri spotlight recommendation",
+      "comment" : "Siri spotlight recommendation",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -23827,7 +23836,7 @@
       }
     },
     "Roku Controls" : {
-      "comment" : "Label on a widget for interactions with my application\nSiri spotlight recommendation",
+      "comment" : "Siri spotlight recommendation",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -24245,7 +24254,7 @@
       }
     },
     "Scanning for devices" : {
-      "comment" : "Empty-state heading on iPhone home while no devices have been discovered\nSidebar empty-state heading while no devices have been discovered",
+      "comment" : "Sidebar empty-state heading while no devices have been discovered",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -25073,7 +25082,7 @@
       }
     },
     "Settings" : {
-      "comment" : "Bottom-bar button on iPhone home to open Settings\nNavigation title on the settings page\nToolbar button on iPad/visionOS sidebar to open Settings",
+      "comment" : "Navigation title on the settings page",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -28889,6 +28898,9 @@
           }
         }
       }
+    },
+    "Your keyboard controls the TV" : {
+
     },
     "Your need to enable \"Control by mobile apps\" in your TV's settings. You can update this setting by going to **Settings > System > Advanced system settings > Control by mobile apps > Network access** and make sure it's set to 'Permissive' or 'Enabled'" : {
       "extractionState" : "stale",

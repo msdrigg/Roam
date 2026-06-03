@@ -124,7 +124,7 @@
         }
 
         private var minimumContentHeight: CGFloat? {
-            isInMenuBar ? nil : 560
+            isInMenuBar ? nil : 620
         }
 
         var body: some View {
@@ -339,14 +339,20 @@
                 .sheet(isPresented: appDelegate.navigationPath.showingAddDevice(for: .remote)) {
                     AddDeviceFlow()
                 }
-                .sheet(isPresented: Binding(
-                    get: { appDelegate.navigationPath.showingEditDevice(for: .remote).wrappedValue != nil },
-                    set: { newValue in
-                        if !newValue {
-                            appDelegate.navigationPath.showingEditDevice(for: .remote).wrappedValue = nil
+                .sheet(
+                    isPresented: Binding(
+                        get: {
+                            appDelegate.navigationPath.showingEditDevice(for: .remote).wrappedValue
+                                != nil
+                        },
+                        set: { newValue in
+                            if !newValue {
+                                appDelegate.navigationPath.showingEditDevice(for: .remote)
+                                    .wrappedValue = nil
+                            }
                         }
-                    }
-                )) {
+                    )
+                ) {
                     EditDeviceSheet(
                         deviceIdToEdit: appDelegate.navigationPath.showingEditDevice(for: .remote)
                     )
@@ -498,11 +504,11 @@
                 VStack(spacing: 0) {
                     if !isInMenuBar {
                         deviceTitleHeader
-                            .padding(.top, 12)
-                            .padding(.bottom, 4)
+                            .padding(.top, 6)
+                            .padding(.bottom, 14)
                     }
 
-                    Spacer(minLength: 0)
+                    Spacer(minLength: 10)
 
                     remoteControls
                         .customAccentColorForeground()
@@ -842,8 +848,8 @@
                     .foregroundStyle(isOnline ? Color.green : Color.secondary.opacity(0.5))
                     .font(.system(size: 8))
                     .baselineOffset(2)
-                + Text("  ")
-                + Text(selectedDevice?.name ?? "Device"))
+                    + Text("  ")
+                    + Text(selectedDevice?.name ?? "Device"))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: 140, alignment: .leading)
