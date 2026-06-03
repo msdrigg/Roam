@@ -189,6 +189,7 @@ struct AddDeviceFlow: View {
             .scrollDisabled(true)
 #endif
         }
+        .defaultFocus($isIpAddressFocused, true, priority: .userInitiated)
     }
 
     @ViewBuilder
