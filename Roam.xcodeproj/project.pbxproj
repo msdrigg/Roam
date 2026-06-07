@@ -236,6 +236,7 @@
 		AFD100342F00000100000001 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* GRDB */; };
 		AFD100412F00000100000001 /* RoamDatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD100402F00000100000001 /* RoamDatabaseTests.swift */; };
 		AFD200012F11000100000001 /* NoVolumeControlsTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD200002F11000100000001 /* NoVolumeControlsTip.swift */; };
+		AFD200052F11000300000001 /* PastedUrlOfferTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD200042F11000300000001 /* PastedUrlOfferTip.swift */; };
 		AFD590D02AEC673C00189620 /* WatchConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590CF2AEC673C00189620 /* WatchConnector.swift */; };
 		AFD590D22AEC692700189620 /* IPhoneConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590D12AEC692700189620 /* IPhoneConnector.swift */; };
 		AFD590D62AEC787700189620 /* ModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590D52AEC787700189620 /* ModelContainer.swift */; };
@@ -560,6 +561,7 @@
 		AFD100212F00000100000001 /* RemoteViewContainedMacOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteViewContainedMacOS.swift; sourceTree = "<group>"; };
 		AFD100402F00000100000001 /* RoamDatabaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamDatabaseTests.swift; sourceTree = "<group>"; };
 		AFD200002F11000100000001 /* NoVolumeControlsTip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoVolumeControlsTip.swift; sourceTree = "<group>"; };
+		AFD200042F11000300000001 /* PastedUrlOfferTip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastedUrlOfferTip.swift; sourceTree = "<group>"; };
 		AFD590CF2AEC673C00189620 /* WatchConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnector.swift; sourceTree = "<group>"; };
 		AFD590D12AEC692700189620 /* IPhoneConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPhoneConnector.swift; sourceTree = "<group>"; };
 		AFD590D32AEC6B4600189620 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS17.0.sdk/System/Library/Frameworks/WatchConnectivity.framework; sourceTree = DEVELOPER_DIR; };
@@ -657,6 +659,7 @@
 				AF05327D2D36DB2200D68F8E /* GlobalKeyboardShortcutsTip.swift */,
 				AF05327E2D36DB2200D68F8E /* HeadphonesModeTip.swift */,
 				AFD200002F11000100000001 /* NoVolumeControlsTip.swift */,
+				AFD200042F11000300000001 /* PastedUrlOfferTip.swift */,
 			);
 			path = Tips;
 			sourceTree = "<group>";
@@ -1513,6 +1516,7 @@
 				AFBDEA322D7D157500C15B18 /* StandardDislosureGroupStyle.swift in Sources */,
 				AF0532812D36DB2200D68F8E /* HeadphonesModeTip.swift in Sources */,
 				AFD200012F11000100000001 /* NoVolumeControlsTip.swift in Sources */,
+				AFD200052F11000300000001 /* PastedUrlOfferTip.swift in Sources */,
 				AFBBE16F2C764564002B7F68 /* RemoteViewContained.swift in Sources */,
 				AFD100202F00000100000001 /* RemoteViewContainedMacOS.swift in Sources */,
 				AF0C82952AEBFB4600CBE7F8 /* APIHelpers.swift in Sources */,

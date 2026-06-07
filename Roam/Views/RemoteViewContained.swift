@@ -5,6 +5,7 @@
     import os
     import StoreKit
     import SwiftUI
+    import TipKit
     import Foundation
 
     let globalToolbarShrinkWidth: CGFloat = 300
@@ -27,6 +28,20 @@
         @State private var showKeyboardEntryManual: Bool = false
         @State private var keyboardLeaving: Bool = false
         @State var buttonPresses: [RemoteButton: Int] = [:]
+        #if os(iOS)
+            @Environment(\.scenePhase) private var scenePhase
+            @Environment(\.colorScheme) private var colorScheme
+            @AppStorageColor(UserDefaultKeys.customAccentColor) private var customAccentColor:
+                Color = Color("AccentColor")
+            @State private var showPastedUrlOffer: Bool = false
+            // Once an offer is accepted or dismissed, don't re-offer until the
+            // pasteboard contents actually change. `changeCount` is metadata,
+            // so reading it never triggers the system paste notice.
+            @State private var lastHandledPasteboardChangeCount: Int = -1
+            @AppStorage(UserDefaultKeys.disablePastedUrlSuggestions) private
+                var disablePastedUrlSuggestions: Bool = false
+            private let pastedUrlOfferTip = PastedUrlOfferTip()
+        #endif
         @State private var headphonesModeEnabled: Bool = false
         @State private var headphonesError: Error?
         @State private var errorTrigger: Int = 0
@@ -126,6 +141,22 @@
 
         #if os(iOS)
             @State var windowScene: UIWindowScene?
+
+            // The negative bottom padding intentionally pulls content below the
+            // safe area when nothing renders at the bottom edge. Switch to a
+            // positive value while the keyboard-entry overlay or the pasted-URL
+            // offer is showing so that content stays above the system keyboard /
+            // the pager's floating button bar instead of clipping below them —
+            // the flexible Spacers above compress to absorb the difference.
+            private var iOSBottomPadding: CGFloat {
+                if showKeyboardEntry || showPastedUrlOffer {
+                    return 10
+                }
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    return isHorizontal ? -16 : -32
+                }
+                return 10
+            }
         #endif
 
         private var selectedDevice: Device? {
@@ -399,6 +430,11 @@
                 }
                 .task(id: headphonesTaskId) { await headphonesTask() }
                 .task(id: isActive) { await activeStateTask() }
+                #if os(iOS)
+                    // Re-check whenever the page becomes the active pager page,
+                    // the app foregrounds, or the device changes.
+                    .task(id: pasteboardCheckTaskId) { await checkForPastedUrl() }
+                #endif
                 .onChange(of: focusKeyboardMonitor) { restoreFocusIfNeeded() }
                 .onChange(of: showKeyboardEntry) { handleShowKeyboardChange() }
                 .onAppear(perform: syncExternalKeyboardOnAppear)
@@ -601,6 +637,117 @@
                         .frame(maxWidth: 1)
                 }
             }
+
+            // MARK: - Pasted URL detection
+
+            private var pasteboardCheckTaskId: String {
+                "\(scenePhase == .active),\(isActive),\(disablePastedUrlSuggestions),\(selectedDevice?.location ?? "--")"
+            }
+
+            // Pattern detection only says *whether* the pasteboard looks like a
+            // web URL — it never reads the value, so the system "pasted from"
+            // notice is not triggered. The actual contents are only read when
+            // the user taps the system PasteButton in the offer banner (a
+            // sanctioned paste affordance, which is also notice-free), and the
+            // URL is parsed/validated there before anything is sent.
+            private func checkForPastedUrl() async {
+                // Only the focused remote page should offer the suggestion — not
+                // off-screen pager pages, and never outside this view (e.g. the
+                // phone home screen, which doesn't contain this view at all).
+                guard isActive, scenePhase == .active, selectedDevice != nil else {
+                    return
+                }
+                guard !disablePastedUrlSuggestions,
+                    UIPasteboard.general.changeCount != lastHandledPasteboardChangeCount
+                else {
+                    withAnimation { showPastedUrlOffer = false }
+                    return
+                }
+                do {
+                    let patterns = try await UIPasteboard.general.detectedPatterns(
+                        for: [\.probableWebURL])
+                    if !Task.isCancelled {
+                        withAnimation {
+                            showPastedUrlOffer = patterns.contains(\.probableWebURL)
+                        }
+                    }
+                } catch {
+                    // Thrown when the pasteboard is empty or detection fails —
+                    // either way there's nothing to offer.
+                    if !Task.isCancelled {
+                        withAnimation { showPastedUrlOffer = false }
+                    }
+                }
+            }
+
+            private var pastedUrlOfferMessage: String {
+                String(
+                    localized: "Open copied video",
+                    comment:
+                        "Banner offering to open a copied streaming link (e.g. YouTube) on the selected device"
+                )
+            }
+
+            private func handlePastedUrlOffer(_ items: [String]) {
+                lastHandledPasteboardChangeCount = UIPasteboard.general.changeCount
+                withAnimation { showPastedUrlOffer = false }
+                guard let first = items.first, let (appId, params) = parsePastedUrl(first)
+                else {
+                    Log.userInteraction.notice(
+                        "Pasted url offer accepted but url did not parse to a launchable app")
+                    errorTrigger += 1
+                    return
+                }
+                incrementButtonPressCount(.inputAV1)
+                Task {
+                    do {
+                        try await ecpSession?.launchApp(appId, params: params)
+                    } catch {
+                        Log.connection.error(
+                            "Error opening pasted url app=\(appId, privacy: .public) params=\(params, privacy: .public): \(error, privacy: .public)"
+                        )
+                    }
+                }
+            }
+
+            private func dismissPastedUrlOffer() {
+                lastHandledPasteboardChangeCount = UIPasteboard.general.changeCount
+                withAnimation { showPastedUrlOffer = false }
+            }
+
+            @ViewBuilder
+            private var pastedUrlBanner: some View {
+                if showPastedUrlOffer {
+                    HStack(alignment: .center, spacing: 10) {
+                        Label(pastedUrlOfferMessage, systemImage: "play.rectangle")
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                            .font(.subheadline)
+
+                        PasteButton(payloadType: String.self, onPaste: handlePastedUrlOffer)
+                            .buttonBorderShape(.capsule)
+                            .controlSize(.small)
+                            .labelStyle(.iconOnly)
+
+                        Button(
+                            "Dismiss", systemImage: "x.circle.fill",
+                            action: dismissPastedUrlOffer
+                        )
+                        .controlSize(.small)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.plain)
+                    }
+                    .foregroundStyle(
+                        colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
+                    )
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(customAccentColor.opacity(0.3))
+                    .cornerRadius(5)
+                    .popoverTip(pastedUrlOfferTip)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         #endif
 
         private func dismissKeyboardEntry() {
@@ -734,6 +881,9 @@
         @ViewBuilder
         private var banners: some View {
             if !hideUIForKeyboardEntry {
+                #if os(iOS)
+                    pastedUrlBanner
+                #endif
                 // Suppress the unread-developer-message banner under
                 // screenshot tests — it's data-driven by an untrusted
                 // count from the testing data fixture and clutters
@@ -827,17 +977,7 @@
                     .padding(.top, 20)
                 #endif
                 #if os(iOS)
-                    // The negative bottom padding intentionally pulls content
-                    // below the safe area when no keyboard is up. Switch to a
-                    // positive value while the keyboard-entry overlay is showing
-                    // so the overlay doesn't extend past the parent's bottom into
-                    // the system keyboard, clipping the text field.
-                    .padding(
-                        .bottom,
-                        showKeyboardEntry
-                            ? 10
-                            : (UIDevice.current.userInterfaceIdiom == .phone
-                                ? (isHorizontal ? -16 : -32) : 10))
+                    .padding(.bottom, iOSBottomPadding)
                 #else
                     .padding(.bottom, 10)
                 #endif
