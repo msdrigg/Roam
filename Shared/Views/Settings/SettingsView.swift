@@ -56,6 +56,9 @@ struct SettingsView: View {
 
     @AppStorage(UserDefaultKeys.shouldScanIPRangeAutomatically) private var scanIpAutomatically: Bool = true
     @AppStorage(UserDefaultKeys.shouldControlVolumeWithHWButtons) private var controlVolumeWithHWButtons: Bool = true
+#if os(iOS)
+    @AppStorage(UserDefaultKeys.disablePastedUrlSuggestions) private var disablePastedUrlSuggestions: Bool = false
+#endif
     @AppStorage(UserDefaultKeys.showMenuBar) private var showMenuBar: Bool = false
     @AppStorage(UserDefaultKeys.userMajorActionCount) private var majorActionsCount: Int = 0
 
@@ -272,6 +275,8 @@ struct SettingsView: View {
             Section(String(localized: "Behavior", comment: "Settings section label")) {
 #if os(iOS)
                 Toggle(String(localized: "Use volume buttons to control TV volume", comment: "Label on a settings toggle"), isOn: $controlVolumeWithHWButtons)
+
+                Toggle(String(localized: "Don't offer to open copied video links", comment: "Label on a settings toggle that disables the banner offering to open a copied streaming link on the device"), isOn: $disablePastedUrlSuggestions)
 #endif
 
                 #if os(macOS)

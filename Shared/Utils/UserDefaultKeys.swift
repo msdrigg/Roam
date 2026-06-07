@@ -15,6 +15,7 @@ enum UserDefaultKeys {
     static let networkExpensiveBannerDismissed = "networkExpensiveBannerDismissed"
     static let localNetworkPermissionGranted = "localNetworkPermissionGranted"
     static let macosKeysWindowHorizontal = "macosKeysWindowHorizontal"
+    static let disablePastedUrlSuggestions = "disablePastedUrlSuggestions"
 
     // Tips
     static let headphonesModeUsed = "headphonesModeUsed"
