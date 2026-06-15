@@ -84,7 +84,7 @@ axum = { version = "^0.8", features = ["http2", "macros", "ws"] }
 axum-macros = "^0.5"
 tower = "^0.5"
 tower-service = "^0.3"
-tower-http = { version = "^0.6", features = [
+tower-http = { version = "^0.7", features = [
     "cors",
     "trace",
     "catch-panic",
