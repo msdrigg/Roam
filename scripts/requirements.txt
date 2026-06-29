@@ -1,5 +1,5 @@
 annotated-types==0.7.0
-anyio==4.14.0
+anyio==4.14.1
 certifi==2026.6.17
 cffi==2.0.0
 cryptography==49.0.0
@@ -8,8 +8,8 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 idna==3.18
-jiter==0.15.0
-openai==2.43.0
+jiter==0.16.0
+openai==2.44.0
 pycparser==3.0
 pydantic==2.13.4
 pydantic_core==2.47.0
