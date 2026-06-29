@@ -118,9 +118,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.102"
+version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
+checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 
 [[package]]
 name = "apns-h2"
@@ -1983,9 +1983,9 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-semantic-conventions"
-version = "0.32.0"
+version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ca2f98a0437b427b4b08f19f1caa3c44db885a202bc12cfea13d6c702243d68"
+checksum = "c913ac17a6c451661ee255f4625d143e51647ae78ebd969b75e41c4442f4fe47"
 
 [[package]]
 name = "opentelemetry_sdk"
@@ -3437,9 +3437,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "symbolic-common"
-version = "13.3.1"
+version = "13.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "737b2b9897b9da03ec679ed4b4ae7e798fa340f36f6b2ff70781aa9f2ea042e1"
+checksum = "ba98c95b1ff25ce40400d286f5dec838097ee42ad1bbd64242cce24c2baace8c"
 dependencies = [
  "debugid",
  "memmap2",
@@ -3449,9 +3449,9 @@ dependencies = [
 
 [[package]]
 name = "symbolic-demangle"
-version = "13.3.1"
+version = "13.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18f3e43b297ac61e59cdca822c7cae395ac85beb39702142953337899e833a8b"
+checksum = "1c547b0231d1794aec8e4795dbb04c1d395ff774954f18e37d46d5a70f0ce4b2"
 dependencies = [
  "cc",
  "cpp_demangle",
@@ -4073,9 +4073,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.23.3"
+version = "1.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "144d6b123cef80b301b8f72a9e2ca4370ddec21950d0a103dd22c437006d2db7"
+checksum = "bf80a72845275afea99e7f2b434723d3bc7e38470fcd1c7ed39a599c73319a53"
 dependencies = [
  "getrandom 0.4.2",
  "js-sys",
