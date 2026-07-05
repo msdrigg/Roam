@@ -4,7 +4,7 @@ hide_table_of_contents: true
 
 # Chính sách bảo mật
 
-Martin Driggers xây dựng ứng dụng Roam như một ứng dụng miễn phí. DỊCH VỤ này được Martin Driggers cung cấp miễn phí và dự định sử dụng như vậy.
+Scott Driggers xây dựng ứng dụng Roam như một ứng dụng miễn phí. DỊCH VỤ này được Scott Driggers cung cấp miễn phí và dự định sử dụng như vậy.
 
 Trang này được sử dụng để thông báo cho khách truy cập về các chính sách của tôi liên quan đến việc thu thập, sử dụng và tiết lộ Thông tin cá nhân nếu ai đó quyết định sử dụng Dịch vụ của tôi.
 

@@ -4,7 +4,7 @@ hide_table_of_contents: true
 
 # Datenschutzrichtlinien
 
-Martin Driggers hat die Roam-App als kostenlose App entwickelt. Dieser DIENST wird von Martin Driggers kostenlos bereitgestellt und ist wie vorgesehen nutzbar.
+Scott Driggers hat die Roam-App als kostenlose App entwickelt. Dieser DIENST wird von Scott Driggers kostenlos bereitgestellt und ist wie vorgesehen nutzbar.
 
 Diese Seite dient dazu, Besucher über meine Richtlinien bezüglich der Sammlung, Nutzung und Offenlegung von persönlichen Informationen zu informieren, wenn jemand sich entscheidet, meinen Service zu nutzen.
 

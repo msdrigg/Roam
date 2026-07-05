@@ -4,7 +4,7 @@ hide_table_of_contents: true
 
 # Patakaran sa Pagkapribado
 
-Binuo ni Martin Driggers ang Roam app bilang isang Libreng app. Ang SERBISYO na ito ay binibigay ni Martin Driggers nang walang gastos at ito ay inilaan para sa paggamit tulad ng inilalarawan.
+Binuo ni Scott Driggers ang Roam app bilang isang Libreng app. Ang SERBISYO na ito ay binibigay ni Scott Driggers nang walang gastos at ito ay inilaan para sa paggamit tulad ng inilalarawan.
 
 Ang pahinang ito ay ginagamit upang ipaalam sa mga bisita ang aking mga patakaran hinggil sa koleksyon, paggamit, at pagsasapubliko ng Personal na Impormasyon kung mayroon mang nagpasyang gamitin ang aking Serbisyo.
 

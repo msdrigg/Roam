@@ -8,6 +8,12 @@ hide_table_of_contents: true
 
 ## About Roam
 
+:::warning
+
+This is a support page for the Roam application, not Roly. I recently learned that the Roly app has copied my source code and app store page, even linking here to my support page. This is fraudulent and incorrect. 
+
+:::
+
 Roam offers everything you want and nothing you don't
 
 -   Runs on Mac, iPhone, iPad, Apple Watch, Vision Pro or Apple TV!

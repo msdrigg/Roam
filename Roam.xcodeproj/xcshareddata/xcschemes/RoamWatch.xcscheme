@@ -95,7 +95,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AF15C2452AE8672700B79FD9"
             BuildableName = "Roam.app"
-            BlueprintName = "RoamWatch"
             ReferencedContainer = "container:Roam.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -119,7 +118,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AF15C2452AE8672700B79FD9"
             BuildableName = "Roam.app"
-            BlueprintName = "RoamWatch"
             ReferencedContainer = "container:Roam.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

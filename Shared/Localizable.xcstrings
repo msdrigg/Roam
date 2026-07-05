@@ -10634,6 +10634,7 @@
       "comment" : "Title of the popup shown when a user taps a disabled headphones mode button"
     },
     "HI" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -13873,6 +13874,7 @@
       }
     },
     "Living Room TV" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -16118,6 +16120,7 @@
       }
     },
     "Mom's TV" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

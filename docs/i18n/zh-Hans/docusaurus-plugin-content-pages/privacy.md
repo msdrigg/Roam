@@ -4,7 +4,7 @@ hide_table_of_contents: true
 
 # 隐私政策
 
-Martin Driggers 建立了 Roam 应用作为一个免费应用。这项服务是由 Martin Driggers 免费提供并打算按原样使用。
+Scott Driggers 建立了 Roam 应用作为一个免费应用。这项服务是由 Scott Driggers 免费提供并打算按原样使用。
 
 我使用此页面来向访客说明我的有关收集、使用和披露个人信息的政策，如果有人决定使用我的服务。
 
