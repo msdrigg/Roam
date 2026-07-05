@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+import atexit
 import enum
 import gzip
 import hashlib
 import json
-import atexit
 import os
 import re
 import shlex
@@ -17,9 +15,12 @@ import subprocess
 import sys
 import tempfile
 import time
-from httpx import AsyncClient, Response
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+
 import httpx
 import jwt
+from httpx import AsyncClient, Response
 
 # Sibling module — pulled in lazily inside `_get_or_create_tart_vm` so the
 # rest of the script still imports cleanly on machines without tart/sshpass
@@ -390,7 +391,8 @@ class AppStoreConnect:
 
             upload_command = [
                 "curl",
-                "-X", method,
+                "-X",
+                method,
                 "--fail-with-body",
                 "--silent",
                 "--show-error",
@@ -680,13 +682,13 @@ def _strip_png_exif(path: str) -> bool:
     i = 8
     stripped = False
     while i + 8 <= len(data):
-        length = int.from_bytes(data[i:i + 4], "big")
-        ctype = data[i + 4:i + 8]
+        length = int.from_bytes(data[i : i + 4], "big")
+        ctype = data[i + 4 : i + 8]
         chunk_total = 12 + length  # length + type + data + crc
         if ctype == b"eXIf":
             stripped = True
         else:
-            out.extend(data[i:i + chunk_total])
+            out.extend(data[i : i + chunk_total])
         i += chunk_total
         if ctype == b"IEND":
             break
@@ -760,9 +762,7 @@ def _recover_pngs_from_xcresult_data(
     os.makedirs(out_subdir, exist_ok=True)
     for (idx, name), (_, src) in zip(name_plan, pngs):
         uid = _uuid.uuid4().hex.upper()
-        dst = os.path.join(
-            out_subdir, f"{locale_id}{idx}{name}_0_{uid}.png"
-        )
+        dst = os.path.join(out_subdir, f"{locale_id}{idx}{name}_0_{uid}.png")
         shutil.copyfile(src, dst)
 
     return len(pngs)
@@ -781,22 +781,23 @@ def _rotate_simulator_via_menu(orientation: str) -> bool:
     Requires Accessibility permission for the process driving osascript.
     """
     if orientation not in {
-        "Portrait", "Landscape Left", "Landscape Right", "Portrait Upside Down"
+        "Portrait",
+        "Landscape Left",
+        "Landscape Right",
+        "Portrait Upside Down",
     }:
         raise ValueError(f"Unknown orientation: {orientation}")
     script = (
         'tell application "Simulator" to activate\n'
-        'delay 0.5\n'
+        "delay 0.5\n"
         'tell application "System Events"\n'
         '    tell process "Simulator"\n'
         f'        click menu item "{orientation}" of menu "Orientation"'
         ' of menu item "Orientation" of menu "Device" of menu bar 1\n'
-        '    end tell\n'
-        'end tell\n'
+        "    end tell\n"
+        "end tell\n"
     )
-    proc = subprocess.run(
-        ["osascript", "-e", script], capture_output=True
-    )
+    proc = subprocess.run(["osascript", "-e", script], capture_output=True)
     if proc.returncode != 0:
         stderr = proc.stderr.decode("utf-8", errors="replace")
         print(f"  Warning: simulator rotate ({orientation!r}) failed: {stderr}")
@@ -809,7 +810,8 @@ def _resolve_device_udid_by_name(device_name: str) -> str | None:
     regardless of boot state. Picks the newest-runtime entry on a tie."""
     proc = subprocess.run(
         ["xcrun", "simctl", "list", "devices", "available", "--json"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if proc.returncode != 0:
         return None
@@ -883,7 +885,8 @@ def _boot_sim_and_open_window(udid: str) -> bool:
     while time.time() < deadline:
         proc = subprocess.run(
             ["osascript", "-e", probe_script],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if proc.returncode == 0 and proc.stdout.strip() == "true":
             time.sleep(0.5)  # one extra beat for the submenu to be clickable
@@ -935,15 +938,17 @@ def _capture_ipad_landscape_via_simctl(
         for entry in os.listdir(derived_data):
             if entry.startswith("Roam-"):
                 candidate = os.path.join(
-                    derived_data, entry,
-                    "Build", "Products", "Debug-iphonesimulator", "Roam.app",
+                    derived_data,
+                    entry,
+                    "Build",
+                    "Products",
+                    "Debug-iphonesimulator",
+                    "Roam.app",
                 )
                 if os.path.isdir(candidate):
                     candidates.append(candidate)
     if not candidates:
-        print(
-            f"  No Debug-iphonesimulator Roam.app for {device_name} landscape"
-        )
+        print(f"  No Debug-iphonesimulator Roam.app for {device_name} landscape")
         return False
     app_path = max(candidates, key=os.path.getmtime)
 
@@ -952,8 +957,10 @@ def _capture_ipad_landscape_via_simctl(
 
     underscore_locale = locale_id.replace("-", "_")
     common_args = [
-        "-AppleLanguages", f"({locale_id})",
-        "-AppleLocale", underscore_locale,
+        "-AppleLanguages",
+        f"({locale_id})",
+        "-AppleLocale",
+        underscore_locale,
     ]
 
     # Ensure we start from portrait so the rotation menu actually triggers
@@ -978,9 +985,15 @@ def _capture_ipad_landscape_via_simctl(
     try:
         launch_proc = subprocess.run(
             [
-                "xcrun", "simctl", "launch", udid, bundle_id,
+                "xcrun",
+                "simctl",
+                "launch",
+                udid,
+                bundle_id,
                 *common_args,
-                "-DataTesting", "-DataLoadTestingData", "-ScreenshotTesting",
+                "-DataTesting",
+                "-DataLoadTestingData",
+                "-ScreenshotTesting",
             ],
             capture_output=True,
         )
@@ -1012,10 +1025,7 @@ def _capture_ipad_landscape_via_simctl(
         # stable frame produced under ar-SA.
         import hashlib as _hashlib
 
-        fn = (
-            f"{locale_id}3LandscapePrimary_0_"
-            f"{_uuid.uuid4().hex.upper()}.png"
-        )
+        fn = f"{locale_id}3LandscapePrimary_0_{_uuid.uuid4().hex.upper()}.png"
         out_path = os.path.join(landscape_subdir, fn)
         prev_hash = None
         stable_count = 0
@@ -1111,8 +1121,8 @@ def _get_or_create_tart_vm():
     from tart_screenshots import (
         BASE_IMAGE_DEFAULT,
         DISPLAY_DEFAULT,
-        TartVM,
         VM_NAME_DEFAULT,
+        TartVM,
         build_roam_app,
         ensure_dependencies,
     )
@@ -1226,7 +1236,9 @@ def _zoom_menubar_to_app_desktop(png_path: str, report: dict) -> bool:
 
     png_dims = _read_png_dimensions(png_path)
     if png_dims is None:
-        print(f"  Warning: could not read dims of {png_path}; keeping full-display capture")
+        print(
+            f"  Warning: could not read dims of {png_path}; keeping full-display capture"
+        )
         return False
     png_w, png_h = png_dims
 
@@ -1264,10 +1276,16 @@ def _zoom_menubar_to_app_desktop(png_path: str, report: dict) -> bool:
     w_i = min(int(round(crop_w)), png_w - left_i)
     h_i = min(int(round(crop_h)), png_h - top_i)
     if w_i <= 0 or h_i <= 0:
-        print(f"  Warning: MenuBarExtra crop degenerate ({w_i}x{h_i}); keeping full-display capture")
+        print(
+            f"  Warning: MenuBarExtra crop degenerate ({w_i}x{h_i}); keeping full-display capture"
+        )
         return False
 
-    tool = "magick" if shutil.which("magick") else ("convert" if shutil.which("convert") else None)
+    tool = (
+        "magick"
+        if shutil.which("magick")
+        else ("convert" if shutil.which("convert") else None)
+    )
     if tool is None:
         print(
             "  Warning: ImageMagick (magick/convert) not found; cannot zoom "
@@ -1277,11 +1295,18 @@ def _zoom_menubar_to_app_desktop(png_path: str, report: dict) -> bool:
         return False
 
     proc = subprocess.run(
-        [tool, png_path,
-         "-crop", f"{w_i}x{h_i}+{left_i}+{top_i}", "+repage",
-         "-filter", "Lanczos",
-         "-resize", f"{target_w}x{target_h}!",
-         png_path],
+        [
+            tool,
+            png_path,
+            "-crop",
+            f"{w_i}x{h_i}+{left_i}+{top_i}",
+            "+repage",
+            "-filter",
+            "Lanczos",
+            "-resize",
+            f"{target_w}x{target_h}!",
+            png_path,
+        ],
         capture_output=True,
     )
     if proc.returncode != 0:
@@ -1371,9 +1396,7 @@ class MetadataManager:
 
         return LocalizedMetadata(whats_new=whats_new, description=description)
 
-    def get_screenshots(
-        self, locale_id: str
-    ) -> dict[Platform, list[ScreenshotExport]]:
+    def get_screenshots(self, locale_id: str) -> dict[Platform, list[ScreenshotExport]]:
         """
         Run UI tests and extract screenshots for every configured device, in
         the given BCP-47 locale.
@@ -1409,9 +1432,7 @@ class MetadataManager:
         for platform in self.screenshot_update_platforms:
             platform_exports = []
             for device in devices[platform]:
-                screenshot_path = self._get_device_screenshots(
-                    device.device, locale_id
-                )
+                screenshot_path = self._get_device_screenshots(device.device, locale_id)
                 if screenshot_path:
                     platform_exports.append(
                         ScreenshotExport(
@@ -1482,8 +1503,10 @@ class MetadataManager:
         bundle_id = "com.msdrigg.roam"
         underscore_locale = locale_id.replace("-", "_")
         common_args = [
-            "-AppleLanguages", f"({locale_id})",
-            "-AppleLocale", underscore_locale,
+            "-AppleLanguages",
+            f"({locale_id})",
+            "-AppleLocale",
+            underscore_locale,
         ]
 
         # (state_index, attachment_name, extra_launch_args, settle_seconds,
@@ -1501,19 +1524,37 @@ class MetadataManager:
         # the visionOS sim).
         states = [
             (4, "ScreenScanning", ["-DataTesting"], 6, None),
-            (1, "Primary", ["-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting"], 8, None),
-            (5, "KeyboardOpen", [
-                "-DataLoadTestingData",
-                "-ScreenshotTesting",
-                "-DataTesting",
-                "-OpenKeyboard",
-            ], 8, "vision_keyboard_camera"),
-            (7, "Settings", [
-                "-DataLoadTestingData",
-                "-ScreenshotTesting",
-                "-DataTesting",
-                "-OpenSettings",
-            ], 8, None),
+            (
+                1,
+                "Primary",
+                ["-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting"],
+                8,
+                None,
+            ),
+            (
+                5,
+                "KeyboardOpen",
+                [
+                    "-DataLoadTestingData",
+                    "-ScreenshotTesting",
+                    "-DataTesting",
+                    "-OpenKeyboard",
+                ],
+                8,
+                "vision_keyboard_camera",
+            ),
+            (
+                7,
+                "Settings",
+                [
+                    "-DataLoadTestingData",
+                    "-ScreenshotTesting",
+                    "-DataTesting",
+                    "-OpenSettings",
+                ],
+                8,
+                None,
+            ),
         ]
 
         # Boot sim if not already.
@@ -1549,8 +1590,13 @@ class MetadataManager:
 
             launch_proc = subprocess.run(
                 [
-                    "xcrun", "simctl", "launch", "booted", bundle_id,
-                    *common_args, *extra_args,
+                    "xcrun",
+                    "simctl",
+                    "launch",
+                    "booted",
+                    bundle_id,
+                    *common_args,
+                    *extra_args,
                 ],
                 capture_output=True,
             )
@@ -1618,22 +1664,20 @@ class MetadataManager:
         """
         toggle_script = (
             'tell application "Simulator" to activate\n'
-            'delay 0.4\n'
+            "delay 0.4\n"
             'tell application "System Events"\n'
             '    tell process "Simulator"\n'
             '        set mark to value of attribute "AXMenuItemMarkChar" '
             'of menu item "Connect Hardware Keyboard" of menu 1 of '
             'menu item "Keyboard" of menu "I/O" of menu bar 1\n'
-            '        if mark is not missing value then\n'
+            "        if mark is not missing value then\n"
             '            keystroke "k" using {shift down, command down}\n'
-            '            delay 0.4\n'
-            '        end if\n'
-            '    end tell\n'
-            'end tell\n'
+            "            delay 0.4\n"
+            "        end if\n"
+            "    end tell\n"
+            "end tell\n"
         )
-        toggle = subprocess.run(
-            ["osascript", "-e", toggle_script], capture_output=True
-        )
+        toggle = subprocess.run(["osascript", "-e", toggle_script], capture_output=True)
         if toggle.returncode != 0:
             print(
                 "  Warning: visionOS HW keyboard disable failed: "
@@ -1642,24 +1686,22 @@ class MetadataManager:
 
         camera_script = (
             'tell application "Simulator" to activate\n'
-            'delay 0.3\n'
+            "delay 0.3\n"
             'tell application "System Events"\n'
             '    keystroke "0" using {command down, control down}\n'
-            '    delay 0.5\n'
+            "    delay 0.5\n"
             '    key down "s"\n'
-            '    delay 5\n'
+            "    delay 5\n"
             '    key up "s"\n'
-            '    delay 0.5\n'
+            "    delay 0.5\n"
             '    tell process "Simulator"\n'
             '        click menu item "Re-Center Open Apps" of '
             'menu "Device" of menu bar 1\n'
-            '    end tell\n'
-            'end tell\n'
-            'delay 1\n'
+            "    end tell\n"
+            "end tell\n"
+            "delay 1\n"
         )
-        camera = subprocess.run(
-            ["osascript", "-e", camera_script], capture_output=True
-        )
+        camera = subprocess.run(["osascript", "-e", camera_script], capture_output=True)
         if camera.returncode != 0:
             print(
                 "  Warning: visionOS camera reposition failed: "
@@ -1714,24 +1756,48 @@ class MetadataManager:
         #  capture_kind). capture_kind is "full" for whole-display captures
         # and "menubar" for the cropped menu-bar capture.
         states = [
-            (4, "ScreenScanning",
-             ["-DataTesting"], 8.0, "full"),
-            (1, "Primary", [
-                "-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting",
-            ], 9.0, "full"),
-            (7, "Settings", [
-                "-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting",
-                "-OpenSettings",
-            ], 8.0, "full"),
+            (4, "ScreenScanning", ["-DataTesting"], 8.0, "full"),
+            (
+                1,
+                "Primary",
+                [
+                    "-DataLoadTestingData",
+                    "-ScreenshotTesting",
+                    "-DataTesting",
+                ],
+                9.0,
+                "full",
+            ),
+            (
+                7,
+                "Settings",
+                [
+                    "-DataLoadTestingData",
+                    "-ScreenshotTesting",
+                    "-DataTesting",
+                    "-OpenSettings",
+                ],
+                8.0,
+                "full",
+            ),
             # `-showMenuBar YES` must be present at launch so the
             # MenuBarExtra scene is inserted at initial scene-graph build.
             # Flipping it at runtime crashes the app (SwiftUI scene-update
             # recursion) — see Roam/ScreenshotCapture.swift.
-            (6, "MenuBarExtra", [
-                "-DataLoadTestingData", "-ScreenshotTesting", "-DataTesting",
-                "-showMenuBar", "YES",
-                "-OpenMenuBarExtra",
-            ], 9.0, "menubar"),
+            (
+                6,
+                "MenuBarExtra",
+                [
+                    "-DataLoadTestingData",
+                    "-ScreenshotTesting",
+                    "-DataTesting",
+                    "-showMenuBar",
+                    "YES",
+                    "-OpenMenuBarExtra",
+                ],
+                9.0,
+                "menubar",
+            ),
         ]
 
         captured_any = False
@@ -1748,22 +1814,18 @@ class MetadataManager:
                     f"menubar-report-{int(time.time() * 1000)}-"
                     f"{_uuid.uuid4().hex[:8]}.json"
                 )
-                report_guest_path = (
-                    f"{GUEST_SHARED_ROOT}/{SHARE_OUT}/{report_basename}"
-                )
-                report_host_path = os.path.join(
-                    vm.host_output_dir, report_basename
-                )
+                report_guest_path = f"{GUEST_SHARED_ROOT}/{SHARE_OUT}/{report_basename}"
+                report_host_path = os.path.join(vm.host_output_dir, report_basename)
                 launch_args += [
-                    "-MenuBarExtraReportPath", report_guest_path,
+                    "-MenuBarExtraReportPath",
+                    report_guest_path,
                 ]
 
             try:
                 vm.launch_roam(launch_args, locale=locale_id)
             except Exception as e:
                 print(
-                    f"  Warning: launch_roam failed for {locale_id} "
-                    f"{state_name}: {e}"
+                    f"  Warning: launch_roam failed for {locale_id} {state_name}: {e}"
                 )
                 continue
 
@@ -1780,7 +1842,8 @@ class MetadataManager:
                 vm.resize_roam_window(
                     x=(disp_w - win_w) // 2,
                     y=(disp_h - win_h) // 2,
-                    width=win_w, height=win_h,
+                    width=win_w,
+                    height=win_h,
                 )
                 time.sleep(1.0)
 
@@ -1808,10 +1871,7 @@ class MetadataManager:
                 else:
                     vm.screenshot_full_display(dst)
             except Exception as e:
-                print(
-                    f"  Warning: capture failed for {locale_id} "
-                    f"{state_name}: {e}"
-                )
+                print(f"  Warning: capture failed for {locale_id} {state_name}: {e}")
                 vm.kill_roam()
                 continue
 
@@ -1921,11 +1981,16 @@ class MetadataManager:
         command = [
             "xcodebuild",
             "test",
-            "-scheme", test_scheme,
-            "-destination", destination,
-            "-testLanguage", locale_id,
-            "-resultBundlePath", screenshots_dir,
-            "-only-testing", f"{test_scheme}/{test_class}/testCaptureScreenshots",
+            "-scheme",
+            test_scheme,
+            "-destination",
+            destination,
+            "-testLanguage",
+            locale_id,
+            "-resultBundlePath",
+            screenshots_dir,
+            "-only-testing",
+            f"{test_scheme}/{test_class}/testCaptureScreenshots",
         ]
 
         print(f"Running UI tests for {device_name} in {locale_id}...")
@@ -1942,15 +2007,20 @@ class MetadataManager:
         # finalization (which never completes due to xcodebuild's post-test
         # hang). 5s grace is enough for any in-flight writes to flush.
         POST_TEST_GRACE = 5
-        import threading
         import sys as _sys
+        import threading
+
         process = subprocess.Popen(
-            command, env=env,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1,
+            command,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
         )
         kill_lock = threading.Lock()
         kill_reason = [None]
+
         def _kill(msg):
             with kill_lock:
                 if kill_reason[0] is None:
@@ -1959,7 +2029,10 @@ class MetadataManager:
                         process.kill()
                     except ProcessLookupError:
                         pass
-        kill_timer = threading.Timer(HARD_TIMEOUT, lambda: _kill(f"hard timeout {HARD_TIMEOUT}s"))
+
+        kill_timer = threading.Timer(
+            HARD_TIMEOUT, lambda: _kill(f"hard timeout {HARD_TIMEOUT}s")
+        )
         kill_timer.daemon = True
         kill_timer.start()
         try:
@@ -2080,7 +2153,9 @@ class MetadataManager:
         if "iPhone" in device_name or "iPad" in device_name:
             for root, _, files in os.walk(screenshots_dir_export):
                 for fname in files:
-                    if "LandscapePrimary" not in fname or not fname.lower().endswith(".png"):
+                    if "LandscapePrimary" not in fname or not fname.lower().endswith(
+                        ".png"
+                    ):
                         continue
                     fpath = os.path.join(root, fname)
                     dims = _read_png_dimensions(fpath)
@@ -2134,8 +2209,12 @@ class MetadataManager:
                     resample = subprocess.run(
                         [
                             "sips",
-                            "--resampleHeightWidth", str(target[1]), str(target[0]),
-                            fpath, "--out", fpath,
+                            "--resampleHeightWidth",
+                            str(target[1]),
+                            str(target[0]),
+                            fpath,
+                            "--out",
+                            fpath,
                         ],
                         capture_output=True,
                     )
@@ -2269,9 +2348,15 @@ async def main():
         if Platform.macOS not in platforms:
             raise ValueError("--mac-vm-setup requires --platform macOS")
         from tart_screenshots import (
-            BASE_IMAGE_DEFAULT, DISPLAY_DEFAULT, TartVM, VM_NAME_DEFAULT,
-            build_roam_app, ensure_dependencies, run_interactive_setup,
+            BASE_IMAGE_DEFAULT,
+            DISPLAY_DEFAULT,
+            VM_NAME_DEFAULT,
+            TartVM,
+            build_roam_app,
+            ensure_dependencies,
+            run_interactive_setup,
         )
+
         ensure_dependencies()
         app_path = build_roam_app()
         host_app_dir = os.path.dirname(app_path)
@@ -2387,9 +2472,7 @@ async def main():
                     print(f"  Error generating screenshots for {locale_id}: {e}")
                     continue
 
-                platform_exports = screenshots_by_platform.get(
-                    app_version.platform, []
-                )
+                platform_exports = screenshots_by_platform.get(app_version.platform, [])
 
                 grouped: dict[str, list[str]] = {}
                 for export in platform_exports:
@@ -2450,9 +2533,7 @@ async def main():
                 # existing sets and proceed with delete + upload per display
                 # type.
                 try:
-                    screenshot_sets = await asc.get_app_screenshot_sets(
-                        localization.id
-                    )
+                    screenshot_sets = await asc.get_app_screenshot_sets(localization.id)
                 except Exception as e:
                     print(f"  Error fetching existing screenshot sets: {e}")
                     continue
@@ -2506,9 +2587,7 @@ async def main():
                             except Exception as e:
                                 print(f"      Error uploading {filename}: {e}")
                     except Exception as e:
-                        print(
-                            f"    Error processing display type {display_type}: {e}"
-                        )
+                        print(f"    Error processing display type {display_type}: {e}")
 
     print("Sync completed successfully!")
 

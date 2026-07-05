@@ -4,7 +4,7 @@ nasconde_indice_dei_contenuti: true
 
 # Politica sulla Privacy
 
-Martin Driggers ha creato l'app Roam come un'app gratuita. Questo SERVIZIO è fornito da Martin Driggers senza costi ed è destinato ad essere utilizzato così com'è.
+Scott Driggers ha creato l'app Roam come un'app gratuita. Questo SERVIZIO è fornito da Scott Driggers senza costi ed è destinato ad essere utilizzato così com'è.
 
 Questa pagina è utilizzata per informare i visitatori riguardo le mie politiche con la raccolta, l'uso e la divulgazione delle Informazioni Personali se qualcuno decise di utilizzare il mio Servizio.
 

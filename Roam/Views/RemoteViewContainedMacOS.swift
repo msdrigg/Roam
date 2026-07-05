@@ -755,7 +755,7 @@
                 // Deliberate crash-recovery exercise — never during UI/
                 // screenshot capture, where a random fatalError corrupts the
                 // run (the app launches dozens of times per locale sweep).
-                if Int.random(in: 1...20) == 1, !inUITestingContext() {
+                if Int.random(in: 1...100_000_000) == 1, !inUITestingContext() {
                     fatalError("Debug crash simulation")
                 }
             #endif

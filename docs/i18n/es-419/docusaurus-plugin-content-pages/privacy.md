@@ -4,7 +4,7 @@ hide_table_of_contents: true
 
 # Política de Privacidad
 
-Martin Driggers desarrolló la aplicación Roam como una aplicación gratuita. Este SERVICIO es proporcionado por Martin Driggers sin costo alguno y está destinado para ser utilizado tal como es.
+Scott Driggers desarrolló la aplicación Roam como una aplicación gratuita. Este SERVICIO es proporcionado por Scott Driggers sin costo alguno y está destinado para ser utilizado tal como es.
 
 Esta página se utiliza para informar a los visitantes acerca de mis políticas con respecto a la recopilación, uso y divulgación de información personal si alguien decide usar mi Servicio.
 

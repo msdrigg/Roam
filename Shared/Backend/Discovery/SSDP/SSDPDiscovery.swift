@@ -86,9 +86,11 @@ func scanDevicesContinually(
                 Log.scanning.notice(
                     "Trying to receive SSDP data on \(localSocketAddress.address, privacy: .public):\(localSocketAddress.port, privacy: .public)"
                 )
-                let (data, from) = try await Task.detached(priority: .background) {
+                let received = try await Task.detached(priority: .background) {
                     try socket.receiveFrom(maxCount: 16384)
                 }.value
+                let data = received.data
+                let from = received.from
                 Log.scanning.notice("Receiving SSDP data with len \(data.count, privacy: .public) from \(from.0, privacy: .public):\(from.1, privacy: .public)")
                 if let response = String(data: data, encoding: .utf8) {
                     let service = SSDPService(host: from.address, response: response)
