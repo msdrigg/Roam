@@ -50,9 +50,17 @@ actor ECPWebsocketClient {
     var websocketStateUpdated: ECPStateCallback
     var notificationhandler: ECPNotificationCallback
     var responseHandlers: [String: ECPResponseCompletion]
+    // Request IDs whose sendCommand was cancelled before `sendMessage` got to
+    // register a completion handler. Consumed by `sendMessage`; cleared on
+    // every restart via `clearHandlers`.
+    private var failedRequestIds: Set<String> = []
 
     var connection: NWConnection
     var internalState: ECPWebsocketState
+
+    // Set by `shutdown()`. A shut-down client refuses to `start()` again, so
+    // a stale start task can never resurrect a client that has been replaced.
+    private var isShutdown = false
 
     var state: ECPWebsocketState {
         internalState
@@ -69,6 +77,7 @@ actor ECPWebsocketClient {
     private let uuid = UUID()
 
     let endpoint: NWEndpoint
+    let location: URL
     let macs: [String]
 
     static let baseRequestId = 2
@@ -83,6 +92,7 @@ actor ECPWebsocketClient {
         self.internalState = .connecting(.now)
 
         endpoint = NWEndpoint.url(location)
+        self.location = location
         connection = NWConnection(to: endpoint, using: NWParameters.ecp)
         self.macs = macs
     }
@@ -105,6 +115,16 @@ actor ECPWebsocketClient {
             self.connection.cancel()
         }
         self.clearHandlers()
+    }
+
+    /// Permanently retire this client. Unlike `cancel()`, which is part of the
+    /// normal error/restart cycle, a shut-down client can never `start()`
+    /// again. `ECPMonitor` calls this when replacing the client so that a
+    /// still-queued `start()` task for the old client becomes a no-op instead
+    /// of resurrecting an orphaned connection.
+    public func shutdown() {
+        isShutdown = true
+        cancel()
     }
 
     private func newRequestId() -> String {
@@ -155,27 +175,34 @@ actor ECPWebsocketClient {
     public nonisolated func sendCommand(_ command: ECPRequestMessage, timeout: TimeInterval = 5) async throws -> ECPResponse {
         Log.connection.notice("Sending command \(command.debugDescription, privacy: .public)")
 
+        let reqId = await self.newRequestId()
         let response = try await withTaskCancellationHandler {
-            try await withTimeout(delay: timeout) {
-                try await withCheckedThrowingContinuation { continuation in
-                    Task {
-                        await self.sendMessage(command, timeout: timeout, completion: { response in
-                            switch response {
-                            case .success(let response):
-                                Log.connection.notice("Got success response for message \(response.debugDescription, privacy: .public)")
-                                continuation.resume(returning: response)
-                            case .failure(let error):
-                                Log.connection.notice("Got failure for command \(command.debugDescription, privacy: .public)")
-                                continuation.resume(throwing: error)
-                            }
-                        })
-                    }
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ECPResponse, Error>) in
+                Task {
+                    await self.sendMessage(command, requestId: reqId, timeout: timeout, completion: { response in
+                        switch response {
+                        case .success(let response):
+                            Log.connection.notice("Got success response for message \(response.debugDescription, privacy: .public)")
+                            continuation.resume(returning: response)
+                        case .failure(let error):
+                            Log.connection.notice("Got failure for command \(command.debugDescription, privacy: .public)")
+                            continuation.resume(throwing: error)
+                        }
+                    })
+                    // Timeout safety net: fail just this request so the
+                    // continuation always resumes. Runs after `sendMessage`
+                    // registered the handler, so it can never race ahead of it.
+                    try? await Task.sleep(duration: timeout)
+                    await self.expireRequest(reqId)
                 }
             }
         } onCancel: {
+            // Fail only this request — cancelling one caller's task (e.g. a
+            // pager page disappearing mid-refresh) must not tear down the
+            // shared connection for everyone else.
             Task {
-                Log.connection.notice("Cancelling self due to sendCommand getting cancelled")
-                await self.cancel()
+                Log.connection.notice("Failing request \(reqId, privacy: .public) because sendCommand was cancelled")
+                await self.failRequest(reqId)
             }
         }
 
@@ -326,12 +353,16 @@ actor ECPWebsocketClient {
         )))
     }
 
-    private func sendMessage(_ inputMessage: ECPRequestMessage, timeout: TimeInterval? = nil, completion: @escaping ECPResponseCompletion) {
+    private func sendMessage(_ inputMessage: ECPRequestMessage, requestId reqId: String, timeout: TimeInterval? = nil, completion: @escaping ECPResponseCompletion) {
+        if failedRequestIds.remove(reqId) != nil {
+            Log.connection.notice("Not sending request \(reqId, privacy: .public) because it was cancelled before send")
+            completion(.failure(.connectionFailed))
+            return
+        }
         if self.inError {
             Log.connection.notice("Restarting on send message because we are in error state")
             self.start()
         }
-        let reqId = self.newRequestId()
         let message = inputMessage.withId(reqId)
 
         Log.connection.notice("Current response handlers \(self.responseHandlers.count, privacy: .public) and new request \(message.requestId, privacy: .public) with state \(self.state.debugDescription, privacy: .public) and ws state \(String(describing: self.connection.state), privacy: .public)")
@@ -381,16 +412,51 @@ actor ECPWebsocketClient {
         Log.connection.notice("Clearing handlers")
         let staleHandlers = self.responseHandlers
         self.responseHandlers = [:]
+        self.failedRequestIds = []
         self.requestId = Self.baseRequestId
         for handler in staleHandlers.values {
             handler(.failure(.connectionFailed))
         }
     }
 
+    /// Fail a single in-flight request without touching the connection. If the
+    /// request hasn't been registered yet (the cancel raced ahead of
+    /// `sendMessage`), leave a marker so the send fails immediately instead of
+    /// leaving its continuation unresumed.
+    private func failRequest(_ requestId: String) {
+        if let handler = responseHandlers.removeValue(forKey: requestId) {
+            handler(.failure(.connectionFailed))
+        } else {
+            failedRequestIds.insert(requestId)
+        }
+    }
+
+    /// Timeout expiry for a request that was definitely registered: fail it if
+    /// it is still pending, no-op if it already completed.
+    private func expireRequest(_ requestId: String) {
+        if let handler = responseHandlers.removeValue(forKey: requestId) {
+            Log.connection.notice("Request \(requestId, privacy: .public) timed out")
+            handler(.failure(.requestFailed("timeout")))
+        }
+    }
+
     public func start() {
-        if connection.state != .cancelled {
+        guard !isShutdown else {
+            Log.connection.notice("Refusing to start ECP client for \(self.endpoint.debugDescription, privacy: .public) because it has been shut down")
+            return
+        }
+        // Detach the old connection's handlers before cancelling it: its
+        // asynchronous `.cancelled` callback would otherwise land *after* the
+        // new connection reports `.ready` and stomp the fresh state with
+        // disconnected/inError.
+        let oldConnection = connection
+        oldConnection.stateUpdateHandler = nil
+        oldConnection.pathUpdateHandler = nil
+        oldConnection.betterPathUpdateHandler = nil
+        oldConnection.viabilityUpdateHandler = nil
+        if oldConnection.state != .cancelled {
             Log.connection.notice("Cancelling existing connection to restart")
-            connection.cancel()
+            oldConnection.cancel()
         }
         connection = NWConnection(to: endpoint, using: NWParameters.ecp)
         self.clearHandlers()
@@ -575,7 +641,11 @@ actor ECPWebsocketClient {
 
     func viabilityDidChange(isViable: Bool) {
         if isViable {
-            self.reportStateChange(.connected)
+            // Only report connected when the connection is actually ready —
+            // viability alone doesn't mean the websocket handshake completed.
+            if case .ready = connection.state {
+                self.reportStateChange(.connected)
+            }
         } else {
             self.reportStateChange(.disconnected(.now))
         }

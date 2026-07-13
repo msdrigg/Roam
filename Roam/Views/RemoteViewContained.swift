@@ -270,32 +270,48 @@
         }
 
         private func refreshDeviceBackoffTask() async {
+            // Only the active page may refresh: inactive pager pages share the
+            // same ECP session, which points at the *active* device — refreshing
+            // through it would write another device's info into this record.
+            guard isActive else { return }
             for await _ in exponentialBackoff(min: 30, max: 3600) {
-                if let selectedDevice, let ecpSession {
-                    Log.connection
-                        .info(
-                            "Refreshing device \(selectedDevice.location, privacy: .public) after backoff"
-                        )
-                    if Task.isCancelled {
-                        return
-                    }
-                    let handler = RoamDataHandler.shared
-                    await handler.refreshDevice(
-                        client: ECPWebsocketRefreshClient(
-                            id: selectedDevice.id,
-                            client: ecpSession,
-                            location: selectedDevice.location
-                        )
-                    )
-                } else {
+                if Task.isCancelled {
+                    return
+                }
+                guard let selectedDevice else {
                     Log.connection
                         .info("No selected device to refresh")
                     return
                 }
+                guard let ecpSession,
+                    ecpSession.location.absoluteString == selectedDevice.location
+                else {
+                    Log.connection
+                        .info("Skipping refresh because shared ECP session is not for this device")
+                    continue
+                }
+                Log.connection
+                    .info(
+                        "Refreshing device \(selectedDevice.location, privacy: .public) after backoff"
+                    )
+                let handler = RoamDataHandler.shared
+                await handler.refreshDevice(
+                    client: ECPWebsocketRefreshClient(
+                        id: selectedDevice.id,
+                        client: ecpSession,
+                        location: selectedDevice.location
+                    )
+                )
             }
         }
 
         private func ecpSessionLocationTask() async {
+            // Only the active page owns the shared ECP session. In the phone
+            // pager, neighbor pages appear during a swipe — without this guard
+            // they steal the session mid-swipe, and if the swipe bounces back
+            // the visible page (which never disappeared) never re-claims it,
+            // leaving the session pointed at the wrong device.
+            guard isActive else { return }
             Log.connection.notice(
                 "Creating ecp session with location \(String(describing: selectedDevice?.location), privacy: .public)"
             )
@@ -422,10 +438,13 @@
                 .task { await networkPermissionTask() }
                 .onAppear(perform: logAppear)
                 .onDisappear(perform: logDisappear)
-                .task(id: selectedDevice?.id, priority: .medium) {
+                // Both ids include `isActive` so a page (re)claims the shared
+                // session and resumes refreshing the moment it becomes the
+                // active pager page — not just when it appears.
+                .task(id: "\(isActive),\(selectedDevice?.id ?? "--")", priority: .medium) {
                     await refreshDeviceBackoffTask()
                 }
-                .task(id: selectedDevice?.location, priority: .medium) {
+                .task(id: "\(isActive),\(selectedDevice?.location ?? "--")", priority: .medium) {
                     await ecpSessionLocationTask()
                 }
                 .task(id: headphonesTaskId) { await headphonesTask() }
