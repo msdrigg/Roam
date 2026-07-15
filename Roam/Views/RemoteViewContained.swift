@@ -340,8 +340,7 @@
             if !headphonesModeEnabled {
                 #if os(iOS)
                     do {
-                        try AVAudioSession.sharedInstance().setCategory(.ambient)
-                        try AVAudioSession.sharedInstance().setActive(false)
+                        try await AudioSessionConfigurator.shared.deactivate(category: .ambient)
                     } catch {
                         Log.headphones.notice(
                             "Unable to set AVAudioSession category to background: \(#fileID, privacy: .public)"

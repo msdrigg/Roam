@@ -1464,6 +1464,56 @@ protocol RefreshClient: Sendable {
     extension RoamDataHandler {
         private static let minRescanInterval: TimeInterval = 30
 
+        // App icons are queried in parallel, but `sendCommand` fails any request
+        // the device hasn't answered inside its 5s timeout — point enough
+        // simultaneous queries at a slow device and its latency turns into
+        // outright failures. Keep enough in flight to hide per-request latency
+        // without getting there.
+        private static let maxConcurrentIconFetches = 5
+
+        private nonisolated func fetchDeviceIcon(client: any RefreshClient, needed: Bool) async
+            -> Data?
+        {
+            guard needed else { return nil }
+            Log.data.notice("Getting icon for device")
+            do {
+                return try await client.getDeviceIcon()
+            } catch {
+                Log.data.warning("Error getting device icon: \(error, privacy: .public)")
+                return nil
+            }
+        }
+
+        private nonisolated func fetchCapabilities(client: any RefreshClient) async
+            -> DeviceCapabilities?
+        {
+            do {
+                let capabilities = try await client.getDeviceCapabilities()
+                Log.data.notice("Successfully refreshed capabilities")
+                return capabilities
+            } catch {
+                Log.data.error("Error getting capabilities: \(error, privacy: .public)")
+                return nil
+            }
+        }
+
+        private nonisolated func fetchApps(client: any RefreshClient, deviceId: String) async
+            -> [AppLink]?
+        {
+            do {
+                let apps = try await client.getDeviceApps().map { app in
+                    var app = app
+                    app.deviceId = deviceId
+                    return app
+                }
+                Log.data.notice("Successfully refreshed device apps")
+                return apps
+            } catch {
+                Log.data.error("Error getting device apps: \(error, privacy: .public)")
+                return nil
+            }
+        }
+
         func refreshDevice(client: any RefreshClient) async {
             let deviceId: String
             do {
@@ -1580,28 +1630,14 @@ protocol RefreshClient: Sendable {
 
             Log.data.notice("Refreshing capabilities and apps")
 
-            // Get device capabilities
-            var capabilities: DeviceCapabilities?
-            do {
-                capabilities = try await client.getDeviceCapabilities()
-                Log.data.notice("Successfully refreshed capabilities")
-            } catch {
-                Log.data.error("Error getting capabilities: \(error, privacy: .public)")
-            }
+            // Capabilities and the app list are independent queries — running
+            // them together stops the app list (and every icon query behind it)
+            // from waiting on a round trip it doesn't depend on.
+            async let fetchedCapabilities = self.fetchCapabilities(client: client)
+            async let fetchedAppList = self.fetchApps(client: client, deviceId: deviceId)
 
-            // Get device apps
-            var fetchedApps: [AppLink]?
-            do {
-                fetchedApps = try await client.getDeviceApps()
-                fetchedApps = fetchedApps?.map { app in
-                    var app = app
-                    app.deviceId = deviceId
-                    return app
-                }
-                Log.data.notice("Successfully refreshed device apps")
-            } catch {
-                Log.data.error("Error getting device apps: \(error, privacy: .public)")
-            }
+            let capabilities = await fetchedCapabilities
+            let fetchedApps = await fetchedAppList
 
             // Update device with capabilities
             if let capabilities = capabilities {
@@ -1660,33 +1696,110 @@ protocol RefreshClient: Sendable {
                 Log.data.error("Failed to save device and apps: \(error, privacy: .public)")
             }
 
-            // Get device icon if needed
-            var deviceIcon: Data?
+            // The device icon is an independent request (and costs two HTTP
+            // round trips of its own), so let it run alongside the app icons
+            // rather than making every app icon queue behind it.
             let deviceNeedsIcon = device.iconHash == nil
-            if deviceNeedsIcon {
-                Log.data.notice("Getting icon for device")
-                do {
-                    deviceIcon = try await client.getDeviceIcon()
-                } catch {
-                    Log.data.warning("Error getting device icon: \(error, privacy: .public)")
+            async let fetchedDeviceIcon = self.fetchDeviceIcon(
+                client: client, needed: deviceNeedsIcon)
+
+            // Query app icons concurrently and publish each one the moment it
+            // lands. Fetching serially and saving the batch in a single write at
+            // the end meant the apps row showed the fallback icon for every app
+            // until the slowest query returned, then flipped them all at once;
+            // committing per icon lets each button render as soon as its own
+            // query comes back.
+            if !appsNeedingIcons.isEmpty {
+                Log.data.notice(
+                    "Getting \(appsNeedingIcons.count, privacy: .public) device app icons")
+
+                // Set when an app's record changed without a save following it,
+                // so a run that only produced failures still records the attempts.
+                var hasUnsavedAttempts = false
+
+                await withTaskGroup(of: (String, Data?).self) { group in
+                    var nextIndex = 0
+
+                    func addNextFetch() {
+                        guard nextIndex < appsNeedingIcons.count else { return }
+                        let appId = appsNeedingIcons[nextIndex]
+                        nextIndex += 1
+                        group.addTask {
+                            do {
+                                return (appId, try await client.getDeviceAppIcon(appId))
+                            } catch {
+                                Log.data.error(
+                                    "Error getting device app icon for \(appId, privacy: .public): \(error, privacy: .public)"
+                                )
+                                return (appId, nil)
+                            }
+                        }
+                    }
+
+                    for _ in 0..<min(
+                        RoamDataHandler.maxConcurrentIconFetches, appsNeedingIcons.count)
+                    {
+                        addNextFetch()
+                    }
+
+                    while let (appId, iconData) = await group.next() {
+                        // Backfill the slot this result just freed, keeping the
+                        // window full until the queue drains.
+                        addNextFetch()
+
+                        guard let appIndex = afterUpdateApps.firstIndex(where: { $0.id == appId })
+                        else { continue }
+
+                        // Stamp the attempt whether or not it produced an icon:
+                        // `lastSyncAt` is what tells the UI this app has already
+                        // been queried, so one that genuinely has no icon settles
+                        // on the fallback instead of showing a loading indicator
+                        // forever. A nil `iconHash` still forces a retry on the
+                        // next refresh.
+                        afterUpdateApps[appIndex].lastSyncAt = .now
+                        hasUnsavedAttempts = true
+
+                        guard let iconData else { continue }
+
+                        let iconHash = fastHashData(data: iconData)
+                        do {
+                            try storeIconToDisk(iconData: iconData, hash: iconHash)
+                        } catch {
+                            Log.data.error(
+                                "Error storing app icon for \(appId, privacy: .public): \(error, privacy: .public)"
+                            )
+                            continue
+                        }
+                        afterUpdateApps[appIndex].iconHash = iconHash
+
+                        do {
+                            try await self.setDeviceApps(deviceId: deviceId, apps: afterUpdateApps)
+                            hasUnsavedAttempts = false
+                        } catch {
+                            Log.data.error(
+                                "Failed to save app icon for \(appId, privacy: .public): \(error, privacy: .public)"
+                            )
+                        }
+
+                        notifyAppIconUpdated(
+                            deviceId: deviceId, appId: appId, iconDataHash: iconHash)
+
+                        Log.data.notice("Stored app icon for \(appId, privacy: .public)")
+                    }
+                }
+
+                if hasUnsavedAttempts {
+                    do {
+                        try await self.setDeviceApps(deviceId: deviceId, apps: afterUpdateApps)
+                    } catch {
+                        Log.data.error(
+                            "Failed to save app icon attempts: \(error, privacy: .public)")
+                    }
                 }
             }
 
-            // Get app icons
-            var appIcons: [String: Data] = [:]
-            for appId in appsNeedingIcons {
-                do {
-                    Log.data.notice("Getting device app icon for id \(appId, privacy: .public)")
-                    let iconData = try await client.getDeviceAppIcon(appId)
-                    Log.data.notice("Successfully refreshed device app icon")
-                    appIcons[appId] = iconData
-                } catch {
-                    Log.data.error("Error getting device app icon: \(error, privacy: .public)")
-                }
-            }
-
-            // Store icons and update hashes
-            if let deviceIconData = deviceIcon {
+            // Store the device icon once its parallel fetch lands.
+            if let deviceIconData = await fetchedDeviceIcon {
                 let iconHash = fastHashData(data: deviceIconData)
                 do {
                     try storeIconToDisk(iconData: deviceIconData, hash: iconHash)
@@ -1695,43 +1808,6 @@ protocol RefreshClient: Sendable {
                     Log.data.notice("Stored device icon")
                 } catch {
                     Log.data.error("Error storing device icon: \(error, privacy: .public)")
-                }
-            }
-
-            // Store app icons and update app records
-            if !appIcons.isEmpty {
-                var appsToUpdate: [AppLink] = []
-
-                for (appId, iconData) in appIcons {
-                    let iconHash = fastHashData(data: iconData)
-                    do {
-                        try storeIconToDisk(iconData: iconData, hash: iconHash)
-
-                        // Find and update the app with the new icon hash
-                        if let appIndex = afterUpdateApps.firstIndex(where: { $0.id == appId }) {
-                            afterUpdateApps[appIndex].iconHash = iconHash
-                            afterUpdateApps[appIndex].lastSyncAt = .now
-                            appsToUpdate.append(afterUpdateApps[appIndex])
-                        }
-
-                        notifyAppIconUpdated(
-                            deviceId: deviceId, appId: appId, iconDataHash: iconHash)
-
-                        Log.data.notice("Stored app icon for \(appId)")
-                    } catch {
-                        Log.data.error(
-                            "Error storing app icon for \(appId): \(error, privacy: .public)")
-                    }
-                }
-
-                // Save updated apps with icon hashes
-                if !appsToUpdate.isEmpty {
-                    do {
-                        try await self.setDeviceApps(deviceId: deviceId, apps: afterUpdateApps)
-                    } catch {
-                        Log.data.error(
-                            "Failed to save apps with updated icons: \(error, privacy: .public)")
-                    }
                 }
             }
 

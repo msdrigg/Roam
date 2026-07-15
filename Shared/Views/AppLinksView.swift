@@ -177,15 +177,40 @@ struct AppLinkButton: View {
         #endif
     }
 
+    // The spinner reads better drawn smaller than a real icon, but it keeps the
+    // full-width footprint (via padding rather than a smaller frame) so the row
+    // doesn't shift when the icon lands and replaces it.
+    private static let pendingIconScale: CGFloat = 0.6
+
+    @ViewBuilder
+    private var icon: some View {
+        if app.iconIsPending {
+            Image(systemName: "rays")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                // `.iterative` walks the highlight around one ray at a time,
+                // which reads as a spinner; the default fills them cumulatively.
+                .symbolEffect(.variableColor.iterative)
+                .padding(gridWidth * (1 - Self.pendingIconScale) / 2)
+                .frame(width: gridWidth)
+        } else {
+            FallibleImage(
+                from: app.iconURL,
+                fallback: "questionmark.app.fill",
+                maxSize: gridWidth
+            )
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .frame(width: gridWidth)
+                .shadow(radius: 4)
+        }
+    }
+
     var body: some View {
         Button(action: {
             action(app)
         }, label: {
             VStack(spacing: appButtonSpacing) {
-                FallibleImage(from: app.iconURL, fallback: "questionmark.app.fill", maxSize: gridWidth)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .frame(width: gridWidth)
-                    .shadow(radius: 4)
+                icon
 
                 Text(app.name)
                 #if os(macOS)

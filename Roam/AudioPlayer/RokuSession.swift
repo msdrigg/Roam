@@ -618,7 +618,8 @@ actor RTPSession {
     }
 
     #if !os(macOS)
-    @MainActor
+        // Not @MainActor: setCategory/setActive block on IPC to mediaserverd and
+        // would hang the UI. Actor isolation keeps them off the main thread.
         func setupSessionForAudioPlayback() {
             // Retrieve the shared audio session.
             let audioSession = AVAudioSession.sharedInstance()

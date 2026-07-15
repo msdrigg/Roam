@@ -62,7 +62,7 @@ struct DevicePicker: View {
                                             do {
                                                 try await RoamDataHandler.shared.deleteDevice(
                                                     id: listItemDevice)
-                                            } catch let error as DataHandlerError {
+                                            } catch {
                                                 Log.connection.error(
                                                     "Error deleting device \(error, privacy: .public)"
                                                 )
@@ -81,7 +81,7 @@ struct DevicePicker: View {
                                             do {
                                                 try await RoamDataHandler.shared.deleteDevice(
                                                     id: pid)
-                                            } catch let error as DataHandlerError {
+                                            } catch {
                                                 Log.connection.error(
                                                     "Error deleting device \(error, privacy: .public)"
                                                 )

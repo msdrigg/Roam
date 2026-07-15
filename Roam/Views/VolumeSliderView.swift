@@ -66,7 +66,6 @@
 
     struct CustomVolumeSliderOverlay: View {
         private let showSlider: Bool = false
-        private let audioSession: AVAudioSession = .sharedInstance()
 
         @Binding var volume: Float
         @State var targetVolumeSet: Float?
@@ -98,10 +97,14 @@
         }
 
         func resetVolume() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                let newVolume = getAudioClamped(audioSession.outputVolume)
-                targetVolumeSet = getAudioClamped(audioSession.outputVolume) ?? targetVolumeSet
-                Log.userInteraction.notice("Resetting volume to clamp value \(newVolume ?? -1, privacy: .public), chosen \(targetVolume, privacy: .public), unclamped \(audioSession.outputVolume, privacy: .public)")
+            Task {
+                try? await Task.sleep(for: .milliseconds(150))
+                // Reading outputVolume blocks on IPC to mediaserverd, so it
+                // happens off the main actor; only the state writes run here.
+                let currentVolume = await AudioSessionConfigurator.shared.outputVolume
+                let newVolume = getAudioClamped(currentVolume)
+                targetVolumeSet = newVolume ?? targetVolumeSet
+                Log.userInteraction.notice("Resetting volume to clamp value \(newVolume ?? -1, privacy: .public), chosen \(targetVolume, privacy: .public), unclamped \(currentVolume, privacy: .public)")
                 Log.userInteraction.notice("Setting volume to new value \(volume, privacy: .public) with target")
                 volume = targetVolume
             }

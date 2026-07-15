@@ -8,6 +8,35 @@ struct AudioFrame {
     let scheduleAt: AVAudioFramePosition
 }
 
+#if !os(macOS)
+    /// Serializes AVAudioSession configuration off the main actor.
+    ///
+    /// `setCategory`/`setActive` block on synchronous IPC to mediaserverd, which
+    /// can take hundreds of milliseconds when the route is changing or another
+    /// app holds the session. Calling them from the main actor hangs the UI, so
+    /// every configuration call goes through here instead.
+    actor AudioSessionConfigurator {
+        static let shared = AudioSessionConfigurator()
+
+        /// Releases the session so other apps can resume playback.
+        func deactivate(category: AVAudioSession.Category) throws {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(category)
+            try session.setActive(false)
+        }
+
+        /// The system output volume, as reported by the shared session.
+        var outputVolume: Float {
+            AVAudioSession.sharedInstance().outputVolume
+        }
+
+        /// The current output latency, which changes as the route changes.
+        var outputLatency: TimeInterval {
+            AVAudioSession.sharedInstance().outputLatency
+        }
+    }
+#endif
+
 actor OpusDecoderWithJitterBuffer {
     var jitterBuffer = MaxHeap<RtpPacket>()
     let opusDecoder: Opus.RoamDecoder

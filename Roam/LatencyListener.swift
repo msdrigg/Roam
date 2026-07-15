@@ -8,7 +8,6 @@ import os.log
     final class LatencyListener {
         var latencyChangeHandler: ((Double) -> Void)?
         var observerTokens: [Any] = []
-        let audioSession = AVAudioSession.sharedInstance()
 
         func startListening() throws {
             Log.headphones.notice("Starting Latency observations")
@@ -16,12 +15,15 @@ import os.log
             let token = NotificationCenter.default.addObserver(
                 forName: AVAudioSession.routeChangeNotification,
                 object: nil,
-                queue: .main
+                queue: nil
             ) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    if let self {
-                        self.latencyChangeHandler?(self.audioSession.outputLatency)
-                    }
+                // Read the latency off the main actor, then hop back to touch
+                // the handler. Reading it inline would block the main thread on
+                // IPC to mediaserverd, right when the route is changing.
+                Task { @MainActor in
+                    guard let self else { return }
+                    let latency = await AudioSessionConfigurator.shared.outputLatency
+                    self.latencyChangeHandler?(latency)
                 }
             }
 

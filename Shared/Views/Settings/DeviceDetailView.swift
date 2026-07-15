@@ -304,7 +304,7 @@ struct DeviceDetailView: View {
                             Log.userInteraction.notice(
                                 "Deleted device with id \(String(describing: deviceId), privacy: .public)"
                             )
-                        } catch let error as DataHandlerError {
+                        } catch {
                             Log.userInteraction.error(
                                 "Error deleting device \(error, privacy: .public)")
                             errorMessage = "Failed to Delete Device"
