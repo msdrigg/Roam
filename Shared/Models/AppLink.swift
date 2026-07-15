@@ -57,6 +57,14 @@ public struct  AppLink: Identifiable, Equatable, Hashable, Codable, Sendable {
         case lastSyncAt
     }
 
+    /// True while an icon is still expected: nothing cached on disk, and no
+    /// completed fetch attempt to say the device has none to give. Lets the UI
+    /// show a loading indicator for icons that are still in flight while
+    /// keeping the "no icon" fallback for apps we've already queried.
+    public var iconIsPending: Bool {
+        iconHash == nil && lastSyncAt == nil
+    }
+
     public var iconURL: URL? {
         guard let iconHash else { return nil }
 

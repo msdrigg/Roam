@@ -69,7 +69,7 @@ struct DeviceListItem: View {
                             .notice(
                                 "Deleted device with id \(String(describing: pid), privacy: .public)"
                             )
-                    } catch let error as DataHandlerError {
+                    } catch {
                         Log.userInteraction.error("Error deleting device \(error, privacy: .public)")
                         deviceError = error
                     }

@@ -275,7 +275,7 @@ struct SettingsView: View {
             Section(String(localized: "Behavior", comment: "Settings section label")) {
 #if os(iOS)
                 Toggle(String(localized: "Use volume buttons to control TV volume", comment: "Label on a settings toggle"), isOn: $controlVolumeWithHWButtons)
-
+                // swiftlint:disable:next line_length
                 Toggle(String(localized: "Don't offer to open copied video links", comment: "Label on a settings toggle that disables the banner offering to open a copied streaming link on the device"), isOn: $disablePastedUrlSuggestions)
 #endif
 
@@ -392,7 +392,7 @@ struct SettingsView: View {
                                         Task {
                                             do {
                                                 try await RoamDataHandler.shared.deleteDevice(id: pid)
-                                            } catch let error as DataHandlerError {
+                                            } catch {
                                                 Log.userInteraction.error("Error deleting device \(error, privacy: .public)")
                                                 deviceError = error
                                             }

@@ -1,17 +1,21 @@
 {
   "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+    "linear-gradient" : [
+      "display-p3:0.79199,0.76855,0.97656,1.00000",
+      "display-p3:0.26107,0.17559,0.93420,1.00000"
+    ]
   },
   "groups" : [
     {
       "layers" : [
         {
           "image-name" : "VisionAppIcon.png",
-          "name" : "VisionAppIcon"
+          "name" : "AppIcon"
         },
         {
+          "hidden" : false,
           "image-name" : "VisionOSBackground.png",
-          "name" : "VisionOSBackground",
+          "name" : "Background",
           "position" : {
             "scale" : 1.2,
             "translation-in-points" : [
