@@ -80,7 +80,7 @@ opentelemetry_sdk = { version = "^0.32", features = ["rt-tokio"] }
 opentelemetry-otlp = { version = "^0.32", features = ["grpc-tonic"] }
 opentelemetry-semantic-conventions = "^0.32"
 
-axum = { version = "^0.8", features = ["http2", "macros", "ws"] }
+axum = { version = "^0.8", features = ["http2", "macros", "multipart", "ws"] }
 axum-macros = "^0.5"
 tower = "^0.5"
 tower-service = "^0.3"

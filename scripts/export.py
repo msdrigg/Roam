@@ -4,11 +4,10 @@ import re
 import subprocess
 from datetime import datetime
 import argparse
-import base64
-import json
 import os
 import shutil
 import tempfile
+import uuid
 from typing import Tuple
 import urllib.error
 import urllib.request
@@ -20,6 +19,14 @@ import urllib.request
 #     XCODE_API_ISSUER="API_ISSUER_ID"
 #
 #     Find both of these values in App Store Connect web after creating the API key
+#
+# Which key to use (verified 2026-07-22): use XCODE_API_KEY=ZWF866Z497 with
+# XCODE_API_ISSUER=cbcdbb0a-aae2-46de-af95-4700664fad72. It is the only key in
+# ~/.private_keys with App Store Connect distribution access. The others fail:
+#   - V7DX9R58N2 -> "Cloud signing permission error" / no "iOS Distribution" certificate
+#   - 834ACPS85P -> "Unauthenticated" / "No Accounts with App Store Connect Access"
+#   - PBG7VN88T9 -> "Unauthenticated" / "No Accounts with App Store Connect Access"
+# The two Unauthenticated keys likely belong to a different issuer than the one above.
 
 
 def archive_application(platform: str, render_github_actions: bool = False):
@@ -90,6 +97,39 @@ def resolve_required_config(
     return value
 
 
+class MultipartBody:
+    """Concatenates the multipart prefix, the zip file, and the closing boundary
+    into one readable stream. `http.client` reads request bodies in 8 KB blocks
+    when the object exposes `read`, so nothing larger than that is ever held in
+    memory on either end of the upload."""
+
+    def __init__(self, prefix: bytes, file, suffix: bytes):
+        self._parts = [prefix, file, suffix]
+        self._index = 0
+
+    def read(self, size: int = -1) -> bytes:
+        while self._index < len(self._parts):
+            part = self._parts[self._index]
+            if isinstance(part, bytes):
+                if size is None or size < 0:
+                    self._index += 1
+                    if part:
+                        return part
+                    continue
+                chunk, remainder = part[:size], part[size:]
+                self._parts[self._index] = remainder
+                if chunk:
+                    return chunk
+                self._index += 1
+                continue
+
+            chunk = part.read(size)
+            if chunk:
+                return chunk
+            self._index += 1
+        return b""
+
+
 def upload_dsyms(
     platform: str,
     backend_url: str,
@@ -111,38 +151,57 @@ def upload_dsyms(
         zip_base = os.path.join(tmp, f"{platform}-dSYMs")
         zip_path = shutil.make_archive(zip_base, "zip", root_dir=archive_path, base_dir="dSYMs")
 
-        with open(zip_path, "rb") as file:
-            dsym_zip = base64.b64encode(file.read()).decode("utf-8")
+        # Streamed as multipart/form-data rather than base64 in a JSON body. The
+        # zip runs to hundreds of MB and buffering it (plus its base64 inflation)
+        # OOM-killed the 256 MB Fly machine.
+        boundary = f"----RoamDsymUpload{uuid.uuid4().hex}"
+        fields = {
+            "bundleIdentifier": bundle_identifier,
+            "appVersion": app_version,
+            "buildVersion": build_version,
+            "platform": platform,
+        }
 
-        payload = json.dumps(
-            {
-                "bundleIdentifier": bundle_identifier,
-                "appVersion": app_version,
-                "buildVersion": build_version,
-                "platform": platform,
-                "dsymZip": dsym_zip,
-            }
+        prefix = b""
+        for name, value in fields.items():
+            prefix += (
+                f"--{boundary}\r\n"
+                f'Content-Disposition: form-data; name="{name}"\r\n\r\n'
+                f"{value}\r\n"
+            ).encode("utf-8")
+        prefix += (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="dsymZip"; filename="{platform}-dSYMs.zip"\r\n'
+            f"Content-Type: application/zip\r\n\r\n"
         ).encode("utf-8")
+        suffix = f"\r\n--{boundary}--\r\n".encode("utf-8")
 
-        request = urllib.request.Request(
-            f"{backend_url}/v2/upload-roam-dsym",
-            data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "x-api-key": backend_api_key,
-            },
-            method="POST",
-        )
+        zip_size = os.path.getsize(zip_path)
+        content_length = len(prefix) + zip_size + len(suffix)
+        print(f"  zip is {zip_size / (1024 * 1024):.1f} MB, streaming multipart upload")
 
-        try:
-            with urllib.request.urlopen(request, timeout=180) as response:
-                body = response.read().decode("utf-8")
-                print(f"dSYM upload succeeded for {platform}: {body}")
-        except urllib.error.HTTPError as error:
-            body = error.read().decode("utf-8", errors="replace")
-            raise RuntimeError(
-                f"dSYM upload failed for {platform}: HTTP {error.code} {body}"
-            ) from error
+        with open(zip_path, "rb") as file:
+            body = MultipartBody(prefix, file, suffix)
+            request = urllib.request.Request(
+                f"{backend_url}/v2/upload-roam-dsym",
+                data=body,
+                headers={
+                    "Content-Type": f"multipart/form-data; boundary={boundary}",
+                    "Content-Length": str(content_length),
+                    "x-api-key": backend_api_key,
+                },
+                method="POST",
+            )
+
+            try:
+                with urllib.request.urlopen(request, timeout=900) as response:
+                    response_body = response.read().decode("utf-8")
+                    print(f"dSYM upload succeeded for {platform}: {response_body}")
+            except urllib.error.HTTPError as error:
+                response_body = error.read().decode("utf-8", errors="replace")
+                raise RuntimeError(
+                    f"dSYM upload failed for {platform}: HTTP {error.code} {response_body}"
+                ) from error
 
 
 def get_current_versions() -> Tuple[str, str]:
