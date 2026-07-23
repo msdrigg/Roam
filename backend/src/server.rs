@@ -1,16 +1,16 @@
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 use crate::{
     database::{DeviceInfo, PendingSymbolication, User, UserUpdate},
     discord::{DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessageOptions},
     presence::UserPresenceInfo,
     symbolicate::{DsymUploadMetadata, MetricKitPayload, RoamDebugInfo},
-    utils::{base64_data_de, i64_to_string, string_to_i64_optional},
+    utils::{i64_to_string, string_to_i64_optional},
 };
 use anyhow::Context;
 use axum::{
     body::{to_bytes, Body},
-    extract::{DefaultBodyLimit, Path, Query, State},
+    extract::{DefaultBodyLimit, Multipart, Path, Query, State},
     http::{header, HeaderName, Request, StatusCode},
     response::{IntoResponse, Response},
     routing::post,
@@ -21,7 +21,7 @@ pub use error::ApiError;
 use futures::{stream, StreamExt};
 use opentelemetry::trace::{SpanKind, TraceContextExt};
 use serde::{Deserialize, Serialize};
-use tokio::{net::TcpListener, task::JoinHandle};
+use tokio::{io::AsyncWriteExt, net::TcpListener, task::JoinHandle};
 use tokio_util::io::ReaderStream;
 use tower_http::{
     catch_panic::CatchPanicLayer,
@@ -40,6 +40,10 @@ const LEASE_TTL: Duration = Duration::from_secs(15 * 60);
 use crate::{discord::DiscordMessage, AppContext};
 
 const UPLOAD_LIMIT: usize = 10 * 1024 * 1024;
+
+/// Ceiling for a streamed dSYM upload. Enforced while writing to disk rather than
+/// by `DefaultBodyLimit`, which would buffer the body in memory.
+const MAX_DSYM_UPLOAD_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
 pub async fn start_server(
     app_context: AppContext,
@@ -181,7 +185,11 @@ fn router(app_context: AppContext) -> Router {
         .route("/new-message", post(new_message_old))
         .route("/v2/new-message", post(new_message))
         .route("/v2/upload-diagnostics", post(upload_metric_diagnostics))
-        .route("/v2/upload-roam-dsym", post(upload_roam_dsym))
+        // Streams to disk, so the global 70 MB body limit must not apply here.
+        .route(
+            "/v2/upload-roam-dsym",
+            post(upload_roam_dsym).layer(DefaultBodyLimit::disable()),
+        )
         .route("/v2/symbolicate/lease", get(lease_pending_symbolications))
         .route("/v2/symbolicate/dsym/{uuid}", get(get_dsym_by_uuid))
         .route("/v2/symbolicate/result", post(submit_symbolication_result))
@@ -535,17 +543,6 @@ async fn upload_metric_diagnostics(
     Ok(())
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DsymUploadRequest {
-    bundle_identifier: String,
-    app_version: String,
-    build_version: String,
-    platform: String,
-    #[serde(deserialize_with = "base64_data_de")]
-    dsym_zip: Vec<u8>,
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DsymUploadResponse {
@@ -553,17 +550,99 @@ struct DsymUploadResponse {
     indexed_debug_ids: Vec<String>,
 }
 
+/// Deletes the temp upload on drop so an early return (bad request, extraction
+/// failure, client hangup) can't leak a few hundred megabytes onto the volume.
+struct TempUpload(PathBuf);
+
+impl Drop for TempUpload {
+    fn drop(&mut self) {
+        if let Err(err) = std::fs::remove_file(&self.0) {
+            if err.kind() != std::io::ErrorKind::NotFound {
+                tracing::warn!(path = %self.0.display(), %err, "Failed to remove temp dSYM upload");
+            }
+        }
+    }
+}
+
+/// Accepts a `multipart/form-data` upload with text fields `bundleIdentifier`,
+/// `appVersion`, `buildVersion`, `platform` and a file field `dsymZip`.
+///
+/// The zip is streamed straight to the data volume rather than buffered: dSYM
+/// archives are 100 MB+ and the previous base64-in-JSON body OOM-killed the
+/// 256 MB machine (three copies of the payload live at once).
 async fn upload_roam_dsym(
     State(app_context): State<AppContext>,
-    Json(dsym_request): Json<DsymUploadRequest>,
+    mut multipart: Multipart,
 ) -> Result<Json<DsymUploadResponse>, ApiError> {
-    let DsymUploadRequest {
-        bundle_identifier,
-        app_version,
-        build_version,
-        platform,
-        dsym_zip,
-    } = dsym_request;
+    let mut bundle_identifier = String::new();
+    let mut app_version = String::new();
+    let mut build_version = String::new();
+    let mut platform = String::new();
+    let mut upload: Option<TempUpload> = None;
+    let mut bytes_written: u64 = 0;
+
+    let temp_dir = app_context.data_dir().join("tmp");
+    tokio::fs::create_dir_all(&temp_dir)
+        .await
+        .with_context(|| format!("creating temp upload directory {}", temp_dir.display()))
+        .map_err(ApiError::SymbolicationError)?;
+
+    while let Some(mut field) = multipart
+        .next_field()
+        .await
+        .map_err(|err| ApiError::BadRequest(format!("reading multipart field: {err}")))?
+    {
+        let Some(name) = field.name().map(str::to_string) else {
+            continue;
+        };
+
+        if name == "dsymZip" {
+            let temp_path = temp_dir.join(format!("dsym-upload-{}.zip", Uuid::new_v4()));
+            let temp_upload = TempUpload(temp_path.clone());
+            let mut file = tokio::fs::File::create(&temp_path)
+                .await
+                .with_context(|| format!("creating temp dSYM upload {}", temp_path.display()))
+                .map_err(ApiError::SymbolicationError)?;
+
+            while let Some(chunk) = field
+                .chunk()
+                .await
+                .map_err(|err| ApiError::BadRequest(format!("reading dsymZip field: {err}")))?
+            {
+                bytes_written += chunk.len() as u64;
+                if bytes_written > MAX_DSYM_UPLOAD_BYTES {
+                    return Err(ApiError::BadRequest(format!(
+                        "dsymZip exceeds the {} MB upload limit",
+                        MAX_DSYM_UPLOAD_BYTES / (1024 * 1024)
+                    )));
+                }
+                file.write_all(&chunk)
+                    .await
+                    .with_context(|| format!("writing temp dSYM upload {}", temp_path.display()))
+                .map_err(ApiError::SymbolicationError)?;
+            }
+
+            file.flush()
+                .await
+                .with_context(|| format!("flushing temp dSYM upload {}", temp_path.display()))
+                .map_err(ApiError::SymbolicationError)?;
+            drop(file);
+            upload = Some(temp_upload);
+            continue;
+        }
+
+        let value = field
+            .text()
+            .await
+            .map_err(|err| ApiError::BadRequest(format!("reading field {name}: {err}")))?;
+        match name.as_str() {
+            "bundleIdentifier" => bundle_identifier = value,
+            "appVersion" => app_version = value,
+            "buildVersion" => build_version = value,
+            "platform" => platform = value,
+            _ => tracing::warn!(field = %name, "Ignoring unknown dSYM upload field"),
+        }
+    }
 
     if bundle_identifier.trim().is_empty()
         || app_version.trim().is_empty()
@@ -575,13 +654,26 @@ async fn upload_roam_dsym(
         ));
     }
 
+    let Some(upload) = upload else {
+        return Err(ApiError::BadRequest(
+            "a dsymZip file part is required".to_string(),
+        ));
+    };
+
     let metadata = DsymUploadMetadata {
         bundle_identifier,
         app_version,
         build_version,
         platform,
     };
-    let stored = app_context.store_dsym_zip(metadata, dsym_zip).await?;
+    tracing::info!(
+        bytes = bytes_written,
+        platform = %metadata.platform,
+        build_version = %metadata.build_version,
+        "Received dSYM upload; extracting"
+    );
+    let stored = app_context.store_dsym_zip(metadata, upload.0.clone()).await?;
+    drop(upload);
     tracing::info!(
         path = %stored.extracted_root.display(),
         indexed_uuids = stored.indexed_debug_ids.len(),

@@ -30,7 +30,11 @@ RUN apt-get update \
         arm64) ipsw_arch="arm64" ;; \
         *) echo "Unsupported architecture for ipsw: $arch" >&2; exit 1 ;; \
     esac \
-    && ipsw_version="$(curl -fsSL https://api.github.com/repos/blacktop/ipsw/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p' | head -n 1)" \
+    # Resolve the latest tag from the release redirect rather than api.github.com:
+    # the API rate-limits unauthenticated builders (403), which silently left
+    # ipsw_version empty and 404'd the download below.
+    && ipsw_version="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/blacktop/ipsw/releases/latest | sed -n 's|.*/tag/v\(.*\)$|\1|p')" \
+    && if [ -z "$ipsw_version" ]; then echo "Could not resolve latest ipsw version" >&2; exit 1; fi \
     && curl -fsSL "https://github.com/blacktop/ipsw/releases/latest/download/ipsw_${ipsw_version}_linux_${ipsw_arch}.tar.gz" -o /tmp/ipsw.tar.gz \
     && tar -xzf /tmp/ipsw.tar.gz -C /usr/local/bin ipsw \
     && chmod +x /usr/local/bin/ipsw \

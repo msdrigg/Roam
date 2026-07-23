@@ -195,10 +195,10 @@ impl AppContext {
     async fn store_dsym_zip(
         &self,
         metadata: DsymUploadMetadata,
-        dsym_zip: Vec<u8>,
+        zip_path: PathBuf,
     ) -> Result<StoredDsymArchive, ApiError> {
         self.symbolicate_client
-            .store_dsym_zip_with_metadata(Some(metadata), dsym_zip)
+            .store_dsym_zip_file_with_metadata(Some(metadata), zip_path)
             .await
             .map_err(ApiError::SymbolicationError)
     }

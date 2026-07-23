@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Display, Write as _};
 use std::fs::{self, File};
-use std::io::Cursor;
+use std::io::{BufReader, Cursor, Read, Seek};
 use std::path::{Path, PathBuf};
 use symbolic_common::Name;
 use symbolic_demangle::{Demangle, DemangleOptions};
@@ -513,16 +513,34 @@ impl SymbolicationClient {
     ) -> Result<StoredDsymArchive> {
         let symbolication_root = self.symbolication_root.clone();
         tokio::task::spawn_blocking(move || {
-            Self::store_dsym_zip_blocking(symbolication_root, metadata, dsym_zip)
+            Self::store_dsym_zip_blocking(symbolication_root, metadata, Cursor::new(dsym_zip))
         })
         .await
         .context("joining dSYM zip extraction task")?
     }
 
-    fn store_dsym_zip_blocking(
+    /// Extracts a dSYM zip that has already been streamed to disk. Preferred over
+    /// [`Self::store_dsym_zip_with_metadata`] for uploads: dSYM archives run to
+    /// hundreds of megabytes and buffering one in memory OOM-kills small machines.
+    pub async fn store_dsym_zip_file_with_metadata(
+        &self,
+        metadata: Option<DsymUploadMetadata>,
+        zip_path: PathBuf,
+    ) -> Result<StoredDsymArchive> {
+        let symbolication_root = self.symbolication_root.clone();
+        tokio::task::spawn_blocking(move || {
+            let file = File::open(&zip_path)
+                .with_context(|| format!("opening uploaded dSYM zip {}", zip_path.display()))?;
+            Self::store_dsym_zip_blocking(symbolication_root, metadata, BufReader::new(file))
+        })
+        .await
+        .context("joining dSYM zip extraction task")?
+    }
+
+    fn store_dsym_zip_blocking<R: Read + Seek>(
         symbolication_root: PathBuf,
         metadata: Option<DsymUploadMetadata>,
-        dsym_zip: Vec<u8>,
+        dsym_zip: R,
     ) -> Result<StoredDsymArchive> {
         let mut extracted_root = symbolication_root.join("uploads");
         if let Some(metadata) = &metadata {
@@ -552,7 +570,7 @@ impl SymbolicationClient {
             })?;
         }
 
-        extract_zip_archive(&dsym_zip, &extracted_root)?;
+        extract_zip_archive(dsym_zip, &extracted_root)?;
 
         let dwarf_files = find_dwarf_files(&extracted_root)?;
         if dwarf_files.is_empty() {
@@ -1593,9 +1611,8 @@ fn sanitize_cache_component(value: &str) -> String {
         .collect()
 }
 
-fn extract_zip_archive(dsym_zip: &[u8], extracted_root: &Path) -> Result<()> {
-    let reader = Cursor::new(dsym_zip);
-    let mut archive = zip::ZipArchive::new(reader).context("opening dSYM zip archive")?;
+fn extract_zip_archive<R: Read + Seek>(dsym_zip: R, extracted_root: &Path) -> Result<()> {
+    let mut archive = zip::ZipArchive::new(dsym_zip).context("opening dSYM zip archive")?;
     for index in 0..archive.len() {
         let mut file = archive
             .by_index(index)
