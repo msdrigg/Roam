@@ -8,65 +8,94 @@ hide_table_of_contents: true
 
 ## À propos de Roam
 
-Roam offre tout ce que vous souhaitez et rien de superflu
+:::warning
 
--   Fonctionne sur Mac, iPhone, iPad, Apple Watch, Vision Pro ou Apple TV !
--   Intégration intelligente avec la plateforme : raccourcis clavier sur Mac, boutons de volume matériel pour contrôler le volume de la TV sur iOS
--   Utilisez des raccourcis et des widgets pour contrôler votre TV sans même ouvrir l’application !
--   Mode écouteurs (écoute privée) pris en charge sur Mac, iPad, iPhone, VisionOS et Apple TV (écoutez l’audio de la TV sur votre appareil)
--   Détection instantanée des appareils sur votre réseau local à l’ouverture de l’application
+Ceci est une page de support pour l'application Roam, pas Roly. J'ai récemment découvert que l'application Roly a copié mon code source et la page de mon application sur l'App Store, en redirigeant même ici vers ma page de support. Ceci est frauduleux et incorrect.
+
+:::
+
+:::tip[Offrez-moi un café]
+
+Roam est gratuit, sans publicité et sans formule payante. Si l'application vous est utile, vous pouvez [laisser un pourboire](/coffee).
+
+:::
+
+Roam offre tout ce dont vous avez besoin, sans superflu
+
+-   Fonctionne sur Mac, iPhone, iPad, Apple Watch, Vision Pro et Apple TV !
+-   Intégration intelligente à la plateforme : raccourcis clavier sur Mac, boutons de volume matériel pour contrôler le volume de la TV sur iOS.
+-   Utilisez les raccourcis et widgets pour contrôler votre TV sans jamais ouvrir l’application !
+-   Prise en charge du mode écouteurs (aussi appelé écoute privée) sur Mac, iPad, iPhone, VisionOS et Apple TV (écoutez le son de votre TV depuis votre appareil)
+-   Détection automatique des appareils sur votre réseau local dès l’ouverture de l’application
 -   Design intuitif reposant sur le système natif SwiftUI d’Apple
--   Rapide et léger, moins de 8 Mo sur tous les appareils, ouverture en moins d’une demi-seconde !
+-   Rapide et léger, moins de 8 Mo sur tous les appareils et s'ouvre en moins d’une demi-seconde !
 -   Open source (https://github.com/msdrigg/roam)
 
 ## Fonctionnalités
 
 -   Télécommande
-    -   Roam inclut toutes les commandes habituelles d’une télécommande Roku, comme les boutons directionnels, sélectionner, retour, accueil, lecture/pause et toutes les commandes TV compatibles avec votre modèle Roku.
-    -   Les contrôles de volume peuvent ne pas fonctionner sur les Roku Stick, car ces appareils HDMI ne permettent pas de contrôler le volume TV via les commandes réseau Roku utilisées par Roam.
--   Saisie clavier
-    -   Sur macOS, il n’y a pas de bouton clavier. Quand la fenêtre Roam est active, le clavier du Mac fonctionne automatiquement avec la TV.
-    -   Sur iOS et iPadOS, un bouton clavier apparaît en haut de la télécommande.
-    -   watchOS ne prend pas en charge la fonctionnalité clavier pour le moment.
-    -   Certaines applications Roku ignorent l’entrée clavier en provenance d’applications de télécommande. Prime Video, par exemple, ne permet pas l’entrée clavier, car l’application Roku ne la prend pas en charge.
+    -   Roam propose toutes les commandes habituelles d'une télécommande Roku : boutons directionnels, sélection, retour, accueil, lecture/pause et autres commandes de TV lorsque le Roku les prend en charge.
+    -   Les commandes de volume peuvent ne pas fonctionner avec les Roku Stick car ces appareils ne sont compatibles HDMI et ne peuvent pas contrôler le volume de la TV via les commandes réseau Roku de Roam.
+-   Saisie au clavier
+    -   Sur macOS, pas de bouton clavier. Lorsque la fenêtre Roam est active, le clavier du Mac fonctionne automatiquement avec la TV.
+    -   Sur iOS et iPadOS, un bouton clavier se trouve en haut de la télécommande.
+    -   watchOS ne propose pas de fonctionnalité clavier actuellement.
+    -   Certaines applications Roku ignorent la saisie clavier des applis de télécommande. Prime Video en est un exemple connu où la saisie via le clavier peut ne pas fonctionner car l’application Roku ne l'accepte pas.
+-   Raccourcis clavier
+    -   Roam associe les touches physiques du clavier à des actions sur la télécommande (touches directionnelles, sélection/OK, retour, accueil, volume, muet, lecture/pause, etc). Ceci est indépendant de la saisie de texte à l'écran.
+    -   Vous pouvez personnaliser ces raccourcis dans **Réglages -> Raccourcis clavier** sur Mac, iPhone, iPad et Vision Pro (watchOS n’a pas de raccourcis clavier).
+    -   Sélectionnez une ligne pour modifier son raccourci, faites un clic droit (Mac) ou un balayage (iPhone/iPad) sur une ligne pour la réinitialiser, ou utilisez **Tout réinitialiser** / **Tout effacer**. Les raccourcis par défaut utilisent la touche Commande (⌘).
+-   Coller un lien à lire (macOS)
+    -   Sur Mac, copiez un lien vidéo, cliquez sur la fenêtre Roam, puis appuyez sur **⌘V**. Roam ouvrira l’application correspondante sur votre Roku et commencera la lecture du contenu.
+    -   Services pris en charge : YouTube, Amazon Prime Video, Netflix, Disney+, Hulu, Max, Paramount+, Peacock, Tubi, Sling et The Roku Channel.
+    -   Si un champ de saisie texte est sélectionné sur la TV, ⌘V saisira le texte du presse-papiers dans ce champ au lieu d’ouvrir un lien.
 -   Mode écouteurs / écoute privée
-    -   L’écoute privée diffuse l’audio de la TV sur votre appareil, sur les modèles Roku compatibles.
-    -   L’écoute privée est disponible avec Roam sur Mac, iPad, iPhone, VisionOS et Apple TV, mais elle n’est pas prise en charge sur tous les modèles de TV Roku.
+    -   L’écoute privée fait passer le son de la TV par votre appareil sur les Roku compatibles.
+    -   L’écoute privée est possible dans Roam sur Mac, iPad, iPhone, VisionOS et Apple TV, mais ne fonctionne pas sur tous les modèles Roku TV.
 
-## Problèmes fréquents
+## Problèmes courants
 
--   Que faire si Roam ne détecte pas automatiquement ma TV ?
+-   Que faire si Roam ne découvre pas automatiquement ma TV
     -   [Voir ici](/manually-add-tv)
 -   Roam ne fonctionne pas correctement sur mon Apple Watch
-    -   Veuillez vous rendre dans **Réglages -> Système -> Paramètres système avancés -> Contrôle via les applications mobiles** et vérifiez que l’option est définie sur **Permissif**
--   Pourquoi le mode écouteurs (appelé aussi écoute privée) ne fonctionne-t-il pas sur ma TV ?
-    -   Le mode écouteurs ne fonctionne actuellement pas sur certains modèles. Si le mode écouteurs ne fonctionne pas avec Roam mais fonctionne avec l’application officielle Roku, merci de partager le nom du modèle de votre Roku et toute information pertinente par email à [roam-support@msd3.io](mailto:roam-support@msd3.io). Votre signalement m’aidera à cibler le problème pour corriger ce bug.
--   Que faire si j’ai un autre problème ou que je souhaite simplement donner un avis ?
-    -   S’il s’agit d’un bug, le plus efficace est de faire remonter un retour depuis l’application
-        -   Ouvrez l’application Roam et accédez aux paramètres
-        -   Cliquez sur "Envoyer un retour". Ceci générera un rapport de diagnostic que vous pourrez envoyer à l’assistance (roam-support@msd3.io)
-        -   Si votre application plante, assurez-vous également que vos analyses sont activées dans Réglages -> Confidentialité et sécurité -> Analyses et améliorations
-            -   Activez "Partager les analyses iPhone & Watch" puis "Partager avec les développeurs" pour qu’Apple puisse me signaler les plantages de votre application
-    -   Pour suggérer une nouvelle fonctionnalité, vous pouvez envoyer un email (roam-support@msd3.io), discuter directement dans l’application Roam (Paramètres -> Discuter avec le développeur) ou rejoindre le [Roam Discord](https://discord.gg/FqaTNRccbG).
--   Pourquoi les flèches du clavier ne fonctionnent-elles pas parfois sur iPad ?
-    -   Ceci est dû au fait qu’iPadOS intercepte parfois les touches fléchées pour naviguer entre les boutons de l’écran avant que Roam puisse les détecter
-    -   Vous pouvez contourner ce problème en allant dans Réglages -> Accessibilité -> Claviers et en désactivant “Accès complet au clavier”, ou en passant par Réglages -> Accessibilité -> Claviers -> Accès complet au clavier -> Raccourcis -> Basique puis en désactivant les commandes “Monter”, “Descendre”, “Aller à gauche” et “Aller à droite”
--   Pourquoi ce que j’écris au clavier n’apparaît-il pas sur la TV ?
-    -   Certaines applications Roku ignorent l’entrée du clavier matériel. Vous pouvez vérifier s’il s’agit d’un bug de Roam ou de l’application en essayant la saisie clavier dans l’application officielle Roku pour voir si cela fonctionne.
-    -   Sur macOS, il n’y a pas de bouton clavier car le clavier Mac fonctionne automatiquement avec la TV quand la fenêtre Roam est active. Sur iOS et iPadOS, utilisez le bouton clavier en haut de la télécommande. watchOS ne prend pas en charge l’entrée clavier pour le moment.
-    -   Applications connues avec des bugs
+    -   Rendez-vous dans **Réglages -> Système -> Paramètres système avancés -> Contrôle par applications mobiles** et vérifiez que l’option est réglée sur **Permissif**
+-   Pourquoi le mode écouteurs (appelé aussi écoute privée) ne fonctionne pas sur ma TV ?
+    -   Le mode écouteurs ne fonctionne pas encore sur certains téléviseurs. Si ce mode fonctionne avec l’application Roku officielle mais pas avec Roam, merci de communiquer le modèle exact de votre Roku ainsi que tout renseignement pertinent par email à [roam-support@msd3.io](mailto:roam-support@msd3.io). Votre retour m’aidera à repérer l’origine du problème pour le corriger.
+-   Que faire si j’ai un autre problème ou si je souhaite simplement donner mon avis ?
+    -   S’il s’agit d’un bug, il est préférable de lancer un rapport de feedback directement depuis l’application :
+        -   Ouvrez l’application Roam et allez sur la page des réglages
+        -   Cliquez sur "Envoyer des retours". Cela générera un rapport de diagnostic à partager avec le support (roam-support@msd3.io)
+        -   Si votre appli plante, assurez-vous aussi que les analyses sont activées dans Réglages -> Confidentialité & sécurité -> Analyses et améliorations
+            -   Activez "Partager les analyses d’iPhone & Watch" puis "Partager avec les développeurs d’applications" pour qu’Apple me signale les crashs de votre application
+    -   Pour une demande de fonctionnalité, vous pouvez envoyer un email (roam-support@msd3.io), discuter directement avec moi dans l’app Roam (Réglages -> Discuter avec le développeur) ou rejoindre le [Roam Discord](https://discord.gg/FqaTNRccbG).
+-   Pourquoi les flèches directionnelles ne fonctionnent-elles pas toujours sur iPad ?
+    -   Cela vient du fait qu’iPadOS intercepte parfois les flèches du clavier et les utilise pour naviguer dans les boutons d’écran avant qu’elles ne soient détectées par Roam
+    -   Vous pouvez contourner ce problème en allant dans Réglages -> Accessibilité -> Claviers et en désactivant "Accès clavier complet" ou en allant dans Réglages -> Accessibilité -> Claviers -> Accès clavier complet -> Commandes -> Basique et en désactivant les commandes "Déplacer vers le haut", "Déplacer vers le bas", "Déplacer vers la gauche" et "Déplacer vers la droite"
+    -   Vous pouvez aussi réaffecter les raccourcis directionnels dans Roam sous **Réglages -> Raccourcis clavier**. Garder la touche Commande (⌘) sur un raccourci empêche "Accès clavier complet" d’intercepter les touches simples comme les flèches.
+-   Pourquoi la saisie au clavier ne s’affiche-t-elle pas sur la TV ?
+    -   Sur certaines applications Roku, la saisie clavier matérielle est ignorée. Pour savoir si le problème vient de Roam ou de l’application, essayez la saisie clavier sur l’application officielle Roku et vérifiez si cela fonctionne.
+    -   Sur macOS, il n’y a pas de bouton clavier car le clavier du Mac fonctionne automatiquement avec la TV quand la fenêtre Roam est active. Sur iOS et iPadOS, utilisez le bouton clavier en haut de la télécommande. watchOS ne prend pas en charge la saisie clavier pour le moment.
+    -   Applications avec problèmes connus
         -   Prime Video
--   Pourquoi Roam fonctionne-t-il sur mon iPhone et mon Mac mais pas sur mon Apple Watch ?
-    -   L’application WatchOS se connecte à la TV via l’API ECP de la TV, qui doit être activée sur certaines Roku TV. Pour l’activer, rendez-vous dans **Réglages -> Système -> Paramètres système avancés -> Contrôle via les applications mobiles** et vérifiez que “Accès réseau” est réglé sur “Permissif”
+-   Pourquoi Roam fonctionne sur mon iPhone et mon Mac mais pas sur mon Apple Watch ?
+    -   L’application WatchOS se connecte à la TV via l’API ECP de la TV, qui doit être activée sur certains modèles Roku TV. Pour l’activer, rendez-vous dans **Réglages -> Système -> Paramètres système avancés -> Contrôle par applications mobiles** et assurez-vous que "Accès réseau" soit réglé sur "Permissif"
+-   Pourquoi est-ce que je ne peux pas allumer ma TV depuis mon Apple Watch ?
+    -   L’Apple Watch ne peut pas utiliser l’API standard pour allumer la TV sauf si **Démarrage rapide TV** est activé sur la Roku TV. Pour l’activer :
+        -   Appuyez sur le bouton **Accueil** de la télécommande Roku TV
+        -   Naviguez vers le haut ou le bas et sélectionnez **Réglages**
+        -   Allez dans **Système**, puis **Alimentation**
+        -   Sélectionnez **Démarrage rapide TV**
+        -   Mettez en surbrillance **Activer le démarrage rapide TV** et appuyez sur **OK** sur la télécommande pour cocher la case
 
 ## Autres ressources
 
-Si vous avez des questions ou des soucis, contactez-moi à l’adresse : [roam-support@msd3.io](mailto:roam-support@msd3.io). Vous pouvez aussi discuter directement avec moi dans l’app Roam (Paramètres -> Discuter avec le développeur) ou rejoindre le [Roam Discord](https://discord.gg/FqaTNRccbG).
+Pour toute question ou problème, contactez-moi à : [roam-support@msd3.io](mailto:roam-support@msd3.io). Vous pouvez aussi discuter directement avec moi dans l’app Roam (Réglages -> Discuter avec le développeur) ou rejoindre le [Roam Discord](https://discord.gg/FqaTNRccbG).
 
 -   [Politique de confidentialité](/privacy)
 -   [Dépôt principal sur GitHub](https://github.com/msdrigg/roam)
 -   [Roam Discord](https://discord.gg/FqaTNRccbG)
 -   [Télécharger sur l’App Store](https://apps.apple.com/us/app/roam/6469834197)
 -   [Feuille de route](/upcoming-work)
--   [Notes de version](/changes)
+-   [Historique des changements](/changes)
 -   [Appareils Roku testés](/tested-tvs)
+-   [Offrez-moi un café](/coffee)

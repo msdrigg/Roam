@@ -60,7 +60,6 @@ struct TipJarView: View {
                     .font(.headline)
 
                     Text(
-                        // swiftlint:disable:next line_length
                         "If it's been useful, you can leave a tip. Any tip unlocks custom accent colors and the alternate app icons. Every tier unlocks the same things.",
                         comment: "Explanation of what tipping does"
                     )

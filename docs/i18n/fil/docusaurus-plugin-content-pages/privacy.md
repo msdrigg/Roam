@@ -2,59 +2,65 @@
 hide_table_of_contents: true
 ---
 
-# Patakaran sa Pagkapribado
+# Patakaran sa Pribasya
 
-Binuo ni Scott Driggers ang Roam app bilang isang Libreng app. Ang SERBISYO na ito ay binibigay ni Scott Driggers nang walang gastos at ito ay inilaan para sa paggamit tulad ng inilalarawan.
+:::warning
 
-Ang pahinang ito ay ginagamit upang ipaalam sa mga bisita ang aking mga patakaran hinggil sa koleksyon, paggamit, at pagsasapubliko ng Personal na Impormasyon kung mayroon mang nagpasyang gamitin ang aking Serbisyo.
+Hindi ito ang patakaran sa pribasya ng Roly app. Ang Roly ay hindi dinivelop o sinusuportahan ni Scott Driggers. Wala ring ibang application maliban sa `Roam` app para sa Roku.
 
-Kung pipiliin mong gamitin ang aking Serbisyo, sumasang-ayon ka na sa koleksyon at paggamit ng impormasyon patungkol sa patakarang ito. Ang Personal na Impormasyon na aking kinokolekta ay ginagamit para sa pagbibigay at pagpapabuti ng Serbisyo. Hindi ko gagamitin o ibabahagi ang iyong impormasyon sa sino mang tao maliban sa kung paano ito inilarawan sa Patakaran sa Pagkapribado.
+:::
 
-Ang mga termino na ginamit sa Patakaran sa Pagkapribado na ito ay pareho ng kahulugan gaya ng nasa aming Mga Tuntunin at Kondisyon, na maaring ma-access sa Roam maliban kung may ibang kahulugan na ibinigay sa Patakaran sa Pagkapribado na ito.
+Ang Roam app ay ginawa ni Scott Driggers bilang isang Libreng app. Ang SERBISYO na ito ay ibinibigay ni Scott Driggers nang walang bayad at ito ay nilalayong gamitin kung paano ito ay.
 
-## Koleksyon at Paggamit ng Impormasyon
+Ang pahinang ito ay inilaan upang ipaalam sa mga bisita ang aking mga patakaran ukol sa pangongolekta, paggamit, at paglalathala ng Personal na Impormasyon kung sakaling piliin ng sinuman na gamitin ang aking Serbisyo.
 
-Para sa mas mahusay na karanasan, habang ginagamit ang aming Serbisyo, maaaring hilingin ko sa iyo na magbigay sa amin ng ilang impormasyong personal na matutukoy. Ang impormasyon na hinihingi ko ay itinatago sa iyong aparato at hindi ito kinokolekta sa anumang paraan.
+Kung pipiliin mong gamitin ang aking Serbisyo, sumasang-ayon ka sa pangongolekta at paggamit ng impormasyon ayon sa patakarang ito. Ang Personal na Impormasyon na aking kinokolekta ay ginagamit para mapabuti at maibigay ang Serbisyo. Hindi ko gagamitin o ibabahagi ang iyong impormasyon kaninuman maliban sa inilarawan sa Patakaran sa Pribasya na ito.
+
+Ang mga terminong ginagamit sa Patakaran sa Pribasya na ito ay may parehong kahulugan gaya ng nasa aming Mga Tuntunin at Kondisyon, na maaaring mabasa sa Roam maliban kung iba ang pagkakadefinisyon dito.
+
+## Pangongolekta at Paggamit ng Impormasyon
+
+Para sa mas magandang karanasan habang ginagamit ang aming Serbisyo, maaari kong hilingin na magbigay ka ng ilang personal na pagkakakilanlang impormasyon. Ang impormasyong hinihingi ko ay nananatili sa iyong device at hindi ko kinokolekta sa kahit anong paraan.
 
 ## Log Data
 
-Nais kong ipaalam sa iyo na kahit kailan ikaw ay gumagamit ng aking Serbisyo, sa kaso ng isang error sa app kinokolekta ko ang data at impormasyon (sa pamamagitan ng third-party products) sa iyong telepono na tinatawag na Log Data. Maaaring kabilang dito ang impormasyon tulad ng iyong device Internet Protocol (“IP”) address, pangalan ng aparato, bersyon ng operating system, ang konfigurasyon ng app kapag ginagamit ang aking Serbisyo, ang oras at petsa ng iyong paggamit ng Serbisyo, at iba pang estadistika.
+Nais kong ipabatid sa iyo na tuwing ginagamit mo ang aking Serbisyo, sa oras na magkaroon ng error sa app, ako ay kumokolekta ng data at impormasyon (gamit ang mga third-party na produkto) sa iyong telepono na tinatawag na Log Data. Maaaring kabilang dito ang impormasyon gaya ng iyong device Internet Protocol (“IP”) address, pangalan ng device, bersyon ng operating system, ang configuration ng app habang ginagamit ang Serbisyo, oras at petsa ng pag-gamit ng Serbisyo, at iba pang estadistika.
 
 ## Cookies
 
-Ang Cookies ay mga file na may kaunting halaga ng data na karaniwang ginagamit bilang anonymous unique identifiers. Ito ay ipinapadala sa iyong browser mula sa mga website na iyong binisita at itinatago sa internal na memorya ng iyong aparato.
+Ang cookies ay mga file na may maliit na halaga ng data na karaniwang ginagamit bilang anonymous unique identifiers. Ito ay ipinapadala sa iyong browser mula sa mga website na binibisita mo at nakaimbak sa internal memory ng iyong device.
 
-Ang Serbisyong ito ay hindi gumagamit ng mga “cookies” ng malinaw. Gayunpaman, ang app ay maaaring gumamit ng third-party na code at libraries na gumagamit ng “cookies” upang makakolekta ng impormasyon at mapabuti ang kanilang mga serbisyo. Mayroon kang opsyon na tanggapin o tanggihan ang mga cookies na ito at malaman kung kailan ang cookie ay ipinadala sa iyong aparato. Kung pipiliin mong tanggihan ang aming cookies, hindi ka maaaring makagamit ng ilang bahagi ng Serbisyong ito.
+Ang Serbisyong ito ay hindi gumagamit ng mga “cookies” nang direkta. Gayunpaman, maaaring gumamit ang app ng third-party na code at mga library na gumagamit ng “cookies” upang mangolekta ng impormasyon at mapabuti ang kanilang mga serbisyo. Ikaw ay may opsyon na tanggapin o tanggihan ang mga cookies na ito at malalaman mo rin kung kailan ipinapadala ang cookie sa iyong device. Kung pipiliin mong tanggihan ang aming cookies, maaaring hindi mo magamit ang ilang bahagi ng Serbisyong ito.
 
 ## Mga Tagapagbigay ng Serbisyo
 
-Maaaring mag-empleyo ako ng third-party na mga kompanya at indibidwal dahil sa mga sumusunod na kadahilanan:
+Maaari akong kumuha ng mga third-party na kumpanya at indibidwal dahil sa mga sumusunod na dahilan:
 
 -   Upang mapadali ang aming Serbisyo;
--   Upang magbigay ng Serbisyo sa aming ngalan;
--   Upang isagawa ang mga Serbisyo-kaugnay na serbisyo; o
+-   Upang ipagkaloob ang Serbisyo sa aming ngalan;
+-   Upang magsagawa ng mga serbisyong may kinalaman sa Serbisyo; o
 -   Upang tulungan kami sa pagsusuri kung paano ginagamit ang aming Serbisyo.
 
-Nais kong ipaalam sa mga gumagamit ng Serbisyong ito na ang mga third party na ito ay may access sa kanilang Personal na Impormasyon. Ang dahilan ay upang isagawa ang mga gawaing iniatas sa kanila sa aming ngalan. Gayunpaman, sila ay obligado na hindi ilantad o gamitin ang impormasyon para sa anumang ibang layunin.
+Nais kong ipabatid sa mga gumagamit ng Serbisyong ito na ang mga third-party na ito ay may access sa kanilang Personal na Impormasyon. Ang dahilan ay upang maisagawa ang mga itinalagang gawain para sa amin. Gayunpaman, sila ay may obligasyong huwag ilathala o gamitin ang impormasyon para sa ibang layunin.
 
 ## Seguridad
 
-Ipinahahalaga ko ang iyong tiwala sa pagbibigay sa amin ng iyong Personal na Impormasyon, kaya naman kami ay nagsusumikap na gumamit ng komersyal na katanggap-tanggap na paraan ng pagprotekta dito. Ngunit tandaan na walang paraan ng transmisyon sa internet, o paraan ng elektronikong imbakan ay 100% na ligtas at maaasahan, at hindi ko masisiguro ang kanyang ganap na seguridad.
+Pinahahalagahan ko ang iyong tiwala sa pagbibigay sa amin ng iyong Personal na Impormasyon, kaya naman nagsusumikap kami na gamitin ang mga komersyal na tanggap na pamamaraan ng pag-protekta dito. Ngunit tandaan na walang paraan ng pagpapadala sa internet o ng electronic storage na 100% na ligtas at mapagkakatiwalaan, at hindi ko matitiyak ang ganap nitong seguridad.
 
-## Mga Link sa Ibang Mga Site
+## Mga Link sa Ibang Site
 
-Ang Serbisyong ito ay maaaring maglaman ng mga link sa ibang mga site. Kung ikaw ay mag-click sa isang third-party link, ikaw ay ididirekta sa site na iyon. Tandaan na ang mga external sites na ito ay hindi iniopera ng inyong lingkod. Kaya, mariing inirerekomenda ko na suriin mo ang Patakaran sa Pagkapribado ng mga website na ito. Wala akong kontrol sa at hindi inaako ang responsibilidad para sa mga content, patakaran sa pagkapribado, o gawain ng anumang third-party na mga site o serbisyo.
+Ang Serbisyong ito ay maaaring maglaman ng mga link patungo sa ibang mga site. Kung magki-click ka sa isang third-party na link, ikaw ay ire-redirect sa site na iyon. Tandaan na ang mga panlabas na site na ito ay hindi pinapatakbo ko. Kaya, mahigpit kong ipinapayo na suriin mo ang Patakaran sa Pribasya ng mga website na ito. Wala akong kontrol at hindi ako responsable sa nilalaman, patakaran sa pribasya, o mga gawain ng anumang third-party na site o serbisyo.
 
-## Privacy ng mga Bata
+## Pribasya ng mga Bata
 
-Hindi ako sinasadyang nakokolekta ng personal na matutukoy na impormasyon mula sa mga bata. Hinikayat ko ang lahat ng mga bata na huwag magsumite ng anumang personal na matutukoy na impormasyon sa pamamagitan ng Application at/o Services. Hinikayat ko ang mga magulang at legal guardians na subaybayan ang kanilang mga anak sa paggamit ng Internet at tumulong sa pagpapatupad ng Patakaran na ito sa pamamagitan ng pagtuturo sa kanilang mga anak na huwag magbigay ng personal na matutukoy na impormasyon sa pamamagitan ng Application at/o Services nang walang pahintulot. Kung mayroon kang dahilan para maniwala na ang isang bata ay nagbigay ng personal na matutukoy na impormasyon sa amin sa pamamagitan ng Application at/o Services, mangyaring makipag-ugnay sa amin. Dapat kang hindi bababa sa 16 taong gulang para makapagbigay ng pahintulot sa pagproseso ng iyong personal na matutukoy na impormasyon sa iyong bansa (sa ilang mga bansa maaaring pahintulutan namin ang iyong magulang o guardian na gawin ito sa iyong ngalan).
+Hindi ako kusang nangongolekta ng personal na pagkakakilanlang impormasyon mula sa mga bata. Hinihikayat ko ang lahat ng bata na huwag magpasa ng anumang personal na impormasyon sa pamamagitan ng Application at/o Services. Hinihikayat ko rin ang mga magulang at legal na tagapangalaga na bantayan ang paggamit ng kanilang mga anak sa Internet at tumulong upang ipatupad ang Policy na ito sa pamamagitan ng paggiya sa kanilang mga anak na huwag magbigay ng personal na impormasyon gamit ang Application at/o Services nang walang pahintulot nila. Kung may dahilan kang maniwala na ang isang bata ay nagbigay sa amin ng personal na pagkakakilanlang impormasyon sa pamamagitan ng Application at/o Services, mangyaring kontakin kami. Dapat ay hindi bababa sa 16 taong gulang ka upang pumayag sa pagproseso ng iyong personal na impormasyon sa iyong bansa (sa ilang bansa, maaaring pahintulutan naming gawin ito ng iyong magulang o tagapangalaga para sa iyo).
 
-## Mga Pagbabago sa Patakaran na Ito sa Pagkapribado
+## Mga Pagbabago sa Patakaran sa Pribasya na Ito
 
-Maaaring baguhin ko ang aming Patakaran sa Pagkapribado mula sa panahon-sa-panahon. Kaya, pinapayuhan kang suriin itong pahina paminsan-minsan para sa anumang mga pagbabago. Aabisan kita ng anumang mga pagbabago sa pamamagitan ng pag-post ng bagong Patakaran sa Pagkapribado sa pahinang ito.
+Maaaring i-update ko ang aming Patakaran sa Pribasya paminsan-minsan. Kaya, pinapayuhan kang regular na suriin ang pahinang ito para sa anumang mga pagbabago. Aabisuhan kita tungkol sa anumang pagbabago sa pamamagitan ng pag-post ng bagong Patakaran sa Pribasya sa pahinang ito.
 
-Ang patakaran na ito ay epektibo simula noong 2023-10-31
+Ang patakarang ito ay epektibo simula 2023-10-31
 
-## Makipag-Ugnay sa Amin
+## Kontakin Kami
 
-Kung mayroon kang anumang mga katanungan o mungkahi tungkol sa aking Patakaran sa Pagkapribado, huwag magatubiling makipag-ugnay sa akin sa roam-support@msd3.io.
+Kung may mga tanong o suhestyon ka tungkol sa aking Patakaran sa Pribasya, huwag mag-atubiling kontakin ako sa roam-support@msd3.io.

@@ -1,0 +1,95 @@
+---
+title: ਮੈਨੂੰ ਕੌਫੀ ਖ਼ਰੀਦ ਕੇ ਦਿਓ
+description: ਰੋਅਮ, ਮੁਫ਼ਤ ਰੋਕੂ ਰਿਮੋਟ ਦੇ ਵਿਕਾਸ ਨੂੰ ਸਹਿਯੋਗ ਦਿਉ
+hide_table_of_contents: true
+---
+
+export const tiers = [
+    {
+        name: "Black Coffee",
+        emoji: "☕️",
+        price: "$3",
+        url: "https://buy.stripe.com/7sYaEY4l058MdMZ4bsgw000",
+    },
+    {
+        name: "Latte",
+        emoji: "🥛",
+        price: "$5",
+        url: "https://buy.stripe.com/4gMbJ23gW30E24h6jAgw001",
+    },
+    {
+        name: "Lunch",
+        emoji: "🥪",
+        price: "$10",
+        url: "https://buy.stripe.com/9B64gA3gW30E24h8rIgw002",
+    },
+    {
+        name: "Dinner",
+        emoji: "🍝",
+        price: "$20",
+        url: "https://buy.stripe.com/7sY14odVA8kY6kxdM2gw003",
+    },
+];
+
+export const TipGrid = () => (
+    <div
+        style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1rem",
+            margin: "2rem 0",
+        }}
+    >
+        {tiers.map((tier) => (
+            <a
+                key={tier.name}
+                href={tier.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    textAlign: "center",
+                    padding: "1.5rem 1rem",
+                    border: "1px solid var(--ifm-color-emphasis-300)",
+                    borderRadius: "12px",
+                    textDecoration: "none",
+                    color: "inherit",
+                    background: "var(--ifm-background-surface-color)",
+                }}
+            >
+                <span style={{ fontSize: "2.5rem", lineHeight: 1 }}>{tier.emoji}</span>
+                <strong style={{ marginTop: "0.75rem", fontSize: "1.1rem" }}>{tier.name}</strong>
+                <span
+                    style={{
+                        marginTop: "0.25rem",
+                        fontSize: "1.5rem",
+                        fontWeight: 700,
+                        color: "var(--ifm-color-primary)",
+                    }}
+                >
+                    {tier.price}
+                </span>
+            </a>
+        ))}
+    </div>
+);
+
+## ਮੈਨੂੰ ਕੌਫੀ ਖ਼ਰੀਦ ਕੇ ਦਿਓ
+
+ਰੋਅਮ ਮੁਫ਼ਤ ਅਤੇ ਖੁੱਲ੍ਹਾ ਸਰੋਤ ਹੈ, ਨਾ ਕੋਈ ਇਸ਼ਤਿਹਾਰ, ਨਾ ਕੋਈ ਭੁਗਤਾਨੀ ਵਰਜਨ। ਇਹ ਮੈਂ ਆਪਣੇ ਖਾਲੀ ਵੇਲੇ ਵਿੱਚ ਬਣਾਇਆ ਹੈ।
+
+ਜੇਕਰ ਇਹ ਤੁਹਾਡੇ ਲਈ ਲਾਭਦਾਇਕ ਰਿਹਾ ਹੈ, ਤਾਂ ਤੁਸੀਂ ਟਿਪ ਦੇ ਸਕਦੇ ਹੋ। ਇਹ ਪੂਰੀ ਤਰ੍ਹਾਂ ਵੈਚੋਇਕ ਹੈ, ਅਤੇ ਐਪ ਦੇ ਕਿਸੇ ਵੀ ਹਿੱਸੇ 'ਤੇ ਇਸ ਦਾ ਕੋਈ ਅਸਰ ਨਹੀਂ ਪੈਂਦਾ।
+
+<TipGrid />
+
+ਭੁਗਤਾਨ [Stripe](https://stripe.com) ਰਾਹੀਂ ਹੋਂਦੇ ਹਨ। ਮੈਂ ਤੁਹਾਡੇ ਕਾਰਡ ਦੀ ਜਾਣਕਾਰੀ ਕਦੇ ਨਹੀਂ ਵੇਖਦਾ।
+
+### ਨੋਟਾਂ
+
+-   ਇਹ ਟਿਪ ਹੈ, ਦਾਨ ਨਹੀਂ। ਮੈਂ ਰਜਿਸਟਰਡ ਚੈਰੀਟੀ ਨਹੀਂ ਹਾਂ, ਇਸ ਲਈ ਇਹ ਟੈਕਸ ਯੋਗ ਨਹੀਂ।
+-   ਇੱਥੇ ਟਿਪ ਕਰਨ ਨਾਲ ਕੁਝ ਵੀ ਅਣਲੌਕ ਨਹੀਂ ਹੁੰਦਾ। ਐਪ ਦੇ ਕਿਸਟਮ ਰੰਗ ਅਤੇ ਵੱਖਰੀਆਂ ਐਪ ਆਈਕਨਜ਼, ਐਪ ਅੰਦਰ ਹੀ ਵੱਖ ਟਿਪ ਹਨ।
+-   ਗਲਤੀ ਨਾਲ ਟਿਪ ਹੋ ਗਈ? [roam-support@msd3.io](mailto:roam-support@msd3.io) 'ਤੇ ਈਮੇਲ ਕਰੋ, ਮੈਂ ਵਾਪਸ ਕਰ ਦਿਆਂਗਾ।
+
+ਰੋਅਮ ਵਰਤਣ ਲਈ ਧੰਨਵਾਦ।

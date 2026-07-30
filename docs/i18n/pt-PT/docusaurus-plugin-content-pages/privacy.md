@@ -4,57 +4,63 @@ hide_table_of_contents: true
 
 # Política de Privacidade
 
-Scott Driggers desenvolveu a aplicação Roam como uma aplicação gratuita. Este SERVIÇO é fornecido por Scott Driggers sem custos e tem como objetivo ser usado como está.
+:::warning
 
-Esta página é usada para informar os visitantes sobre as minhas políticas com a coleta, uso e divulgação de Informações Pessoais caso alguém decida usar o meu Serviço.
+Esta não é uma política de privacidade da aplicação Roly. A Roly não é desenvolvida nem suportada por Scott Driggers. O mesmo aplica-se a qualquer outra aplicação, exceto a aplicação `Roam` para Roku.
 
-Se você optar por usar o meu Serviço, concorda com a coleta e uso de informações em relação a esta política. A informação pessoal que eu coleta é usada para fornecer e melhorar o Serviço. Eu não vou usar ou compartilhar suas informações com ninguém, exceto conforme descrito nesta Política de Privacidade.
+:::
 
-Os termos usados ​​nesta Política de Privacidade têm os mesmos significados que em nossos Termos e Condições, que são acessíveis em Roam, a menos que definido de outra forma nesta Política de Privacidade.
+Scott Driggers criou a aplicação Roam como uma aplicação gratuita. Este SERVIÇO é fornecido por Scott Driggers sem custos e destina-se a ser utilizado tal como está.
 
-## Coleta e Uso de Informações
+Esta página serve para informar os visitantes sobre as minhas políticas relativas à recolha, utilização e divulgação de Informação Pessoal para quem decida utilizar o meu Serviço.
 
-Para uma melhor experiência, ao usar o nosso Serviço, eu posso pedir que você nos forneça algumas informações pessoalmente identificáveis. As informações que eu solicito serão mantidas no seu dispositivo e não serão coletadas por mim de qualquer forma.
+Se optar por utilizar o meu Serviço, concorda com a recolha e utilização de informações de acordo com esta política. A Informação Pessoal que recolho é usada para fornecer e melhorar o Serviço. Não utilizarei nem partilharei as suas informações com ninguém, exceto nos casos descritos nesta Política de Privacidade.
 
-## Dados de Log
+Os termos utilizados nesta Política de Privacidade têm o mesmo significado que nos nossos Termos e Condições, acessíveis em Roam, salvo indicação em contrário nesta Política de Privacidade.
 
-Quero informar que sempre que você usar o meu Serviço, em caso de erro na aplicação eu coleta dados e informações (através de produtos de terceiros) no seu telemóvel chamados Dados de Log. Esses Dados de Log podem incluir informações como o endereço de Protocolo de Internet (“IP”) do seu dispositivo, nome do dispositivo, versão do sistema operacional, configuração do aplicativo ao utilizar meu Serviço, hora e data do uso do Serviço e outras estatísticas.
+## Recolha e Utilização de Informação
+
+Para uma melhor experiência ao utilizar o nosso Serviço, poderei pedir-lhe que forneça algumas informações pessoais identificáveis. As informações que solicitar serão mantidas apenas no seu dispositivo e não são recolhidas por mim de forma alguma.
+
+## Dados de Registo
+
+Quero informar que sempre que utilizar o meu Serviço, em caso de erro na aplicação, recolho dados e informações (através de produtos de terceiros) no seu telemóvel, denominados Dados de Registo. Estes Dados de Registo podem incluir informações como o endereço de Protocolo de Internet (“IP”) do seu dispositivo, nome do dispositivo, versão do sistema operativo, configuração da aplicação ao utilizar o Serviço, data e hora de utilização do Serviço e outras estatísticas.
 
 ## Cookies
 
-Cookies são arquivos com uma pequena quantidade de dados que são comumente usados ​​como identificadores únicos anônimos. Estes são enviados para o seu navegador a partir dos sites que você visita e são armazenados na memória interna do seu dispositivo.
+Cookies são ficheiros com uma pequena quantidade de dados que são utilizados normalmente como identificadores únicos anónimos. Estes são enviados para o seu navegador a partir dos websites que visita e armazenados na memória interna do seu dispositivo.
 
-Este Serviço não usa explicitamente esses “cookies”. No entanto, a aplicação pode usar código e bibliotecas de terceiros que usam “cookies” para coletar informações e melhorar seus serviços. Você tem a opção de aceitar ou recusar esses cookies e saber quando um cookie está sendo enviado para o seu dispositivo. Se você optar por recusar nossos cookies, pode não conseguir usar algumas partes deste Serviço.
+Este Serviço não utiliza estes “cookies” de forma explícita. Contudo, a aplicação pode usar código e bibliotecas de terceiros que utilizam “cookies” para recolher informações e melhorar os seus serviços. Tem a opção de aceitar ou recusar estes cookies e de ser informado quando um cookie está a ser enviado para o seu dispositivo. Se optar por recusar os nossos cookies, poderá não conseguir usar algumas partes deste Serviço.
 
-## Provedores de serviço
+## Prestadores de Serviços
 
-Eu posso empregar empresas e indivíduos terceiros pelos seguintes motivos:
+Posso recorrer a empresas e indivíduos terceiros pelos seguintes motivos:
 
 -   Para facilitar o nosso Serviço;
 -   Para fornecer o Serviço em nosso nome;
--   Para realizar serviços relacionados ao serviço; ou
--   Para nos ajudar a analisar como o nosso Serviço é usado.
+-   Para executar serviços relacionados com o Serviço; ou
+-   Para nos ajudar a analisar como o nosso Serviço é utilizado.
 
-Quero informar aos usuários deste Serviço que esses terceiros têm acesso às suas Informações Pessoais. O motivo é para realizar as tarefas atribuídas a eles em nosso nome. No entanto, eles são obrigados a não divulgar ou usar as informações para qualquer outro propósito.
+Quero informar os utilizadores deste Serviço de que estes terceiros têm acesso à Informação Pessoal. O motivo é para executar as tarefas atribuídas em nosso nome. No entanto, estão obrigados a não divulgar ou utilizar a informação para qualquer outro fim.
 
 ## Segurança
 
-Eu valorizo sua confiança em fornecer-nos suas Informações Pessoais, por isso, estamos nos esforçando para usar meios comercialmente aceitáveis para protegê-las. Mas lembre-se de que nenhum método de transmissão pela internet, ou método de armazenamento eletrônico é 100% seguro e confiável, e eu não posso garantir sua segurança absoluta.
+Valorizo a sua confiança ao fornecer-nos a sua Informação Pessoal, por isso esforçamo-nos por usar meios comercialmente aceitáveis para a proteger. Mas lembre-se de que nenhum método de transmissão pela internet ou de armazenamento eletrónico é 100% seguro e fiável, não podendo garantir a sua segurança absoluta.
 
-## Links para outros sites
+## Ligações para Outros Sites
 
-Este Serviço pode conter links para outros sites. Se você clicar num link de terceiros, será direcionado para esse site. Observe que esses sites externos não são operados por mim. Portanto, eu recomendo fortemente que você reveja a Política de Privacidade desses sites. Eu não tenho controle e não assumo responsabilidade pelo conteúdo, políticas de privacidade ou práticas de quaisquer sites ou serviços de terceiros.
+Este Serviço pode conter ligações para outros sites. Se clicar numa ligação de terceiros, será redirecionado para esse site. Note que estes sites externos não são operados por mim. Por isso, aconselho vivamente que reveja a Política de Privacidade desses websites. Não tenho controlo sobre, nem assumo qualquer responsabilidade pelo conteúdo, políticas de privacidade ou práticas de quaisquer sites ou serviços de terceiros.
 
-## Privacidade de Crianças
+## Privacidade das Crianças
 
-Eu não coleta intencionalmente informações pessoalmente identificáveis de crianças. Incentivo todas as crianças a nunca enviar quaisquer informações pessoalmente identificáveis através do Aplicativo e/ou Serviços. Eu incentivo os pais e tutores legais a monitorar o uso da internet por seus filhos e a ajudar a fazer cumprir esta Política, instruindo suas crianças a nunca fornecerem informações pessoalmente identificáveis através do Aplicativo e/ou Serviços sem a sua permissão. Se você tiver motivos para acreditar que uma criança nos forneceu informações pessoalmente identificáveis através do Aplicativo e/ou Serviços, entre em contato comigo. Você também deve ter pelo menos 16 anos de idade para consentir no processamento de suas informações pessoalmente identificáveis no seu país (em alguns países, podemos permitir que seu pai ou tutor faça isso em seu nome).
+Não recolho conscientemente informações pessoais identificáveis de crianças. Incentivo todas as crianças a nunca submeterem qualquer informação pessoal identificável através da Aplicação e/ou Serviços. Incentivo os pais e tutores legais a monitorizar a utilização da Internet pelas suas crianças e a ajudar a aplicar esta Política instruindo-as a nunca fornecerem informações pessoais identificáveis através da Aplicação e/ou Serviços sem a sua permissão. Se tiver razões para acreditar que uma criança forneceu informações pessoais identificáveis através da Aplicação e/ou Serviços, por favor contacte-nos. Deve ter pelo menos 16 anos para consentir o tratamento dos seus dados pessoais identificáveis no seu país (em alguns países, poderemos permitir que os seus pais ou tutores o façam em seu nome).
 
-## Alterações na Política de Privacidade
+## Alterações a Esta Política de Privacidade
 
-Eu posso atualizar nossa Política de Privacidade de tempos em tempos. Portanto, você é aconselhado a revisar esta página periodicamente para quaisquer alterações. Eu informarei você sobre quaisquer alterações, publicando a nova Política de Privacidade nesta página.
+Posso atualizar a nossa Política de Privacidade periodicamente. Assim, recomenda-se que reveja esta página periodicamente para eventuais alterações. Notificarei quaisquer alterações publicando a nova Política de Privacidade nesta página.
 
-Esta política é eficaz desde 31 de Outubro de 2023
+Esta política está em vigor a partir de 2023-10-31
 
 ## Contacte-nos
 
-Se você tiver alguma dúvida ou sugestão sobre a minha Política de Privacidade, não hesite em contactar-me em roam-support@msd3.io.
+Se tiver alguma questão ou sugestão relativamente à minha Política de Privacidade, não hesite em contactar-me através de roam-support@msd3.io.

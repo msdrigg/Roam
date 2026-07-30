@@ -1,0 +1,95 @@
+---
+title: Mua cho tôi một cốc cà phê
+description: Hỗ trợ phát triển Roam, ứng dụng điều khiển Roku miễn phí
+hide_table_of_contents: true
+---
+
+export const tiers = [
+    {
+        name: "Black Coffee",
+        emoji: "☕️",
+        price: "$3",
+        url: "https://buy.stripe.com/7sYaEY4l058MdMZ4bsgw000",
+    },
+    {
+        name: "Latte",
+        emoji: "🥛",
+        price: "$5",
+        url: "https://buy.stripe.com/4gMbJ23gW30E24h6jAgw001",
+    },
+    {
+        name: "Lunch",
+        emoji: "🥪",
+        price: "$10",
+        url: "https://buy.stripe.com/9B64gA3gW30E24h8rIgw002",
+    },
+    {
+        name: "Dinner",
+        emoji: "🍝",
+        price: "$20",
+        url: "https://buy.stripe.com/7sY14odVA8kY6kxdM2gw003",
+    },
+];
+
+export const TipGrid = () => (
+    <div
+        style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1rem",
+            margin: "2rem 0",
+        }}
+    >
+        {tiers.map((tier) => (
+            <a
+                key={tier.name}
+                href={tier.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    textAlign: "center",
+                    padding: "1.5rem 1rem",
+                    border: "1px solid var(--ifm-color-emphasis-300)",
+                    borderRadius: "12px",
+                    textDecoration: "none",
+                    color: "inherit",
+                    background: "var(--ifm-background-surface-color)",
+                }}
+            >
+                <span style={{ fontSize: "2.5rem", lineHeight: 1 }}>{tier.emoji}</span>
+                <strong style={{ marginTop: "0.75rem", fontSize: "1.1rem" }}>{tier.name}</strong>
+                <span
+                    style={{
+                        marginTop: "0.25rem",
+                        fontSize: "1.5rem",
+                        fontWeight: 700,
+                        color: "var(--ifm-color-primary)",
+                    }}
+                >
+                    {tier.price}
+                </span>
+            </a>
+        ))}
+    </div>
+);
+
+## Mua cho tôi một cốc cà phê
+
+Roam là ứng dụng miễn phí và mã nguồn mở, không có quảng cáo và không có cấp trả phí. Tôi xây dựng nó vào thời gian rảnh rỗi.
+
+Nếu bạn thấy ứng dụng này hữu ích, bạn có thể gửi một khoản ủng hộ nhỏ. Điều này hoàn toàn không bắt buộc, và ứng dụng sẽ không thay đổi gì dù bạn có ủng hộ hay không.
+
+<TipGrid />
+
+Thanh toán được thực hiện qua [Stripe](https://stripe.com). Tôi sẽ không bao giờ nhìn thấy thông tin thẻ của bạn.
+
+### Lưu ý
+
+- Đây là một khoản ủng hộ, không phải quyên góp. Tôi không phải là tổ chức từ thiện, nên bạn sẽ không được giảm trừ thuế.
+- Ủng hộ ở đây sẽ không mở khóa thêm tính năng nào. Các màu nhấn và biểu tượng ứng dụng khác là phần ủng hộ riêng trong ứng dụng.
+- Lỡ ủng hộ nhầm? Vui lòng gửi email đến [roam-support@msd3.io](mailto:roam-support@msd3.io) và tôi sẽ hoàn lại khoản tiền đó.
+
+Cảm ơn bạn đã sử dụng Roam.
