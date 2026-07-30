@@ -14,6 +14,12 @@ This is a support page for the Roam application, not Roly. I recently learned th
 
 :::
 
+:::tip[Buy me a coffee]
+
+Roam is free with no ads and no paid tier. If it's useful to you, you can [leave a tip](/coffee).
+
+:::
+
 Roam offers everything you want and nothing you don't
 
 -   Runs on Mac, iPhone, iPad, Apple Watch, Vision Pro or Apple TV!

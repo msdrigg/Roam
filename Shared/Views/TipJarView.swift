@@ -54,14 +54,14 @@ struct TipJarView: View {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(
-                        "Roam is free, ad-free, and open source.",
+                        "Roam is free and open source, with no ads.",
                         comment: "Headline at the top of the tip jar"
                     )
                     .font(.headline)
 
                     Text(
                         // swiftlint:disable:next line_length
-                        "If it's been useful to you, you can leave a tip. Any tip unlocks custom accent colors and the alternate app icons — but every tier unlocks the same things, so pick whatever feels right.",
+                        "If it's been useful, you can leave a tip. Any tip unlocks custom accent colors and the alternate app icons. Every tier unlocks the same things.",
                         comment: "Explanation of what tipping does"
                     )
                     .font(.subheadline)
@@ -80,7 +80,7 @@ struct TipJarView: View {
                 if store.hasTipped {
                     Label(
                         String(
-                            localized: "Thank you! Your extras are unlocked.",
+                            localized: "Thanks. Your extras are unlocked.",
                             comment: "Confirmation shown once the user has tipped"
                         ),
                         systemImage: "checkmark.seal.fill"
