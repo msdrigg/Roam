@@ -256,11 +256,11 @@ def localize_docusaurus(docs_dir: str):
         )
         return
     else:
-        locales = [
-            locale.strip().replace('"', "")
-            for locale in locales.split(",")
-            if locale.strip().replace('"', "") != "en"
-        ]
+        locales = [locale.strip().replace('"', "") for locale in locales.split(",")]
+        # Drop the default locale and any empty entries (a trailing comma in the
+        # config's locales array would otherwise yield a "" locale, which writes
+        # translations into the i18n root instead of a locale directory)
+        locales = [locale for locale in locales if locale and locale != "en"]
         print(f"Locales found: {locales}")
 
     file_translate_map = {}

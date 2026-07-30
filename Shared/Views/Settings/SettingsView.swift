@@ -327,16 +327,12 @@ struct SettingsView: View {
                     Button {
                         showingTipJar = true
                     } label: {
-                        HStack {
+                        HStack(spacing: 12) {
                             Text("Accent Color", comment: "Label for accent color picker")
-                            Spacer()
-                            Label(
-                                String(localized: "Tip to unlock", comment: "Label on a locked cosmetic setting"),
-                                systemImage: "lock.fill"
-                            )
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                                Spacer(minLength: 0)
+                            TipToUnlockBadge()
                         }
+                        .padding(.vertical, 2)
 #if os(macOS)
                         .contentShape(Rectangle())
 #endif
@@ -354,18 +350,18 @@ struct SettingsView: View {
                         showingTipJar = true
                     }
                 } label: {
-                    HStack {
+                    HStack(spacing: 12) {
                         Text("App Icon", comment: "Label for the alternate app icon picker")
-                        Spacer()
-                        if !tipStore.hasTipped {
-                            Label(
-                                String(localized: "Tip to unlock", comment: "Label on a locked cosmetic setting"),
-                                systemImage: "lock.fill"
-                            )
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        if tipStore.hasTipped {
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        } else {
+                            TipToUnlockBadge()
                         }
                     }
+                    .padding(.vertical, 2)
                 }
 #endif
             }

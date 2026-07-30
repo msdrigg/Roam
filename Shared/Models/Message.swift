@@ -67,6 +67,17 @@ public struct Message: Codable, Sendable {
 }
 
 extension Message {
+    /// Id of the message shown after the developer unlock code is redeemed. It
+    /// is synthesized on device and never round-trips to the backend, so — like
+    /// `"start"` — it is not a snowflake and carries no timestamp.
+    static let developerUnlockID = "developer-unlock"
+
+    /// Messages the app makes up locally. They have no backend copy, so they
+    /// must never render a send indicator or a parsed-from-id timestamp.
+    var isLocallyGenerated: Bool {
+        robotMessage || id == "start" || id == Self.developerUnlockID
+    }
+
     var timestamp: Date? {
         return parseDiscordSnowflake(self.id)
     }

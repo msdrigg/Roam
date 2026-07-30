@@ -24,6 +24,7 @@ enum UserDefaultKeys {
     // Tip jar / cosmetic unlocks
     static let cosmeticsGrandfathered = "cosmeticsGrandfathered"
     static let didEvaluateCosmeticsGrandfathering = "didEvaluateCosmeticsGrandfathering"
+    static let developerCosmeticsUnlock = "developerCosmeticsUnlock"
     static let alternateAppIcon = "alternateAppIcon"
 
     // Messaging

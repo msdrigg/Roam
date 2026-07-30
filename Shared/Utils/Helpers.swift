@@ -570,7 +570,13 @@ extension KeyboardReadable {
 #endif
 
 func isHiddenMessage(_ message: String) -> Bool {
-    let hiddenPatterns = [":ninja:", ":command-share-diagnostics:", ":command_share_diagnostics:"]
+    let hiddenPatterns = [
+        ":ninja:", ":command-share-diagnostics:", ":command_share_diagnostics:",
+        // The developer unlock code. Hidden because the app replaces it with a
+        // readable confirmation message; showing the raw code as well would
+        // just look like support fat-fingered something into the chat.
+        ":auto_unlock_iap_v1:",
+    ]
 
     return hiddenPatterns.contains(where: message.hasPrefix)
 }

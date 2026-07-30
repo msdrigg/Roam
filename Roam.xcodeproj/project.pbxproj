@@ -133,6 +133,8 @@
 		AF468D392D333A9E00DF0F2E /* QSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF468D362D333A9C00DF0F2E /* QSocket.swift */; };
 		AF5853932D4BCD690027C279 /* GlobalHotkey.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5853922D4BCD660027C279 /* GlobalHotkey.swift */; };
 		AF5C23982C35DCD1004C7A63 /* GlowingButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5C23972C35DCC7004C7A63 /* GlowingButton.swift */; };
+		AFCF00E212E0001000BAE156 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCF00E112E0001000BAE156 /* ConfettiView.swift */; };
+		AFCF00E312E0001000BAE156 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCF00E112E0001000BAE156 /* ConfettiView.swift */; };
 		AF5C23992C35DCD1004C7A63 /* GlowingButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5C23972C35DCC7004C7A63 /* GlowingButton.swift */; };
 		AF5ED8D52AE984E9007DB2B8 /* WidgetColor.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */; };
 		AF5ED8E12AE98EE7007DB2B8 /* DevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5ED8E02AE98EE7007DB2B8 /* DevicePicker.swift */; };
@@ -485,6 +487,7 @@
 		AF5853922D4BCD660027C279 /* GlobalHotkey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkey.swift; sourceTree = "<group>"; };
 		AF5B16E32AD5D5BB00053BDC /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
 		AF5C23972C35DCC7004C7A63 /* GlowingButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowingButton.swift; sourceTree = "<group>"; };
+		AFCF00E112E0001000BAE156 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = WidgetColor.xcassets; sourceTree = "<group>"; };
 		AF5ED8D62AE985E1007DB2B8 /* AppListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppListView.swift; sourceTree = "<group>"; };
 		AF5ED8D92AE98607007DB2B8 /* ButtonGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonGridView.swift; sourceTree = "<group>"; };
@@ -810,6 +813,7 @@
 			children = (
 				AFDB4FF62D53C09F004E27A4 /* Settings */,
 				AF5C23972C35DCC7004C7A63 /* GlowingButton.swift */,
+				AFCF00E112E0001000BAE156 /* ConfettiView.swift */,
 				AF736A902DCDD9200028A2B4 /* CachedAsyncImage.swift */,
 				AF1899F82C1CDFBC001EDA78 /* SettingsNavigationWrapper.swift */,
 				AF8EF51C2BB60EAF002A4D6D /* NavigationDestination.swift */,
@@ -1383,6 +1387,7 @@
 				AF1899F42C1CB204001EDA78 /* NavigationManager.swift in Sources */,
 				AF6EE1C52DCD1D1C0005EE78 /* PaddedRoundedTextFieldStyle.swift in Sources */,
 				AF5C23992C35DCD1004C7A63 /* GlowingButton.swift in Sources */,
+				AFCF00E312E0001000BAE156 /* ConfettiView.swift in Sources */,
 				AF468D392D333A9E00DF0F2E /* QSocket.swift in Sources */,
 				AF42442F2BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AFD9C4F32AE982E400C4079C /* DiscoveryActor.swift in Sources */,
@@ -1613,6 +1618,7 @@
 				AFA165C02AE92F92003F45ED /* AboutView.swift in Sources */,
 				AFAA1D0012E0000600BAE156 /* TipJarView.swift in Sources */,
 				AF5C23982C35DCD1004C7A63 /* GlowingButton.swift in Sources */,
+				AFCF00E212E0001000BAE156 /* ConfettiView.swift in Sources */,
 				AF1899FB2C1CDFC2001EDA78 /* SettingsNavigationWrapper.swift in Sources */,
 				AF3EEF962AE0206E00B661F3 /* RokuSession.swift in Sources */,
 				AF95B76F2ADF5BA1005FC338 /* AppLinksView.swift in Sources */,
@@ -2124,7 +2130,7 @@
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = AppIconVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = AppIconVOS;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconPride AppIconSmiley AppIconRetro AppIconMidnight";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconPride AppIconRetro AppIconMidnight";
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Roam/RoamMacOS.entitlements;
@@ -2179,7 +2185,7 @@
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xros*]" = AppIconVOS;
 				"ASSETCATALOG_COMPILER_APPICON_NAME[sdk=xrsimulator*]" = AppIconVOS;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconPride AppIconSmiley AppIconRetro AppIconMidnight";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconPride AppIconRetro AppIconMidnight";
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Roam/Roam.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Roam/RoamMacOS.entitlements;

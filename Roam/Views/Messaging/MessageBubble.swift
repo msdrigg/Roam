@@ -6,8 +6,10 @@ struct MessageBubble: View {
 
     @Environment(\.colorScheme) var colorScheme
 
+    @Environment(CelebrationController.self) private var celebration: CelebrationController?
+
     var shownWeekday: String? {
-        if message.robotMessage || message.id == "start" {
+        if message.isLocallyGenerated {
             return nil
         }
 
@@ -99,6 +101,10 @@ struct MessageBubble: View {
                 }
             }
 
+            if message.id == Message.developerUnlockID {
+                celebrateButton
+            }
+
             ForEach(message.sentAttachments, id: \.id) { attachment in
                 MessageFraming(message: message) {
                     AttachmentView(attachment: attachment, message: message)
@@ -117,6 +123,27 @@ struct MessageBubble: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// Sits under the unlock bubble, aligned with it, so it reads as part of
+    /// that message rather than as a stray control in the conversation.
+    @ViewBuilder
+    private var celebrateButton: some View {
+        HStack {
+            Button {
+                celebration?.celebrate()
+            } label: {
+                Label(
+                    String(localized: "Celebrate", comment: "Button that sets off confetti in the chat"),
+                    systemImage: "party.popper.fill"
+                )
+            }
+            .buttonStyle(.glassIfSupported(isProminent: true))
+
+            Spacer()
+        }
+        .padding(.leading, 10)
+        .padding(.top, 2)
     }
 }
 
@@ -342,7 +369,7 @@ extension Message {
         if self.showSending {
             return Date.now.formatted(date: .omitted, time: .shortened)
         }
-        if self.robotMessage || self.id == "start" {
+        if self.isLocallyGenerated {
             return nil
         }
 
@@ -355,7 +382,7 @@ extension Message {
             return true
         }
 
-        if !self.fetchedBackend && !self.robotMessage && self.id != "start" {
+        if !self.fetchedBackend && !self.isLocallyGenerated {
             return true
         }
 

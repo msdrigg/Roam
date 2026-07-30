@@ -15,6 +15,8 @@ struct MessageView: View {
     @State private var refreshResetId = UUID()
     @State private var keyboardIsShowing = false
     @State private var wrongAttemptsTracker = WrongAttemptsTracker()
+    @State private var celebration = CelebrationController()
+    @State private var tipStore = TipStore.shared
     @AppStorage(UserDefaultKeys.hasSentFirstMessage) private var hasSentFirstMessage: Bool = false
     @AppStorage(UserDefaultKeys.lastApnsRequestTime) private var lastApnsRequestTime: Double = -1
     @AppStorage(UserDefaultKeys.lastSupportTypingTime) private var lastSupportTypingTimeInterval: TimeInterval = Date.distantPast.timeIntervalSince1970
@@ -70,6 +72,33 @@ struct MessageView: View {
         }
     }
 
+    /// True once support has sent the unlock code into this conversation.
+    ///
+    /// Read off the loader's raw list rather than `messages`, because the code
+    /// itself is a hidden message and `messages` has already filtered it out.
+    private var receivedDeveloperUnlockCode: Bool {
+        (messageLoader.messages ?? []).contains { message in
+            message.author == .support && TipStore.isDeveloperUnlockCode(message.message)
+        }
+    }
+
+    /// Pinned to the end of the conversation for as long as the developer
+    /// unlock is active, so the Celebrate button stays reachable instead of
+    /// being a one-frame confirmation the user can never get back to.
+    var developerUnlockMessage: Message? {
+        guard tipStore.isDeveloperUnlocked else { return nil }
+
+        return Message(
+            id: Message.developerUnlockID,
+            message: String(
+                localized: "Developer unlocked tip-based functionality",
+                comment: "Confirmation shown in the chat when support sends the developer unlock code"
+            ),
+            author: .support,
+            fetchedBackend: false
+        )
+    }
+
     var pendingAttachments: Bool {
         attachedFiles.contains{ $0.failure != nil || $0.attachment == nil}
     }
@@ -88,6 +117,7 @@ struct MessageView: View {
             )]
             + (messageLoader.messages ?? [])
                 .filter{!$0.hidden}
+            + [developerUnlockMessage].compactMap({$0})
             + [roboMessage].compactMap({$0})
         ).filter { !$0.message.isEmpty || !$0.sentAttachments.isEmpty || $0.unsentAttachment != nil }
     }
@@ -159,6 +189,14 @@ struct MessageView: View {
                     if !messageFieldText.isEmpty {
                         notifyTyping()
                     }
+                }
+                // `initial: true` so a code that arrived while the user was
+                // elsewhere in the app still lands the moment they open the
+                // chat. `redeemDeveloperUnlock` only reports true the once, so
+                // reopening the chat later doesn't re-fire the confetti.
+                .onChange(of: receivedDeveloperUnlockCode, initial: true) { _, received in
+                    guard received, tipStore.redeemDeveloperUnlock() else { return }
+                    celebration.celebrate()
                 }
                 .task(id: hasSentFirstMessage) {
                     if !hasSentFirstMessage {
@@ -362,12 +400,24 @@ struct MessageView: View {
         }
         .buttonStyle(.plain)
         .sendButtonGlass(tint: meColor)
+        // Icon-only, so the automatic symbol-derived label ("arrow up") is what
+        // VoiceOver would otherwise read out.
+        .accessibilityLabel(Text("Send", comment: "Label on a button to send a message"))
         .help(String(localized: "Send the message", comment: "Help text on a button to send a chat message"))
     }
 #endif
 
     @ViewBuilder
     var bodyContent: some View {
+        conversation
+            // Above the bubbles so the Celebrate button can reach it, and above
+            // the input bar so confetti falls in front of everything.
+            .environment(celebration)
+            .confettiOverlay(burst: celebration.burst)
+    }
+
+    @ViewBuilder
+    private var conversation: some View {
 #if os(iOS)
         // The input bar floats in the bottom safe area so chat content scrolls
         // *behind* its liquid glass rather than sitting on an opaque bar. The

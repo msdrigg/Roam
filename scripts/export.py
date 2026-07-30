@@ -37,26 +37,38 @@ def archive_application(platform: str, render_github_actions: bool = False):
     subprocess.run(f'rm -rf "{archive_path}"', shell=True)
     print(f"Archiving application for platform {platform}")
     subprocess.run(
-        f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}' | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
+        f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}'{authentication_args()} | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
         shell=True,
         check=True,
     )
     print(f"Archive succeeded for platform {platform}")
 
 
-def publish_to_app_store(platform: str, render_github_actions: bool = False):
-    print(f"Exporting for platform {platform}")
+def authentication_args() -> str:
+    """App Store Connect credentials plus -allowProvisioningUpdates.
+
+    The archive needs these as much as the export does: every target signs
+    automatically, so on a machine that has never built Roam there are no
+    profiles on disk and Xcode has to mint them. Without the flag it fails with
+    "No profiles for 'com.msdrigg.roam.…' were found ... Automatic signing is
+    disabled and unable to generate a profile."
+    """
     api_key = os.environ.get("XCODE_API_KEY")
     api_issuer = os.environ.get("XCODE_API_ISSUER")
-    auth_args = ""
-    if api_key and api_issuer:
-        key_path = os.path.expanduser(f"~/.private_keys/AuthKey_{api_key}.p8")
-        auth_args = (
-            f" -authenticationKeyID {api_key}"
-            f" -authenticationKeyIssuerID {api_issuer}"
-            f" -authenticationKeyPath {key_path}"
-            f" -allowProvisioningUpdates"
-        )
+    if not api_key or not api_issuer:
+        return ""
+    key_path = os.path.expanduser(f"~/.private_keys/AuthKey_{api_key}.p8")
+    return (
+        f" -authenticationKeyID {api_key}"
+        f" -authenticationKeyIssuerID {api_issuer}"
+        f" -authenticationKeyPath {key_path}"
+        f" -allowProvisioningUpdates"
+    )
+
+
+def publish_to_app_store(platform: str, render_github_actions: bool = False):
+    print(f"Exporting for platform {platform}")
+    auth_args = authentication_args()
     subprocess.run(
         f"""set -o pipefail && xcodebuild -exportArchive -archivePath "./Archives/XCArchives/{platform}.xcarchive" -exportPath "./Archives/Exports/{platform}" -exportOptionsPlist ./scripts/options.plist{auth_args} | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
         shell=True,
