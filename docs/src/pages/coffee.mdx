@@ -9,28 +9,24 @@ export const tiers = [
         name: "Black Coffee",
         emoji: "☕️",
         price: "$3",
-        blurb: "A small thank-you",
         url: "https://buy.stripe.com/7sYaEY4l058MdMZ4bsgw000",
     },
     {
         name: "Latte",
         emoji: "🥛",
         price: "$5",
-        blurb: "Fuel for an evening of bug fixing",
         url: "https://buy.stripe.com/4gMbJ23gW30E24h6jAgw001",
     },
     {
         name: "Lunch",
         emoji: "🥪",
         price: "$10",
-        blurb: "Very generous, thank you",
         url: "https://buy.stripe.com/9B64gA3gW30E24h8rIgw002",
     },
     {
         name: "Dinner",
         emoji: "🍝",
         price: "$20",
-        blurb: "Extraordinarily kind of you",
         url: "https://buy.stripe.com/7sY14odVA8kY6kxdM2gw003",
     },
 ];
@@ -39,7 +35,7 @@ export const TipGrid = () => (
     <div
         style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: "1rem",
             margin: "2rem 0",
         }}
@@ -75,15 +71,6 @@ export const TipGrid = () => (
                 >
                     {tier.price}
                 </span>
-                <span
-                    style={{
-                        marginTop: "0.5rem",
-                        fontSize: "0.85rem",
-                        color: "var(--ifm-color-emphasis-700)",
-                    }}
-                >
-                    {tier.blurb}
-                </span>
             </a>
         ))}
     </div>
@@ -91,29 +78,22 @@ export const TipGrid = () => (
 
 ## Buy me a coffee
 
-Roam is free, ad-free, and open source. There is no paid tier, no subscription, and
-nothing is held back from you. I build it in my spare time because I wanted a Roku
-remote that put its users first.
+Roam is free and open source, with no ads and no paid tier. I build it in my spare time.
 
-If Roam has been useful to you and you feel like chipping in, you can leave a tip below.
-It is entirely optional and it changes nothing about the app — everything stays free
-either way.
+If it's been useful to you, you can leave a tip. It's optional, and nothing about the
+app changes either way.
 
 <TipGrid />
 
-Payments are handled securely by [Stripe](https://stripe.com). I never see your card
-details.
+Payments are handled by [Stripe](https://stripe.com). I never see your card details.
 
-### A few notes
+### Notes
 
--   **This is a tip, not a donation.** I am an individual developer, not a registered
-    charity, so tips are not tax-deductible.
--   **Nothing is unlocked by tipping here.** Tips on this page are purely a thank-you.
-    If you would like the cosmetic extras — custom accent colors and the alternate app
-    icons — those are available as a tip inside the app itself, on the App Store.
--   **Refunds.** If you tip by mistake, email
-    [roam-support@msd3.io](mailto:roam-support@msd3.io) and I will refund it, no
-    questions asked.
+-   This is a tip, not a donation. I'm not a registered charity, so it isn't tax
+    deductible.
+-   Tipping here doesn't unlock anything. The accent colors and alternate app icons are
+    a separate tip inside the app.
+-   Tipped by mistake? Email [roam-support@msd3.io](mailto:roam-support@msd3.io) and
+    I'll refund it.
 
-Thank you for using Roam. Genuinely — a note saying the app is useful to you is worth
-as much to me as the coffee.
+Thanks for using Roam.
