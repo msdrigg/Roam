@@ -3,3 +3,7 @@ Roam.xcodeproj/project.xcworkspace/xcuserdata
 Roam.xcodeproj/xcuserdata
 Archives/
 Secrets.xcconfig
+# Intermediate SVG/PNG from AppIcons/generate-alternates.py. The committed
+# artifacts are the .appiconset / .imageset assets it writes into
+# Shared/AppIcon.xcassets; these are regenerable.
+AppIcons/generated/

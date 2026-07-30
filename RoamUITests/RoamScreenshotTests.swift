@@ -16,6 +16,58 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         try await captureScreenshots(locale: Locale(identifier: locale))
     }
 
+#if os(iOS)
+    /// Captures the tip jar for the App Store Connect in-app purchase review
+    /// screenshot. Apple requires one per IAP showing where the purchase
+    /// happens; all four tiers live on this single screen, so one capture
+    /// serves all of them.
+    ///
+    /// Kept separate from `testCaptureScreenshots` because this one is not
+    /// locale-fanned — review screenshots are English-only — and because the
+    /// marketing set is uploaded to a different endpoint.
+    ///
+    /// Requires the scheme's StoreKit configuration (Roam/TipJar.storekit) so
+    /// `Product.products(for:)` resolves; without it the tiers render as
+    /// redacted placeholders and the screenshot is useless for review.
+    @MainActor
+    func testCaptureIAPReviewScreenshot() async throws {
+        let app = XCUIApplication()
+        appendLocaleArgs(app, locale: Locale(identifier: "en-US"))
+        app.launchArguments += [
+            "-DataTesting", "-DataLoadTestingData", "-ScreenshotTesting",
+            "-OpenTipJar",
+        ]
+        app.launch()
+
+        // Settings push + sheet presentation + StoreKit product load. The
+        // product fetch is the long pole; a shorter wait captures the
+        // placeholder prices.
+        try await Task.sleep(nanoseconds: 6_000_000_000)
+
+        // Fail loudly rather than uploading a screenshot of the wrong screen —
+        // a silently-wrong review asset costs a rejection cycle.
+        let restoreButton = app.buttons["Restore Purchases"]
+        XCTAssertTrue(
+            restoreButton.waitForExistence(timeout: 15),
+            "Tip jar sheet did not appear - the -OpenTipJar launch arg may have regressed"
+        )
+
+        // The sheet appearing is not enough. If StoreKit hasn't resolved the
+        // products the tiers render redacted placeholders instead of prices,
+        // which looks fine at a glance but is useless to a reviewer. Require a
+        // real price before capturing.
+        let firstPrice = app.buttons["$3.00"]
+        XCTAssertTrue(
+            firstPrice.waitForExistence(timeout: 20),
+            "Tip tiers show placeholder prices - the scheme's StoreKit configuration "
+                + "(Roam/TipJar.storekit) is not being applied to this test run"
+        )
+
+        addScreenshot(app.screenshot(), name: "iap-review/TipJar")
+        app.terminate()
+    }
+#endif
+
     // MARK: - Common helpers
 
     /// `-AppleLanguages` needs the BCP-47 form in parens (`(fr-CA)`);

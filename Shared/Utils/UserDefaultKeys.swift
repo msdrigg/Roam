@@ -21,6 +21,11 @@ enum UserDefaultKeys {
     static let headphonesModeUsed = "headphonesModeUsed"
     static let audioInteractionCount = "audioInteractionCount"
 
+    // Tip jar / cosmetic unlocks
+    static let cosmeticsGrandfathered = "cosmeticsGrandfathered"
+    static let didEvaluateCosmeticsGrandfathering = "didEvaluateCosmeticsGrandfathering"
+    static let alternateAppIcon = "alternateAppIcon"
+
     // Messaging
     static let lastTypingTime = "lastTypingTime"
     static let lastSupportTypingTime = "lastSupportTypingTime"

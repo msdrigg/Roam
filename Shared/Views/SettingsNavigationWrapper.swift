@@ -72,6 +72,12 @@ struct SettingsNavigationWrapper<Content>: View where Content: View {
                         settingsSubview {
                             MessageView()
                         }
+                    #if os(iOS)
+                        case .appIconDestination:
+                            settingsSubview {
+                                AppIconPickerView()
+                            }
+                    #endif
                     }
                 }
         }
