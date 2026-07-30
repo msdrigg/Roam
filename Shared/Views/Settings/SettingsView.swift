@@ -67,6 +67,15 @@ struct SettingsView: View {
     @State private var variableColor: CGFloat = 0.0
     @State private var deviceError: Error?
 
+#if !os(watchOS)
+    @State private var tipStore = TipStore.shared
+    // `-OpenTipJar` presents the sheet from first appear, matching how
+    // `-OpenKeyboard` seeds its state. Driving Settings -> "Buy me a coffee"
+    // through XCUI is the same brittle chain the Settings capture already
+    // gave up on, and the App Store review screenshot has to be reproducible.
+    @State private var showingTipJar: Bool = CommandLine.arguments.contains("-OpenTipJar")
+#endif
+
     #if !os(watchOS)
     func initiateScan() {
         Log.scanning.notice(
@@ -294,25 +303,71 @@ struct SettingsView: View {
                     })
                 )
 
-                HStack {
-                    Text("Accent Color", comment: "Label for accent color picker")
-                    Spacer()
-                    ColorPicker("", selection: Binding(get: { customAccentColor }, set: { c in
-                        saveCustomAccentColor(c)
-                        customAccentColor = c
-                    }), supportsOpacity: false)
-                        .labelsHidden()
-                    Button(action: {
-                        customAccentColor = .accentColor
-                        saveCustomAccentColor(nil)
-                    }, label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .foregroundColor(.secondary)
+                if tipStore.hasTipped {
+                    HStack {
+                        Text("Accent Color", comment: "Label for accent color picker")
+                        Spacer()
+                        ColorPicker("", selection: Binding(get: { customAccentColor }, set: { c in
+                            saveCustomAccentColor(c)
+                            customAccentColor = c
+                        }), supportsOpacity: false)
+                            .labelsHidden()
+                        Button(action: {
+                            customAccentColor = .accentColor
+                            saveCustomAccentColor(nil)
+                        }, label: {
+                            Image(systemName: "arrow.counterclockwise")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        })
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Reset to default accent color")
+                    }
+                } else {
+                    Button {
+                        showingTipJar = true
+                    } label: {
+                        HStack {
+                            Text("Accent Color", comment: "Label for accent color picker")
+                            Spacer()
+                            Label(
+                                String(localized: "Tip to unlock", comment: "Label on a locked cosmetic setting"),
+                                systemImage: "lock.fill"
+                            )
                             .font(.caption)
-                    })
-                    .buttonStyle(PlainButtonStyle())
-                    .help("Reset to default accent color")
+                            .foregroundStyle(.secondary)
+                        }
+#if os(macOS)
+                        .contentShape(Rectangle())
+#endif
+                    }
+#if os(macOS)
+                    .buttonStyle(.plain)
+#endif
                 }
+
+#if os(iOS)
+                Button {
+                    if tipStore.hasTipped {
+                        path.append(NavigationDestination.appIconDestination)
+                    } else {
+                        showingTipJar = true
+                    }
+                } label: {
+                    HStack {
+                        Text("App Icon", comment: "Label for the alternate app icon picker")
+                        Spacer()
+                        if !tipStore.hasTipped {
+                            Label(
+                                String(localized: "Tip to unlock", comment: "Label on a locked cosmetic setting"),
+                                systemImage: "lock.fill"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+#endif
             }
 #endif
 
@@ -410,6 +465,30 @@ struct SettingsView: View {
             }
 
             Section {
+#if !os(watchOS)
+                Button {
+                    showingTipJar = true
+                } label: {
+                    HStack {
+                        Label(
+                            String(
+                                localized: "Buy me a coffee",
+                                comment: "Label on a button that opens the tip jar"
+                            ),
+                            systemImage: "cup.and.saucer"
+                        )
+                        Spacer()
+                    }
+#if os(macOS)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+#endif
+                }
+#if os(macOS)
+                .buttonStyle(.plain)
+#endif
+#endif
+
                 NavigationLink(String(localized: "About", comment: "Text on a navigation link to the about page"), value: NavigationDestination.aboutDestination)
             }
         }
@@ -450,6 +529,20 @@ struct SettingsView: View {
         .navigationTitle(String(localized: "Settings", comment: "Navigation title on the settings page"))
 #endif
         .formStyle(.grouped)
+#if !os(watchOS)
+        .sheet(isPresented: $showingTipJar) {
+            NavigationStack {
+                TipJarView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(String(localized: "Done", comment: "Button to dismiss the tip jar sheet")) {
+                                showingTipJar = false
+                            }
+                        }
+                    }
+            }
+        }
+#endif
         .alertingError(message: "Failed to Delete Device", error: $deviceError)
         .customAccentColorTint()
     }

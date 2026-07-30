@@ -107,10 +107,14 @@ struct RemoteRoot: View {
 
     /// Honors `-OpenSettings` launch arg by pushing the Settings root once the
     /// view tree is alive. Idempotent so re-fires from `.task` don't double-push.
+    ///
+    /// `-OpenTipJar` implies `-OpenSettings`: the tip jar is a sheet presented
+    /// by SettingsView, so Settings has to be on the path for it to appear.
     private func applyLaunchSettingsIfRequested() {
         guard !didApplyLaunchSettings else { return }
         didApplyLaunchSettings = true
-        if CommandLine.arguments.contains("-OpenSettings") {
+        let args = CommandLine.arguments
+        if args.contains("-OpenSettings") || args.contains("-OpenTipJar") {
             appDelegate.navigationPath.append(.settingsDestination(.global))
         }
     }

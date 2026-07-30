@@ -1,0 +1,76 @@
+{
+  "identifier" : "7A1C4E20",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "3.00",
+      "familyShareable" : false,
+      "internalID" : "6796081397",
+      "localizations" : [
+        {
+          "description" : "A small tip. Unlocks colors and icons.",
+          "displayName" : "Black Coffee",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.msdrigg.roam.tip.coffee",
+      "referenceName" : "Tip - Black Coffee",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "5.00",
+      "familyShareable" : false,
+      "internalID" : "6796081398",
+      "localizations" : [
+        {
+          "description" : "A tip. Unlocks colors and icons.",
+          "displayName" : "Latte",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.msdrigg.roam.tip.latte",
+      "referenceName" : "Tip - Latte",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "10.00",
+      "familyShareable" : false,
+      "internalID" : "6796081351",
+      "localizations" : [
+        {
+          "description" : "A generous tip. Unlocks colors and icons.",
+          "displayName" : "Lunch",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.msdrigg.roam.tip.lunch",
+      "referenceName" : "Tip - Lunch",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "20.00",
+      "familyShareable" : false,
+      "internalID" : "6796081427",
+      "localizations" : [
+        {
+          "description" : "A big tip. Unlocks colors and icons.",
+          "displayName" : "Dinner",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.msdrigg.roam.tip.dinner",
+      "referenceName" : "Tip - Dinner",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6469834197",
+    "_developerTeamID" : "",
+    "_lastSynchronizedDate" : 0
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
