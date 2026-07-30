@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Generate the alternate app icons unlocked by the tip jar.
 
-The original AppIcon.png was produced by an image model, so there is no vector
-source to recolor. These alternates redraw the same remote as flat vector art
-and vary only the backdrop, which keeps the family recognisably one set.
+Every variant composites the *real* remote artwork — the transparent foreground
+layer Icon Composer draws the shipping icon from, AppIcon.icon/Assets/
+VisionAppIcon.png — over a different backdrop. The alternates are therefore the
+same icon the user already knows, not a lookalike.
+
+Midnight is the one exception: that artwork is dark purple, which disappears
+against a near-black backdrop, so midnight keeps a redrawn light-on-dark remote.
 
 ImageMagick is not installed on this machine (AppIcons/script.zsh depends on
 it), so rendering goes through Inkscape and resizing through macOS `sips`.
@@ -11,6 +15,9 @@ it), so rendering goes through Inkscape and resizing through macOS `sips`.
 Usage:  python3 AppIcons/generate-alternates.py
 Writes: Shared/AppIcon.xcassets/AppIcon<Name>.appiconset/  (1024 single-size)
         Shared/AppIcon.xcassets/AppIcon<Name>Preview.imageset/  (180pt swatch)
+        Shared/AppIcon.xcassets/AppIconPreview.imageset/  (swatch for the
+        default icon, which the picker needs and cannot read from
+        AppIcon.appiconset)
 """
 
 import json
@@ -25,6 +32,12 @@ BUILD = os.path.join(HERE, "generated")
 
 INKSCAPE = "/Applications/Inkscape.app/Contents/MacOS/inkscape"
 
+# The shipping icon's foreground layer, with a transparent background. This is
+# the source of truth for what the remote looks like.
+ARTWORK = os.path.join(HERE, "AppIcon.icon", "Assets", "VisionAppIcon.png")
+# The rendered default icon, used only for the picker's "Default" swatch.
+DEFAULT_ICON = os.path.join(XCASSETS, "AppIcon.appiconset", "1024-any.png")
+
 # Palette lifted from the existing icon so the alternates sit in the same family.
 BODY = "#46415F"
 BODY_EDGE = "#2A1840"
@@ -35,8 +48,36 @@ BTN_ACCENT = "#6D3FE0"
 SHADOW = "#000000"
 
 
+def artwork_remote():
+    """The shipping icon's own foreground layer, dropped in as a raster.
+
+    Icon Composer applies the icon's shadow at render time and that shadow is
+    not part of the layer, so it is reapplied here — without it the remote
+    reads as a sticker pasted onto the backdrop rather than sitting on it.
+
+    The shadow is an offset copy flattened to black and blurred, rather than
+    the one-line `feDropShadow`: this Inkscape rejects that primitive outright
+    ("unknown type: svg:feDropShadow") and drops the filtered element entirely,
+    which silently produces an icon with no remote on it at all.
+    """
+    return (
+        '<defs>'
+        '<filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">'
+        '<feColorMatrix type="matrix" values="'
+        '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.30 0"/>'
+        '<feGaussianBlur stdDeviation="16"/>'
+        '</filter>'
+        '</defs>'
+        f'<g transform="translate(24,26)">'
+        f'<image x="0" y="0" width="1024" height="1024" filter="url(#shadow)" '
+        f'xlink:href="{ARTWORK}"/>'
+        f'</g>'
+        f'<image x="0" y="0" width="1024" height="1024" xlink:href="{ARTWORK}"/>'
+    )
+
+
 def remote(body=BODY, edge=BODY_EDGE, btn=BTN, accent=BTN_ACCENT, shadow=SHADOW):
-    """The remote itself, identical across every variant."""
+    """A redrawn remote, used only where the real artwork has no contrast."""
     parts = []
 
     # Offset drop shadow, drawn first so it sits behind the body.
@@ -68,14 +109,14 @@ def remote(body=BODY, edge=BODY_EDGE, btn=BTN, accent=BTN_ACCENT, shadow=SHADOW)
     return "\n  ".join(parts)
 
 
-def svg(background, body_kwargs=None):
-    body_kwargs = body_kwargs or {}
+def svg(background, foreground=None):
     return (
-        '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" '
+        '<svg xmlns="http://www.w3.org/2000/svg" '
+        'xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" '
         'viewBox="0 0 1024 1024">\n  '
         + background
         + "\n  "
-        + remote(**body_kwargs)
+        + (foreground or artwork_remote())
         + "\n</svg>\n"
     )
 
@@ -86,14 +127,6 @@ PRIDE_COLORS = ["#E40303", "#FF8C00", "#FFED00", "#008026", "#24408E", "#732982"
 pride_bg = "".join(
     f'<rect x="0" y="{i * 1024 / 6:.2f}" width="1024" height="{1024 / 6:.2f}" fill="{c}"/>'
     for i, c in enumerate(PRIDE_COLORS)
-)
-
-smiley_bg = (
-    '<rect width="1024" height="1024" fill="#FFD84D"/>'
-    '<circle cx="300" cy="300" r="46" fill="#E0A800"/>'
-    '<circle cx="724" cy="300" r="46" fill="#E0A800"/>'
-    '<path d="M232 604 A 290 290 0 0 0 792 604" fill="none" stroke="#E0A800" '
-    'stroke-width="52" stroke-linecap="round"/>'
 )
 
 BARS = ["#C0C0C0", "#C0C000", "#00C0C0", "#00C000", "#C000C0", "#C00000", "#0000C0"]
@@ -109,18 +142,18 @@ midnight_bg = '<rect width="1024" height="1024" fill="#0B0A14"/>'
 
 VARIANTS = {
     "AppIconPride": svg(pride_bg),
-    "AppIconSmiley": svg(smiley_bg),
     "AppIconRetro": svg(retro_bg),
-    # Inverted so the remote stays high-contrast against near-black.
+    # The only variant that does not use the real artwork: the shipping remote
+    # is dark purple and vanishes on near-black, so it is redrawn inverted.
     "AppIconMidnight": svg(
         midnight_bg,
-        {
-            "body": "#EDEAF7",
-            "edge": "#FFFFFF",
-            "btn": "#2A2340",
-            "accent": "#8B5CF6",
-            "shadow": "#2A2340",
-        },
+        remote(
+            body="#EDEAF7",
+            edge="#FFFFFF",
+            btn="#2A2340",
+            accent="#8B5CF6",
+            shadow="#2A2340",
+        ),
     ),
 }
 
@@ -129,11 +162,40 @@ def run(cmd):
     subprocess.run(cmd, check=True, capture_output=True)
 
 
+def write_preview(name, source_png):
+    """Preview swatch for the in-app picker.
+
+    App icon *sets* are not addressable as `Image(...)` at runtime, so every
+    option in the picker — the default included — needs a plain image set
+    alongside. The default's absence is what left its cell blank.
+    """
+    imageset = os.path.join(XCASSETS, f"{name}.imageset")
+    os.makedirs(imageset, exist_ok=True)
+    preview = os.path.join(imageset, f"{name}.png")
+    run(["sips", "-z", "180", "180", source_png, "--out", preview])
+    with open(os.path.join(imageset, "Contents.json"), "w") as handle:
+        json.dump(
+            {
+                "images": [
+                    {"filename": f"{name}.png", "idiom": "universal", "scale": "1x"},
+                    {"idiom": "universal", "scale": "2x"},
+                    {"idiom": "universal", "scale": "3x"},
+                ],
+                "info": {"author": "xcode", "version": 1},
+            },
+            handle,
+            indent=2,
+        )
+
+
 def main():
     if not os.path.exists(INKSCAPE):
         sys.exit(f"Inkscape not found at {INKSCAPE}")
 
     os.makedirs(BUILD, exist_ok=True)
+
+    write_preview("AppIconPreview", DEFAULT_ICON)
+    print("generated AppIconPreview")
 
     for name, markup in VARIANTS.items():
         svg_path = os.path.join(BUILD, f"{name}.svg")
@@ -166,25 +228,7 @@ def main():
                 indent=2,
             )
 
-        # Preview swatch for the in-app picker: icon assets are not addressable
-        # as `Image(...)`, so the picker needs a plain image set alongside.
-        imageset = os.path.join(XCASSETS, f"{name}Preview.imageset")
-        os.makedirs(imageset, exist_ok=True)
-        preview = os.path.join(imageset, f"{name}Preview.png")
-        run(["sips", "-z", "180", "180", png_path, "--out", preview])
-        with open(os.path.join(imageset, "Contents.json"), "w") as handle:
-            json.dump(
-                {
-                    "images": [
-                        {"filename": f"{name}Preview.png", "idiom": "universal", "scale": "1x"},
-                        {"idiom": "universal", "scale": "2x"},
-                        {"idiom": "universal", "scale": "3x"},
-                    ],
-                    "info": {"author": "xcode", "version": 1},
-                },
-                handle,
-                indent=2,
-            )
+        write_preview(f"{name}Preview", png_path)
 
         print(f"generated {name}")
 

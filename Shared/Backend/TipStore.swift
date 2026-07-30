@@ -66,9 +66,18 @@ final class TipStore {
     /// Surfaced to the UI via `.alertingError`. Cleared when the user dismisses.
     var purchaseError: Error?
 
+    /// True once the developer unlock code has been redeemed on this device.
+    ///
+    /// Stored rather than read from `UserDefaults` on demand (the way
+    /// `isGrandfathered` is) so `@Observable` sees the change and every locked
+    /// row flips the instant the code lands, without a view reload.
+    private(set) var isDeveloperUnlocked: Bool
+
     private var updateListener: Task<Void, Never>?
 
     private init() {
+        isDeveloperUnlocked = UserDefaults.standard.bool(forKey: UserDefaultKeys.developerCosmeticsUnlock)
+
         // Grandfathering has to run before the first `hasTipped` read, otherwise
         // an existing user could see the paywall for a single frame on launch.
         Self.grandfatherExistingUsersIfNeeded()
@@ -96,7 +105,7 @@ final class TipStore {
 
     /// True when the cosmetic extras (accent color, alternate icons) are unlocked.
     var hasTipped: Bool {
-        !purchasedProductIDs.isEmpty || isGrandfathered
+        !purchasedProductIDs.isEmpty || isGrandfathered || isDeveloperUnlocked
     }
 
     /// Users who already had a custom accent color before it became a paid
@@ -120,6 +129,35 @@ final class TipStore {
             Log.data.notice("Grandfathering cosmetics for pre-existing custom accent color")
             defaults.set(true, forKey: UserDefaultKeys.cosmeticsGrandfathered)
         }
+    }
+
+    // MARK: - Developer unlock
+
+    /// Sent *from* support into a user's chat to grant the tip extras without a
+    /// purchase — a thank-you the developer can hand out directly. Versioned:
+    /// minting `_v2` later retires this one instead of having to honour every
+    /// code ever shipped.
+    static let developerUnlockCode = ":auto_unlock_iap_v1:"
+
+    /// Trimmed and case-folded, so the code still lands when it picks up a
+    /// stray newline or capitalization on its way through the support tooling.
+    static func isDeveloperUnlockCode(_ text: String) -> Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == developerUnlockCode
+    }
+
+    /// Grants the extras permanently on this device. Deliberately local: this
+    /// is not an entitlement, so it never touches StoreKit and is never synced.
+    ///
+    /// Returns true only on the call that actually flips the unlock, so callers
+    /// can celebrate once instead of every time the chat is reopened.
+    @discardableResult
+    func redeemDeveloperUnlock() -> Bool {
+        guard !isDeveloperUnlocked else { return false }
+
+        isDeveloperUnlocked = true
+        UserDefaults.standard.set(true, forKey: UserDefaultKeys.developerCosmeticsUnlock)
+        Log.userInteraction.notice("Developer unlock code redeemed")
+        return true
     }
 
     // MARK: - Loading

@@ -16,7 +16,6 @@ import SwiftUI
 enum AppIconOption: String, CaseIterable, Identifiable {
     case standard
     case pride = "AppIconPride"
-    case smiley = "AppIconSmiley"
     case retro = "AppIconRetro"
     case midnight = "AppIconMidnight"
 
@@ -38,10 +37,35 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         switch self {
         case .standard: String(localized: "Default", comment: "Name of the default app icon")
         case .pride: String(localized: "Pride", comment: "Name of the rainbow app icon")
-        case .smiley: String(localized: "Smiley", comment: "Name of the smiley-face app icon")
         case .retro: String(localized: "Retro", comment: "Name of the retro TV test-pattern app icon")
         case .midnight: String(localized: "Midnight", comment: "Name of the dark monochrome app icon")
         }
+    }
+}
+
+/// The trailing marker on a settings row that tipping unlocks.
+///
+/// Previously a bare `.caption` label crammed against the row title, which read
+/// as disabled-state fine print rather than as the tappable thing it is. A
+/// tinted capsule at footnote size gives it enough presence to look like an
+/// offer, and enough padding to stop colliding with the title.
+struct TipToUnlockBadge: View {
+    @AppStorageColor(UserDefaultKeys.customAccentColor) private var accentColor: Color = Color("AccentColor")
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "lock.fill")
+                .imageScale(.small)
+            Text("Tip to unlock", comment: "Label on a locked cosmetic setting")
+                .fontWeight(.semibold)
+        }
+        .font(.footnote)
+        .foregroundStyle(accentColor)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(accentColor.opacity(0.15)))
+        // Never truncate to "Tip to unl…" — the row title wraps first.
+        .fixedSize()
     }
 }
 
@@ -131,16 +155,33 @@ private struct TipTierRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Text(tier.emoji)
-                .font(.title2)
+                .font(.system(size: 24))
+                .frame(width: 42, height: 42)
+                .background(Circle().fill(Color.secondary.opacity(0.12)))
 
             Text(tier.displayName)
+                .font(.body.weight(.medium))
+                // Long tier names in other locales wrap instead of shoving the
+                // price button off the row.
+                .fixedSize(horizontal: false, vertical: true)
 
-            Spacer()
+            Spacer(minLength: 8)
 
+            price
+        }
+        .padding(.vertical, 6)
+    }
+
+    /// `.fixedSize()` throughout: a price is short, and letting the button
+    /// shrink to "$10..." to satisfy the row is never the right trade.
+    @ViewBuilder
+    private var price: some View {
+        Group {
             if isPurchased {
                 Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
                     .foregroundStyle(.green)
             } else if let product {
                 Button(product.displayPrice) {
@@ -164,6 +205,9 @@ private struct TipTierRow: View {
                     .redacted(reason: .placeholder)
             }
         }
+        .font(.callout.weight(.semibold))
+        .controlSize(.large)
+        .fixedSize()
     }
 }
 
