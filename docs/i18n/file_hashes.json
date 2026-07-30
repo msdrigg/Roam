@@ -2,8 +2,8 @@
     "docusaurus-plugin-content-pages/tested-tvs.md": "a2b7c4ad8bf10b789bac7d80b93ce68ca77e7e998f1a30d99e817a71a3eb345c",
     "docusaurus-plugin-content-pages/scan.md": "14a40d32276f7367315f71262ea8c673e04e8715723487ea1e216ab43c8fe305",
     "docusaurus-plugin-content-pages/manually-add-tv.md": "67336135ea9fb5bfcb1d2150bfe5d8eb6fa61c3d8e10589309b0051219a4ca63",
-    "docusaurus-plugin-content-pages/index.md": "d43a37eec7f81c8a5cc867b0ba08b8a031c9bac6a3d10796ec934a368e3fce9d",
-    "docusaurus-plugin-content-pages/privacy.md": "bde187c3200609c496e72729904d7d705975800c7becccd86adaa2eb8c432f2a",
+    "docusaurus-plugin-content-pages/index.md": "04cb7acb5f5c3be2f073bc3e03735254125140d3e54a2e613f6ba78881256b3e",
+    "docusaurus-plugin-content-pages/privacy.md": "705573f09311163a5c8524df317b98a7d76ff40be83f69c0b33dd22bf17ee135",
     "docusaurus-plugin-content-pages/deep-link/feedback.mdx": "abbe5c204fd4cc35309068de538442007e93787847bf9266b709a75c4604b95b",
     "docusaurus-plugin-content-pages/deep-link/add-device.mdx": "d1396f163d68583e69f67f4097995494063395ac870b4b0d34b56a551f2b251b",
     "docusaurus-plugin-content-pages/deep-link/messages.mdx": "67f0305c9c505d9350dc1265875a6005459888e16a648fa01d28484bb7d77d81",
@@ -18,5 +18,6 @@
     "docusaurus-plugin-content-pages/description/visionOS.md": "05bb8b141103bf32ca1b3d09435fd39c94b1139590378b551080aa63fb8ad5b5",
     "docusaurus-plugin-content-pages/description/index.mdx": "422b36ff06367c4622d53d23b69f62baa70a2368e7ce6a9f9db9b7230baa28ce",
     "docusaurus-plugin-content-pages/description/macOS.md": "1d6a109c54d6ce6a0401b707999de72e223fed82d4c65673980ef28d042d4b0f",
-    "docusaurus-plugin-content-pages/description/iOS.md": "290bdee95eb51cbe08fa96051a8e393031a8c68eb564faea64752bb24bbd47f6"
+    "docusaurus-plugin-content-pages/description/iOS.md": "290bdee95eb51cbe08fa96051a8e393031a8c68eb564faea64752bb24bbd47f6",
+    "docusaurus-plugin-content-pages/coffee.mdx": "39b93a476f94a2d4040a81f8a02e6c9a0a6a639aa556bbef4d699895bee04094"
 }

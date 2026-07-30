@@ -1,0 +1,95 @@
+---
+title: 请我喝杯咖啡
+description: 支持 Roam 的开发，一款免费的 Roku 遥控器
+hide_table_of_contents: true
+---
+
+export const tiers = [
+    {
+        name: "黑咖啡",
+        emoji: "☕️",
+        price: "$3",
+        url: "https://buy.stripe.com/7sYaEY4l058MdMZ4bsgw000",
+    },
+    {
+        name: "拿铁",
+        emoji: "🥛",
+        price: "$5",
+        url: "https://buy.stripe.com/4gMbJ23gW30E24h6jAgw001",
+    },
+    {
+        name: "午餐",
+        emoji: "🥪",
+        price: "$10",
+        url: "https://buy.stripe.com/9B64gA3gW30E24h8rIgw002",
+    },
+    {
+        name: "晚餐",
+        emoji: "🍝",
+        price: "$20",
+        url: "https://buy.stripe.com/7sY14odVA8kY6kxdM2gw003",
+    },
+];
+
+export const TipGrid = () => (
+    <div
+        style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1rem",
+            margin: "2rem 0",
+        }}
+    >
+        {tiers.map((tier) => (
+            <a
+                key={tier.name}
+                href={tier.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    textAlign: "center",
+                    padding: "1.5rem 1rem",
+                    border: "1px solid var(--ifm-color-emphasis-300)",
+                    borderRadius: "12px",
+                    textDecoration: "none",
+                    color: "inherit",
+                    background: "var(--ifm-background-surface-color)",
+                }}
+            >
+                <span style={{ fontSize: "2.5rem", lineHeight: 1 }}>{tier.emoji}</span>
+                <strong style={{ marginTop: "0.75rem", fontSize: "1.1rem" }}>{tier.name}</strong>
+                <span
+                    style={{
+                        marginTop: "0.25rem",
+                        fontSize: "1.5rem",
+                        fontWeight: 700,
+                        color: "var(--ifm-color-primary)",
+                    }}
+                >
+                    {tier.price}
+                </span>
+            </a>
+        ))}
+    </div>
+);
+
+## 请我喝杯咖啡
+
+Roam 是一个免费开源的应用，没有广告，也没有付费版本。我在业余时间开发它。
+
+如果你觉得有用，可以选择打赏。完全自愿，不会影响到应用的任何功能。
+
+<TipGrid />
+
+支付通过 [Stripe](https://stripe.com) 处理。我不会看到你的银行卡信息。
+
+### 说明
+
+-   这是一份打赏，而不是捐赠。我不是注册慈善机构，无法用于抵税。
+-   在这里打赏不会解锁任何功能。应用内自定义主题色和图标需要在 App 内单独打赏。
+-   误打赏了？请发送邮件至 [roam-support@msd3.io](mailto:roam-support@msd3.io)，我会为你退款。
+
+感谢你使用 Roam。

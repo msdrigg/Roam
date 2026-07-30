@@ -1,0 +1,95 @@
+---
+title: Spendiere mir einen Kaffee
+description: Unterstütze die Entwicklung von Roam, der kostenlosen Roku-Fernbedienung
+hide_table_of_contents: true
+---
+
+export const tiers = [
+    {
+        name: "Schwarzer Kaffee",
+        emoji: "☕️",
+        price: "$3",
+        url: "https://buy.stripe.com/7sYaEY4l058MdMZ4bsgw000",
+    },
+    {
+        name: "Latte",
+        emoji: "🥛",
+        price: "$5",
+        url: "https://buy.stripe.com/4gMbJ23gW30E24h6jAgw001",
+    },
+    {
+        name: "Mittagessen",
+        emoji: "🥪",
+        price: "$10",
+        url: "https://buy.stripe.com/9B64gA3gW30E24h8rIgw002",
+    },
+    {
+        name: "Abendessen",
+        emoji: "🍝",
+        price: "$20",
+        url: "https://buy.stripe.com/7sY14odVA8kY6kxdM2gw003",
+    },
+];
+
+export const TipGrid = () => (
+    <div
+        style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1rem",
+            margin: "2rem 0",
+        }}
+    >
+        {tiers.map((tier) => (
+            <a
+                key={tier.name}
+                href={tier.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    textAlign: "center",
+                    padding: "1.5rem 1rem",
+                    border: "1px solid var(--ifm-color-emphasis-300)",
+                    borderRadius: "12px",
+                    textDecoration: "none",
+                    color: "inherit",
+                    background: "var(--ifm-background-surface-color)",
+                }}
+            >
+                <span style={{ fontSize: "2.5rem", lineHeight: 1 }}>{tier.emoji}</span>
+                <strong style={{ marginTop: "0.75rem", fontSize: "1.1rem" }}>{tier.name}</strong>
+                <span
+                    style={{
+                        marginTop: "0.25rem",
+                        fontSize: "1.5rem",
+                        fontWeight: 700,
+                        color: "var(--ifm-color-primary)",
+                    }}
+                >
+                    {tier.price}
+                </span>
+            </a>
+        ))}
+    </div>
+);
+
+## Spendiere mir einen Kaffee
+
+Roam ist kostenlos und Open Source, komplett ohne Werbung oder Bezahlstufe. Ich entwickle die App in meiner Freizeit.
+
+Wenn dir Roam geholfen hat, kannst du mir gerne eine kleine Anerkennung dalassen. Das ist völlig freiwillig und hat keinerlei Auswirkungen auf die Funktionen der App.
+
+<TipGrid />
+
+Die Zahlung erfolgt sicher über [Stripe](https://stripe.com). Ich habe keinen Zugriff auf deine Kartendaten.
+
+### Hinweise
+
+-   Dies ist ein Trinkgeld, keine Spende. Ich bin keine gemeinnützige Organisation – es ist also nicht steuerlich absetzbar.
+-   Das Trinkgeld hier schaltet keine Funktionen frei. Die Akzentfarben und alternativen App-Icons sind ein separates Trinkgeld innerhalb der App.
+-   Aus Versehen getippt? Schreib eine Mail an [roam-support@msd3.io](mailto:roam-support@msd3.io), dann erstatte ich das gerne.
+
+Danke, dass du Roam nutzt.

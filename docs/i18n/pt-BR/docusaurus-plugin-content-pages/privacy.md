@@ -4,57 +4,63 @@ hide_table_of_contents: true
 
 # Política de Privacidade
 
-Scott Driggers criou o aplicativo Roam como um aplicativo gratuito. Este SERVIÇO é fornecido por Scott Driggers sem custo e destina-se a ser usado como está.
+:::warning
 
-Esta página é utilizada para informar os visitantes sobre minhas políticas com a coleta, uso e divulgação de Informações Pessoais se alguém decidir usar meu Serviço.
+Esta não é uma política de privacidade para o app Roly. Roly não é desenvolvido ou suportado por Scott Driggers. Nenhum outro aplicativo além do app `Roam` para Roku é suportado.
 
-Se você optar por usar meu Serviço, concorda com a coleta e uso de informações em relação a esta política. As Informações Pessoais que eu coleto são usadas para fornecer e melhorar o Serviço. Não usarei ou compartilharei suas informações com ninguém, exceto conforme descrito nesta Política de Privacidade.
+:::
 
-Os termos usados nesta Política de Privacidade têm os mesmos significados que em nossos Termos e Condições, que são acessíveis no Roam, a menos que definido de outra forma nesta Política de Privacidade.
+Scott Driggers desenvolveu o app Roam como um aplicativo gratuito. Este SERVIÇO é oferecido por Scott Driggers sem custo e é destinado para uso como está.
+
+Esta página é utilizada para informar os visitantes sobre minhas políticas em relação à coleta, uso e divulgação de Informações Pessoais caso alguém decida usar meu Serviço.
+
+Ao optar por usar meu Serviço, você concorda com a coleta e o uso das informações conforme esta política. As Informações Pessoais que eu coleto são usadas para fornecer e melhorar o Serviço. Eu não vou usar ou compartilhar suas informações com ninguém, exceto conforme descrito nesta Política de Privacidade.
+
+Os termos utilizados nesta Política de Privacidade têm os mesmos significados definidos em nossos Termos e Condições, disponíveis em Roam, salvo definição diferente nesta Política de Privacidade.
 
 ## Coleta e Uso de Informações
 
-Para uma melhor experiência, ao usar nosso Serviço, posso exigir que você nos forneça algumas informações pessoalmente identificáveis. As informações que solicito serão mantidas no seu dispositivo e não serão coletadas por mim de nenhuma forma.
+Para uma melhor experiência ao utilizar nosso Serviço, eu posso solicitar que você forneça certas informações pessoais identificáveis. As informações que eu solicitar serão armazenadas no seu dispositivo e não são coletadas por mim de nenhuma forma.
 
-## Dados de Log
+## Dados de Registro
 
-Quero informá-lo de que sempre que você usa meu Serviço, em caso de erro no aplicativo, eu coleta dados e informações (através de produtos de terceiros) no seu telefone denominados Dados de Log. Esses Dados de Log podem incluir informações como seu endereço de Protocolo de Internet ("IP"), nome do dispositivo, versão do sistema operacional, a configuração do aplicativo ao utilizar meu Serviço, a hora e a data de uso do Serviço, e outras estatísticas.
+Quero informar que sempre que você usar meu Serviço, em caso de erro no app, eu coleto dados e informações (através de produtos de terceiros) no seu telefone chamados Dados de Registro. Esses Dados de Registro podem incluir informações como endereço de Protocolo de Internet (“IP”) do seu dispositivo, nome do dispositivo, versão do sistema operacional, configuração do app ao utilizar meu Serviço, hora e data de uso do Serviço, e outras estatísticas.
 
 ## Cookies
 
-Cookies são arquivos com uma pequena quantidade de dados que são usados comumente como identificadores únicos anônimos. Eles são enviados para o seu navegador a partir dos sites que você visita e são armazenados na memória interna do seu dispositivo.
+Cookies são arquivos com uma pequena quantidade de dados que geralmente são usados como identificadores anônimos e únicos. Eles são enviados ao seu navegador a partir dos sites que você visita e ficam armazenados na memória interna do seu dispositivo.
 
-Este serviço não usa esses "cookies" explicitamente. No entanto, o aplicativo pode usar códigos e bibliotecas de terceiros que usam “cookies” para coletar informações e melhorar seus serviços. Você tem a opção de aceitar ou recusar esses cookies e saber quando um cookie está sendo enviado para o seu dispositivo. Se você optar por recusar nossos cookies, talvez não consiga utilizar algumas partes deste Serviço.
+Este Serviço não utiliza esses “cookies” explicitamente. No entanto, o app pode usar código e bibliotecas de terceiros que utilizam “cookies” para coletar informações e melhorar seus serviços. Você tem a opção de aceitar ou recusar esses cookies e ser avisado quando um cookie estiver sendo enviado ao seu dispositivo. Se optar por recusar nossos cookies, talvez não consiga usar algumas partes deste Serviço.
 
-## Fornecedores de Serviço
+## Prestadores de Serviço
 
-Eu posso empregar empresas e indivíduos terceirizados pelos seguintes motivos:
+Eu posso empregar empresas e indivíduos terceiros pelos seguintes motivos:
 
 -   Para facilitar nosso Serviço;
--   Fornecer o Serviço em nosso nome;
--   Para realizar serviços relacionados ao Serviço; ou
--   Para nos ajudar a analisar como nosso Serviço é usado.
+-   Para fornecer o Serviço em nosso nome;
+-   Para executar serviços relacionados ao Serviço; ou
+-   Para nos ajudar a analisar como nosso Serviço está sendo usado.
 
-Quero informar aos usuários deste Serviço que esses terceiros têm acesso às suas Informações Pessoais. O motivo é realizar as tarefas atribuídas a eles em nosso nome. No entanto, eles são obrigados a não divulgar ou usar as informações para qualquer outra finalidade.
+Quero informar aos usuários deste Serviço que esses terceiros têm acesso às suas Informações Pessoais. O motivo é para executar as tarefas atribuídas a eles em nosso nome. No entanto, eles são obrigados a não divulgar ou usar as informações para qualquer outro fim.
 
 ## Segurança
 
-Valorizo sua confiança em nos fornecer suas Informações Pessoais, por isso, estamos empenhados em usar meios comercialmente aceitáveis de protegê-las. Mas lembre-se de que nenhum método de transmissão pela internet, ou método de armazenamento eletrônico é 100% seguro e confiável, e não posso garantir sua segurança absoluta.
+Valorizo sua confiança em nos fornecer suas Informações Pessoais, por isso buscamos usar meios comercialmente aceitáveis para protegê-las. Mas lembre-se de que nenhum método de transmissão pela internet, ou de armazenamento eletrônico, é 100% seguro e confiável, e não posso garantir segurança absoluta.
 
 ## Links para Outros Sites
 
-Este Serviço pode conter links para outros sites. Se você clicar em um link de terceiros, será direcionado para esse site. Observe que esses sites externos não são operados por mim. Portanto, recomendo que você revise a Política de Privacidade desses sites. Não tenho controle sobre e não assumo responsabilidade pelo conteúdo, políticas de privacidade ou práticas de quaisquer sites ou serviços de terceiros.
+Este Serviço pode conter links para outros sites. Se você clicar em um link de terceiros, será direcionado para esse site. Note que esses sites externos não são operados por mim. Portanto, recomendo fortemente que você revise a Política de Privacidade desses sites. Não tenho controle nem assumo responsabilidade pelo conteúdo, políticas de privacidade ou práticas de sites ou serviços de terceiros.
 
 ## Privacidade das Crianças
 
-Não coletamos conscientemente informações pessoais identificáveis de crianças. Incentivo todas as crianças a nunca enviarem informações pessoais identificáveis através do Aplicativo e/ou Serviços. Incentivo os pais e responsáveis legais a monitorar o uso da Internet pelos seus filhos e a ajudar a aplicar esta Política de Privacidade instruindo seus filhos a nunca fornecerem informações pessoalmente identificáveis através do Aplicativo e/ou Serviços sem a permissão deles. Se você tiver motivos para acreditar que uma criança forneceu informações pessoalmente identificáveis a nós através do Aplicativo e/ou Serviços, por favor entre em contato conosco. Você também deve ter pelo menos 16 anos de idade para consentir com o processamento de suas informações pessoalmente identificáveis em seu país (em alguns países podemos permitir que seu pai ou guardião o faça em seu nome).
+Eu não coleto intencionalmente informações pessoais identificáveis de crianças. Incentivo todas as crianças a nunca fornecerem qualquer informação pessoal identificável através do Aplicativo e/ou Serviços. Incentivo pais e responsáveis legais a monitorarem o uso da internet dos seus filhos e ajudarem a aplicar esta Política, instruindo seus filhos a nunca fornecerem informações pessoais identificáveis através do Aplicativo e/ou Serviços sem sua permissão. Se você tiver motivos para acreditar que uma criança forneceu informações pessoais identificáveis para nós através do Aplicativo e/ou Serviços, por favor, entre em contato. Você também deve ter pelo menos 16 anos de idade para consentir com o processamento das suas informações pessoais identificáveis no seu país (em alguns países, podemos permitir que seu pai/mãe ou responsável faça isso em seu nome).
 
 ## Alterações nesta Política de Privacidade
 
-Posso atualizar nossa Política de Privacidade de tempos em tempos. Portanto, você é aconselhado a revisar esta página periodicamente para quaisquer alterações. Vou notificá-lo de quaisquer alterações postando a nova Política de Privacidade nesta página.
+Eu posso atualizar nossa Política de Privacidade periodicamente. Portanto, recomenda-se revisar esta página periodicamente para eventuais mudanças. Eu notificarei você sobre quaisquer alterações publicando a nova Política de Privacidade nesta página.
 
-Esta política é efetiva a partir de 31 de outubro de 2023
+Esta política é válida a partir de 2023-10-31
 
-## Contate-Nos
+## Fale Conosco
 
-Se você tiver alguma dúvida ou sugestão sobre minha Política de Privacidade, não hesite em contactar-me em roam-support@msd3.io.
+Se você tiver perguntas ou sugestões sobre minha Política de Privacidade, não hesite em entrar em contato pelo e-mail roam-support@msd3.io.

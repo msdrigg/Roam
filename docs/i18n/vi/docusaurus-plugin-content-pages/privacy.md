@@ -2,59 +2,65 @@
 hide_table_of_contents: true
 ---
 
-# Chính sách bảo mật
+# Chính Sách Bảo Mật
 
-Scott Driggers xây dựng ứng dụng Roam như một ứng dụng miễn phí. DỊCH VỤ này được Scott Driggers cung cấp miễn phí và dự định sử dụng như vậy.
+:::warning
 
-Trang này được sử dụng để thông báo cho khách truy cập về các chính sách của tôi liên quan đến việc thu thập, sử dụng và tiết lộ Thông tin cá nhân nếu ai đó quyết định sử dụng Dịch vụ của tôi.
+Đây không phải là chính sách bảo mật của ứng dụng Roly. Roly không được phát triển hoặc hỗ trợ bởi Scott Driggers. Ngoài ứng dụng `Roam` dành cho Roku, không có bất kỳ ứng dụng nào khác do Scott Driggers phát triển.
 
-Nếu bạn chọn sử dụng Dịch vụ của tôi, bạn đồng ý cho việc thu thập và sử dụng thông tin liên quan đến chính sách này. Thông tin cá nhân mà tôi thu thập được sử dụng để cung cấp và cải thiện Dịch vụ. Tôi sẽ không sử dụng hoặc chia sẻ thông tin của bạn với bất kỳ ai ngoại trừ những gì được mô tả trong Chính sách bảo mật này.
+:::
 
-Những thuật ngữ sử dụng trong Chính sách bảo mật này có ý nghĩa giống như trong Điều khoản và Điều kiện của chúng tôi, nếu không được định rõ trong Chính sách bảo mật này, có thể được truy cập tại Roam.
+Scott Driggers xây dựng ứng dụng Roam như một ứng dụng miễn phí. DỊCH VỤ này được cung cấp bởi Scott Driggers hoàn toàn miễn phí và dự định sử dụng nguyên trạng.
 
-## Thu thập và Sử dụng Thông tin
+Trang này được dùng để thông báo cho khách truy cập về các chính sách của tôi liên quan đến việc thu thập, sử dụng và tiết lộ Thông Tin Cá Nhân nếu ai đó quyết định sử dụng Dịch Vụ của tôi.
 
-Để có trải nghiệm tốt hơn, trong quá trình sử dụng Dịch vụ của chúng tôi, tôi có thể yêu cầu bạn cung cấp cho chúng tôi một số thông tin cá nhân cụ thể. Thông tin mà tôi yêu cầu sẽ được lưu trữ trên thiết bị của bạn và không được tôi thu thập theo bất kỳ cách nào.
+Nếu bạn chọn sử dụng Dịch Vụ của tôi, có nghĩa là bạn đồng ý với việc thu thập và sử dụng thông tin liên quan đến chính sách này. Thông Tin Cá Nhân mà tôi thu thập được dùng để cung cấp và cải thiện Dịch Vụ. Tôi sẽ không sử dụng hoặc chia sẻ thông tin của bạn với bất kỳ ai ngoài những gì được mô tả trong Chính Sách Bảo Mật này.
 
-## Dữ liệu nhật ký
+Các thuật ngữ sử dụng trong Chính Sách Bảo Mật này có cùng ý nghĩa như trong các Điều Khoản và Điều Kiện của chúng tôi, có thể truy cập tại Roam trừ khi có quy định khác trong Chính Sách Bảo Mật này.
 
-Tôi muốn thông báo cho bạn rằng mỗi khi bạn sử dụng Dịch vụ của tôi, trong trường hợp có lỗi trong ứng dụng, tôi thu thập dữ liệu và thông tin (thông qua sản phẩm của bên thứ ba) trên điện thoại của bạn gọi là Dữ liệu nhật ký. Dữ liệu Nhật ký này có thể bao gồm thông tin như địa chỉ Internet Protocol (“IP”) của thiết bị, tên thiết bị, phiên bản hệ điều hành, cấu hình của ứng dụng khi sử dụng Dịch vụ của tôi, thời gian và ngày bạn sử dụng Dịch vụ, và các thống kê khác.
+## Thu Thập và Sử Dụng Thông Tin
 
-## Cookies
+Để nâng cao trải nghiệm, khi sử dụng Dịch Vụ của chúng tôi, tôi có thể yêu cầu bạn cung cấp một số thông tin nhận dạng cá nhân nhất định. Những thông tin mà tôi yêu cầu sẽ được lưu trữ trên thiết bị của bạn và không được tôi thu thập theo bất kỳ cách nào.
 
-Cookies là các tập tin với một lượng dữ liệu nhỏ thường được sử dụng như nhận dạng duy nhất ẩn danh. Những tập tin này được gửi đến trình duyệt của bạn từ các website mà bạn truy cập và được lưu trữ trong bộ nhớ trong của thiết bị của bạn.
+## Dữ Liệu Nhật Ký
 
-Dịch vụ này không sử dụng các “cookie” một cách rõ ràng. Tuy nhiên, ứng dụng có thể sử dụng mã và thư viện của bên thứ ba sử dụng “cookie” để thu thập thông tin và cải thiện dịch vụ của họ. Bạn có quyền chấp thuận hoặc từ chối những cookie này và biết khi một cookie được gửi đến thiết bị của bạn. Nếu bạn chọn từ chối cookie của chúng tôi, bạn có thể không thể sử dụng một số phần của Dịch vụ này.
+Tôi muốn thông báo rằng bất cứ khi nào bạn sử dụng Dịch Vụ của tôi, trong trường hợp xuất hiện lỗi trong ứng dụng, tôi thu thập dữ liệu và thông tin (thông qua các sản phẩm bên thứ ba) trên điện thoại của bạn được gọi là Dữ Liệu Nhật Ký. Dữ Liệu Nhật Ký này có thể bao gồm thông tin như địa chỉ Giao Thức Internet ("IP") của thiết bị, tên thiết bị, phiên bản hệ điều hành, cấu hình của ứng dụng khi sử dụng Dịch Vụ của tôi, thời gian và ngày sử dụng Dịch Vụ và các thông tin thống kê khác.
 
-## Nhà cung cấp dịch vụ
+## Cookie
 
-Tôi có thể thuê các công ty và cá nhân của bên thứ ba vì các lý do sau:
+Cookie là các tệp chứa một lượng nhỏ dữ liệu, thường được dùng như các mã định danh duy nhất ẩn danh. Chúng được gửi tới trình duyệt của bạn từ các trang web mà bạn truy cập và được lưu trữ trong bộ nhớ trong của thiết bị bạn.
 
--   Để hỗ trợ Dịch vụ của chúng tôi;
--   Để cung cấp Dịch vụ thay mặt chúng tôi;
--   Để thực hiện các dịch vụ liên quan đến Dịch vụ; hoặc
--   Để hỗ trợ chúng tôi trong việc phân tích cách Dịch vụ được sử dụng.
+Dịch Vụ này không sử dụng các "cookie" này một cách rõ ràng. Tuy nhiên, ứng dụng có thể sử dụng mã và thư viện bên thứ ba sử dụng "cookie" để thu thập thông tin và cải thiện dịch vụ của họ. Bạn có quyền lựa chọn chấp nhận hoặc từ chối các cookie này cũng như biết khi nào một cookie được gửi đến thiết bị của bạn. Nếu bạn chọn từ chối cookie của chúng tôi, bạn có thể không sử dụng được một số phần của Dịch Vụ này.
 
-Tôi muốn thông báo cho người dùng về Dịch vụ này rằng những bên thứ ba này có quyền truy cập vào Thông tin cá nhân của họ. Lý do là để thực hiện các công việc được chỉ định cho họ thay mặt chúng tôi. Tuy nhiên, họ phải cam kết không tiết lộ hoặc sử dụng thông tin cho bất kỳ mục đích khác.
+## Nhà Cung Cấp Dịch Vụ
 
-## Bảo mật
+Tôi có thể thuê các công ty và cá nhân bên thứ ba vì các lý do sau:
 
-Tôi coi trọng sự tin tưởng của bạn khi cung cấp cho chúng tôi Thông tin cá nhân của bạn, do đó, chúng tôi đang nỗ lực sử dụng phương tiện thương mại có thể chấp nhận để bảo vệ nó. Nhưng hãy ghi nhớ rằng không có phương pháp truyền dữ liệu qua Internet, hoặc phương pháp lưu trữ điện tử là 100% an toàn và đáng tin cậy, và tôi không thể đảm bảo sự an toàn tuyệt đối của nó.
+-   Để hỗ trợ Dịch Vụ của chúng tôi;
+-   Để cung cấp Dịch Vụ thay mặt chúng tôi;
+-   Để thực hiện các dịch vụ liên quan đến Dịch Vụ; hoặc
+-   Để hỗ trợ chúng tôi phân tích cách sử dụng Dịch Vụ của chúng tôi.
 
-## Liên kết đến các site khác
+Tôi muốn thông báo cho người dùng Dịch Vụ này rằng các bên thứ ba này có quyền truy cập vào Thông Tin Cá Nhân của bạn. Lý do là để thực hiện các nhiệm vụ được giao thay mặt chúng tôi. Tuy nhiên, họ có nghĩa vụ không tiết lộ hoặc sử dụng thông tin cho bất kỳ mục đích nào khác.
 
-Dịch vụ này có thể chứa các liên kết đến các trang web khác. Nếu bạn nhấp vào một liên kết của bên thứ ba, bạn sẽ được đưa đến trang đó. Lưu ý rằng các trang web bên ngoài này không được tôi điều hành. Do đó, tôi khuyến nghị bạn xem xét Chính sách bảo mật của những trang web này. Tôi không kiểm soát và không chịu trách nhiệm về nội dung, chính sách bảo mật, hoặc thực hành của bất kỳ trang web hoặc dịch vụ bên thứ ba nào.
+## Bảo Mật
 
-## Bảo mật trẻ em
+Tôi trân trọng sự tin tưởng của bạn khi cung cấp Thông Tin Cá Nhân cho chúng tôi, vì vậy chúng tôi luôn nỗ lực sử dụng các biện pháp thương mại hợp lý để bảo vệ thông tin đó. Nhưng hãy nhớ rằng không phương pháp truyền tải nào trên internet hoặc lưu trữ điện tử là an toàn tuyệt đối 100%, và tôi không thể đảm bảo sự an toàn tuyệt đối cho thông tin đó.
 
-Tôi không cố ý thu thập thông tin cá nhân có thể xác định từ trẻ em. Tôi khuyên tất cả trẻ em không bao giờ gửi bất kỳ thông tin cá nhân có thể xác định nào thông qua Ứng dụng và/hoặc Dịch vụ. Tôi khuyến khích cha mẹ và người giám hộ giám sát việc sử dụng Internet của con em mình và hỗ trợ thực hiện Chính sách này bằng cách hướng dẫn con em mình không bao giờ cung cấp thông tin cá nhân có thể xác định thông qua Ứng dụng và/hoặc Dịch vụ mà không có sự cho phép của họ. Nếu bạn có lý do để tin rằng một đứa trẻ đã cung cấp cho chúng tôi thông tin cá nhân có thể xác định thông qua Ứng dụng và/hoặc Dịch vụ, vui lòng liên hệ với chúng tôi. Bạn cũng phải từ 16 tuổi trở lên để đồng ý cho việc xử lý thông tin cá nhân có thể xác định của bạn trong nước bạn (trong một số quốc gia, chúng tôi có thể cho phép cha mẹ hoặc người giám hộ của bạn làm như vậy thay bạn).
+## Liên Kết Đến Trang Khác
 
-## Thay đổi Chính sách bảo mật này
+Dịch Vụ này có thể chứa các liên kết đến các trang web khác. Nếu bạn nhấp vào liên kết bên thứ ba, bạn sẽ được chuyển đến trang web đó. Xin lưu ý rằng các trang web bên ngoài này không được tôi vận hành. Do đó, tôi cực kỳ khuyên bạn nên xem lại Chính Sách Bảo Mật của các trang web đó. Tôi không kiểm soát và không chịu trách nhiệm về nội dung, chính sách bảo mật hoặc thực tiễn của bất kỳ trang web hay dịch vụ bên thứ ba nào.
 
-Tôi có thể cập nhật Chính sách bảo mật của chúng tôi từ thời gian này sang thời gian khác. Do đó, bạn nên xem xét trang này định kỳ để biết về bất kỳ thay đổi nào. Tôi sẽ thông báo cho bạn về bất kỳ thay đổi nào bằng cách đăng Chính sách bảo mật mới trên trang này.
+## Quyền Riêng Tư của Trẻ Em
 
-Chính sách này có hiệu lực kể từ 2023-10-31
+Tôi không cố ý thu thập thông tin nhận dạng cá nhân từ trẻ em. Tôi khuyến khích tất cả trẻ em không bao giờ gửi bất kỳ thông tin nhận dạng cá nhân nào qua Ứng Dụng và/hoặc Dịch Vụ. Tôi cũng khuyến khích cha mẹ và người giám hộ hợp pháp giám sát việc sử dụng Internet của con cái và hỗ trợ thực thi Chính Sách này bằng cách hướng dẫn con cái không bao giờ cung cấp thông tin nhận dạng cá nhân thông qua Ứng Dụng và/hoặc Dịch Vụ mà không có sự cho phép của họ. Nếu bạn có lý do tin rằng một đứa trẻ đã cung cấp thông tin nhận dạng cá nhân cho chúng tôi thông qua Ứng Dụng và/hoặc Dịch Vụ, vui lòng liên hệ với chúng tôi. Bạn cũng phải từ 16 tuổi trở lên để đồng ý với việc xử lý thông tin nhận dạng cá nhân của bạn tại quốc gia của bạn (ở một số quốc gia chúng tôi có thể cho phép cha mẹ hoặc người giám hộ của bạn thay mặt bạn thực hiện điều này).
 
-## Liên hệ chúng tôi
+## Thay Đổi Chính Sách Bảo Mật Này
 
-Nếu bạn có bất kỳ câu hỏi hoặc đề xuất nào về Chính sách bảo mật của tôi, đừng ngần ngại liên hệ với tôi tại roam-support@msd3.io.
+Tôi có thể cập nhật Chính Sách Bảo Mật của mình theo thời gian. Vì vậy, bạn nên xem lại trang này định kỳ để biết về mọi thay đổi. Tôi sẽ thông báo cho bạn về bất kỳ thay đổi nào bằng cách đăng Chính Sách Bảo Mật mới trên trang này.
+
+Chính sách này có hiệu lực kể từ ngày 2023-10-31
+
+## Liên Hệ
+
+Nếu bạn có bất kỳ câu hỏi hoặc góp ý nào về Chính Sách Bảo Mật của tôi, đừng ngần ngại liên hệ với tôi tại roam-support@msd3.io.

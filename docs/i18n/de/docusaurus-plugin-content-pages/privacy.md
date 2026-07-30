@@ -2,60 +2,65 @@
 hide_table_of_contents: true
 ---
 
-# Datenschutzrichtlinien
+# Datenschutzerklärung
 
-Scott Driggers hat die Roam-App als kostenlose App entwickelt. Dieser DIENST wird von Scott Driggers kostenlos bereitgestellt und ist wie vorgesehen nutzbar.
+:::warning
 
-Diese Seite dient dazu, Besucher über meine Richtlinien bezüglich der Sammlung, Nutzung und Offenlegung von persönlichen Informationen zu informieren, wenn jemand sich entscheidet, meinen Service zu nutzen.
+Dies ist keine Datenschutzerklärung für die Roly-App. Roly wird weder von Scott Driggers entwickelt noch unterstützt. Ebenso gilt dies für alle anderen Anwendungen außer der `Roam`-App für Roku.
 
-Wenn Sie sich für die Nutzung meines Service entscheiden, stimmen Sie der Sammlung und Nutzung von Informationen im Zusammenhang mit dieser Richtlinie zu. Die von mir gesammelten persönlichen Daten werden zur Bereitstellung und Verbesserung des Service verwendet. Ihre Informationen werden nicht ohne Ihre Genehmigung geteilt oder anders verwendet, wie es in diesen Datenschutzrichtlinien beschrieben ist.
+:::
 
-Die in dieser Datenschutzrichtlinie verwendeten Begriffe haben dieselben Bedeutungen wie in unseren Allgemeinen Geschäftsbedingungen, die unter Roam zugänglich sind, sofern in dieser Datenschutzrichtlinie nicht anders definiert.
+Scott Driggers hat die Roam-App als kostenlose App entwickelt. Dieser DIENST wird von Scott Driggers kostenlos bereitgestellt und ist zur Nutzung wie besehen vorgesehen.
 
-## Sammlung und Nutzung von Informationen
+Diese Seite dient dazu, Besucher über meine Richtlinien bezüglich der Erhebung, Nutzung und Offenlegung personenbezogener Daten zu informieren, falls jemand meinen Dienst nutzt.
 
-Für ein besseres Erlebnis während der Nutzung unseres Service kann ich Sie bitten, uns bestimmte persönlich identifizierbare Informationen zur Verfügung zu stellen. Die Informationen, die ich anfordere, bleiben auf Ihrem Gerät und werden in keiner Weise von mir gesammelt.
+Wenn Sie sich entscheiden, meinen Dienst zu nutzen, stimmen Sie der Erhebung und Nutzung von Informationen in Übereinstimmung mit dieser Richtlinie zu. Die personenbezogenen Daten, die ich erfasse, werden zur Bereitstellung und Verbesserung des Dienstes verwendet. Ich werde Ihre Informationen ausschließlich wie in dieser Datenschutzerklärung beschrieben verwenden oder weitergeben.
+
+Die in dieser Datenschutzerklärung verwendeten Begriffe haben dieselbe Bedeutung wie in unseren Nutzungsbedingungen, sofern in dieser Datenschutzerklärung nichts anderes definiert ist. Die Nutzungsbedingungen sind bei Roam abrufbar.
+
+## Erhebung und Nutzung von Informationen
+
+Für eine bessere Nutzererfahrung kann es sein, dass ich Sie bei der Nutzung unseres Dienstes bitte, bestimmte personenbezogene Daten anzugeben. Die von mir angeforderten Informationen werden auf Ihrem Gerät gespeichert und nicht von mir in irgendeiner Weise erfasst.
 
 ## Protokolldaten
 
-Ich möchte Sie darüber informieren, dass immer wenn Sie meinen Service nutzen, im Falle eines Fehlers in der App sammle ich Daten und Informationen (über Produkte von Drittanbietern) auf Ihrem Telefon, die als Protokolldaten bezeichnet werden. Diese Protokolldaten können Informationen wie Ihre Geräte-Internetprotokoll- (“IP”) Adresse, Gerätename, Betriebssystemversion, die Konfiguration der App bei Nutzung meines Service, die Uhrzeit und das Datum Ihrer Nutzung des Service und andere Statistiken enthalten.
+Ich möchte Sie darüber informieren, dass ich im Falle eines Fehlers in der App Daten und Informationen auf Ihrem Telefon erhebe (über Produkte von Drittanbietern), die als Protokolldaten bezeichnet werden, sobald Sie meinen Dienst nutzen. Diese Protokolldaten können Informationen wie Ihre IP-Adresse, Gerätename, Version des Betriebssystems, die Konfiguration der App bei Nutzung meines Dienstes, Zeitpunkt und Datum Ihrer Nutzung des Dienstes sowie weitere Statistiken beinhalten.
 
 ## Cookies
 
-Cookies sind Dateien mit einer kleinen Menge an Daten, die häufig als anonyme eindeutige Identifikatoren verwendet werden. Diese werden von den von Ihnen besuchten Websites an Ihren Browser gesendet und auf dem internen Speicher Ihres Geräts gespeichert.
+Cookies sind Dateien mit einer geringen Datenmenge, die üblicherweise als anonyme, eindeutige Identifikatoren verwendet werden. Sie werden von den von Ihnen besuchten Websites an Ihren Browser gesendet und im internen Speicher Ihres Geräts gespeichert.
 
-Dieser Service verwendet diese "Cookies" nicht explizit. Die App kann jedoch Code und Bibliotheken von Drittanbietern verwenden, die "Cookies" verwenden, um Informationen zu sammeln und ihre Dienste zu verbessern. Sie haben die Möglichkeit, diese Cookies zu akzeptieren oder abzulehnen und zu wissen, wann ein Cookie an Ihr Gerät gesendet wird. Wenn Sie sich entscheiden, unsere Cookies abzulehnen, können Sie möglicherweise einige Teile dieses Service nicht nutzen.
+Dieser Dienst verwendet diese „Cookies“ nicht explizit. Dennoch kann die App Drittanbieter-Code und -Bibliotheken nutzen, die „Cookies“ verwenden, um Informationen zu sammeln und ihre Dienste zu verbessern. Sie haben die Möglichkeit, diese Cookies zu akzeptieren oder abzulehnen und werden informiert, wenn ein Cookie an Ihr Gerät gesendet wird. Wenn Sie unsere Cookies ablehnen, ist es möglich, dass Sie einige Teile dieses Dienstes nicht nutzen können.
 
 ## Dienstleister
 
-Ich kann Dritte wie Unternehmen und Einzelpersonen aus den folgenden Gründen anstellen:
+Ich kann aus folgenden Gründen Drittunternehmen und Einzelpersonen beschäftigen:
 
--   Um unseren Service zu erleichtern;
--   Um den Service in unserem Auftrag zu erbringen;
--   Um Dienstleistungen im Zusammenhang mit dem Service durchzuführen; oder
--   Um uns bei der Analyse zu helfen, wie unser Service genutzt wird.
+-   Um unseren Dienst zu erleichtern;
+-   Um den Dienst in unserem Auftrag bereitzustellen;
+-   Um dienstbezogene Dienstleistungen zu erbringen; oder
+-   Um uns bei der Analyse der Nutzung unseres Dienstes zu unterstützen.
 
-Ich möchte die Nutzer dieses Service darüber informieren, dass diese Dritten Zugriff auf ihre persönlichen Daten haben. Der Grund ist, die ihnen übertragenen Aufgaben in unserem Auftrag auszuführen. Sie sind jedoch verpflichtet, die Informationen für keinen anderen Zweck offen zu legen oder zu nutzen.
+Ich möchte die Nutzer dieses Dienstes darauf hinweisen, dass diese Dritten Zugang zu ihren personenbezogenen Daten haben. Der Grund dafür ist, die ihnen in unserem Namen übertragenen Aufgaben auszuführen. Sie sind jedoch verpflichtet, diese Informationen weder für andere Zwecke zu verwenden noch offenzulegen.
 
 ## Sicherheit
 
-Ich schätze Ihr Vertrauen, uns Ihre persönlichen Daten zu geben, daher bemühen wir uns, diese mit kommerziell akzeptablen Methoden zu schützen. Bitte beachten Sie jedoch, dass keine Übertragungsmethode über das Internet oder eine Methode der elektronischen Speicherung 100% sicher und zuverlässig ist und ich deren absolute Sicherheit nicht garantieren kann.
+Ich schätze Ihr Vertrauen, uns Ihre personenbezogenen Daten anzuvertrauen. Deshalb streben wir danach, wirtschaftlich vertretbare Methoden einzusetzen, um diese zu schützen. Bedenken Sie jedoch, dass keine Übertragungsmethode über das Internet oder elektronische Speicherung völlig sicher und zuverlässig ist, und ich kann keine absolute Sicherheit garantieren.
 
 ## Links zu anderen Seiten
 
-Dieser Service kann Links zu anderen Seiten enthalten. Wenn Sie auf einen Drittanbieter-Link klicken, werden Sie zu dieser Seite weitergeleitet. Bitte beachten Sie, dass diese externen Seiten nicht von mir betrieben werden. Daher rate ich Ihnen dringend, die Datenschutzrichtlinien dieser Website zu überprüfen. Ich habe keine Kontrolle über und übernehme keine Verantwortung für den Inhalt, die Datenschutzrichtlinien oder die Praktiken von Seiten oder Diensten Dritter.
+Dieser Dienst kann Links zu anderen Websites enthalten. Wenn Sie einen Link eines Drittanbieters anklicken, werden Sie zu dieser Website weitergeleitet. Bitte beachten Sie, dass diese externen Webseiten nicht von mir betrieben werden. Daher empfehle ich Ihnen dringend, die Datenschutzerklärungen dieser Websites zu überprüfen. Ich habe keine Kontrolle über den Inhalt, die Datenschutzrichtlinien oder das Verhalten von Websites oder Diensten Dritter und übernehme hierfür keine Verantwortung.
 
 ## Datenschutz für Kinder
 
-Ich sammle wissentlich keine persönlich identifizierbaren Informationen von Kindern. Ich ermutige alle Kinder, niemals persönlich identifizierbare Informationen über die Anwendung und/oder Dienstleistungen zu übermitteln. Ich fordere Eltern und gesetzliche Vormünder auf, die Internetnutzung ihrer Kinder zu überwachen und durch Anweisungen dazu beizutragen, diese Richtlinie durchzusetzen, dass ihre Kinder niemals persönlich identifizierbare Informationen über die Anwendung und/oder Services ohne ihre Erlaubnis bereitstellen. Wenn Sie Grund zur Annahme haben, dass ein Kind persönlich identifizierbare Informationen durch die Anwendung und/oder Dienstleistungen an uns übermittelt hat, kontaktieren Sie uns bitte. Sie müssen außerdem mindestens 16 Jahre alt sein, um der Verarbeitung Ihrer persönlich identifizierbaren Daten in Ihrem Land zuzustimmen (in einigen Ländern können wir Ihre Eltern oder Vormund dies in Ihrem Auftrag erlauben).
+Ich sammle nicht wissentlich personenbezogene Daten von Kindern. Ich ermutige alle Kinder, niemals personenbezogene Daten über die Anwendung und/oder die Dienste zu übermitteln. Ich empfehle Eltern und gesetzlichen Vertretern, die Internetnutzung ihrer Kinder zu überwachen und bei der Durchsetzung dieser Richtlinie mitzuhelfen, indem sie ihre Kinder anweisen, ohne Erlaubnis keine personenbezogenen Daten über die Anwendung und/oder die Dienste anzugeben. Wenn Sie Grund zu der Annahme haben, dass ein Kind uns personenbezogene Daten über die Anwendung und/oder Dienste zur Verfügung gestellt hat, kontaktieren Sie uns bitte. Sie müssen außerdem mindestens 16 Jahre alt sein, um der Verarbeitung Ihrer personenbezogenen Daten in Ihrem Land zuzustimmen (in einigen Ländern können auch Ihre Eltern oder Erziehungsberechtigten dies für Sie tun).
 
-## Änderungen an diesen Datenschutzrichtlinien
+## Änderungen an dieser Datenschutzerklärung
 
-Ich kann diese Datenschutzrichtlinien von Zeit zu Zeit aktualisieren. Daher werden Sie aufgefordert, diese Seite regelmäßig auf mögliche Änderungen zu überprüfen. Ich werde Sie über alle Änderungen informieren, indem ich die neue Datenschutzrichtlinie auf dieser Seite veröffentliche.
+Ich kann unsere Datenschutzerklärung von Zeit zu Zeit aktualisieren. Daher sollten Sie diese Seite regelmäßig auf Änderungen überprüfen. Über Änderungen werde ich Sie informieren, indem ich die neue Datenschutzerklärung auf dieser Seite veröffentliche.
 
-Diese Richtlinie ist wirksam ab 2023-10-31
+Diese Richtlinie gilt ab dem 31.10.2023
 
-## Kontaktiere uns
+## Kontakt
 
-Falls Sie Fragen oder Anregungen zu meinen Datenschutzrichtlinien haben, zögern Sie nicht, mich unter roam-support@msd3.io zu kontaktieren.
-```
+Wenn Sie Fragen oder Anregungen zu meiner Datenschutzerklärung haben, zögern Sie nicht, mich unter roam-support@msd3.io zu kontaktieren.
