@@ -222,10 +222,14 @@ def get_current_versions() -> Tuple[str, str]:
     with open(project_file_path, "r") as file:
         project_contents = file.readlines()
 
+    # Any dotted numeric version, not just two components: `git describe` will
+    # hand back a three-component tag sooner or later, bump_versions() will
+    # happily write `MARKETING_VERSION = 1.50.1;`, and a two-component-only
+    # pattern would then fail to read back what it just wrote.
     marketing_version_line = [
         line
         for line in project_contents
-        if re.search(r"MARKETING_VERSION = \d+\.\d+;", line)
+        if re.search(r"MARKETING_VERSION = \d+(\.\d+)*;", line)
     ]
 
     current_version_line = [
@@ -363,7 +367,11 @@ if __name__ == "__main__":
     if args.bump_versions:
         bump_versions()
 
-    if not args.no_bump and (args.archive or args.publish):
+    # Only an archive may renumber the project. Bumping on a bare --publish
+    # rewrites project.pbxproj *after* the .xcarchive was built, so the upload
+    # would carry one version while the binary inside it carries another --
+    # and --upload-dsyms would file the symbols under the wrong build.
+    if not args.no_bump and args.archive:
         bump_versions()
 
     if args.archive:

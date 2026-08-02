@@ -1,35 +1,80 @@
 name: Archive Xcode Build on Push
+
+# Build-only smoke test: archives all three platforms on every push to main but
+# never uploads anything. The manually-triggered "Export Roam" workflow
+# (export-app.yml) is what actually publishes to App Store Connect.
 "on":
     push:
         branches:
             - main
 
+concurrency:
+    group: archive-push-${{ github.ref }}
+    cancel-in-progress: true
+
 jobs:
     archive:
-        runs-on: macos-14
+        # macos-26 is the only image that ships the visionOS (xros) device SDK
+        # preinstalled; macos-14 has no visionOS SDK at all and is fully
+        # unsupported for GitHub Actions after 2026-11-02.
+        runs-on: macos-26
         name: Archive Xcode Build
+        timeout-minutes: 120
         steps:
             - uses: actions/checkout@v7
               with:
+                  # export.py derives the marketing version from `git describe
+                  # --tags` and the build number from the commit sha.
                   fetch-depth: 0
                   fetch-tags: true
 
-            - name: Install Secret
+            - name: Create signing keychain
+              # Cloud signing writes the certificates it fetches into the default
+              # keychain. A dedicated, unlocked keychain keeps that non-interactive.
+              env:
+                  KEYCHAIN_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
               run: |
-                  mkdir -p "./.private_keys" && \
-                  echo "${{ secrets.XCODE_API_SECRET }}" > ./.private_keys/AuthKey_${{secrets.XCODE_API_KEY}}.p8
+                  KEYCHAIN="$RUNNER_TEMP/roam-signing.keychain-db"
+                  security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+                  security set-keychain-settings -lut 21600 "$KEYCHAIN"
+                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+                  security default-keychain -s "$KEYCHAIN"
+                  security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+
+            - name: Install App Store Connect API key
+              # export.py reads ~/.private_keys/AuthKey_$XCODE_API_KEY.p8 (it
+              # expanduser()s the path), so the key has to land in $HOME, not ./.
+              env:
+                  XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
+                  XCODE_API_SECRET: ${{ secrets.XCODE_API_SECRET }}
+              run: |
+                  mkdir -p "$HOME/.private_keys"
+                  printf '%s\n' "$XCODE_API_SECRET" > "$HOME/.private_keys/AuthKey_${XCODE_API_KEY}.p8"
+                  chmod 600 "$HOME/.private_keys/AuthKey_${XCODE_API_KEY}.p8"
 
             - name: Create Secrets.xcconfig
-              run: echo 'BACKEND_API_KEY = ${secrets.BACKEND_API_KEY}' > Secrets.xcconfig
+              # Vars.xcconfig does `#include? "Secrets.xcconfig"`, which feeds
+              # $(BACKEND_API_KEY) into Roam/Info.plist and RoamWatch/Info.plist.
+              env:
+                  BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
+              run: printf 'BACKEND_API_KEY = %s\n' "$BACKEND_API_KEY" > Secrets.xcconfig
 
-            - name: Fetch Tags
-              run: |
-                  git fetch --tags origin && \
-                  git describe --tags
+            - name: Install xcbeautify
+              run: command -v xcbeautify >/dev/null || brew install xcbeautify
 
             - name: Archive
-              run: |
-                  ./scripts/export.py --archive --platform iOS macOS visionOS --github-actions
+              # --no-bump: a push build is a smoke test, so it must not rewrite
+              # project.pbxproj versions or burn a build number.
               env:
-                  XCODE_API_KEY: "${{ secrets.XCODE_API_KEY }}"
-                  XCODE_API_ISSUER: "${{ secrets.XCODE_API_ISSUER }}"
+                  XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
+                  XCODE_API_ISSUER: ${{ secrets.XCODE_API_ISSUER }}
+              run: |
+                  ./scripts/export.py --archive --no-bump \
+                      --platform iOS macOS visionOS --github-actions
+
+            - name: Clean up signing keychain
+              if: always()
+              run: |
+                  security default-keychain -s login.keychain-db || true
+                  security delete-keychain "$RUNNER_TEMP/roam-signing.keychain-db" || true
+                  rm -rf "$HOME/.private_keys" Secrets.xcconfig
