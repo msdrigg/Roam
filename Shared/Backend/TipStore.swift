@@ -1,5 +1,8 @@
 import Foundation
 import StoreKit
+// `PurchaseAction` comes from the StoreKit ⨯ SwiftUI cross-import overlay, so
+// both modules have to be imported here for the type to resolve.
+import SwiftUI
 
 /// The four tip tiers, in ascending price order.
 ///
@@ -199,9 +202,14 @@ final class TipStore {
 
     // MARK: - Purchasing
 
-    func purchase(_ product: Product) async {
+    /// The buy itself goes through SwiftUI's `PurchaseAction` rather than
+    /// `Product.purchase()`, which is unavailable on visionOS — there StoreKit
+    /// requires the sheet be confirmed in a scene. `PurchaseAction` resolves
+    /// that scene from the view environment, so every platform that ships the
+    /// tip jar keeps one code path instead of an `#if os(visionOS)` fork.
+    func purchase(_ product: Product, using purchase: PurchaseAction) async {
         do {
-            let result = try await product.purchase()
+            let result = try await purchase(product)
 
             switch result {
             case let .success(verification):
