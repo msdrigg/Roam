@@ -1,0 +1,171 @@
+name: Export Roam
+
+# Manual only. Archives Roam for iOS / macOS / visionOS and (optionally) uploads
+# the builds to App Store Connect and the dSYMs to the Roam backend.
+#
+# Signing is fully automatic: every target in Roam.xcodeproj uses
+# CODE_SIGN_STYLE = Automatic with no pinned provisioning profiles, so
+# scripts/export.py passes -allowProvisioningUpdates together with the App Store
+# Connect API key and Xcode mints/fetches the cloud-managed certificates and
+# profiles on the runner. There is nothing to import from a developer machine
+# beyond the .p8 API key itself.
+"on":
+    workflow_dispatch:
+        inputs:
+            platforms:
+                description: Platforms to build
+                type: choice
+                default: iOS macOS visionOS
+                options:
+                    - iOS macOS visionOS
+                    - iOS
+                    - macOS
+                    - visionOS
+                    - iOS macOS
+            publish:
+                description: Upload the builds to App Store Connect
+                type: boolean
+                default: true
+            upload_dsyms:
+                description: Upload dSYMs to the Roam backend
+                type: boolean
+                default: true
+            bump_versions:
+                description: Bump marketing/build versions from git before building
+                type: boolean
+                default: true
+            xcode_version:
+                description: Xcode version to build with
+                type: choice
+                default: "26.6"
+                options:
+                    - "26.6"
+                    - "26.5"
+                    - "26.4.1"
+
+concurrency:
+    group: export-app
+    cancel-in-progress: false
+
+jobs:
+    export:
+        # macos-26 is the only image that ships the visionOS (xros) device SDK
+        # preinstalled, so no `xcodebuild -downloadPlatform visionOS` is needed.
+        runs-on: macos-26
+        name: Export ${{ inputs.platforms }}
+        timeout-minutes: 120
+
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  # export.py derives the marketing version from `git describe
+                  # --tags` and the build number from the commit sha.
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Select Xcode
+              run: |
+                  sudo xcode-select -switch "/Applications/Xcode_${{ inputs.xcode_version }}.app"
+                  xcodebuild -version
+
+            - name: Create signing keychain
+              # Cloud signing writes the certificates it fetches into the default
+              # keychain. A dedicated, unlocked keychain keeps that non-interactive
+              # and keeps the runner's login keychain out of the picture.
+              env:
+                  KEYCHAIN_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+              run: |
+                  KEYCHAIN="$RUNNER_TEMP/roam-signing.keychain-db"
+                  security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+                  security set-keychain-settings -lut 21600 "$KEYCHAIN"
+                  security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+                  security default-keychain -s "$KEYCHAIN"
+                  security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+
+            - name: Install App Store Connect API key
+              # export.py reads ~/.private_keys/AuthKey_$XCODE_API_KEY.p8 (it
+              # expanduser()s the path), so the key has to land in $HOME.
+              env:
+                  XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
+                  XCODE_API_SECRET: ${{ secrets.XCODE_API_SECRET }}
+              run: |
+                  mkdir -p "$HOME/.private_keys"
+                  printf '%s\n' "$XCODE_API_SECRET" > "$HOME/.private_keys/AuthKey_${XCODE_API_KEY}.p8"
+                  chmod 600 "$HOME/.private_keys/AuthKey_${XCODE_API_KEY}.p8"
+
+            - name: Create Secrets.xcconfig
+              # Vars.xcconfig does `#include? "Secrets.xcconfig"`, which feeds
+              # $(BACKEND_API_KEY) into Roam/Info.plist and RoamWatch/Info.plist.
+              env:
+                  BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
+              run: printf 'BACKEND_API_KEY = %s\n' "$BACKEND_API_KEY" > Secrets.xcconfig
+
+            - name: Install xcbeautify
+              run: command -v xcbeautify >/dev/null || brew install xcbeautify
+
+            - name: Archive
+              env:
+                  XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
+                  XCODE_API_ISSUER: ${{ secrets.XCODE_API_ISSUER }}
+              run: |
+                  ./scripts/export.py \
+                      --archive \
+                      --platform ${{ inputs.platforms }} \
+                      ${{ inputs.bump_versions && ' ' || '--no-bump' }} \
+                      --github-actions
+
+            - name: Publish
+              if: inputs.publish
+              env:
+                  XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
+                  XCODE_API_ISSUER: ${{ secrets.XCODE_API_ISSUER }}
+                  BACKEND_URL: ${{ secrets.BACKEND_URL }}
+                  BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
+              run: |
+                  ./scripts/export.py \
+                      --publish \
+                      --no-bump \
+                      --platform ${{ inputs.platforms }} \
+                      ${{ inputs.upload_dsyms && '--upload-dsyms' || ' ' }} \
+                      --github-actions
+
+            - name: Upload dSYMs
+              # Only needed when we archived but did not publish; the publish step
+              # already uploads dSYMs per platform as each export finishes.
+              if: ${{ !inputs.publish && inputs.upload_dsyms }}
+              env:
+                  BACKEND_URL: ${{ secrets.BACKEND_URL }}
+                  BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
+              run: |
+                  ./scripts/export.py \
+                      --upload-dsyms \
+                      --no-bump \
+                      --platform ${{ inputs.platforms }} \
+                      --github-actions
+
+            - name: Collect distribution logs
+              if: always()
+              run: |
+                  mkdir -p /tmp/export-logs
+                  # xcodebuild -exportArchive writes its ASC upload transcript here.
+                  cp -R ./Archives/Exports /tmp/export-logs/Exports 2>/dev/null || true
+                  find "$HOME/Library/Logs/gym" "$HOME/Library/Logs/ContentDelivery" \
+                      -type f -print0 2>/dev/null \
+                      | xargs -0 -I{} cp {} /tmp/export-logs/ 2>/dev/null || true
+                  # Drop the .ipa/.pkg payloads so the artifact stays small.
+                  find /tmp/export-logs -type f \( -name '*.ipa' -o -name '*.pkg' -o -name '*.app' \) -delete 2>/dev/null || true
+
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: export-logs-${{ github.run_id }}
+                  path: /tmp/export-logs
+                  if-no-files-found: ignore
+                  retention-days: 14
+
+            - name: Clean up signing keychain
+              if: always()
+              run: |
+                  security default-keychain -s login.keychain-db || true
+                  security delete-keychain "$RUNNER_TEMP/roam-signing.keychain-db" || true
+                  rm -rf "$HOME/.private_keys" Secrets.xcconfig
