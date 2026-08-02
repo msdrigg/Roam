@@ -145,6 +145,7 @@ struct TipJarView: View {
 private struct TipTierRow: View {
     let tier: TipTier
     let store: TipStore
+    @Environment(\.purchase) private var purchase
 
     private var product: Product? {
         store.product(for: tier)
@@ -185,7 +186,7 @@ private struct TipTierRow: View {
                     .foregroundStyle(.green)
             } else if let product {
                 Button(product.displayPrice) {
-                    Task { await store.purchase(product) }
+                    Task { await store.purchase(product, using: purchase) }
                 }
                 .buttonStyle(.glassIfSupported(isProminent: true))
             } else if inScreenshotTestingContext() {
