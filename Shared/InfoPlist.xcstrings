@@ -356,270 +356,180 @@
         },
         "NSLocalNetworkUsageDescription": {
             "comment": "Privacy - Local Network Usage Description",
-            "extractionState": "extracted_with_value",
+            "extractionState": "manual",
             "localizations": {
                 "ar": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "يستخدم روام الشبكة المحلية لاكتشاف والتحكم في تلفزيون Roku الخاص بك"
+                        "value": "يستخدم Roam شبكتك المحلية للعثور على أجهزة Roku المتصلة بشبكة Wi-Fi وإرسال أوامر التحكم عن بُعد إليها، مثل العثور على تلفزيون Roku في غرفة المعيشة لتتمكن من تغيير القناة أو ضبط مستوى الصوت أو تشغيل تطبيق مثل Netflix من جهاز iPhone الخاص بك."
                     }
                 },
                 "de": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam verwendet das lokale Netzwerk, um Ihren Roku-Fernseher zu entdecken und zu steuern"
+                        "value": "Roam nutzt Ihr lokales Netzwerk, um Roku-Geräte in Ihrem WLAN zu finden und ihnen Fernbedienungsbefehle zu senden, zum Beispiel um Ihren Roku TV im Wohnzimmer zu entdecken, damit Sie vom iPhone aus den Kanal wechseln, die Lautstärke anpassen oder eine App wie Netflix starten können."
                     }
                 },
                 "en": {
                     "stringUnit": {
-                        "state": "new",
-                        "value": "Roam uses the local network to discover and control your Roku TV"
+                        "state": "translated",
+                        "value": "Roam uses your local network to find Roku devices on your Wi-Fi and send them remote-control commands, for example discovering your living room Roku TV so you can change the channel, adjust the volume, or launch an app like Netflix from your iPhone."
                     }
                 },
                 "es": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam usa la red local para descubrir y controlar su televisor Roku"
+                        "value": "Roam usa tu red local para encontrar dispositivos Roku en tu wifi y enviarles comandos del mando a distancia, por ejemplo para detectar el Roku TV del salón y poder cambiar de canal, ajustar el volumen o abrir una app como Netflix desde tu iPhone."
                     }
                 },
                 "es-419": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam usa la red local para descubrir y controlar su televisor Roku"
+                        "value": "Roam usa tu red local para encontrar dispositivos Roku en tu wifi y enviarles comandos del control remoto, por ejemplo para detectar el Roku TV de la sala y poder cambiar de canal, ajustar el volumen o abrir una app como Netflix desde tu iPhone."
                     }
                 },
                 "fil": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Gumagamit ang Roam ng lokal na network upang matuklasan at kontrolin ang iyong Roku TV"
+                        "value": "Ginagamit ng Roam ang iyong lokal na network para hanapin ang mga Roku device sa iyong Wi-Fi at magpadala sa kanila ng mga utos ng remote control, halimbawa para matuklasan ang Roku TV sa iyong sala nang sa gayon ay mapalitan mo ang channel, ma-adjust ang volume, o mabuksan ang app tulad ng Netflix mula sa iyong iPhone."
                     }
                 },
                 "fr": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam utilise le réseau local pour découvrir et contrôler votre téléviseur Roku"
+                        "value": "Roam utilise votre réseau local pour trouver les appareils Roku sur votre Wi-Fi et leur envoyer des commandes de télécommande, par exemple pour détecter le téléviseur Roku de votre salon afin de changer de chaîne, régler le volume ou lancer une application comme Netflix depuis votre iPhone."
                     }
                 },
                 "fr-CA": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam utilise le réseau local pour découvrir et contrôler votre téléviseur Roku"
+                        "value": "Roam utilise votre réseau local pour trouver les appareils Roku sur votre Wi-Fi et leur envoyer des commandes de télécommande, par exemple pour détecter le téléviseur Roku de votre salon afin de changer de chaîne, régler le volume ou lancer une application comme Netflix depuis votre iPhone."
                     }
                 },
                 "it": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam utilizza la rete locale per scoprire e controllare il tuo Roku TV"
+                        "value": "Roam usa la rete locale per trovare i dispositivi Roku sul tuo Wi-Fi e inviare loro comandi del telecomando, ad esempio per rilevare il Roku TV del soggiorno e poter cambiare canale, regolare il volume o aprire un'app come Netflix dall'iPhone."
                     }
                 },
                 "pa": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "ਰੋਮ ਤੁਹਾਡੇ ਰੋਕੂ ਟੀਵੀ ਨੂੰ ਖੋਜਣ ਅਤੇ ਕੰਟਰੋਲ ਕਰਨ ਲਈ ਸਥਾਨਕ ਨੈੱਟਵਰਕ ਦੀ ਵਰਤੋਂ ਕਰਦਾ ਹੈ"
+                        "value": "ਰੋਮ ਤੁਹਾਡੇ ਵਾਈ-ਫਾਈ ਉੱਤੇ Roku ਡੀਵਾਈਸ ਲੱਭਣ ਅਤੇ ਉਹਨਾਂ ਨੂੰ ਰਿਮੋਟ ਕੰਟਰੋਲ ਕਮਾਂਡਾਂ ਭੇਜਣ ਲਈ ਤੁਹਾਡੇ ਸਥਾਨਕ ਨੈੱਟਵਰਕ ਦੀ ਵਰਤੋਂ ਕਰਦਾ ਹੈ, ਜਿਵੇਂ ਕਿ ਤੁਹਾਡੇ ਲਿਵਿੰਗ ਰੂਮ ਦਾ Roku TV ਲੱਭਣਾ ਤਾਂ ਜੋ ਤੁਸੀਂ ਆਪਣੇ iPhone ਤੋਂ ਚੈਨਲ ਬਦਲ ਸਕੋ, ਆਵਾਜ਼ ਘਟਾ-ਵਧਾ ਸਕੋ, ਜਾਂ Netflix ਵਰਗੀ ਐਪ ਖੋਲ੍ਹ ਸਕੋ।"
                     }
                 },
                 "pt-BR": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam usa a rede local para descobrir e controlar sua TV Roku"
+                        "value": "O Roam usa a sua rede local para encontrar dispositivos Roku no seu Wi-Fi e enviar comandos de controle remoto para eles, por exemplo para localizar a Roku TV da sala e você poder mudar de canal, ajustar o volume ou abrir um app como a Netflix pelo iPhone."
                     }
                 },
                 "pt-PT": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam usa a rede local para descobrir e controlar sua TV Roku"
+                        "value": "O Roam usa a sua rede local para encontrar dispositivos Roku na sua rede Wi-Fi e enviar-lhes comandos de telecomando, por exemplo para localizar a Roku TV da sala e poder mudar de canal, ajustar o volume ou abrir uma app como a Netflix a partir do iPhone."
                     }
                 },
                 "vi": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam sử dụng mạng cục bộ để khám phá và điều khiển Roku TV của bạn"
+                        "value": "Roam sử dụng mạng cục bộ của bạn để tìm các thiết bị Roku trên Wi-Fi và gửi lệnh điều khiển từ xa đến chúng, ví dụ như tìm Roku TV trong phòng khách để bạn có thể đổi kênh, chỉnh âm lượng hoặc mở ứng dụng như Netflix từ iPhone."
                     }
                 },
                 "zh-Hans": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam 使用本地网络来发现和控制您的 Roku 电视"
+                        "value": "Roam 使用本地网络在您的 Wi-Fi 上查找 Roku 设备并向其发送遥控指令，例如找到客厅的 Roku TV，以便您通过 iPhone 换台、调节音量或打开 Netflix 等应用。"
                     }
                 }
             }
         },
         "NSPhotoLibraryAddUsageDescription": {
             "comment": "Privacy - Photo Library Additions Usage Description",
-            "extractionState": "extracted_with_value",
-            "localizations": {
-                "ar": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "وصف استخدام مكتبة الصور NS"
-                    }
-                },
-                "de": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "NSPhotoLibraryAddUsageDescription"
-                    }
-                },
-                "en": {
-                    "stringUnit": {
-                        "state": "new",
-                        "value": "This application adds photos saved from the developer chat to the library"
-                    }
-                },
-                "es": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Descripción de Uso de la Biblioteca de Fotos NS"
-                    }
-                },
-                "es-419": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Descripción de uso de añadir a la biblioteca de fotos"
-                    }
-                },
-                "fil": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Paglalarawan ng Paggamit sa Pagdaragdag sa Library ng Larawan"
-                    }
-                },
-                "fr": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Description de l'utilisation de l'ajout à la bibliothèque de photos"
-                    }
-                },
-                "fr-CA": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Description de l'utilisation de l'ajout à la bibliothèque de photos"
-                    }
-                },
-                "it": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Descrizione dell'uso dell'aggiunta alla libreria fotografica"
-                    }
-                },
-                "pa": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "NSPhotoLibraryAddUsageDescription ਦਾ ਪ੍ਰਯੋਗ ਵੇਰਵਾ"
-                    }
-                },
-                "pt-BR": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Descrição de Uso para Adicionar à Biblioteca de Fotos"
-                    }
-                },
-                "pt-PT": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Descrição de Uso da Adição à Biblioteca de Fotos"
-                    }
-                },
-                "vi": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "Mô tả sử dụng thêm thư viện ảnh"
-                    }
-                },
-                "zh-Hans": {
-                    "stringUnit": {
-                        "state": "translated",
-                        "value": "添加到照片库使用描述"
-                    }
-                }
-            }
-        },
-        "NSUserNotificationUsageDescription": {
-            "comment": "Notification Usage Description",
             "extractionState": "manual",
             "localizations": {
                 "ar": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "يمكن أن يخطر روامك عندما يستجيب المطور لرسالتك"
+                        "value": "يضيف Roam صورة إلى مكتبة الصور لديك فقط عندما تضغط على «حفظ في الصور» لمرفق داخل محادثة الدعم مع المطوّر، مثل حفظ لقطة شاشة أرسلها إليك المطوّر أثناء مساعدتك في حل مشكلة في إعداد جهاز Roku."
                     }
                 },
                 "de": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam kann Sie benachrichtigen, wenn der Entwickler auf Ihre Nachricht antwortet"
+                        "value": "Roam fügt Ihrer Fotomediathek nur dann ein Bild hinzu, wenn Sie bei einem Anhang in Ihrer Support-Unterhaltung mit dem Entwickler auf „In Fotos sichern“ tippen, zum Beispiel um einen Screenshot zu sichern, den Ihnen der Entwickler bei der Fehlersuche an Ihrem Roku geschickt hat."
                     }
                 },
                 "en": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam can notify you when the the developer responds to your message"
+                        "value": "Roam adds an image to your photo library only when you tap Save to photos on an attachment in your support conversation with the developer, for example saving a screenshot the developer sent you while helping troubleshoot your Roku setup."
                     }
                 },
                 "es": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam puede notificarle cuando el desarrollador responda a su mensaje"
+                        "value": "Roam añade una imagen a tu fototeca solo cuando pulsas «Guardar en Fotos» en un archivo adjunto de tu conversación de soporte con el desarrollador, por ejemplo para guardar una captura de pantalla que el desarrollador te envió mientras te ayudaba a resolver un problema con tu Roku."
                     }
                 },
                 "es-419": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam puede notificarle cuando el desarrollador responda a su mensaje"
+                        "value": "Roam agrega una imagen a tu galería de fotos solo cuando tocas «Guardar en Fotos» en un archivo adjunto de tu conversación de soporte con el desarrollador, por ejemplo para guardar una captura de pantalla que el desarrollador te envió mientras te ayudaba a resolver un problema con tu Roku."
                     }
                 },
                 "fil": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Maaaring abisuhan ka ng Roam kapag tumugon ang developer sa iyong mensahe"
+                        "value": "Nagdaragdag lang ang Roam ng larawan sa iyong photo library kapag na-tap mo ang Save to photos sa isang attachment sa iyong support conversation kasama ang developer, halimbawa kapag sini-save ang screenshot na ipinadala ng developer habang tinutulungan kang ayusin ang setup ng iyong Roku."
                     }
                 },
                 "fr": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam peut vous notifier lorsque le développeur répond à votre message"
+                        "value": "Roam n'ajoute une image à votre photothèque que lorsque vous touchez « Enregistrer dans Photos » sur une pièce jointe de votre conversation d'assistance avec le développeur, par exemple pour enregistrer une capture d'écran que le développeur vous a envoyée en vous aidant à configurer votre Roku."
                     }
                 },
                 "fr-CA": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam peut vous notifier lorsque le développeur répond à votre message"
+                        "value": "Roam n'ajoute une image à votre photothèque que lorsque vous touchez « Enregistrer dans Photos » sur une pièce jointe de votre conversation d'assistance avec le développeur, par exemple pour enregistrer une capture d'écran que le développeur vous a envoyée en vous aidant à configurer votre Roku."
                     }
                 },
                 "it": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam può notificarti quando lo sviluppatore risponde al tuo messaggio"
+                        "value": "Roam aggiunge un'immagine alla tua libreria foto solo quando tocchi «Salva in Foto» su un allegato della tua conversazione di assistenza con lo sviluppatore, ad esempio per salvare uno screenshot che lo sviluppatore ti ha inviato mentre ti aiutava a risolvere un problema con il tuo Roku."
                     }
                 },
                 "pa": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "ਜਦੋਂ ਡਿਵੈਲਪਰ ਤੁਹਾਡੇ ਸੁਨੇਹੇ ਦਾ ਜਵਾਬ ਦੇਂਦਾ ਹੈ ਤਾਂ ਰੋਮ ਤੁਹਾਨੂੰ ਸੂਚਿਤ ਕਰ ਸਕਦਾ ਹੈ"
+                        "value": "ਰੋਮ ਤੁਹਾਡੀ ਫੋਟੋ ਲਾਇਬ੍ਰੇਰੀ ਵਿੱਚ ਤਸਵੀਰ ਸਿਰਫ਼ ਉਦੋਂ ਜੋੜਦਾ ਹੈ ਜਦੋਂ ਤੁਸੀਂ ਡਿਵੈਲਪਰ ਨਾਲ ਆਪਣੀ ਸਹਾਇਤਾ ਗੱਲਬਾਤ ਵਿੱਚ ਕਿਸੇ ਅਟੈਚਮੈਂਟ ਉੱਤੇ «ਫੋਟੋਆਂ ਵਿੱਚ ਸੇਵ ਕਰੋ» ਦਬਾਉਂਦੇ ਹੋ, ਜਿਵੇਂ ਕਿ ਉਹ ਸਕ੍ਰੀਨਸ਼ਾਟ ਸੇਵ ਕਰਨਾ ਜੋ ਡਿਵੈਲਪਰ ਨੇ ਤੁਹਾਡੇ Roku ਦੀ ਸੈੱਟਅੱਪ ਸਮੱਸਿਆ ਹੱਲ ਕਰਨ ਵਿੱਚ ਮਦਦ ਕਰਦੇ ਹੋਏ ਭੇਜਿਆ ਸੀ।"
                     }
                 },
                 "pt-BR": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "O Roam pode notificá-lo quando o desenvolvedor responder à sua mensagem"
+                        "value": "O Roam adiciona uma imagem à sua fototeca somente quando você toca em «Salvar em Fotos» em um anexo da sua conversa de suporte com o desenvolvedor, por exemplo para salvar uma captura de tela que o desenvolvedor enviou enquanto ajudava a resolver um problema na configuração do seu Roku."
                     }
                 },
                 "pt-PT": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "O Roam pode notificá-lo quando o desenvolvedor responder à sua mensagem"
+                        "value": "O Roam adiciona uma imagem à sua fototeca apenas quando toca em «Guardar em Fotos» num anexo da sua conversa de apoio com o programador, por exemplo para guardar uma captura de ecrã que o programador lhe enviou enquanto o ajudava a resolver um problema na configuração do seu Roku."
                     }
                 },
                 "vi": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam có thể thông báo cho bạn khi nhà phát triển trả lời tin nhắn của bạn"
+                        "value": "Roam chỉ thêm ảnh vào thư viện ảnh của bạn khi bạn chạm vào «Lưu vào Ảnh» trên một tệp đính kèm trong cuộc trò chuyện hỗ trợ với nhà phát triển, ví dụ như lưu ảnh chụp màn hình mà nhà phát triển đã gửi khi giúp bạn khắc phục sự cố thiết lập Roku."
                     }
                 },
                 "zh-Hans": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "当开发者回复您的消息时，Roam 可以通知您"
+                        "value": "只有当您在与开发者的支持对话中点按附件上的「存储到照片」时，Roam 才会将该图片添加到您的照片图库，例如保存开发者在帮您排查 Roku 设置问题时发送的截图。"
                     }
                 }
             }
