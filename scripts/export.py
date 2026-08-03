@@ -290,6 +290,32 @@ def upload_dsyms(
                 ) from error
 
 
+def try_upload_dsyms(
+    platform: str,
+    backend_url: str,
+    backend_api_key: str,
+    bundle_identifier: str,
+    render_github_actions: bool = False,
+) -> bool:
+    """Upload symbols without letting a failure block distribution.
+
+    Publishing and symbol upload are interleaved per platform, so raising here
+    stops every *later* platform from being published at all: one HTTP 502 on
+    the iOS dSYM upload left macOS and visionOS unshipped. Symbols can be
+    re-uploaded at any time with `--upload-dsyms`; a half-published release
+    cannot be undone.
+    """
+    try:
+        upload_dsyms(platform, backend_url, backend_api_key, bundle_identifier)
+        return True
+    except Exception as error:
+        # ::warning:: surfaces in the Actions summary instead of scrolling past
+        # in the log, so a skipped symbol upload stays visible on a green run.
+        prefix = "::warning::" if render_github_actions else "WARNING: "
+        print(f"{prefix}dSYM upload failed for {platform}, continuing: {error}")
+        return False
+
+
 def get_current_versions() -> Tuple[str, str]:
     project_file_path = "./Roam.xcodeproj/project.pbxproj"
 
@@ -357,6 +383,10 @@ def get_build_version():
     return f"{date_str}.{git_commit}.{patch_version}"
 
 
+def version_sort_key(version: str) -> Tuple[int, ...]:
+    return tuple(int(part) for part in re.findall(r"\d+", version))
+
+
 def bump_versions():
     project_file_path = "./Roam.xcodeproj/project.pbxproj"
 
@@ -365,6 +395,22 @@ def bump_versions():
         get_marketing_version(),
         get_build_version(),
     )
+
+    # `git describe` only sees tags that were actually pushed, so a tag living
+    # only on a developer's machine leaves CI a release behind -- and the sed
+    # below will happily rewrite MARKETING_VERSION *downwards*. That is how a
+    # 1.50 project archived and uploaded itself to App Store Connect as 1.49.
+    if version_sort_key(new_marketing_version) < version_sort_key(
+        current_marketing_version
+    ):
+        raise SystemExit(
+            f"Refusing to downgrade MARKETING_VERSION "
+            f"{current_marketing_version} -> {new_marketing_version}.\n"
+            f"The newest tag reachable from HEAD is v{new_marketing_version}, but "
+            f"the project is already at {current_marketing_version}. Push the "
+            f"newer tag (git push origin v{current_marketing_version}) or tag the "
+            "release you actually intend to ship."
+        )
 
     sed_cmd_marketing_version = f"sed -i '' 's/MARKETING_VERSION = {current_marketing_version};/MARKETING_VERSION = {new_marketing_version};/g' {project_file_path}"
     subprocess.run(sed_cmd_marketing_version, shell=True, check=True)
@@ -455,6 +501,7 @@ if __name__ == "__main__":
 
     backend_url = None
     backend_api_key = None
+    dsym_failures: list[str] = []
     if args.upload_dsyms:
         dotenv_values = load_dotenv(args.env_file)
         try:
@@ -476,18 +523,31 @@ if __name__ == "__main__":
             )
         for platform in args.platform or []:
             publish_to_app_store(platform, render_github_actions=args.github_actions)
-            if args.upload_dsyms:
-                upload_dsyms(
-                    platform,
-                    backend_url,
-                    backend_api_key,
-                    args.bundle_identifier,
-                )
-    elif args.upload_dsyms:
-        for platform in args.platform or []:
-            upload_dsyms(
+            if args.upload_dsyms and not try_upload_dsyms(
                 platform,
                 backend_url,
                 backend_api_key,
                 args.bundle_identifier,
-            )
+                render_github_actions=args.github_actions,
+            ):
+                dsym_failures.append(platform)
+    elif args.upload_dsyms:
+        for platform in args.platform or []:
+            if not try_upload_dsyms(
+                platform,
+                backend_url,
+                backend_api_key,
+                args.bundle_identifier,
+                render_github_actions=args.github_actions,
+            ):
+                dsym_failures.append(platform)
+
+    if dsym_failures:
+        # Deliberately not an error: the builds are on App Store Connect, and
+        # failing the run here would misreport a successful distribution.
+        print(
+            f"\nSymbols were NOT uploaded for: {', '.join(dsym_failures)}.\n"
+            f"Re-run once the backend is healthy:\n"
+            f"    ./scripts/export.py --upload-dsyms --no-bump --platform "
+            f"{' '.join(dsym_failures)}"
+        )
