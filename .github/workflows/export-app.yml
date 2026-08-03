@@ -155,7 +155,7 @@ jobs:
                   # Drop the .ipa/.pkg payloads so the artifact stays small.
                   find /tmp/export-logs -type f \( -name '*.ipa' -o -name '*.pkg' -o -name '*.app' \) -delete 2>/dev/null || true
 
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v7
               if: always()
               with:
                   name: export-logs-${{ github.run_id }}
