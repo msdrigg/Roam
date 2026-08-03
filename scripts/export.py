@@ -29,6 +29,79 @@ import urllib.request
 # The two Unauthenticated keys likely belong to a different issuer than the one above.
 
 
+# Where BACKEND_API_KEY may live, in priority order. Secrets.xcconfig is the
+# only one Xcode reads; the rest are sources we can populate it from so that a
+# local archive stops depending on a gitignored file being present by luck.
+BACKEND_API_KEY_SOURCES = ("Secrets.xcconfig", ".env", "backend/.env")
+
+
+def ensure_backend_api_key():
+    """Guarantee Secrets.xcconfig exists with a real key before archiving.
+
+    Vars.xcconfig pulls it in with `#include?`, so a missing file is silent:
+    `$(BACKEND_API_KEY)` in Roam/Info.plist expands to the empty string, the
+    build succeeds, and the shipped app sends `x-api-key: ` on every backend
+    call -- which the server answers with 401. That is how 1.49 and 1.50 went
+    out with a dead developer chat.
+
+    CI writes Secrets.xcconfig from a repo secret. Locally the same value is
+    already sitting in backend/.env, so copy it across rather than making the
+    developer remember to hand-create a file they cannot commit.
+    """
+    if load_dotenv("Secrets.xcconfig").get("BACKEND_API_KEY"):
+        return
+
+    for source in BACKEND_API_KEY_SOURCES:
+        key = os.environ.get("BACKEND_API_KEY") or load_dotenv(source).get(
+            "BACKEND_API_KEY"
+        )
+        if key:
+            with open("Secrets.xcconfig", "w") as file:
+                file.write(f"BACKEND_API_KEY = {key}\n")
+            print(f"Wrote Secrets.xcconfig from {source}")
+            return
+
+    raise SystemExit(
+        "BACKEND_API_KEY is missing or empty.\n"
+        "Vars.xcconfig includes Secrets.xcconfig optionally, so without it the "
+        "app ships with an empty key and every backend request 401s.\n"
+        "Set $BACKEND_API_KEY, or add it to one of: "
+        + ", ".join(BACKEND_API_KEY_SOURCES)
+    )
+
+
+def verify_archived_api_key(platform: str, archive_path: str):
+    """Read the key back out of the artifact that was actually built.
+
+    The pre-flight check proves the file exists; this proves the value made it
+    through Vars.xcconfig into the app's Info.plist. It catches the failure
+    modes a file check cannot: a renamed variable, a target whose build
+    configuration lost its baseConfigurationReference, a stale build dir.
+    """
+    import glob
+
+    candidates = glob.glob(f"{archive_path}/Products/Applications/*.app/Info.plist")
+    candidates += glob.glob(
+        f"{archive_path}/Products/Applications/*.app/Contents/Info.plist"
+    )
+    if not candidates:
+        raise SystemExit(f"No app Info.plist found in {archive_path}")
+
+    for plist in candidates:
+        value = subprocess.run(
+            ["/usr/libexec/PlistBuddy", "-c", "Print :BACKEND_API_KEY", plist],
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        if not value:
+            raise SystemExit(
+                f"{platform}: BACKEND_API_KEY is empty in {plist}.\n"
+                "The archive would ship with a dead backend connection "
+                "(developer chat, diagnostics upload). Refusing to continue."
+            )
+    print(f"BACKEND_API_KEY present in the {platform} archive")
+
+
 def archive_application(platform: str, render_github_actions: bool = False):
     scheme = "Roam"
     project_path = "."
@@ -41,6 +114,7 @@ def archive_application(platform: str, render_github_actions: bool = False):
         shell=True,
         check=True,
     )
+    verify_archived_api_key(platform, archive_path)
     print(f"Archive succeeded for platform {platform}")
 
 
@@ -375,6 +449,7 @@ if __name__ == "__main__":
         bump_versions()
 
     if args.archive:
+        ensure_backend_api_key()
         for platform in args.platform or []:
             archive_application(platform, render_github_actions=args.github_actions)
 
@@ -393,6 +468,12 @@ if __name__ == "__main__":
             parser.error(str(error))
 
     if args.publish:
+        # A bare --publish uploads an archive built by an earlier invocation,
+        # which may predate the pre-flight check, so re-verify the artifact.
+        for platform in args.platform or []:
+            verify_archived_api_key(
+                platform, f"./Archives/XCArchives/{platform}.xcarchive"
+            )
         for platform in args.platform or []:
             publish_to_app_store(platform, render_github_actions=args.github_actions)
             if args.upload_dsyms:
