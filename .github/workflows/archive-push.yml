@@ -1,12 +1,14 @@
-name: Archive Xcode Build on Push
+name: Archive Xcode Build
 
-# Build-only smoke test: archives all three platforms on every push to main but
-# never uploads anything. The manually-triggered "Export Roam" workflow
-# (export-app.yml) is what actually publishes to App Store Connect.
+# Build-only smoke test: archives all three platforms but never uploads
+# anything. The manually-triggered "Export Roam" workflow (export-app.yml) is
+# what actually publishes to App Store Connect.
+#
+# Manual only. This used to run on every push to main; at ~20-35 min of macOS
+# runner time per push, billed at a 10x minute multiplier, it was the bulk of
+# the account's Actions spend and competed with the releases that matter.
 "on":
-    push:
-        branches:
-            - main
+    workflow_dispatch:
 
 concurrency:
     group: archive-push-${{ github.ref }}
