@@ -1,0 +1,76 @@
+name: ASC Certificates
+
+# Maintenance tool for the Apple Developer account's certificate quota.
+#
+# Ephemeral CI runners + `-allowProvisioningUpdates` mint a fresh Apple
+# Development certificate whenever a runner's keychain lacks one, so stale
+# dev certs accumulate until Xcode fails with "Your account has reached the
+# maximum number of certificates" and releases stop archiving.
+#
+# Run with no input to print the account's certificates. Pass comma-separated
+# certificate IDs to revoke them — the script refuses to revoke anything that
+# is not a development certificate, so distribution / Developer ID identities
+# cannot be lost from here.
+"on":
+    workflow_dispatch:
+        inputs:
+            revoke_ids:
+                description: Comma-separated certificate IDs to revoke (empty = list only)
+                type: string
+                default: ""
+
+jobs:
+    certs:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: List / revoke certificates
+              env:
+                  XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
+                  XCODE_API_ISSUER: ${{ secrets.XCODE_API_ISSUER }}
+                  XCODE_API_SECRET: ${{ secrets.XCODE_API_SECRET }}
+                  REVOKE_IDS: ${{ inputs.revoke_ids }}
+              run: |
+                  pip install --quiet pyjwt cryptography requests
+                  python3 - <<'EOF'
+                  import os, time, jwt, requests
+
+                  now = int(time.time())
+                  token = jwt.encode(
+                      {"iss": os.environ["XCODE_API_ISSUER"], "iat": now,
+                       "exp": now + 900, "aud": "appstoreconnect-v1"},
+                      os.environ["XCODE_API_SECRET"],
+                      algorithm="ES256",
+                      headers={"kid": os.environ["XCODE_API_KEY"]},
+                  )
+                  headers = {"Authorization": f"Bearer {token}"}
+                  base = "https://api.appstoreconnect.apple.com/v1/certificates"
+
+                  certs, url = [], base + "?limit=200"
+                  while url:
+                      resp = requests.get(url, headers=headers)
+                      resp.raise_for_status()
+                      body = resp.json()
+                      certs += body["data"]
+                      url = body.get("links", {}).get("next")
+
+                  certs.sort(key=lambda c: c["attributes"].get("expirationDate") or "")
+                  print(f"{len(certs)} certificates:")
+                  for c in certs:
+                      a = c["attributes"]
+                      print(f'{c["id"]:>12}  {a.get("certificateType") or "?":<26}'
+                            f' exp={a.get("expirationDate")}'
+                            f'  {a.get("displayName")!r}'
+                            f'  serial={a.get("serialNumber")}')
+
+                  DEV_TYPES = {"DEVELOPMENT", "MAC_APP_DEVELOPMENT", "IOS_DEVELOPMENT"}
+                  for cid in filter(None, map(str.strip, os.environ["REVOKE_IDS"].split(","))):
+                      cert = next((c for c in certs if c["id"] == cid), None)
+                      ctype = cert["attributes"].get("certificateType") if cert else None
+                      if ctype not in DEV_TYPES:
+                          print(f"SKIP {cid}: type {ctype} is not a development certificate")
+                          continue
+                      resp = requests.delete(f"{base}/{cid}", headers=headers)
+                      print(f"REVOKE {cid}: HTTP {resp.status_code}"
+                            f"{'' if resp.ok else ' ' + resp.text[:300]}")
+                  EOF
