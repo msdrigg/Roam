@@ -111,12 +111,26 @@ def archive_application(platform: str, render_github_actions: bool = False):
     subprocess.run(f'rm -rf "{archive_path}"', shell=True)
     print(f"Archiving application for platform {platform}")
     subprocess.run(
-        f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}'{authentication_args()} | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
+        f"""set -o pipefail && xcodebuild archive -project "{project_path}/Roam.xcodeproj" -scheme "{scheme}" -archivePath "{archive_path}" -destination 'generic/platform={platform}'{arch_args(platform)}{authentication_args()} | xcbeautify{' --renderer github-actions' if render_github_actions else ''}""",
         shell=True,
         check=True,
     )
     verify_archived_api_key(platform, archive_path)
     print(f"Archive succeeded for platform {platform}")
+
+
+def arch_args(platform: str) -> str:
+    """Force Apple silicon only on macOS.
+
+    The project sets ARCHS/EXCLUDED_ARCHS for the macosx SDK, but Xcode builds
+    Swift package products (RoamGRDB.framework) with the full architecture set
+    regardless of project-level conditionals, so the embedded framework comes
+    out x86_64+arm64 fat. Passing ARCHS on the command line does reach the
+    package build, which halves the framework (7.29 MB -> 3.77 MB).
+    """
+    if platform != "macOS":
+        return ""
+    return " ARCHS=arm64 ONLY_ACTIVE_ARCH=NO"
 
 
 def authentication_args() -> str:

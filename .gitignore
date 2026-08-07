@@ -7,3 +7,6 @@ Secrets.xcconfig
 # artifacts are the .appiconset / .imageset assets it writes into
 # Shared/AppIcon.xcassets; these are regenerable.
 AppIcons/generated/
+
+# Local SPM package build artifacts
+LocalPackages/**/.build/
