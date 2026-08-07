@@ -547,10 +547,19 @@
                     Spacer(minLength: 0)
 
                     if !isInMenuBar && !inScreenshotTestingContext() {
+                        // On macOS 26/27, TipView reports a huge ideal height
+                        // to layout (its rendered card is ~100pt). The detail
+                        // column's hosting view adopts that as its intrinsic
+                        // height, the NSSplitView inflates to ~3300pt, and the
+                        // whole split view gets vertically centered — clipping
+                        // the sidebar's device list above the window. Bounding
+                        // the tips' height keeps the split view at window size.
                         TipView(keyboardShortcutsTip)
                             .customAccentColorTint()
+                            .frame(maxHeight: 150)
                         TipView(pasteToPlayTip)
                             .customAccentColorTint()
+                            .frame(maxHeight: 150)
                     }
                 }
                 .padding(.horizontal, 24)
