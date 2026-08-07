@@ -6,4 +6,4 @@
 -   Soporte para escucha privada en Mac e iOS (reproduce el audio de tu TV a través de tus auriculares)
 -   Descubre los dispositivos en tu red local tan pronto como abres la aplicación
 -   Diseño intuitivo con el sistema de diseño nativo de Apple SwiftUI
--   Rápido y ligero (descarga de 6 MB) y se abre instantáneamente
+-   Rápido y ligero (descarga de 8 MB) y se abre instantáneamente

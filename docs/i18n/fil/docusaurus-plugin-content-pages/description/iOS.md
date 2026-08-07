@@ -6,4 +6,4 @@ Ang Roam ay isang libreng app na walang mga ad!
 -   Suporta sa pribadong pakikinig sa Mac at iOS (i-play ang audio mula sa iyong TV sa pamamagitan ng iyong mga headphone)
 -   Natutuklasan ang mga device sa iyong lokal na network sa oras na buksan mo ang app
 -   Intuitive na disenyo gamit ang katutubong sistema ng disenyo ng SwiftUI ng apple
--   Mabilis at magaan (6 MB download) at agarang binubuksan
+-   Mabilis at magaan (8 MB download) at agarang binubuksan

@@ -5,4 +5,4 @@ Roam é um aplicativo gratuito e sem anúncios!
 -   Suporte para modo de fone de ouvido (reproduza o áudio da sua TV através dos seus auriculares)
 -   Descobre dispositivos na sua rede local assim que abre o aplicativo
 -   Design intuitivo com o sistema de design nativo SwiftUI da Apple
--   Rápido e leve (5 MB de download) e abre instantaneamente
+-   Rápido e leve (9 MB de download) e abre instantaneamente

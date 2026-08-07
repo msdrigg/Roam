@@ -6,4 +6,4 @@ Roam là một ứng dụng miễn phí không có quảng cáo!
 -   Hỗ trợ nghe riêng trên Mac và iOS (phát âm thanh từ TV qua tai nghe của bạn)
 -   Phát hiện các thiết bị trên mạng nội bộ của bạn ngay khi bạn mở ứng dụng
 -   Thiết kế trực quan với hệ thống thiết kế SwiftUI gốc của apple
--   Nhanh và nhẹ (tải về 6 MB) và mở ngay lập tức
+-   Nhanh và nhẹ (tải về 8 MB) và mở ngay lập tức
