@@ -95,49 +95,40 @@ struct NotificationBanner: View {
     }
 
     var body: some View {
-        if let onClick {
-            Button(action: onClick, label: {
-                Text(message)
-                    .lineLimit(2)
-                    .truncationMode(.tail)
-                    .font(.subheadline)
-                    .foregroundStyle(
-                        colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
-                    )
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(backgroundColor)
-                    .cornerRadius(3.0)
-                    .cornerRadius(5)
-            })
-            .buttonStyle(.plain)
-            .help(message)
-        } else {
-            HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 10) {
+            if let onClick {
+                Button(action: onClick, label: {
+                    Text(message)
+                        .lineLimit(2)
+                        .truncationMode(.tail)
+                        .font(.subheadline)
+                })
+                .buttonStyle(.plain)
+            } else {
                 Text(message)
 #if os(macOS)
                     .lineLimit(2)
                     .truncationMode(.tail)
 #endif
                     .font(.subheadline)
-
-                if let onDismiss {
-                    Button("Dismiss", systemImage: "x.circle.fill", action: onDismiss)
-                        .controlSize(.small)
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.plain)
-                }
             }
-            .foregroundStyle(
-                colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
-            )
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(backgroundColor)
-            .cornerRadius(3.0)
-            .cornerRadius(5)
-            .help(message)
+
+            if let onDismiss {
+                Button("Dismiss", systemImage: "x.circle.fill", action: onDismiss)
+                    .controlSize(.small)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+            }
         }
+        .foregroundStyle(
+            colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
+        )
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(backgroundColor)
+        .cornerRadius(3.0)
+        .cornerRadius(5)
+        .help(message)
     }
 
     private var backgroundColor: Color {
