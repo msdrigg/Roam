@@ -28,8 +28,11 @@
         @State private var showKeyboardEntryManual: Bool = false
         @State private var keyboardLeaving: Bool = false
         @State var buttonPresses: [RemoteButton: Int] = [:]
+        // Used by `decoratedRemotePage` to re-probe local-network permission on
+        // foreground, which visionOS needs too — so it lives outside the
+        // iOS-only block below.
+        @Environment(\.scenePhase) private var scenePhase
         #if os(iOS)
-            @Environment(\.scenePhase) private var scenePhase
             @Environment(\.colorScheme) private var colorScheme
             @AppStorageColor(UserDefaultKeys.customAccentColor) private var customAccentColor:
                 Color = Color("AccentColor")
