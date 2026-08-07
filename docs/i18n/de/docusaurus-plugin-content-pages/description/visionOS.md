@@ -5,4 +5,4 @@ Roam ist eine kostenlose App ohne Werbung!
 -   Unterstützung für den Kopfhörermodus (spielen Sie den Ton von Ihrem Fernseher über Ihre Kopfhörer)
 -   Entdeckt Geräte in Ihrem lokalen Netzwerk, sobald Sie die App öffnen
 -   Intuitives Design mit Apples nativem SwiftUI Designsystem
--   Schnell und leichtgewichtig (5 MB Download) und öffnet sofort
+-   Schnell und leichtgewichtig (9 MB Download) und öffnet sofort
