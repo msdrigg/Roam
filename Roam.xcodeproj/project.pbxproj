@@ -69,6 +69,8 @@
 		AF205B2E2AE02D1C00041CDF /* AppLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68D2ADDE2BC0036EC90 /* AppLink.swift */; };
 		AF207FFC2D31C1EE00E541AD /* DebugImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */; };
 		AF207FFD2D31C1EE00E541AD /* DebugImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */; };
+		AFD200112F00000100000001 /* LoadTestImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFD200102F00000100000001 /* LoadTestImages.xcassets */; };
+		AFD200122F00000100000001 /* LoadTestImages.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFD200102F00000100000001 /* LoadTestImages.xcassets */; };
 		AF20AD142AE01ED100D371C7 /* NetworkHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B74F2ADF43FD005FC338 /* NetworkHelpers.swift */; };
 		AF20AD172AE01EDB00D371C7 /* RemoteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E68B2ADDDF450036EC90 /* RemoteButton.swift */; };
 		AF21300C2DFF35E300B3F2D6 /* DispatchQueueExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF21300B2DFF35E300B3F2D6 /* DispatchQueueExtension.swift */; };
@@ -237,6 +239,8 @@
 		AFD100172F00000100000001 /* RoamDataSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD100012F00000100000001 /* RoamDataSnapshot.swift */; };
 		AFD100182F00000100000001 /* RoamDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD100022F00000100000001 /* RoamDatabase.swift */; };
 		AFD100202F00000100000001 /* RemoteViewContainedMacOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD100212F00000100000001 /* RemoteViewContainedMacOS.swift */; };
+		AFD400012F00000100000001 /* RoamGRDB in Embed Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* RoamGRDB */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		AFD400022F00000100000001 /* RoamGRDB in Embed Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* RoamGRDB */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AFD100322F00000100000001 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* GRDB */; };
 		AFD100332F00000100000001 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* GRDB */; };
 		AFD100342F00000100000001 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* GRDB */; };
@@ -400,6 +404,16 @@
 			dstPath = "";
 			dstSubfolder = Frameworks;
 			files = (
+				AFD400012F00000100000001 /* RoamGRDB in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+		};
+		AFD400102F00000100000001 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = Frameworks;
+			files = (
+				AFD400022F00000100000001 /* RoamGRDB in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 		};
@@ -454,6 +468,7 @@
 		AF21300B2DFF35E300B3F2D6 /* DispatchQueueExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DispatchQueueExtension.swift; sourceTree = "<group>"; };
 		AF2480572BDB42F600EF47AE /* TestData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestData.swift; sourceTree = "<group>"; };
 		AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = DebugImages.xcassets; sourceTree = "<group>"; };
+		AFD200102F00000100000001 /* LoadTestImages.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = LoadTestImages.xcassets; sourceTree = "<group>"; };
 		AF2480642BDB4D9F00EF47AE /* RoamWatchRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RoamWatchRelease.entitlements; sourceTree = "<group>"; };
 		AF250517A05AA05CA05A0AB0 /* ScreenshotCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotCapture.swift; sourceTree = "<group>"; };
 		AF27400B2AE02C25007C6208 /* RoamWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RoamWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -861,6 +876,7 @@
 				AFDB19A12C0D8D4E00C4DAB7 /* InfoPlist.xcstrings */,
 				AFC24F042AD0E5A2002AB66C /* AppIcon.xcassets */,
 				AF24805C2BDB475A00EF47AE /* DebugImages.xcassets */,
+				AFD200102F00000100000001 /* LoadTestImages.xcassets */,
 				AF0C82872AEB44BF00CBE7F8 /* AccentColor.xcassets */,
 				AF5ED8D42AE984E9007DB2B8 /* WidgetColor.xcassets */,
 				AF05327F2D36DB2200D68F8E /* Tips */,
@@ -1072,6 +1088,7 @@
 				AF15C2422AE8672700B79FD9 /* Sources */,
 				AF15C2432AE8672700B79FD9 /* Frameworks */,
 				AF15C2442AE8672700B79FD9 /* Resources */,
+				AFD400102F00000100000001 /* Embed Frameworks */,
 				AF3503922BB499F3004F4337 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -1246,7 +1263,7 @@
 			packageReferences = (
 				AFECDE1B2AE18511003F6676 /* XCRemoteSwiftPackageReference "swift-opus" */,
 				AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */,
-				AFD100302F00000100000001 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+				AFD300102F00000100000001 /* XCLocalSwiftPackageReference "LocalPackages/RoamGRDB" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = AFC24EFC2AD0E5A1002AB66C /* Products */;
@@ -1269,6 +1286,7 @@
 			files = (
 				AF35ACF32BA3D6B300CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AF207FFD2D31C1EE00E541AD /* DebugImages.xcassets in Resources */,
+				AFD200122F00000100000001 /* LoadTestImages.xcassets in Resources */,
 				AFDB19A62C0D8E7900C4DAB7 /* InfoPlist.xcstrings in Resources */,
 				AFC4A6582AE867A3005DAC6C /* AppIcon.xcassets in Resources */,
 				AF94AEF42C0BEA8200D8D7CF /* Localizable.xcstrings in Resources */,
@@ -1300,6 +1318,7 @@
 			files = (
 				AF35ACF22BA3D6B200CC8B36 /* PrivacyInfo.xcprivacy in Resources */,
 				AF207FFC2D31C1EE00E541AD /* DebugImages.xcassets in Resources */,
+				AFD200112F00000100000001 /* LoadTestImages.xcassets in Resources */,
 				AFDB19A22C0D8D4E00C4DAB7 /* InfoPlist.xcstrings in Resources */,
 				AF0C82882AEB44C000CBE7F8 /* AccentColor.xcassets in Resources */,
 				AF94AEF32C0BEA8200D8D7CF /* Localizable.xcstrings in Resources */,
@@ -1761,6 +1780,7 @@
 				CURRENT_PROJECT_VERSION = "$(CURRENT_PROJECT_VERSION)";
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = "Shared/DebugImages.xcassets Shared/LoadTestImages.xcassets";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RoamWatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RoamWatch;
@@ -1972,6 +1992,8 @@
 			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				"ARCHS[sdk=macosx*]" = arm64;
+				"EXCLUDED_ARCHS[sdk=macosx*]" = x86_64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -2052,6 +2074,8 @@
 			baseConfigurationReference = AF6520872BCE55E200B69BE8 /* Vars.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				"ARCHS[sdk=macosx*]" = arm64;
+				"EXCLUDED_ARCHS[sdk=macosx*]" = x86_64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -2201,7 +2225,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
-				EXCLUDED_SOURCE_FILE_NAMES = Shared/DebugImages.xcassets;
+				EXCLUDED_SOURCE_FILE_NAMES = "Shared/DebugImages.xcassets Shared/LoadTestImages.xcassets";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Roam/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Roam;
@@ -2339,7 +2363,11 @@
 				minimumVersion = 1.3.2;
 			};
 		};
-		AFD100302F00000100000001 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+		AFD300102F00000100000001 /* XCLocalSwiftPackageReference "LocalPackages/RoamGRDB" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/RoamGRDB;
+		};
+		AFD100302F00000100000001 /* XCRemoteSwiftPackageReference "GRDB.swift (unused, kept for reference)" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift.git";
 			requirement = {
@@ -2363,10 +2391,9 @@
 			package = AF0042812AEAA3ED0051BB1E /* XCRemoteSwiftPackageReference "libwebp-Xcode" */;
 			productName = libwebp;
 		};
-		AFD100312F00000100000001 /* GRDB */ = {
+		AFD100312F00000100000001 /* RoamGRDB */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = AFD100302F00000100000001 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
-			productName = GRDB;
+			productName = RoamGRDB;
 		};
 		AFECDE1C2AE18511003F6676 /* Opus */ = {
 			isa = XCSwiftPackageProductDependency;

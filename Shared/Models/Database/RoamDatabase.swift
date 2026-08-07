@@ -1,6 +1,6 @@
 import Foundation
 import Dispatch
-import GRDB
+import RoamGRDB
 import OSLog
 
 final class RoamDatabase: @unchecked Sendable {
