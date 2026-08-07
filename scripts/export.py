@@ -7,6 +7,7 @@ import argparse
 import os
 import shutil
 import tempfile
+import time
 import uuid
 from typing import Tuple
 import urllib.error
@@ -216,6 +217,47 @@ class MultipartBody:
         return b""
 
 
+# Delays before the 2nd, 3rd and 4th attempts — four tries over ~45s. The
+# backend is a single small Fly machine that 502s while it restarts or pages in
+# a large upload, which is exactly what dropped roam 1.50's iOS symbols on an
+# otherwise green run; by 30s it is back.
+RETRY_DELAYS_SECONDS = (5, 10, 30)
+
+
+def is_retryable(error: Exception) -> bool:
+    """Whether a later attempt could plausibly succeed.
+
+    A 4xx other than 429 means the request itself is wrong — bad api key, payload
+    too large — and will be just as wrong in 30 seconds, so it fails immediately
+    instead of stretching the build by 45s to reach the same conclusion.
+    """
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code == 429 or 500 <= error.code < 600
+    # URLError covers DNS and connection-refused; the others are raised straight
+    # from the socket on a dropped or timed-out connection mid-upload.
+    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
+def with_retries(operation, what: str):
+    attempts = len(RETRY_DELAYS_SECONDS) + 1
+    for index, delay in enumerate(RETRY_DELAYS_SECONDS + (None,)):
+        try:
+            return operation()
+        except Exception as error:
+            if delay is None or not is_retryable(error):
+                raise
+            if isinstance(error, urllib.error.HTTPError):
+                reason = f"HTTP {error.code}"
+            else:
+                reason = f"{type(error).__name__}: {error}"
+            print(
+                f"  {what} failed ({reason}) — retrying in {delay}s "
+                f"[attempt {index + 2} of {attempts}]",
+                flush=True,
+            )
+            time.sleep(delay)
+
+
 def upload_dsyms(
     platform: str,
     backend_url: str,
@@ -267,27 +309,41 @@ def upload_dsyms(
         print(f"  zip is {zip_size / (1024 * 1024):.1f} MB, streaming multipart upload")
 
         with open(zip_path, "rb") as file:
-            body = MultipartBody(prefix, file, suffix)
-            request = urllib.request.Request(
-                f"{backend_url}/v2/upload-roam-dsym",
-                data=body,
-                headers={
-                    "Content-Type": f"multipart/form-data; boundary={boundary}",
-                    "Content-Length": str(content_length),
-                    "x-api-key": backend_api_key,
-                },
-                method="POST",
-            )
+
+            def attempt() -> str:
+                # Both the seek and the fresh MultipartBody are required per
+                # attempt: the body consumes `_parts` as it streams (byte chunks
+                # are sliced away and the file is read to EOF), so reusing it
+                # would upload an empty payload under a Content-Length promising
+                # the whole zip, and hang until the timeout.
+                file.seek(0)
+                request = urllib.request.Request(
+                    f"{backend_url}/v2/upload-roam-dsym",
+                    data=MultipartBody(prefix, file, suffix),
+                    headers={
+                        "Content-Type": f"multipart/form-data; boundary={boundary}",
+                        "Content-Length": str(content_length),
+                        "x-api-key": backend_api_key,
+                    },
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(request, timeout=900) as response:
+                        return response.read().decode("utf-8")
+                except urllib.error.HTTPError as error:
+                    # Read the body here — the connection is closed by the time
+                    # the retry loop or the caller formats the message.
+                    error.detail = error.read().decode("utf-8", errors="replace")
+                    raise
 
             try:
-                with urllib.request.urlopen(request, timeout=900) as response:
-                    response_body = response.read().decode("utf-8")
-                    print(f"dSYM upload succeeded for {platform}: {response_body}")
+                response_body = with_retries(attempt, f"dSYM upload for {platform}")
             except urllib.error.HTTPError as error:
-                response_body = error.read().decode("utf-8", errors="replace")
                 raise RuntimeError(
-                    f"dSYM upload failed for {platform}: HTTP {error.code} {response_body}"
+                    f"dSYM upload failed for {platform}: "
+                    f"HTTP {error.code} {getattr(error, 'detail', '')}"
                 ) from error
+            print(f"dSYM upload succeeded for {platform}: {response_body}")
 
 
 def try_upload_dsyms(
