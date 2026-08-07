@@ -434,7 +434,12 @@
                     handleTextEditStatusChange(old: old, new: new)
                 }
                 .onChange(of: showKeyboardEntry) { handleShowKeyboardChange() }
-                .task { await networkPermissionTask() }
+                // Re-probe whenever the app returns to the foreground so the
+                // permission banner clears (or appears) without a relaunch.
+                .task(id: scenePhase) {
+                    guard scenePhase != .background else { return }
+                    await networkPermissionTask()
+                }
                 .onAppear(perform: logAppear)
                 .onDisappear(perform: logDisappear)
                 // Both ids include `isActive` so a page (re)claims the shared

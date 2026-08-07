@@ -17,6 +17,7 @@
 
     struct RemoteViewContained: View {
         @Environment(\.dismiss) private var dismiss
+        @Environment(\.scenePhase) private var scenePhase
         @Environment(\.openSettings) private var openSettings
         @Environment(\.openWindow) private var openWindow
         @Environment(\.requestReview) private var requestReview
@@ -193,7 +194,10 @@
                 .task(id: deviceIds) {
                     await ensureSelectedDevice()
                 }
-                .task {
+                // Re-probe whenever the app returns to the foreground so the
+                // permission banner clears (or appears) without a relaunch.
+                .task(id: scenePhase) {
+                    guard scenePhase != .background else { return }
                     do {
                         Log.network.notice(
                             "\("Checking", privacy: .public) for local network permission")

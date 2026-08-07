@@ -1,6 +1,10 @@
 import SwiftUI
+#if !os(watchOS) && !os(macOS)
+    import UIKit
+#endif
 
 struct NetworkConnectivityBanner: View {
+    @Environment(\.openURL) private var openURL
 #if os(watchOS)
     @EnvironmentObject private var appDelegate: RoamWatchAppDelegate
 #else
@@ -95,7 +99,13 @@ struct NetworkConnectivityBanner: View {
                 NotificationBanner(message: String(
                     localized: "Local network permission may not be granted. Please open System Settings and navigate to Privacy and Security -> Local Network and enable access for Roam",
                     comment: "Warning indicator message that there is no local network permission"
-                ), onDismiss: {
+                ), onClick: {
+                    if let url = URL(
+                        string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork"
+                    ) {
+                        openURL(url)
+                    }
+                }, onDismiss: {
                     self.networkPermissionBannerDismissed = true
                 })
                 .padding(.bottom, 8)
@@ -104,7 +114,11 @@ struct NetworkConnectivityBanner: View {
                     localized:
                         "Local network permission may not be granted. Please navigate to System Settings -> Apps -> Roam and enable Local Network",
                     comment: "Warning indicator message that there is no local network permission"
-                ), onDismiss: {
+                ), onClick: {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                }, onDismiss: {
                     self.networkPermissionBannerDismissed = true
                 })
                 .padding(.bottom, 8)
