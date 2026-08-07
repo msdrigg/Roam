@@ -1,0 +1,61 @@
+name: ASC Create Development Certificate
+
+# Issues an Apple Development certificate from a caller-supplied CSR via the
+# App Store Connect API. The private key never leaves the machine that
+# generated the CSR; the issued certificate (public) is printed base64-DER in
+# the log so the caller can assemble a .p12 locally and store it in the
+# MACOS_DEV_CERT_P12 / MACOS_DEV_CERT_PASSWORD repo secrets. The export
+# workflows import that identity into the runner keychain so automatic signing
+# reuses it instead of minting a new certificate on every ephemeral runner
+# (which is what filled the account's certificate quota).
+"on":
+    workflow_dispatch:
+        inputs:
+            csr_b64:
+                description: Base64-encoded PEM certificate signing request
+                type: string
+                required: true
+
+jobs:
+    create:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Create certificate
+              env:
+                  XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
+                  XCODE_API_ISSUER: ${{ secrets.XCODE_API_ISSUER }}
+                  XCODE_API_SECRET: ${{ secrets.XCODE_API_SECRET }}
+                  CSR_B64: ${{ inputs.csr_b64 }}
+              run: |
+                  pip install --quiet pyjwt cryptography requests
+                  python3 - <<'EOF'
+                  import base64, os, time, jwt, requests
+
+                  now = int(time.time())
+                  token = jwt.encode(
+                      {"iss": os.environ["XCODE_API_ISSUER"], "iat": now,
+                       "exp": now + 900, "aud": "appstoreconnect-v1"},
+                      os.environ["XCODE_API_SECRET"],
+                      algorithm="ES256",
+                      headers={"kid": os.environ["XCODE_API_KEY"]},
+                  )
+                  csr = base64.b64decode(os.environ["CSR_B64"]).decode()
+                  resp = requests.post(
+                      "https://api.appstoreconnect.apple.com/v1/certificates",
+                      headers={"Authorization": f"Bearer {token}"},
+                      json={"data": {"type": "certificates", "attributes": {
+                          "csrContent": csr,
+                          "certificateType": "DEVELOPMENT",
+                      }}},
+                  )
+                  if not resp.ok:
+                      raise SystemExit(f"HTTP {resp.status_code}: {resp.text[:500]}")
+                  data = resp.json()["data"]
+                  attrs = data["attributes"]
+                  print(f'Created certificate {data["id"]}'
+                        f' ({attrs["certificateType"]}, expires {attrs["expirationDate"]})')
+                  print("CERT_DER_B64_BEGIN")
+                  print(attrs["certificateContent"])
+                  print("CERT_DER_B64_END")
+                  EOF
