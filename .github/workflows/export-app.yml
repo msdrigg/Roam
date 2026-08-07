@@ -72,8 +72,17 @@ jobs:
               # Cloud signing writes the certificates it fetches into the default
               # keychain. A dedicated, unlocked keychain keeps that non-interactive
               # and keeps the runner's login keychain out of the picture.
+              #
+              # The persistent CI development identity (MACOS_DEV_CERT_P12) is
+              # imported so automatic signing reuses it instead of minting a new
+              # Apple Development certificate on every ephemeral runner — stale
+              # minted certs pile up until the account hits Apple's certificate
+              # cap and archiving fails. Recreate the identity with the "ASC
+              # Create Development Certificate" workflow if it expires.
               env:
                   KEYCHAIN_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+                  MACOS_DEV_CERT_P12: ${{ secrets.MACOS_DEV_CERT_P12 }}
+                  MACOS_DEV_CERT_PASSWORD: ${{ secrets.MACOS_DEV_CERT_PASSWORD }}
               run: |
                   KEYCHAIN="$RUNNER_TEMP/roam-signing.keychain-db"
                   security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
@@ -81,6 +90,14 @@ jobs:
                   security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
                   security default-keychain -s "$KEYCHAIN"
                   security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+                  if [ -n "$MACOS_DEV_CERT_P12" ]; then
+                      printf '%s' "$MACOS_DEV_CERT_P12" | base64 -d > "$RUNNER_TEMP/ci-dev-cert.p12"
+                      security import "$RUNNER_TEMP/ci-dev-cert.p12" -k "$KEYCHAIN" \
+                          -P "$MACOS_DEV_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+                      security set-key-partition-list -S "apple-tool:,apple:,codesign:" \
+                          -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+                      rm "$RUNNER_TEMP/ci-dev-cert.p12"
+                  fi
 
             - name: Install App Store Connect API key
               # export.py reads ~/.private_keys/AuthKey_$XCODE_API_KEY.p8 (it
