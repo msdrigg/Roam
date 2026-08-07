@@ -12,9 +12,13 @@ name: ASC Create Development Certificate
     workflow_dispatch:
         inputs:
             csr_b64:
-                description: Base64-encoded PEM certificate signing request
+                description: Base64-encoded PEM certificate signing request (ignored when cert_id is set)
                 type: string
-                required: true
+                default: ""
+            cert_id:
+                description: Existing certificate ID to download instead of creating a new one
+                type: string
+                default: ""
 
 jobs:
     create:
@@ -27,6 +31,7 @@ jobs:
                   XCODE_API_ISSUER: ${{ secrets.XCODE_API_ISSUER }}
                   XCODE_API_SECRET: ${{ secrets.XCODE_API_SECRET }}
                   CSR_B64: ${{ inputs.csr_b64 }}
+                  CERT_ID: ${{ inputs.cert_id }}
               run: |
                   pip install --quiet pyjwt cryptography requests
                   python3 - <<'EOF'
@@ -40,22 +45,33 @@ jobs:
                       algorithm="ES256",
                       headers={"kid": os.environ["XCODE_API_KEY"]},
                   )
-                  csr = base64.b64decode(os.environ["CSR_B64"]).decode()
-                  resp = requests.post(
-                      "https://api.appstoreconnect.apple.com/v1/certificates",
-                      headers={"Authorization": f"Bearer {token}"},
-                      json={"data": {"type": "certificates", "attributes": {
-                          "csrContent": csr,
-                          "certificateType": "DEVELOPMENT",
-                      }}},
-                  )
+                  headers = {"Authorization": f"Bearer {token}"}
+                  base = "https://api.appstoreconnect.apple.com/v1/certificates"
+
+                  if os.environ["CERT_ID"]:
+                      resp = requests.get(f'{base}/{os.environ["CERT_ID"]}', headers=headers)
+                  else:
+                      csr = base64.b64decode(os.environ["CSR_B64"]).decode()
+                      resp = requests.post(base, headers=headers,
+                          json={"data": {"type": "certificates", "attributes": {
+                              "csrContent": csr,
+                              "certificateType": "DEVELOPMENT",
+                          }}})
                   if not resp.ok:
                       raise SystemExit(f"HTTP {resp.status_code}: {resp.text[:500]}")
                   data = resp.json()["data"]
                   attrs = data["attributes"]
-                  print(f'Created certificate {data["id"]}'
+                  print(f'Certificate {data["id"]}'
                         f' ({attrs["certificateType"]}, expires {attrs["expirationDate"]})')
-                  print("CERT_DER_B64_BEGIN")
-                  print(attrs["certificateContent"])
-                  print("CERT_DER_B64_END")
+                  # The certificate content is written to an artifact, not the
+                  # log: the CN embeds the API key ID, so GitHub log masking
+                  # would corrupt an inline base64 dump.
+                  with open("certificate.der", "wb") as f:
+                      f.write(base64.b64decode(attrs["certificateContent"]))
                   EOF
+
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: certificate
+                  path: certificate.der
+                  retention-days: 1
