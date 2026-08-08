@@ -333,7 +333,7 @@ extension View {
 
     func translucentBackground() -> some View {
         self.applyBuilder {
-            #if !os(iOS) && !os(watchOS) && !os(visionOS)
+            #if os(macOS)
             if #available(macOS 15.0, *) {
                 // NB: don't special-case screenshot/UI-testing here. The
                 // `.thickMaterial` window backdrop composites correctly in
@@ -342,10 +342,29 @@ extension View {
                 // workaround forced `Color.black` under `inUITestingContext()`
                 // for an older VM that couldn't composite it — that produced
                 // an opaque black window and is no longer needed.
-                $0.containerBackground(.thickMaterial, for: .window)
+                //
+                // A window-level material samples the desktop behind the
+                // window, so on its own a light window underneath drags the
+                // backdrop up to near-white and the glass controls stop
+                // reading against it. Keep the material for the blur, then lay
+                // a scrim of the app's own window color over the top so the
+                // composite stays anchored regardless of what is behind. The
+                // scrim has to sit *above* the material — a sibling placed
+                // underneath it gets ignored, since the material samples the
+                // window backdrop rather than its in-hierarchy neighbours.
+                $0.containerBackground(for: .window) {
+                    Rectangle()
+                        .fill(.thickMaterial)
+                        .overlay(
+                            Color(nsColor: .windowBackgroundColor)
+                                .opacity(0.82)
+                        )
+                }
             } else {
                 $0
             }
+            #elseif !os(iOS) && !os(watchOS) && !os(visionOS)
+            $0.containerBackground(.thickMaterial, for: .window)
             #else
             $0
             #endif
