@@ -21,6 +21,8 @@ private let iPadMinContentHeight: CGFloat = 560
 struct RemoteRoot: View {
     @EnvironmentObject private var appDelegate: RoamAppDelegate
 
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var devicesLoader = DeviceListLoader(dataHandler: .shared)
     @State private var primaryDeviceLoader = PrimaryDeviceLoader(dataHandler: .shared)
     @State private var messageLoader = MessageListLoader(dataHandler: .shared)
@@ -40,6 +42,13 @@ struct RemoteRoot: View {
 
     private var runningInPreview: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+
+    /// Automatic scanning stops while backgrounded so a discovery-driven database
+    /// write can't still be holding the app-group file lock when the process is
+    /// suspended (0xdead10cc).
+    private var discoveryPausedForBackground: Bool {
+        discoveryPaused(for: scenePhase)
     }
 
     private var settingsNavigationPathBinding: Binding<[NavigationDestination]> {
@@ -77,16 +86,24 @@ struct RemoteRoot: View {
                 guard !runningInPreview else { return }
                 await RoamDataHandler.shared.initialize()
             }
-            .task(id: "ssdp-\(scanAutomatically)", priority: .background) {
+            .task(id: "ssdp-\(scanAutomatically)-\(discoveryPausedForBackground)", priority: .background) {
                 guard !runningInPreview, scanAutomatically else { return }
+                guard !discoveryPausedForBackground else {
+                    Log.scanning.notice("RemoteRoot skipping continual SSDP scan while backgrounded")
+                    return
+                }
                 Log.scanning.notice("RemoteRoot starting continual SSDP scan")
                 await appDelegate.discoveryCoordinator.ssdpActor.scanSSDPContinually()
                 Log.scanning.notice("RemoteRoot continual SSDP scan returned")
             }
             .task(
-                id: "ipv4-\(scanAutomatically)-\(primaryDevice == nil)-\(String(describing: appDelegate.networkMonitor.networkConnection))"
+                id: "ipv4-\(scanAutomatically)-\(primaryDevice == nil)-\(discoveryPausedForBackground)-\(String(describing: appDelegate.networkMonitor.networkConnection))"
             ) {
                 guard !runningInPreview, scanAutomatically else { return }
+                guard !discoveryPausedForBackground else {
+                    Log.scanning.notice("RemoteRoot skipping IPV4 scan while backgrounded")
+                    return
+                }
                 guard primaryDevice == nil else { return }
                 Log.scanning.notice("RemoteRoot starting IPV4 scan")
                 await appDelegate.discoveryCoordinator.ipv4Actor.scanIPV4Once()

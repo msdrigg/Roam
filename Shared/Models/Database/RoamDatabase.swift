@@ -289,10 +289,8 @@ final class RoamDatabase: @unchecked Sendable {
 
     private func write(_ body: (Database) throws -> Void) throws {
         do {
-            let nextSnapshot = try withExclusiveDatabaseLock {
-                try dbWriter.writeWithoutTransaction { db in
-                    try Self.performWrite(body, db: db)
-                }
+            let nextSnapshot = try dbWriter.writeWithoutTransaction { [fileLock] db in
+                try Self.performWrite(body, db: db, fileLock: fileLock)
             }
 
             stateLock.withLock {
@@ -309,13 +307,13 @@ final class RoamDatabase: @unchecked Sendable {
 
     private func writeAsync(_ body: @escaping @Sendable (Database) throws -> Void) async throws {
         do {
-            let nextSnapshot = try await dbWriter.writeWithoutTransaction { [fileLock] db in
-                if let fileLock {
-                    return try fileLock.withExclusiveLock {
-                        try Self.performWrite(body, db: db)
-                    }
+            // The write holds an flock on a lock file in the shared app-group
+            // container. Being suspended mid-write gets the app killed with
+            // 0xdead10cc, so hold a background assertion until it unlocks.
+            let nextSnapshot = try await DatabaseWriteSuspensionGuard.protectingFromSuspension {
+                try await dbWriter.writeWithoutTransaction { [fileLock] db in
+                    try Self.performWrite(body, db: db, fileLock: fileLock)
                 }
-                return try Self.performWrite(body, db: db)
             }
 
             stateLock.withLock {
@@ -383,8 +381,10 @@ final class RoamDatabase: @unchecked Sendable {
     func mergeVolatileSnapshot(_ source: RoamDataSnapshot) throws {
         guard isPersistent else { return }
 
-        let nextSnapshot = try withExclusiveDatabaseLock {
-            try dbWriter.writeWithoutTransaction { db in
+        // As in `performWrite`, the flock covers the transaction only; the trailing
+        // snapshot reload runs unlocked to keep the suspension window short.
+        let nextSnapshot = try dbWriter.writeWithoutTransaction { [fileLock] db in
+            try Self.withExclusiveDatabaseLock(fileLock) {
                 try db.inTransaction {
                     let existingSnapshot = try Self.loadSnapshot(from: db)
                     for device in source.devicesByID.values {
@@ -419,9 +419,9 @@ final class RoamDatabase: @unchecked Sendable {
                     try db.execute(sql: "UPDATE app_state SET revision = revision + 1 WHERE id = 1")
                     return .commit
                 }
-
-                return try Self.loadSnapshot(from: db)
             }
+
+            return try Self.loadSnapshot(from: db)
         }
 
         stateLock.withLock {
@@ -432,6 +432,13 @@ final class RoamDatabase: @unchecked Sendable {
     }
 
     private func withExclusiveDatabaseLock<T>(_ body: () throws -> T) throws -> T {
+        try Self.withExclusiveDatabaseLock(fileLock, body)
+    }
+
+    private static func withExclusiveDatabaseLock<T>(
+        _ fileLock: DatabaseFileLock?,
+        _ body: () throws -> T
+    ) throws -> T {
         if let fileLock {
             return try fileLock.withExclusiveLock(body)
         }
@@ -440,12 +447,20 @@ final class RoamDatabase: @unchecked Sendable {
 
     private static func performWrite(
         _ body: (Database) throws -> Void,
-        db: Database
+        db: Database,
+        fileLock: DatabaseFileLock?
     ) throws -> RoamDataSnapshot {
-        try db.inTransaction {
-            try body(db)
-            try db.execute(sql: "UPDATE app_state SET revision = revision + 1 WHERE id = 1")
-            return .commit
+        // Only the mutating transaction needs the cross-process file lock.
+        // Reloading the snapshot afterwards full-scans every table, and holding
+        // the flock across that widens the window in which a suspension gets the
+        // app killed with 0xdead10cc — so it runs unlocked, on the same writer
+        // connection.
+        try withExclusiveDatabaseLock(fileLock) {
+            try db.inTransaction {
+                try body(db)
+                try db.execute(sql: "UPDATE app_state SET revision = revision + 1 WHERE id = 1")
+                return .commit
+            }
         }
 
         return try Self.loadSnapshot(from: db)

@@ -304,7 +304,7 @@ actor RoamDataHandler {
         }
     }
 
-    func retryOpeningPersistentDatabase() {
+    func retryOpeningPersistentDatabase() async {
         guard shouldRetryPersistentOpen else {
             persistentRetryTask?.cancel()
             persistentRetryTask = nil
@@ -321,13 +321,32 @@ actor RoamDataHandler {
         }
 
         let volatileSnapshot = database.exportSnapshot()
+        // Hoisted out of the closure below so it captures only local values
+        // rather than this actor's isolated state.
+        let rootPath = legacyRootPath
 
         do {
-            let persistentDatabase = try RoamDatabase(
-                databaseURL: persistentDatabaseURL,
-                lockURL: persistentLockURL,
-                legacyRootPath: legacyRootPath)
-            try persistentDatabase.mergeVolatileSnapshot(volatileSnapshot)
+            // Opening runs the migrations and the merge writes every table, all
+            // under the shared container's file lock. Being suspended underneath
+            // that gets the app killed with 0xdead10cc, same as a normal write.
+            let persistentDatabase = try await DatabaseWriteSuspensionGuard.protectingFromSuspension {
+                let opened = try RoamDatabase(
+                    databaseURL: persistentDatabaseURL,
+                    lockURL: persistentLockURL,
+                    legacyRootPath: rootPath)
+                try opened.mergeVolatileSnapshot(volatileSnapshot)
+                return opened
+            }
+
+            // This method is now re-entrant across the await above (the retry
+            // timer and the connectivity banner can both call it). If another
+            // call already installed a persistent database, drop ours — the
+            // merge landed in the same file either way.
+            guard !database.isPersistent else {
+                Log.backend.notice("Discarding duplicate persistent database open")
+                return
+            }
+
             database = persistentDatabase
             configureDatabaseCallbacks()
             handleExternalDatabaseChange()
