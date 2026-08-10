@@ -228,6 +228,25 @@ private func discoveryNWInterfaceNames(_ interfaces: [NWInterface]) -> [String] 
     Array(Set(interfaces.map(\.name).filter { !isUnsupportedDiscoveryInterfaceName($0) })).sorted()
 }
 
+/// Whether automatic discovery must stop because the process is backgrounded.
+///
+/// Discovery writes every device it finds straight into the shared app-group
+/// database. Those writes hold an exclusive file lock on the container, and iOS
+/// kills an app that gets suspended while holding one (0xdead10cc). Stopping
+/// automatic scanning on the way to the background removes the main source of
+/// writes that can still be in flight at suspension time.
+///
+/// Only applies to automatic/continual scanning — a user-initiated pull-to-refresh
+/// only ever runs in the foreground. macOS has no equivalent suspension policy, so
+/// scanning keeps running there.
+func discoveryPaused(for scenePhase: ScenePhase) -> Bool {
+    #if os(macOS)
+        return false
+    #else
+        return scenePhase == .background
+    #endif
+}
+
 /// Run a single concurrent IPV4 + one-shot SSDP scan. Shared by every UI surface
 /// that exposes a manual "Scan / pull-to-refresh" affordance.
 func performManualDeviceScan(ipv4Actor: DeviceDiscoveryActor, ssdpActor: DeviceDiscoveryActor) async {

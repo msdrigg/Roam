@@ -22,6 +22,8 @@ struct SettingsView: View {
     @Environment(\.openWindow) private var openWindow
 #endif
 
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var deviceListLoader = DeviceListLoader(dataHandler: .shared)
     @State private var hiddenDeviceListLoader = HiddenDeviceListLoader(dataHandler: .shared)
     @State private var messageLoader = MessageListLoader(dataHandler: .shared)
@@ -160,12 +162,18 @@ struct SettingsView: View {
                     allDevices = await RoamDataHandler.shared.requestAllDevices(allDeviceIds)
                 }
 #if !os(watchOS)
-                .task(id: "\(scanIpAutomatically)", priority: .background) {
+                .task(id: "\(scanIpAutomatically)-\(discoveryPaused(for: scenePhase))", priority: .background) {
                     Log.scanning.notice(
                         "SettingsView automatic SSDP task fired actorReady=\(ssdpActor != nil, privacy: .public) scanIpAutomatically=\(scanIpAutomatically, privacy: .public)"
                     )
                     guard scanIpAutomatically else {
                         Log.scanning.notice("SettingsView automatic SSDP task skipping because scanIpAutomatically is false")
+                        return
+                    }
+                    // Stop scanning while backgrounded so a discovery-driven write
+                    // can't hold the app-group file lock into suspension (0xdead10cc).
+                    guard !discoveryPaused(for: scenePhase) else {
+                        Log.scanning.notice("SettingsView automatic SSDP task skipping because the app is backgrounded")
                         return
                     }
                     guard let ssdpActor else {
