@@ -1,6 +1,7 @@
 use crate::database::DeviceInfo;
 use crate::symbolicate::RoamDebugInfo;
 use anyhow::{Context, Result};
+use futures::FutureExt as _;
 use object::read::macho::{FatArch, MachOFatFile32, MachOFatFile64};
 use object::{FileKind, Object};
 use samply_symbols::debugid::DebugId;
@@ -13,6 +14,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Display, Write as _};
 use std::fs::{self, File};
 use std::io::{BufReader, Cursor, Read, Seek};
+use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use symbolic_common::Name;
 use symbolic_demangle::{Demangle, DemangleOptions};
@@ -748,10 +750,40 @@ impl SymbolicationClient {
                 "Looking up symbols for binary"
             );
             let lib_started = std::time::Instant::now();
-            match self
-                .symbolicate_requested_addresses_for_lib(&breakpad_id, request, &symbol_manager)
-                .await
+            // Symbol parsing runs over binaries we do not control — user-uploaded
+            // dSYMs and dyld shared caches — and the object/DWARF readers we call
+            // into can panic on layouts they did not anticipate (e.g. samply-symbols
+            // 0.24.1 subtracts an image's __TEXT vmaddr from every export address,
+            // which underflows for dyld cache images whose exports sit below their
+            // __TEXT segment). One bad binary must not lose the whole report, so
+            // treat a panic exactly like a lookup error: this UUID goes to the
+            // report's "Unresolved UUIDs" section and the other binaries still
+            // symbolicate.
+            let outcome = match AssertUnwindSafe(self.symbolicate_requested_addresses_for_lib(
+                &breakpad_id,
+                request,
+                &symbol_manager,
+            ))
+            .catch_unwind()
+            .await
             {
+                Ok(Ok(result)) => Ok(result),
+                Ok(Err(err)) => {
+                    tracing::warn!(%breakpad_id, error = ?err, "Could not symbolicate binary UUID");
+                    Err(err.to_string())
+                }
+                Err(panic) => {
+                    let message = describe_panic(&*panic);
+                    tracing::error!(
+                        %breakpad_id,
+                        binary_name = %binary_name,
+                        panic = %message,
+                        "Symbol lookup panicked; treating this binary as unresolved"
+                    );
+                    Err(format!("symbol lookup panicked: {message}"))
+                }
+            };
+            match outcome {
                 Ok(result) => {
                     let resolved = result
                         .address_results
@@ -768,9 +800,8 @@ impl SymbolicationClient {
                     );
                     symbolicated_addresses.insert(breakpad_id, result);
                 }
-                Err(err) => {
-                    tracing::warn!(%breakpad_id, error = ?err, "Could not symbolicate binary UUID");
-                    lookup_errors.insert(breakpad_id, err.to_string());
+                Err(message) => {
+                    lookup_errors.insert(breakpad_id, message);
                 }
             }
         }
@@ -822,6 +853,19 @@ impl MetricKitPayload {
             }
         }
         out
+    }
+}
+
+/// Recover the message from a caught panic payload. `panic!` payloads are
+/// `&'static str` for literal messages and `String` for formatted ones; anything
+/// else came from a non-standard `panic_any` and has no printable form.
+fn describe_panic(payload: &(dyn std::any::Any + Send)) -> String {
+    if let Some(message) = payload.downcast_ref::<&'static str>() {
+        (*message).to_string()
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else {
+        "unknown panic payload".to_string()
     }
 }
 

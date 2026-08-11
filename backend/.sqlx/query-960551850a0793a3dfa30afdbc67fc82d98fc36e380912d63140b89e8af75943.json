@@ -1,0 +1,182 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE crash_reviews\n            SET reviewed_at_ms = NULL,\n                reviewed_by = NULL,\n                reviewed_message_id = NULL,\n                matched_rule_id = NULL,\n                review_note = NULL\n            WHERE thread_id = ?\n            RETURNING thread_id,\n                latest_crash_message_id,\n                latest_crash_at_ms,\n                app_version,\n                device_type,\n                os_version,\n                exception_type,\n                signal,\n                termination_code,\n                reviewed_at_ms,\n                reviewed_by,\n                reviewed_message_id,\n                matched_rule_id,\n                review_note\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "thread_id",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "thread_id"
+          }
+        }
+      },
+      {
+        "name": "latest_crash_message_id",
+        "ordinal": 1,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "latest_crash_message_id"
+          }
+        }
+      },
+      {
+        "name": "latest_crash_at_ms",
+        "ordinal": 2,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "latest_crash_at_ms"
+          }
+        }
+      },
+      {
+        "name": "app_version",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "app_version"
+          }
+        }
+      },
+      {
+        "name": "device_type",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "device_type"
+          }
+        }
+      },
+      {
+        "name": "os_version",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "os_version"
+          }
+        }
+      },
+      {
+        "name": "exception_type",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "exception_type"
+          }
+        }
+      },
+      {
+        "name": "signal",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "signal"
+          }
+        }
+      },
+      {
+        "name": "termination_code",
+        "ordinal": 8,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "termination_code"
+          }
+        }
+      },
+      {
+        "name": "reviewed_at_ms",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "reviewed_at_ms"
+          }
+        }
+      },
+      {
+        "name": "reviewed_by",
+        "ordinal": 10,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "reviewed_by"
+          }
+        }
+      },
+      {
+        "name": "reviewed_message_id",
+        "ordinal": 11,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "reviewed_message_id"
+          }
+        }
+      },
+      {
+        "name": "matched_rule_id",
+        "ordinal": 12,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "matched_rule_id"
+          }
+        }
+      },
+      {
+        "name": "review_note",
+        "ordinal": 13,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "review_note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "960551850a0793a3dfa30afdbc67fc82d98fc36e380912d63140b89e8af75943"
+}

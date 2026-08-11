@@ -6,7 +6,13 @@
       {
         "name": "device_id!: String",
         "ordinal": 0,
-        "type_info": "Null"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "device_id"
+          }
+        }
       }
     ],
     "parameters": {

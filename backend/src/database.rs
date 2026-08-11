@@ -404,7 +404,12 @@ impl DatabaseClient {
         facts: &crate::crash_rules::CrashFacts,
     ) -> Result<CrashReview, anyhow::Error> {
         let now_ms = chrono::Utc::now().timestamp_millis();
-        sqlx::query_as::<_, CrashReview>(
+        let app_version = facts.app_version.as_deref();
+        let device_type = facts.device_type.as_deref();
+        let os_version = facts.os_version.as_deref();
+        let termination_code = facts.termination_code.as_deref();
+        sqlx::query_as!(
+            CrashReview,
             r#"
             INSERT INTO crash_reviews (
                 thread_id, latest_crash_message_id, latest_crash_at_ms,
@@ -436,16 +441,16 @@ impl DatabaseClient {
                 matched_rule_id,
                 review_note
             "#,
+            thread_id,
+            latest_crash_message_id,
+            now_ms,
+            app_version,
+            device_type,
+            os_version,
+            facts.exception_type,
+            facts.signal,
+            termination_code,
         )
-        .bind(thread_id)
-        .bind(latest_crash_message_id)
-        .bind(now_ms)
-        .bind(&facts.app_version)
-        .bind(&facts.device_type)
-        .bind(&facts.os_version)
-        .bind(facts.exception_type)
-        .bind(facts.signal)
-        .bind(&facts.termination_code)
         .fetch_one(&self.writer_pool)
         .await
         .context("Error recording crash for review")
@@ -464,7 +469,8 @@ impl DatabaseClient {
         review_note: Option<&str>,
     ) -> Result<Option<CrashReview>, anyhow::Error> {
         let now_ms = chrono::Utc::now().timestamp_millis();
-        sqlx::query_as::<_, CrashReview>(
+        sqlx::query_as!(
+            CrashReview,
             r#"
             UPDATE crash_reviews
             SET reviewed_at_ms = ?,
@@ -488,13 +494,13 @@ impl DatabaseClient {
                 matched_rule_id,
                 review_note
             "#,
+            now_ms,
+            reviewed_by,
+            reviewed_message_id,
+            matched_rule_id,
+            review_note,
+            thread_id,
         )
-        .bind(now_ms)
-        .bind(reviewed_by)
-        .bind(reviewed_message_id)
-        .bind(matched_rule_id)
-        .bind(review_note)
-        .bind(thread_id)
         .fetch_optional(&self.writer_pool)
         .await
         .context("Error marking thread reviewed")
@@ -505,7 +511,8 @@ impl DatabaseClient {
         &self,
         thread_id: i64,
     ) -> Result<Option<CrashReview>, anyhow::Error> {
-        sqlx::query_as::<_, CrashReview>(
+        sqlx::query_as!(
+            CrashReview,
             r#"
             UPDATE crash_reviews
             SET reviewed_at_ms = NULL,
@@ -529,8 +536,8 @@ impl DatabaseClient {
                 matched_rule_id,
                 review_note
             "#,
+            thread_id,
         )
-        .bind(thread_id)
         .fetch_optional(&self.writer_pool)
         .await
         .context("Error marking thread unreviewed")
@@ -548,7 +555,8 @@ impl DatabaseClient {
         before_ms: Option<i64>,
         limit: i64,
     ) -> Result<Vec<CrashReview>, anyhow::Error> {
-        sqlx::query_as::<_, CrashReview>(
+        sqlx::query_as!(
+            CrashReview,
             r#"
             SELECT thread_id,
                 latest_crash_message_id,
@@ -571,11 +579,11 @@ impl DatabaseClient {
             ORDER BY latest_crash_at_ms DESC
             LIMIT ?4
             "#,
+            only_unreviewed,
+            app_version,
+            before_ms,
+            limit,
         )
-        .bind(only_unreviewed)
-        .bind(app_version)
-        .bind(before_ms)
-        .bind(limit)
         .fetch_all(&self.reader_pool)
         .await
         .context("Error listing crash reviews")
@@ -585,7 +593,8 @@ impl DatabaseClient {
         &self,
         thread_id: i64,
     ) -> Result<Option<CrashReview>, anyhow::Error> {
-        sqlx::query_as::<_, CrashReview>(
+        sqlx::query_as!(
+            CrashReview,
             r#"
             SELECT thread_id,
                 latest_crash_message_id,
@@ -604,8 +613,8 @@ impl DatabaseClient {
             FROM crash_reviews
             WHERE thread_id = ?
             "#,
+            thread_id,
         )
-        .bind(thread_id)
         .fetch_optional(&self.reader_pool)
         .await
         .context("Error getting crash review")
@@ -684,43 +693,12 @@ pub struct DeviceInfo {
 ///
 /// See `migrations/20260811000000_crash_reviews.up.sql` for the unreviewed
 /// predicate; [`CrashReview::is_unreviewed`] mirrors it in Rust.
-/// # Why these queries are runtime-checked
 ///
-/// Every `crash_reviews` query below uses `sqlx::query_as::<_, CrashReview>`
-/// rather than the compile-time-checked `query_as!` macro used elsewhere in
-/// this file. That is a workaround for an upstream sqlx bug, not a style
-/// choice.
-///
-/// `sqlx_sqlite`'s `StatementHandle::column_nullable` null-checks the database,
-/// table and origin name pointers, then calls `CStr::from_ptr(datatype)` on the
-/// declared type from `sqlite3_table_column_metadata` *without* a null check.
-/// SQLite sets that out-param to NULL for a column declared with no type, and
-/// this schema has one: `users.device_id PRIMARY KEY` in
-/// `20250121024817_initial.up.sql`. Any `query_as!` in the crate therefore
-/// segfaults rustc during macro expansion whenever it can reach a live
-/// database, which is exactly what `cargo sqlx prepare` does. The existing
-/// `.sqlx` cache still works, so offline builds are unaffected — but the cache
-/// cannot be regenerated locally.
-///
-/// Confirmed still unfixed on sqlx main as of 2026-08-11.
-///
-/// ## Retry periodically
-///
-/// Re-test after any sqlx upgrade:
-///
-/// ```text
-/// sqlite3 /tmp/probe.db < migrations/20250121024817_initial.up.sql   # or a copy of the real db
-/// DATABASE_URL="sqlite:///tmp/probe.db" cargo sqlx prepare -- --lib
-/// ```
-///
-/// If that completes without SIGSEGV, convert these back to `query_as!` and
-/// commit the regenerated `.sqlx` entries.
-///
-/// Giving `users.device_id` an explicit `TEXT` type also fixes it — verified
-/// locally, the segfault disappears against a rebuilt schema — but that needs a
-/// full table rebuild migration against production data, so it is deliberately
-/// not bundled with this change.
-#[derive(Debug, Clone, serde::Serialize, sqlx::FromRow)]
+/// These queries were runtime-checked (`query_as::<_, CrashReview>`) until
+/// `20260811120000_users_device_id_text`, because the untyped `users.device_id`
+/// column segfaulted rustc during macro expansion. See that migration for the
+/// details.
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct CrashReview {
     #[serde(serialize_with = "i64_to_string")]
     pub thread_id: i64,
@@ -775,10 +753,9 @@ mod tests {
     use super::*;
     use crate::crash_rules::CrashFacts;
 
-    /// The `crash_reviews` queries are runtime-checked (see [`CrashReview`]),
-    /// so nothing verifies their column names or bind order at compile time.
-    /// These tests run the real SQL against a real migrated database, which is
-    /// what stands in for that lost checking.
+    /// The `crash_reviews` queries are compile-time checked, so column names and
+    /// bind types are verified by the macros. These tests cover what that cannot:
+    /// the upsert's conflict behaviour, the unreviewed predicate, and paging.
     async fn test_client() -> (DatabaseClient, tempfile::TempDir) {
         let dir = tempfile::tempdir().expect("tempdir");
         let db_path = dir.path().join("test.db");
@@ -806,6 +783,16 @@ mod tests {
             },
             dir,
         )
+    }
+
+    /// Both `record_crash_for_review` and `mark_thread_reviewed` stamp rows with
+    /// `Utc::now()` at millisecond resolution, and `is_unreviewed` compares them
+    /// with a strict `<`. Tests that need one to land strictly after the other
+    /// have to let the clock tick, or the two stamps can be equal and the
+    /// comparison flips. Real crashes and reviews are seconds apart, so this only
+    /// bites in tests.
+    async fn tick() {
+        tokio::time::sleep(Duration::from_millis(2)).await;
     }
 
     fn facts(version: &str) -> CrashFacts {
@@ -870,6 +857,7 @@ mod tests {
         db.mark_thread_reviewed(7, Some("someone"), None, None, None)
             .await
             .expect("review");
+        tick().await;
 
         // Same thread, newer crash: the review is now stale and the thread
         // should surface again rather than staying silently closed.
