@@ -38,6 +38,18 @@ where
     serializer.serialize_str(&number.to_string())
 }
 
+/// Snowflake IDs exceed JavaScript's safe integer range, so they go over the
+/// wire as strings. `null` stays `null`.
+pub fn i64_to_string_optional<S>(number: &Option<i64>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match number {
+        Some(number) => serializer.serialize_str(&number.to_string()),
+        None => serializer.serialize_none(),
+    }
+}
+
 pub fn string_to_i64_optional<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
 where
     D: Deserializer<'de>,

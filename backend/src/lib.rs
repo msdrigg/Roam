@@ -16,6 +16,7 @@ use crate::symbolicate::{DsymUploadMetadata, StoredDsymArchive, SymbolicationCli
 pub mod ai_responder;
 pub mod apns;
 pub mod cli;
+pub mod crash_rules;
 pub mod database;
 pub mod discord;
 pub mod gateway;

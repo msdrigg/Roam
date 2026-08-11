@@ -338,6 +338,23 @@ impl DiscordClient {
         last_message_id: Option<i64>,
         limit: Option<u8>,
     ) -> Result<Vec<DiscordMessage>, DiscordError> {
+        self.get_messages_paginated(thread_id, last_message_id, None, limit)
+            .await
+    }
+
+    /// Message history with both pagination directions.
+    ///
+    /// `after` walks forward from an id (oldest-first semantics on Discord's
+    /// side), `before` walks backwards from an id, which is how you page
+    /// through history newest-first. Passing neither returns the most recent
+    /// `limit` messages.
+    pub async fn get_messages_paginated(
+        &self,
+        thread_id: i64,
+        after: Option<i64>,
+        before: Option<i64>,
+        limit: Option<u8>,
+    ) -> Result<Vec<DiscordMessage>, DiscordError> {
         let _permit = self.acquire().await.expect("Semaphore should never close");
         self.error_on_locked()?;
 
@@ -348,8 +365,11 @@ impl DiscordClient {
         );
 
         let mut query = Vec::new();
-        if let Some(last_id) = last_message_id {
-            query.push(format!("after={last_id}"));
+        if let Some(after) = after {
+            query.push(format!("after={after}"));
+        }
+        if let Some(before) = before {
+            query.push(format!("before={before}"));
         }
         if let Some(limit) = limit {
             query.push(format!("limit={}", limit.clamp(1, 100)));
@@ -382,6 +402,227 @@ impl DiscordClient {
             })?;
 
         Ok(messages)
+    }
+
+    /// Posts a message, optionally as a threaded reply to an existing one.
+    ///
+    /// Mentions are suppressed: these are automated triage replies and should
+    /// never ping a thread's participants.
+    pub async fn send_reply(
+        &self,
+        thread_id: i64,
+        content: &str,
+        reply_to_message_id: Option<i64>,
+        notify: bool,
+    ) -> Result<DiscordMessage, DiscordError> {
+        let _permit = self.acquire().await.expect("Semaphore should never close");
+        self.error_on_locked()?;
+
+        let url = format!(
+            "{}/channels/{}/messages",
+            Self::DISCORD_API_BASE_URL,
+            thread_id
+        );
+
+        let mut body = serde_json::json!({
+            "content": content,
+            "flags": Self::get_flags(Some(&DiscordMessageOptions { nonce: None, notify })),
+            "allowed_mentions": { "parse": [] },
+        });
+        if let Some(reply_to) = reply_to_message_id {
+            body["message_reference"] = serde_json::json!({
+                "message_id": reply_to.to_string(),
+                "channel_id": thread_id.to_string(),
+                // A deleted parent should downgrade to a plain message rather
+                // than failing the whole post.
+                "fail_if_not_exists": false,
+            });
+        }
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bot {}", self.token))
+            .header("Content-Type", "application/json")
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| DiscordError::ConnectionError(e.into()))?;
+
+        self.update_rate_limit(response.headers());
+        let response = self
+            .except_error_response(response, "sending reply")
+            .await?;
+
+        response
+            .json()
+            .await
+            .map_err(|e| DiscordError::ResponseError(e.into()))
+    }
+
+    /// Fetches one message by id.
+    pub async fn get_message(
+        &self,
+        thread_id: i64,
+        message_id: i64,
+    ) -> Result<DiscordMessage, DiscordError> {
+        let _permit = self.acquire().await.expect("Semaphore should never close");
+        self.error_on_locked()?;
+
+        let url = format!(
+            "{}/channels/{}/messages/{}",
+            Self::DISCORD_API_BASE_URL,
+            thread_id,
+            message_id
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .header("Authorization", format!("Bot {}", self.token))
+            .send()
+            .await
+            .map_err(|e| DiscordError::ConnectionError(e.into()))?;
+
+        self.update_rate_limit(response.headers());
+        let response = self
+            .except_error_response(response, "getting message")
+            .await?;
+
+        response
+            .json()
+            .await
+            .map_err(|e| DiscordError::ResponseError(e.into()))
+    }
+
+    /// Every thread under the support forum channel, active and archived.
+    ///
+    /// Archived threads are paginated by archive timestamp; `max_archived_pages`
+    /// bounds how far back we walk so a caller cannot accidentally pull years of
+    /// history in one request.
+    pub async fn list_all_threads(
+        &self,
+        max_archived_pages: usize,
+    ) -> Result<Vec<Thread>, DiscordError> {
+        let mut threads = self.get_active_threads_updated_since(None).await?;
+        let mut seen: std::collections::HashSet<i64> = threads.iter().map(|t| t.id).collect();
+
+        let mut before: Option<String> = None;
+        for _ in 0..max_archived_pages {
+            let page = self.get_archived_threads_page(before.as_deref()).await?;
+            let is_last = !page.has_more || page.threads.is_empty();
+            before = page
+                .threads
+                .last()
+                .and_then(|t| t.thread_metadata.as_ref())
+                .and_then(|m| m.archive_timestamp.clone());
+            for thread in page.threads {
+                if seen.insert(thread.id) {
+                    threads.push(thread);
+                }
+            }
+            if is_last || before.is_none() {
+                break;
+            }
+        }
+
+        // Most recently active first.
+        threads.sort_by_key(|thread| std::cmp::Reverse(thread.last_message_id));
+        Ok(threads)
+    }
+
+    async fn get_archived_threads_page(
+        &self,
+        before: Option<&str>,
+    ) -> Result<ThreadResponse, DiscordError> {
+        let _permit = self.acquire().await.expect("Semaphore should never close");
+        self.error_on_locked()?;
+
+        let mut url = reqwest::Url::parse(&format!(
+            "{}/channels/{}/threads/archived/public",
+            Self::DISCORD_API_BASE_URL,
+            self.channel_id
+        ))
+        .map_err(|e| DiscordError::ConnectionError(e.into()))?;
+        {
+            // `archive_timestamp` is an ISO-8601 string whose `+00:00` offset
+            // must be percent-encoded or Discord rejects it as unparseable.
+            let mut query = url.query_pairs_mut();
+            query.append_pair("limit", "100");
+            if let Some(before) = before {
+                query.append_pair("before", before);
+            }
+        }
+
+        let response = self
+            .client
+            .get(url)
+            .header("Authorization", format!("Bot {}", self.token))
+            .send()
+            .await
+            .map_err(|e| DiscordError::ConnectionError(e.into()))?;
+
+        self.update_rate_limit(response.headers());
+        let response = self
+            .except_error_response(response, "getting archived threads")
+            .await?;
+
+        response
+            .json()
+            .await
+            .map_err(|e| DiscordError::ResponseError(e.into()))
+    }
+
+    /// Opens an attachment download without reading it into memory.
+    ///
+    /// Returns the live upstream response so the caller can hand
+    /// `bytes_stream()` straight to the HTTP body — attachments here are
+    /// symbolicated crash reports and full diagnostics dumps, which run to
+    /// hundreds of kilobytes each and should never be buffered server-side.
+    ///
+    /// The URL is not taken from the client: callers pass message/attachment
+    /// ids and the URL comes from the looked-up message, so this cannot be
+    /// pointed at arbitrary hosts. The host check is a second line of defence
+    /// in case that ever changes.
+    pub async fn stream_attachment(&self, url: &str) -> Result<Response, DiscordError> {
+        let host = reqwest::Url::parse(url)
+            .ok()
+            .and_then(|parsed| parsed.host_str().map(str::to_string))
+            .ok_or_else(|| DiscordError::InvalidInput(format!("Unparseable attachment url {url}")))?;
+
+        const ALLOWED_SUFFIXES: [&str; 4] = [
+            "discordapp.net",
+            "discordapp.com",
+            "discord.com",
+            "discord.media",
+        ];
+        let allowed = ALLOWED_SUFFIXES
+            .iter()
+            .any(|suffix| host == *suffix || host.ends_with(&format!(".{suffix}")));
+        if !allowed {
+            return Err(DiscordError::InvalidInput(format!(
+                "Refusing to proxy attachment from non-Discord host {host}"
+            )));
+        }
+
+        // Deliberately no semaphore permit: the CDN is not rate limited with the
+        // bot API, and holding a permit for the whole download would serialise
+        // transfers behind the shared request budget.
+        let response = self
+            .client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| DiscordError::ConnectionError(e.into()))?;
+
+        if !response.status().is_success() {
+            return Err(DiscordError::ApiError {
+                message: format!("Attachment download failed for {url}"),
+                status: response.status(),
+            });
+        }
+
+        Ok(response)
     }
 
     pub async fn get_active_threads_updated_since(
@@ -801,6 +1042,10 @@ mod types {
         #[serde(rename = "type")]
         pub message_type: u8,
         pub attachments: Vec<MessageAttachment>,
+        /// ISO-8601, as Discord sends it. Absent on messages we construct
+        /// ourselves (gateway events, tests).
+        #[serde(default)]
+        pub timestamp: Option<String>,
     }
 
     #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -830,6 +1075,7 @@ mod types {
                 author: DiscordAuthor { id: author_id },
                 message_type,
                 attachments,
+                timestamp: None,
             }
         }
 
@@ -940,15 +1186,32 @@ mod types {
         }
     }
 
-    #[derive(Debug, Clone, Deserialize)]
+    #[derive(Debug, Clone, Deserialize, Serialize)]
     pub struct Thread {
-        #[serde(deserialize_with = "string_to_i64")]
+        // Snowflakes are serialized back out as strings so JSON clients don't
+        // lose precision on them.
+        #[serde(deserialize_with = "string_to_i64", serialize_with = "i64_to_string")]
         pub id: i64,
-        #[serde(default, deserialize_with = "string_to_i64_optional")]
+        #[serde(
+            default,
+            deserialize_with = "string_to_i64_optional",
+            serialize_with = "crate::utils::i64_to_string_optional"
+        )]
         pub parent_id: Option<i64>,
         pub name: String,
-        #[serde(deserialize_with = "string_to_i64")]
+        #[serde(deserialize_with = "string_to_i64", serialize_with = "i64_to_string")]
         pub last_message_id: i64,
+        #[serde(default)]
+        pub thread_metadata: Option<ThreadMetadata>,
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    pub struct ThreadMetadata {
+        #[serde(default)]
+        pub archived: bool,
+        /// ISO-8601; doubles as the pagination cursor for archived threads.
+        #[serde(default)]
+        pub archive_timestamp: Option<String>,
     }
 
     #[derive(Deserialize)]
@@ -960,6 +1223,9 @@ mod types {
     #[derive(Deserialize)]
     pub struct ThreadResponse {
         pub threads: Vec<Thread>,
+        /// Only sent on the archived-threads endpoint.
+        #[serde(default)]
+        pub has_more: bool,
     }
 }
 
@@ -989,6 +1255,7 @@ mod tests {
             author: DiscordAuthor { id: 2 },
             message_type: 0,
             attachments: vec![],
+            timestamp: None,
         };
         let normalized = message.normalize();
         assert_eq!(normalized.content, "Hello :ninja: World! :smile:");
@@ -1005,6 +1272,7 @@ mod tests {
             author: DiscordAuthor { id: 3 },
             message_type: 0,
             attachments: vec![],
+            timestamp: None,
         };
         let normalized = message_with_command.normalize();
         assert_eq!(
@@ -1027,6 +1295,7 @@ mod tests {
                 author: DiscordAuthor { id: 2 },
                 message_type: 0,
                 attachments: vec![],
+                timestamp: None,
             },
             DiscordMessage {
                 id: 2,
@@ -1035,6 +1304,7 @@ mod tests {
                 author: DiscordAuthor { id: 2 },
                 message_type: 0,
                 attachments: vec![],
+                timestamp: None,
             },
             DiscordMessage {
                 id: 3,
@@ -1043,6 +1313,7 @@ mod tests {
                 author: DiscordAuthor { id: 2 },
                 message_type: 0,
                 attachments: vec![],
+                timestamp: None,
             },
         ];
 
