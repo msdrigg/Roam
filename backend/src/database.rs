@@ -391,6 +391,226 @@ impl DatabaseClient {
         Ok(row)
     }
 
+    /// Records a freshly symbolicated crash against its thread.
+    ///
+    /// Upserts so a thread accumulates one row that always describes its most
+    /// recent crash. The review columns are deliberately left untouched: a
+    /// thread reviewed before this crash arrived becomes unreviewed again,
+    /// because `reviewed_at_ms` now trails `latest_crash_at_ms`.
+    pub async fn record_crash_for_review(
+        &self,
+        thread_id: i64,
+        latest_crash_message_id: Option<i64>,
+        facts: &crate::crash_rules::CrashFacts,
+    ) -> Result<CrashReview, anyhow::Error> {
+        let now_ms = chrono::Utc::now().timestamp_millis();
+        sqlx::query_as::<_, CrashReview>(
+            r#"
+            INSERT INTO crash_reviews (
+                thread_id, latest_crash_message_id, latest_crash_at_ms,
+                app_version, device_type, os_version,
+                exception_type, signal, termination_code
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(thread_id) DO UPDATE SET
+                latest_crash_message_id = excluded.latest_crash_message_id,
+                latest_crash_at_ms = excluded.latest_crash_at_ms,
+                app_version = excluded.app_version,
+                device_type = excluded.device_type,
+                os_version = excluded.os_version,
+                exception_type = excluded.exception_type,
+                signal = excluded.signal,
+                termination_code = excluded.termination_code
+            RETURNING thread_id,
+                latest_crash_message_id,
+                latest_crash_at_ms,
+                app_version,
+                device_type,
+                os_version,
+                exception_type,
+                signal,
+                termination_code,
+                reviewed_at_ms,
+                reviewed_by,
+                reviewed_message_id,
+                matched_rule_id,
+                review_note
+            "#,
+        )
+        .bind(thread_id)
+        .bind(latest_crash_message_id)
+        .bind(now_ms)
+        .bind(&facts.app_version)
+        .bind(&facts.device_type)
+        .bind(&facts.os_version)
+        .bind(facts.exception_type)
+        .bind(facts.signal)
+        .bind(&facts.termination_code)
+        .fetch_one(&self.writer_pool)
+        .await
+        .context("Error recording crash for review")
+    }
+
+    /// Marks a thread reviewed as of now.
+    ///
+    /// `reviewed_by` is free-form: `auto:<rule id>` for the rules engine, or
+    /// whatever a human caller supplies.
+    pub async fn mark_thread_reviewed(
+        &self,
+        thread_id: i64,
+        reviewed_by: Option<&str>,
+        reviewed_message_id: Option<i64>,
+        matched_rule_id: Option<&str>,
+        review_note: Option<&str>,
+    ) -> Result<Option<CrashReview>, anyhow::Error> {
+        let now_ms = chrono::Utc::now().timestamp_millis();
+        sqlx::query_as::<_, CrashReview>(
+            r#"
+            UPDATE crash_reviews
+            SET reviewed_at_ms = ?,
+                reviewed_by = ?,
+                reviewed_message_id = COALESCE(?, reviewed_message_id),
+                matched_rule_id = COALESCE(?, matched_rule_id),
+                review_note = COALESCE(?, review_note)
+            WHERE thread_id = ?
+            RETURNING thread_id,
+                latest_crash_message_id,
+                latest_crash_at_ms,
+                app_version,
+                device_type,
+                os_version,
+                exception_type,
+                signal,
+                termination_code,
+                reviewed_at_ms,
+                reviewed_by,
+                reviewed_message_id,
+                matched_rule_id,
+                review_note
+            "#,
+        )
+        .bind(now_ms)
+        .bind(reviewed_by)
+        .bind(reviewed_message_id)
+        .bind(matched_rule_id)
+        .bind(review_note)
+        .bind(thread_id)
+        .fetch_optional(&self.writer_pool)
+        .await
+        .context("Error marking thread reviewed")
+    }
+
+    /// Clears review state so a thread shows up as needing attention again.
+    pub async fn mark_thread_unreviewed(
+        &self,
+        thread_id: i64,
+    ) -> Result<Option<CrashReview>, anyhow::Error> {
+        sqlx::query_as::<_, CrashReview>(
+            r#"
+            UPDATE crash_reviews
+            SET reviewed_at_ms = NULL,
+                reviewed_by = NULL,
+                reviewed_message_id = NULL,
+                matched_rule_id = NULL,
+                review_note = NULL
+            WHERE thread_id = ?
+            RETURNING thread_id,
+                latest_crash_message_id,
+                latest_crash_at_ms,
+                app_version,
+                device_type,
+                os_version,
+                exception_type,
+                signal,
+                termination_code,
+                reviewed_at_ms,
+                reviewed_by,
+                reviewed_message_id,
+                matched_rule_id,
+                review_note
+            "#,
+        )
+        .bind(thread_id)
+        .fetch_optional(&self.writer_pool)
+        .await
+        .context("Error marking thread unreviewed")
+    }
+
+    /// Lists tracked crash threads, newest crash first.
+    ///
+    /// `only_unreviewed` applies the same predicate as
+    /// [`CrashReview::is_unreviewed`]. `before_ms` pages backwards through
+    /// `latest_crash_at_ms`; pass the last row's value to get the next page.
+    pub async fn list_crash_reviews(
+        &self,
+        only_unreviewed: bool,
+        app_version: Option<&str>,
+        before_ms: Option<i64>,
+        limit: i64,
+    ) -> Result<Vec<CrashReview>, anyhow::Error> {
+        sqlx::query_as::<_, CrashReview>(
+            r#"
+            SELECT thread_id,
+                latest_crash_message_id,
+                latest_crash_at_ms,
+                app_version,
+                device_type,
+                os_version,
+                exception_type,
+                signal,
+                termination_code,
+                reviewed_at_ms,
+                reviewed_by,
+                reviewed_message_id,
+                matched_rule_id,
+                review_note
+            FROM crash_reviews
+            WHERE (?1 = 0 OR reviewed_at_ms IS NULL OR reviewed_at_ms < latest_crash_at_ms)
+              AND (?2 IS NULL OR app_version = ?2)
+              AND (?3 IS NULL OR latest_crash_at_ms < ?3)
+            ORDER BY latest_crash_at_ms DESC
+            LIMIT ?4
+            "#,
+        )
+        .bind(only_unreviewed)
+        .bind(app_version)
+        .bind(before_ms)
+        .bind(limit)
+        .fetch_all(&self.reader_pool)
+        .await
+        .context("Error listing crash reviews")
+    }
+
+    pub async fn get_crash_review(
+        &self,
+        thread_id: i64,
+    ) -> Result<Option<CrashReview>, anyhow::Error> {
+        sqlx::query_as::<_, CrashReview>(
+            r#"
+            SELECT thread_id,
+                latest_crash_message_id,
+                latest_crash_at_ms,
+                app_version,
+                device_type,
+                os_version,
+                exception_type,
+                signal,
+                termination_code,
+                reviewed_at_ms,
+                reviewed_by,
+                reviewed_message_id,
+                matched_rule_id,
+                review_note
+            FROM crash_reviews
+            WHERE thread_id = ?
+            "#,
+        )
+        .bind(thread_id)
+        .fetch_optional(&self.reader_pool)
+        .await
+        .context("Error getting crash review")
+    }
+
     /// Records a worker-reported failure on the given lease. Clears `leased_at_ms`
     /// so the row is re-leasable, but keeps the incremented `attempts` from the
     /// lease call, which is what caps retries via the `attempts < 3` filter.
@@ -460,6 +680,78 @@ pub struct DeviceInfo {
     pub user_locale: Option<String>,
 }
 
+/// Review state for the crashes in one Discord thread.
+///
+/// See `migrations/20260811000000_crash_reviews.up.sql` for the unreviewed
+/// predicate; [`CrashReview::is_unreviewed`] mirrors it in Rust.
+/// # Why these queries are runtime-checked
+///
+/// Every `crash_reviews` query below uses `sqlx::query_as::<_, CrashReview>`
+/// rather than the compile-time-checked `query_as!` macro used elsewhere in
+/// this file. That is a workaround for an upstream sqlx bug, not a style
+/// choice.
+///
+/// `sqlx_sqlite`'s `StatementHandle::column_nullable` null-checks the database,
+/// table and origin name pointers, then calls `CStr::from_ptr(datatype)` on the
+/// declared type from `sqlite3_table_column_metadata` *without* a null check.
+/// SQLite sets that out-param to NULL for a column declared with no type, and
+/// this schema has one: `users.device_id PRIMARY KEY` in
+/// `20250121024817_initial.up.sql`. Any `query_as!` in the crate therefore
+/// segfaults rustc during macro expansion whenever it can reach a live
+/// database, which is exactly what `cargo sqlx prepare` does. The existing
+/// `.sqlx` cache still works, so offline builds are unaffected — but the cache
+/// cannot be regenerated locally.
+///
+/// Confirmed still unfixed on sqlx main as of 2026-08-11.
+///
+/// ## Retry periodically
+///
+/// Re-test after any sqlx upgrade:
+///
+/// ```text
+/// sqlite3 /tmp/probe.db < migrations/20250121024817_initial.up.sql   # or a copy of the real db
+/// DATABASE_URL="sqlite:///tmp/probe.db" cargo sqlx prepare -- --lib
+/// ```
+///
+/// If that completes without SIGSEGV, convert these back to `query_as!` and
+/// commit the regenerated `.sqlx` entries.
+///
+/// Giving `users.device_id` an explicit `TEXT` type also fixes it — verified
+/// locally, the segfault disappears against a rebuilt schema — but that needs a
+/// full table rebuild migration against production data, so it is deliberately
+/// not bundled with this change.
+#[derive(Debug, Clone, serde::Serialize, sqlx::FromRow)]
+pub struct CrashReview {
+    #[serde(serialize_with = "i64_to_string")]
+    pub thread_id: i64,
+    #[serde(serialize_with = "crate::utils::i64_to_string_optional")]
+    pub latest_crash_message_id: Option<i64>,
+    pub latest_crash_at_ms: i64,
+    pub app_version: Option<String>,
+    pub device_type: Option<String>,
+    pub os_version: Option<String>,
+    pub exception_type: Option<i64>,
+    pub signal: Option<i64>,
+    pub termination_code: Option<String>,
+    pub reviewed_at_ms: Option<i64>,
+    pub reviewed_by: Option<String>,
+    #[serde(serialize_with = "crate::utils::i64_to_string_optional")]
+    pub reviewed_message_id: Option<i64>,
+    pub matched_rule_id: Option<String>,
+    pub review_note: Option<String>,
+}
+
+impl CrashReview {
+    /// A thread needs attention when it was never reviewed, or when a newer
+    /// crash landed after the last review.
+    pub fn is_unreviewed(&self) -> bool {
+        match self.reviewed_at_ms {
+            None => true,
+            Some(reviewed_at) => reviewed_at < self.latest_crash_at_ms,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PendingSymbolication {
     pub id: String,
@@ -476,4 +768,177 @@ pub struct PendingSymbolication {
     pub failed_at_ms: Option<i64>,
     pub attempts: i64,
     pub last_error: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::crash_rules::CrashFacts;
+
+    /// The `crash_reviews` queries are runtime-checked (see [`CrashReview`]),
+    /// so nothing verifies their column names or bind order at compile time.
+    /// These tests run the real SQL against a real migrated database, which is
+    /// what stands in for that lost checking.
+    async fn test_client() -> (DatabaseClient, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let db_path = dir.path().join("test.db");
+        let opts = SqliteConnectOptions::from_str(db_path.to_str().unwrap())
+            .expect("parse opts")
+            .create_if_missing(true);
+        let writer_pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(opts.clone())
+            .await
+            .expect("writer pool");
+        let reader_pool = SqlitePoolOptions::new()
+            .max_connections(2)
+            .connect_with(opts)
+            .await
+            .expect("reader pool");
+        sqlx::migrate!("./migrations")
+            .run(&writer_pool)
+            .await
+            .expect("migrations");
+        (
+            DatabaseClient {
+                reader_pool,
+                writer_pool,
+            },
+            dir,
+        )
+    }
+
+    fn facts(version: &str) -> CrashFacts {
+        CrashFacts {
+            app_version: Some(version.to_string()),
+            device_type: Some("iPhone14,7".to_string()),
+            os_version: Some("iPhone OS 26.6 (23G71)".to_string()),
+            exception_type: Some(10),
+            signal: Some(9),
+            termination_code: Some("0xdead10cc".to_string()),
+        }
+    }
+
+    #[tokio::test]
+    async fn records_and_reviews_a_crash() {
+        let (db, _dir) = test_client().await;
+
+        let recorded = db
+            .record_crash_for_review(42, Some(1001), &facts("1.50"))
+            .await
+            .expect("record");
+        assert_eq!(recorded.thread_id, 42);
+        assert_eq!(recorded.app_version.as_deref(), Some("1.50"));
+        assert_eq!(recorded.exception_type, Some(10));
+        assert!(recorded.is_unreviewed());
+
+        let unreviewed = db
+            .list_crash_reviews(true, None, None, 50)
+            .await
+            .expect("list");
+        assert_eq!(unreviewed.len(), 1);
+
+        let reviewed = db
+            .mark_thread_reviewed(42, Some("auto:test-rule"), Some(2002), Some("test-rule"), None)
+            .await
+            .expect("review")
+            .expect("row exists");
+        assert!(!reviewed.is_unreviewed());
+        assert_eq!(reviewed.reviewed_by.as_deref(), Some("auto:test-rule"));
+        assert_eq!(reviewed.reviewed_message_id, Some(2002));
+
+        assert!(db
+            .list_crash_reviews(true, None, None, 50)
+            .await
+            .expect("list")
+            .is_empty());
+        assert_eq!(
+            db.list_crash_reviews(false, None, None, 50)
+                .await
+                .expect("list all")
+                .len(),
+            1
+        );
+    }
+
+    #[tokio::test]
+    async fn a_newer_crash_reopens_a_reviewed_thread() {
+        let (db, _dir) = test_client().await;
+        db.record_crash_for_review(7, Some(1), &facts("1.49"))
+            .await
+            .expect("record");
+        db.mark_thread_reviewed(7, Some("someone"), None, None, None)
+            .await
+            .expect("review");
+
+        // Same thread, newer crash: the review is now stale and the thread
+        // should surface again rather than staying silently closed.
+        let reopened = db
+            .record_crash_for_review(7, Some(2), &facts("1.50"))
+            .await
+            .expect("record again");
+        assert!(reopened.is_unreviewed(), "{reopened:?}");
+        assert_eq!(reopened.app_version.as_deref(), Some("1.50"));
+        assert_eq!(reopened.latest_crash_message_id, Some(2));
+
+        let unreviewed = db
+            .list_crash_reviews(true, None, None, 50)
+            .await
+            .expect("list");
+        assert_eq!(unreviewed.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn filters_by_version_and_pages_backwards() {
+        let (db, _dir) = test_client().await;
+        for (thread_id, version) in [(1, "1.49"), (2, "1.50"), (3, "1.50")] {
+            db.record_crash_for_review(thread_id, None, &facts(version))
+                .await
+                .expect("record");
+        }
+
+        let only_150 = db
+            .list_crash_reviews(false, Some("1.50"), None, 50)
+            .await
+            .expect("list");
+        assert_eq!(only_150.len(), 2);
+        assert!(only_150.iter().all(|c| c.app_version.as_deref() == Some("1.50")));
+
+        // Newest first, and `before_ms` excludes everything at or after it.
+        let all = db
+            .list_crash_reviews(false, None, None, 50)
+            .await
+            .expect("list");
+        assert_eq!(all.len(), 3);
+        let cursor = all[0].latest_crash_at_ms;
+        let next_page = db
+            .list_crash_reviews(false, None, Some(cursor), 50)
+            .await
+            .expect("page");
+        assert!(next_page.iter().all(|c| c.latest_crash_at_ms < cursor));
+    }
+
+    #[tokio::test]
+    async fn unreview_clears_state_and_missing_threads_report_none() {
+        let (db, _dir) = test_client().await;
+        db.record_crash_for_review(9, None, &facts("1.50"))
+            .await
+            .expect("record");
+        db.mark_thread_reviewed(9, Some("someone"), Some(5), Some("rule"), Some("note"))
+            .await
+            .expect("review");
+
+        let cleared = db.mark_thread_unreviewed(9).await.expect("unreview").expect("row");
+        assert!(cleared.is_unreviewed());
+        assert_eq!(cleared.reviewed_by, None);
+        assert_eq!(cleared.matched_rule_id, None);
+
+        assert!(db.get_crash_review(9).await.expect("get").is_some());
+        assert!(db.get_crash_review(12345).await.expect("get").is_none());
+        assert!(db
+            .mark_thread_reviewed(12345, None, None, None, None)
+            .await
+            .expect("review missing")
+            .is_none());
+    }
 }
