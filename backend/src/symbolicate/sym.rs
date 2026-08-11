@@ -847,6 +847,30 @@ pub(crate) struct MetricKitCrashDiagnostic {
     pub(crate) call_stack_tree: MetricKitCallStackTree,
     #[serde(default)]
     diagnostic_meta_data: BTreeMap<String, serde_json::Value>,
+    // `MXCrashDiagnostic` declares terminationReason and virtualMemoryRegionInfo
+    // as properties of the diagnostic itself, but `jsonRepresentation()` folds
+    // them into `diagnosticMetaData` alongside exceptionType/signal. Accept
+    // either placement so the field is picked up whichever way it arrives.
+    #[serde(default)]
+    termination_reason: Option<String>,
+    #[serde(default)]
+    virtual_memory_region_info: Option<String>,
+}
+
+impl MetricKitCrashDiagnostic {
+    fn termination_reason(&self) -> Option<String> {
+        self.termination_reason
+            .clone()
+            .or_else(|| metadata_string(&self.diagnostic_meta_data, "terminationReason"))
+            .filter(|reason| !reason.trim().is_empty())
+    }
+
+    fn virtual_memory_region_info(&self) -> Option<String> {
+        self.virtual_memory_region_info
+            .clone()
+            .or_else(|| metadata_string(&self.diagnostic_meta_data, "virtualMemoryRegionInfo"))
+            .filter(|info| !info.trim().is_empty())
+    }
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -1333,6 +1357,156 @@ fn metadata_string(metadata: &BTreeMap<String, serde_json::Value>, key: &str) ->
         .map(str::to_string)
 }
 
+/// Read a metadata value that MetricKit may encode either as a JSON number or
+/// as a string (`"signal": 9` vs `"signal": "9"` both occur in the wild).
+fn metadata_u64(metadata: &BTreeMap<String, serde_json::Value>, key: &str) -> Option<u64> {
+    let value = metadata.get(key)?;
+    value
+        .as_u64()
+        .or_else(|| value.as_str().and_then(|text| text.trim().parse().ok()))
+}
+
+/// Mach exception type names, from `<mach/exception_types.h>`.
+fn exception_type_name(exception_type: u64) -> Option<&'static str> {
+    Some(match exception_type {
+        1 => "EXC_BAD_ACCESS",
+        2 => "EXC_BAD_INSTRUCTION",
+        3 => "EXC_ARITHMETIC",
+        4 => "EXC_EMULATION",
+        5 => "EXC_SOFTWARE",
+        6 => "EXC_BREAKPOINT",
+        7 => "EXC_SYSCALL",
+        8 => "EXC_MACH_SYSCALL",
+        9 => "EXC_RPC_ALERT",
+        10 => "EXC_CRASH",
+        11 => "EXC_RESOURCE",
+        12 => "EXC_GUARD",
+        13 => "EXC_CORPSE_NOTIFY",
+        _ => return None,
+    })
+}
+
+/// Unix signal names, from `<sys/signal.h>`.
+fn signal_name(signal: u64) -> Option<&'static str> {
+    Some(match signal {
+        1 => "SIGHUP",
+        2 => "SIGINT",
+        3 => "SIGQUIT",
+        4 => "SIGILL",
+        5 => "SIGTRAP",
+        6 => "SIGABRT",
+        7 => "SIGEMT",
+        8 => "SIGFPE",
+        9 => "SIGKILL",
+        10 => "SIGBUS",
+        11 => "SIGSEGV",
+        12 => "SIGSYS",
+        13 => "SIGPIPE",
+        14 => "SIGALRM",
+        15 => "SIGTERM",
+        _ => return None,
+    })
+}
+
+/// Plain-English meaning of the well-known OS termination codes that show up in
+/// `MXCrashDiagnostic.terminationReason`.
+fn termination_code_explanation(code: u64) -> Option<&'static str> {
+    Some(match code {
+        0xdead10cc => {
+            "held a file lock or SQLite/WAL lock on a file in a shared app-group \
+             container while being suspended"
+        }
+        0x8badf00d => "watchdog timeout — took too long to launch, resume, suspend, or terminate",
+        0xbaadca11 => "failed to report a PushKit VoIP call after waking for one",
+        0xc00010ff => "terminated because the device got too hot",
+        0xdeadfa11 => "force-quit by the user",
+        0x2bad45ec => "terminated for a security violation",
+        0xbad22222 => "VoIP app was resuming too frequently",
+        0xc51bad01 => "background task ran out of its CPU time budget",
+        0xc51bad02 => "background task ran out of its wall-clock time budget",
+        0xc51bad03 => "background task was not given enough CPU time to finish",
+        _ => return None,
+    })
+}
+
+/// Pull the `Code 0x...` value out of a termination reason string such as
+/// `"Namespace SPRINGBOARD, Code 0xdead10cc"`.
+fn parse_termination_code(termination_reason: &str) -> Option<u64> {
+    let start = termination_reason.find("0x")? + 2;
+    let digits: String = termination_reason[start..]
+        .chars()
+        .take_while(char::is_ascii_hexdigit)
+        .collect();
+    if digits.is_empty() {
+        return None;
+    }
+    u64::from_str_radix(&digits, 16).ok()
+}
+
+/// One-line interpretation of why the process died, assembled from
+/// `exceptionType` / `signal` / `terminationReason`.
+///
+/// The raw numbers alone are hard to read, and `terminationReason` is the field
+/// that distinguishes an OS policy kill (`EXC_CRASH` + `SIGKILL`) from an actual
+/// fault — so when it is present, say what it means; when it is absent, say so
+/// explicitly rather than leaving the reader to guess.
+fn describe_termination(
+    metadata: &BTreeMap<String, serde_json::Value>,
+    termination_reason: Option<&str>,
+) -> Option<String> {
+    let exception_type = metadata_u64(metadata, "exceptionType");
+    let signal = metadata_u64(metadata, "signal");
+
+    let mut parts: Vec<String> = Vec::new();
+
+    if let Some(exception_type) = exception_type {
+        parts.push(match exception_type_name(exception_type) {
+            Some(name) => format!("{name} ({exception_type})"),
+            None => format!("exception type {exception_type}"),
+        });
+    }
+
+    if let Some(signal) = signal {
+        parts.push(match signal_name(signal) {
+            Some(name) => format!("{name} ({signal})"),
+            None => format!("signal {signal}"),
+        });
+    }
+
+    if parts.is_empty() && termination_reason.is_none() {
+        return None;
+    }
+
+    let mut description = parts.join(" / ");
+
+    match termination_reason.and_then(parse_termination_code) {
+        Some(code) => {
+            let explanation = termination_code_explanation(code)
+                .unwrap_or("see the termination reason above for the owning subsystem");
+            if !description.is_empty() {
+                description.push_str(" — ");
+            }
+            description.push_str(&format!("0x{code:x}: {explanation}"));
+        }
+        None => {
+            // EXC_CRASH with SIGKILL is always an OS-initiated kill, never a
+            // fault in the app's own code. Without a terminationReason we can't
+            // say which policy fired, so name the candidates instead of
+            // silently reporting two opaque integers.
+            if exception_type == Some(10) && signal == Some(9) {
+                description.push_str(
+                    " — killed by the OS, not an in-process fault. No terminationReason in \
+                     the payload, so the specific policy is unconfirmed; the usual candidates \
+                     are 0xdead10cc (suspended while holding a file/SQLite lock in a shared \
+                     container), 0x8badf00d (watchdog), and 0xc51bad0* (background task budget).",
+                );
+            }
+        }
+    }
+
+    Some(description)
+}
+
 fn parse_os_build_id(os_version: &str) -> Option<String> {
     let start = os_version.rfind('(')? + 1;
     let end = os_version[start..].find(')')? + start;
@@ -1468,6 +1642,22 @@ fn render_metric_report(
                 .map(|version| format!(" (version {version})"))
                 .unwrap_or_default()
         )?;
+
+        // Surface the termination fields above the metadata dump. They are the
+        // ones that say whether the OS killed the process and why, and they are
+        // easy to miss inside an alphabetical key/value list.
+        let termination_reason = crash.termination_reason();
+        if let Some(termination_reason) = termination_reason.as_deref() {
+            writeln!(report, "Termination reason: {termination_reason}")?;
+        }
+        if let Some(diagnosis) =
+            describe_termination(&crash.diagnostic_meta_data, termination_reason.as_deref())
+        {
+            writeln!(report, "Diagnosis: {diagnosis}")?;
+        }
+        if let Some(region_info) = crash.virtual_memory_region_info() {
+            writeln!(report, "Faulting VM region: {region_info}")?;
+        }
 
         if !crash.diagnostic_meta_data.is_empty() {
             writeln!(report, "Metadata:")?;
@@ -1797,6 +1987,187 @@ mod tests {
             Some("iOS")
         );
         assert_eq!(parse_os_family(""), None);
+    }
+
+    fn crash_from(value: serde_json::Value) -> MetricKitCrashDiagnostic {
+        serde_json::from_value(value).expect("crash diagnostic deserializes")
+    }
+
+    #[test]
+    fn parses_termination_code_from_reason_string() {
+        assert_eq!(
+            parse_termination_code("Namespace SPRINGBOARD, Code 0xdead10cc"),
+            Some(0xdead10cc)
+        );
+        assert_eq!(
+            parse_termination_code("Namespace ASSERTIOND, Code 0x8badf00d"),
+            Some(0x8badf00d)
+        );
+        // Trailing prose after the code must not be swallowed into the digits.
+        assert_eq!(
+            parse_termination_code("Namespace SPRINGBOARD, Code 0xdead10cc (held lock)"),
+            Some(0xdead10cc)
+        );
+        assert_eq!(parse_termination_code("Namespace SPRINGBOARD"), None);
+        assert_eq!(parse_termination_code("Code 0x"), None);
+    }
+
+    #[test]
+    fn reads_termination_reason_from_either_placement() {
+        // Top-level, mirroring MXCrashDiagnostic's property layout.
+        let top_level = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "terminationReason": "Namespace SPRINGBOARD, Code 0xdead10cc",
+            "virtualMemoryRegionInfo": "0x1234 is in region 5",
+            "diagnosticMetaData": {}
+        }));
+        assert_eq!(
+            top_level.termination_reason().as_deref(),
+            Some("Namespace SPRINGBOARD, Code 0xdead10cc")
+        );
+        assert_eq!(
+            top_level.virtual_memory_region_info().as_deref(),
+            Some("0x1234 is in region 5")
+        );
+
+        // Folded into diagnosticMetaData, which is what jsonRepresentation() does.
+        let in_metadata = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": {
+                "terminationReason": "Namespace SPRINGBOARD, Code 0xdead10cc"
+            }
+        }));
+        assert_eq!(
+            in_metadata.termination_reason().as_deref(),
+            Some("Namespace SPRINGBOARD, Code 0xdead10cc")
+        );
+
+        // Absent entirely — the case every payload we have on file hits today.
+        let absent = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": { "signal": 9 }
+        }));
+        assert_eq!(absent.termination_reason(), None);
+        assert_eq!(absent.virtual_memory_region_info(), None);
+    }
+
+    #[test]
+    fn describes_termination_with_decoded_reason() {
+        let crash = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": { "exceptionType": 10, "signal": 9 },
+            "terminationReason": "Namespace SPRINGBOARD, Code 0xdead10cc"
+        }));
+
+        let description = describe_termination(
+            &crash.diagnostic_meta_data,
+            crash.termination_reason().as_deref(),
+        )
+        .expect("description");
+
+        assert!(description.contains("EXC_CRASH (10)"), "{description}");
+        assert!(description.contains("SIGKILL (9)"), "{description}");
+        assert!(description.contains("0xdead10cc"), "{description}");
+        assert!(
+            description.contains("shared app-group container"),
+            "{description}"
+        );
+    }
+
+    #[test]
+    fn describes_os_kill_without_a_termination_reason() {
+        // The shape of the payload that prompted this: EXC_CRASH + SIGKILL and
+        // no terminationReason, so the policy can be narrowed but not confirmed.
+        let crash = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": { "exceptionType": 10, "signal": 9 }
+        }));
+
+        let description = describe_termination(
+            &crash.diagnostic_meta_data,
+            crash.termination_reason().as_deref(),
+        )
+        .expect("description");
+
+        assert!(description.contains("killed by the OS"), "{description}");
+        assert!(description.contains("unconfirmed"), "{description}");
+        assert!(description.contains("0xdead10cc"), "{description}");
+    }
+
+    #[test]
+    fn describes_termination_from_string_encoded_numbers() {
+        // MetricKit has shipped these as strings as well as numbers.
+        let crash = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": { "exceptionType": "1", "signal": "11" }
+        }));
+
+        let description = describe_termination(
+            &crash.diagnostic_meta_data,
+            crash.termination_reason().as_deref(),
+        )
+        .expect("description");
+
+        assert_eq!(description, "EXC_BAD_ACCESS (1) / SIGSEGV (11)");
+    }
+
+    #[test]
+    fn describes_nothing_without_termination_fields() {
+        let crash = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": { "deviceType": "iPhone14,7" }
+        }));
+
+        assert_eq!(
+            describe_termination(
+                &crash.diagnostic_meta_data,
+                crash.termination_reason().as_deref()
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn report_surfaces_termination_reason_above_metadata() {
+        let payload: MetricKitPayload = serde_json::from_value(serde_json::json!({
+            "timeStampBegin": "2026-08-10 15:53:00",
+            "timeStampEnd": "2026-08-10 15:53:00",
+            "crashDiagnostics": [{
+                "version": "1.0.0",
+                "callStackTree": { "callStacks": [] },
+                "terminationReason": "Namespace SPRINGBOARD, Code 0xdead10cc",
+                "diagnosticMetaData": {
+                    "exceptionType": 10,
+                    "signal": 9,
+                    "deviceType": "iPhone14,7"
+                }
+            }]
+        }))
+        .expect("payload deserializes");
+
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(
+            report.contains("Termination reason: Namespace SPRINGBOARD, Code 0xdead10cc"),
+            "{report}"
+        );
+        assert!(
+            report.contains("Diagnosis: EXC_CRASH (10) / SIGKILL (9)"),
+            "{report}"
+        );
+        assert!(report.contains("shared app-group container"), "{report}");
+
+        // The decoded lines must come before the raw key/value dump.
+        let diagnosis_at = report.find("Diagnosis:").expect("diagnosis line");
+        let metadata_at = report.find("Metadata:").expect("metadata block");
+        assert!(diagnosis_at < metadata_at, "{report}");
     }
 
     #[test]
