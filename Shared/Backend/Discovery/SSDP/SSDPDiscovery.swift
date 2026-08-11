@@ -11,6 +11,41 @@ enum SSDPError: Swift.Error, LocalizedError {
 }
 
 /// SSDP discovery for UPnP devices on the LAN.
+/// Closes a file descriptor exactly once, however many callers ask.
+///
+/// `withTaskCancellationHandler` can run its `onCancel` closure concurrently
+/// with — and on a different thread from — the operation body, so a socket that
+/// is closed both on cancellation and in the body's `defer` gets `close(2)`d
+/// twice. By then the kernel may well have handed that descriptor number to
+/// something else, and the second close lands on an unrelated file. When the
+/// new owner is a *guarded* descriptor (GRDB's SQLite handles and
+/// Network.framework both guard theirs) the process is killed outright with
+/// `EXC_GUARD` — which `try? close()` cannot catch, because a Mach exception is
+/// not an errno.
+private final class CloseOnceFileDescriptor: @unchecked Sendable {
+    private let fileDescriptor: FileDescriptor
+    private let closed = OSAllocatedUnfairLock(initialState: false)
+
+    init(_ fileDescriptor: FileDescriptor) {
+        self.fileDescriptor = fileDescriptor
+    }
+
+    var wrapped: FileDescriptor { fileDescriptor }
+
+    func close() {
+        let shouldClose = closed.withLock { alreadyClosed -> Bool in
+            if alreadyClosed { return false }
+            alreadyClosed = true
+            return true
+        }
+        guard shouldClose else {
+            Log.scanning.notice("Skipping redundant SSDP socket close")
+            return
+        }
+        try? fileDescriptor.close()
+    }
+}
+
 /// Created using BSD sockets do to this bug: https://developer.apple.com/forums/thread/716339?page=1#769355022
 /// Code using Network framework shown below
 func scanDevicesContinually(
@@ -19,6 +54,7 @@ func scanDevicesContinually(
 ) async throws {
     Log.scanning.notice("Starting scan with interface \(interface ?? "nil", privacy: .public)")
     let socket = try FileDescriptor.socket(AF_INET, SOCK_DGRAM, 0)
+    let socketCloser = CloseOnceFileDescriptor(socket)
     // Setting nosigpipe due to https://developer.apple.com/forums/thread/773307
     try socket.setSocketOption(SOL_SOCKET, SO_NOSIGPIPE, 1 as CInt)
     try socket.setSocketOption(SOL_SOCKET, SO_REUSEPORT, 1 as CInt)
@@ -55,7 +91,7 @@ func scanDevicesContinually(
         defer {
             Log.scanning.notice("Terminating ssdp")
             sendingHandle?.cancel()
-            try? socket.close()
+            socketCloser.close()
         }
 
         Log.scanning.notice(
@@ -114,6 +150,9 @@ func scanDevicesContinually(
             }
         }
     } onCancel: {
-        try? socket.close()
+        // Closing here is what interrupts the blocking `receiveFrom` above; the
+        // body's `defer` then closes again as it unwinds. Route both through
+        // `socketCloser` so the descriptor is only ever handed to `close(2)` once.
+        socketCloser.close()
     }
 }

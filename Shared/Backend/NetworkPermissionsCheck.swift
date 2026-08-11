@@ -198,8 +198,18 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
 
         return first
     } onCancel: {
-        listener.cancel()
-        browser.cancel()
+        // `onCancel` runs synchronously on whichever thread cancels the task, and
+        // SwiftUI cancels `.task` work on the main thread while it applies a
+        // scene-phase change. `NWBrowser.cancel()` / `NWListener.cancel()` block
+        // on an internal Network.framework lock, so when `queue` is busy this
+        // stalls the main thread — long enough on app termination to be killed by
+        // the watchdog with 0x8BADF00D ("Failed to terminate gracefully after
+        // 5.0s"). Tear down on the queue these objects already run on so the
+        // cancelling thread is never blocked.
+        queue.async {
+            listener.cancel()
+            browser.cancel()
+        }
     }
 }
 #endif

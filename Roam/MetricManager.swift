@@ -9,6 +9,64 @@ struct DiagnosticsRequest: Codable, Sendable {
     let installationInfo: InstallationInfo
 }
 
+/// `MXDiagnosticPayload.jsonRepresentation()` has not been carrying
+/// `terminationReason` / `virtualMemoryRegionInfo` in the payloads we receive,
+/// even though `MXCrashDiagnostic` exposes both as properties. They are the
+/// fields that say *why* the OS killed the process — without them an
+/// `EXC_CRASH` / `SIGKILL` report can only be narrowed to "some OS policy fired"
+/// rather than naming the policy (0xdead10cc, 0x8badf00d, and so on).
+///
+/// Read them off the diagnostic objects directly and merge them into
+/// `diagnosticMetaData`, which is where the backend report generator looks.
+/// Falls back to the unmodified representation if anything about the shape is
+/// unexpected, so a MetricKit format change can't cost us the whole upload.
+private func jsonRepresentationIncludingTerminationFields(_ payload: MXDiagnosticPayload) -> Data {
+    let data = payload.jsonRepresentation()
+
+    guard let crashDiagnostics = payload.crashDiagnostics, !crashDiagnostics.isEmpty,
+        var root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+        var encodedCrashes = root["crashDiagnostics"] as? [[String: Any]],
+        encodedCrashes.count == crashDiagnostics.count
+    else {
+        Log.backend.notice("Uploading MetricKit payload without merged termination fields")
+        return data
+    }
+
+    var addedField = false
+    for (index, crashDiagnostic) in crashDiagnostics.enumerated() {
+        var encodedCrash = encodedCrashes[index]
+        var metaData = encodedCrash["diagnosticMetaData"] as? [String: Any] ?? [:]
+
+        if let terminationReason = crashDiagnostic.terminationReason,
+            metaData["terminationReason"] == nil
+        {
+            metaData["terminationReason"] = terminationReason
+            addedField = true
+        }
+
+        if let regionInfo = crashDiagnostic.virtualMemoryRegionInfo,
+            metaData["virtualMemoryRegionInfo"] == nil
+        {
+            metaData["virtualMemoryRegionInfo"] = regionInfo
+            addedField = true
+        }
+
+        encodedCrash["diagnosticMetaData"] = metaData
+        encodedCrashes[index] = encodedCrash
+    }
+
+    guard addedField else { return data }
+    root["crashDiagnostics"] = encodedCrashes
+
+    guard let merged = try? JSONSerialization.data(withJSONObject: root) else {
+        Log.backend.error("Failed to re-encode MetricKit payload with termination fields")
+        return data
+    }
+
+    Log.backend.notice("Merged MetricKit termination fields into crash payload")
+    return merged
+}
+
 final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
     override init() {
         super.init()
@@ -28,7 +86,7 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
             payload.crashDiagnostics?.isEmpty == false
         }) {
             let payloadData = payload.filter { $0.crashDiagnostics?.isEmpty == false }.map {
-                $0.jsonRepresentation()
+                jsonRepresentationIncludingTerminationFields($0)
             }
             Log.backend.notice(
                 "Sending \(payloadData.count, privacy: .public) crash diagnostics reports...")

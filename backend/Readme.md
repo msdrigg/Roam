@@ -214,3 +214,62 @@ curl https://backend.roam.msd3.io/health
 ## Using the system
 
 Human support can send :translate: text, /translate text, or <@bot> :translate: text; reply-style :translate: also uses the referenced message text.
+
+## Crash review API
+
+Every endpoint below sits behind the existing `x-api-key` header, so a triage
+client needs `BACKEND_URL` and `BACKEND_API_KEY` and no Discord credentials of
+its own — the backend proxies Discord with its bot token. The
+`roam-crash-triage` skill in `.claude/skills/` drives all of this.
+
+When a symbolication completes, the backend records the crash against its
+thread and matches the report against the auto-review rules in
+`src/crash_rules.rs`. A match means it replies in-thread and marks the thread
+reviewed as `auto:<rule id>`; no match leaves the thread in the unreviewed
+queue for a human. A thread counts as unreviewed when it was never reviewed or
+when a newer crash landed after the last review.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/v2/crashes` | List tracked crashes. `unreviewed=true`, `app_version=`, `before_ms=`, `limit=` (1–200). Response carries `next_before_ms` as the page cursor. |
+| GET | `/v2/crashes/{thread_id}` | One thread's review state. |
+| POST | `/v2/crashes/{thread_id}/review` | Mark reviewed. Optional `reviewed_by`, `reviewed_message_id`, `matched_rule_id`, `note`. |
+| DELETE | `/v2/crashes/{thread_id}/review` | Reopen for review. |
+| GET | `/v2/crashes/rules` | The auto-review rules. |
+| GET | `/v2/discord/threads` | Forum threads. `archived_pages=` walks 100 archived per page (max 20). |
+| GET | `/v2/discord/threads/{id}/messages` | Messages, newest first. `before=`, `after=`, `limit=` (1–100). |
+| POST | `/v2/discord/threads/{id}/messages` | Post a reply. `content`, optional `reply_to_message_id`, `notify`. Mentions always suppressed. |
+| GET | `/v2/discord/threads/{id}/messages/{mid}` | One message. |
+| GET | `/v2/discord/threads/{id}/messages/{mid}/attachments/{aid}` | Stream an attachment through from Discord's CDN. Never buffered server-side. |
+
+Snowflake ids are strings in every request and response, since they exceed
+JavaScript's safe integer range.
+
+### Adding an auto-review rule
+
+Rules are a compiled-in list in `src/crash_rules.rs`, matched in order with
+first-match-wins, so narrower rules go first — several distinct bugs share
+`EXC_CRASH (10)` / `SIGKILL (9)`. Add a test alongside the rule that covers the
+new report shape and asserts it does not steal matches from existing rules.
+
+### Note: `crash_reviews` queries are runtime-checked
+
+They use `sqlx::query_as::<_, T>` rather than `query_as!`. `sqlx_sqlite`'s
+`column_nullable` calls `CStr::from_ptr` on the declared type from
+`sqlite3_table_column_metadata` without a null check, and SQLite returns NULL
+there for a column declared with no type — this schema has one, `users.device_id
+PRIMARY KEY` in the initial migration. Any `query_as!` that can reach a live
+database therefore segfaults rustc, which is exactly what `cargo sqlx prepare`
+does. Offline builds are fine; the cache just cannot be regenerated locally.
+
+Retry after any sqlx upgrade:
+
+```bash
+sqlite3 /tmp/probe.db < migrations/20250121024817_initial.up.sql
+DATABASE_URL="sqlite:///tmp/probe.db" cargo sqlx prepare -- --lib
+```
+
+If that completes without SIGSEGV, convert those queries back to `query_as!`
+and commit the regenerated `.sqlx` entries. Giving `users.device_id` an explicit
+`TEXT` type also fixes it (verified locally), but needs a table-rebuild
+migration against production data.
