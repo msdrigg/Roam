@@ -190,6 +190,31 @@ fn router(app_context: AppContext) -> Router {
             "/v2/upload-roam-dsym",
             post(upload_roam_dsym).layer(DefaultBodyLimit::disable()),
         )
+        // Crash review tracking. All of these sit behind the existing
+        // `x-api-key` layer, so a triage client needs the backend key and no
+        // Discord credentials of its own.
+        .route("/v2/crashes", get(list_crashes))
+        .route("/v2/crashes/rules", get(list_crash_rules))
+        .route("/v2/crashes/{thread_id}", get(get_crash))
+        .route(
+            "/v2/crashes/{thread_id}/review",
+            post(review_crash).delete(unreview_crash),
+        )
+        // Discord proxy. Lets the same key read threads, messages and
+        // attachments without ever handling a bot token.
+        .route("/v2/discord/threads", get(list_discord_threads))
+        .route(
+            "/v2/discord/threads/{thread_id}/messages",
+            get(list_discord_messages).post(post_discord_message),
+        )
+        .route(
+            "/v2/discord/threads/{thread_id}/messages/{message_id}",
+            get(get_discord_message),
+        )
+        .route(
+            "/v2/discord/threads/{thread_id}/messages/{message_id}/attachments/{attachment_id}",
+            get(stream_discord_attachment),
+        )
         .route("/v2/symbolicate/lease", get(lease_pending_symbolications))
         .route("/v2/symbolicate/dsym/{uuid}", get(get_dsym_by_uuid))
         .route("/v2/symbolicate/result", post(submit_symbolication_result))
@@ -897,6 +922,333 @@ struct SymbolicationResultRequest {
     error: Option<String>,
 }
 
+// ---------------------------------------------------------------------------
+// Crash review tracking
+// ---------------------------------------------------------------------------
+
+/// Records a freshly symbolicated crash and, when it matches a known rule,
+/// replies in-thread and marks it reviewed.
+///
+/// Crashes that match nothing are left unreviewed on purpose — that is the
+/// queue a human works through via `GET /v2/crashes?unreviewed=true`.
+async fn auto_review_crash(
+    app_context: &AppContext,
+    thread_id: i64,
+    crash_message_id: i64,
+    report: &str,
+) -> anyhow::Result<()> {
+    let facts = crate::crash_rules::CrashFacts::from_report(report);
+    app_context
+        .db_client()
+        .record_crash_for_review(thread_id, Some(crash_message_id), &facts)
+        .await?;
+
+    let Some(rule) = crate::crash_rules::match_rule(report, &facts) else {
+        tracing::info!(
+            thread_id,
+            app_version = ?facts.app_version,
+            "Crash recorded with no matching rule; left for manual review"
+        );
+        return Ok(());
+    };
+
+    let reply = app_context
+        .discord_client()
+        .send_reply(thread_id, rule.reply, Some(crash_message_id), false)
+        .await?;
+
+    app_context
+        .db_client()
+        .mark_thread_reviewed(
+            thread_id,
+            Some(&format!("auto:{}", rule.id)),
+            Some(reply.id),
+            Some(rule.id),
+            Some(rule.title),
+        )
+        .await?;
+
+    tracing::info!(thread_id, rule = rule.id, "Auto-reviewed crash");
+    Ok(())
+}
+
+fn default_crash_limit() -> i64 {
+    50
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListCrashesQuery {
+    /// Only threads whose newest crash has not been reviewed yet.
+    #[serde(default)]
+    unreviewed: bool,
+    /// Exact match on the crash's `appVersion`, e.g. `1.50`.
+    #[serde(default)]
+    app_version: Option<String>,
+    /// Page backwards: pass the previous page's last `latest_crash_at_ms`.
+    #[serde(default)]
+    before_ms: Option<i64>,
+    #[serde(default = "default_crash_limit")]
+    limit: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ListCrashesResponse {
+    crashes: Vec<crate::database::CrashReview>,
+    /// Cursor for the next page, or `null` when the last page was returned.
+    next_before_ms: Option<i64>,
+}
+
+async fn list_crashes(
+    State(app_context): State<AppContext>,
+    Query(query): Query<ListCrashesQuery>,
+) -> Result<Json<ListCrashesResponse>, ApiError> {
+    let limit = query.limit.clamp(1, 200);
+    let crashes = app_context
+        .db_client()
+        .list_crash_reviews(
+            query.unreviewed,
+            query.app_version.as_deref(),
+            query.before_ms,
+            limit,
+        )
+        .await
+        .map_err(ApiError::DatabaseError)?;
+
+    // Only advertise another page when this one was full; otherwise the caller
+    // would loop once more just to get an empty list.
+    let next_before_ms = (crashes.len() as i64 == limit)
+        .then(|| crashes.last().map(|c| c.latest_crash_at_ms))
+        .flatten();
+
+    Ok(Json(ListCrashesResponse {
+        crashes,
+        next_before_ms,
+    }))
+}
+
+async fn get_crash(
+    State(app_context): State<AppContext>,
+    Path(thread_id): Path<i64>,
+) -> Result<Json<crate::database::CrashReview>, ApiError> {
+    app_context
+        .db_client()
+        .get_crash_review(thread_id)
+        .await
+        .map_err(ApiError::DatabaseError)?
+        .map(Json)
+        .ok_or_else(|| ApiError::NotFound(format!("No tracked crash for thread {thread_id}")))
+}
+
+async fn list_crash_rules() -> Json<&'static [crate::crash_rules::CrashRule]> {
+    Json(crate::crash_rules::RULES)
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub struct ReviewCrashRequest {
+    /// Free-form attribution, e.g. a person's handle. Defaults to `manual`.
+    #[serde(default)]
+    reviewed_by: Option<String>,
+    /// Id of the reply that resolved this crash, if one was posted.
+    #[serde(default)]
+    reviewed_message_id: Option<String>,
+    #[serde(default)]
+    matched_rule_id: Option<String>,
+    #[serde(default)]
+    note: Option<String>,
+}
+
+async fn review_crash(
+    State(app_context): State<AppContext>,
+    Path(thread_id): Path<i64>,
+    body: Option<Json<ReviewCrashRequest>>,
+) -> Result<Json<crate::database::CrashReview>, ApiError> {
+    let Json(req) = body.unwrap_or_default();
+    let reviewed_message_id =
+        parse_snowflake(req.reviewed_message_id.as_ref(), "reviewed_message_id")?;
+    app_context
+        .db_client()
+        .mark_thread_reviewed(
+            thread_id,
+            Some(req.reviewed_by.as_deref().unwrap_or("manual")),
+            reviewed_message_id,
+            req.matched_rule_id.as_deref(),
+            req.note.as_deref(),
+        )
+        .await
+        .map_err(ApiError::DatabaseError)?
+        .map(Json)
+        .ok_or_else(|| ApiError::NotFound(format!("No tracked crash for thread {thread_id}")))
+}
+
+async fn unreview_crash(
+    State(app_context): State<AppContext>,
+    Path(thread_id): Path<i64>,
+) -> Result<Json<crate::database::CrashReview>, ApiError> {
+    app_context
+        .db_client()
+        .mark_thread_unreviewed(thread_id)
+        .await
+        .map_err(ApiError::DatabaseError)?
+        .map(Json)
+        .ok_or_else(|| ApiError::NotFound(format!("No tracked crash for thread {thread_id}")))
+}
+
+// ---------------------------------------------------------------------------
+// Discord proxy
+// ---------------------------------------------------------------------------
+
+fn default_archived_pages() -> usize {
+    3
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListThreadsQuery {
+    /// How many pages (100 each) of archived threads to walk. 0 = active only.
+    #[serde(default = "default_archived_pages")]
+    archived_pages: usize,
+}
+
+async fn list_discord_threads(
+    State(app_context): State<AppContext>,
+    Query(query): Query<ListThreadsQuery>,
+) -> Result<Json<Vec<crate::discord::Thread>>, ApiError> {
+    let threads = app_context
+        .discord_client()
+        .list_all_threads(query.archived_pages.min(20))
+        .await?;
+    Ok(Json(threads))
+}
+
+/// Snowflake ids arrive as strings (they exceed JS's safe integer range), so
+/// query and body fields carrying them are parsed rather than deserialized
+/// straight to `i64`.
+fn parse_snowflake(value: Option<&String>, field: &str) -> Result<Option<i64>, ApiError> {
+    value
+        .map(|raw| {
+            raw.parse::<i64>()
+                .map_err(|_| ApiError::BadRequest(format!("Invalid {field}: {raw}")))
+        })
+        .transpose()
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListMessagesQuery {
+    /// Newest-first pagination: return messages older than this id.
+    #[serde(default)]
+    before: Option<String>,
+    /// Return messages newer than this id.
+    #[serde(default)]
+    after: Option<String>,
+    #[serde(default)]
+    limit: Option<u8>,
+}
+
+async fn list_discord_messages(
+    State(app_context): State<AppContext>,
+    Path(thread_id): Path<i64>,
+    Query(query): Query<ListMessagesQuery>,
+) -> Result<Json<Vec<DiscordMessage>>, ApiError> {
+    let before = parse_snowflake(query.before.as_ref(), "before")?;
+    let after = parse_snowflake(query.after.as_ref(), "after")?;
+    let messages = app_context
+        .discord_client()
+        .get_messages_paginated(thread_id, after, before, query.limit.or(Some(50)))
+        .await?;
+    Ok(Json(messages))
+}
+
+async fn get_discord_message(
+    State(app_context): State<AppContext>,
+    Path((thread_id, message_id)): Path<(i64, i64)>,
+) -> Result<Json<DiscordMessage>, ApiError> {
+    let message = app_context
+        .discord_client()
+        .get_message(thread_id, message_id)
+        .await?;
+    Ok(Json(message))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PostMessageRequest {
+    content: String,
+    /// Post as a threaded reply to this message.
+    #[serde(default)]
+    reply_to_message_id: Option<String>,
+    #[serde(default)]
+    notify: Option<bool>,
+}
+
+async fn post_discord_message(
+    State(app_context): State<AppContext>,
+    Path(thread_id): Path<i64>,
+    Json(req): Json<PostMessageRequest>,
+) -> Result<Json<DiscordMessage>, ApiError> {
+    let reply_to = parse_snowflake(req.reply_to_message_id.as_ref(), "reply_to_message_id")?;
+    let message = app_context
+        .discord_client()
+        .send_reply(
+            thread_id,
+            &req.content,
+            reply_to,
+            req.notify.unwrap_or(false),
+        )
+        .await?;
+    Ok(Json(message))
+}
+
+/// Streams an attachment straight through from Discord's CDN.
+///
+/// The bytes are piped from the upstream response into the client response
+/// without ever being collected: these are symbolicated reports and full
+/// diagnostics dumps, and buffering them would put arbitrary attachment sizes
+/// into backend memory.
+async fn stream_discord_attachment(
+    State(app_context): State<AppContext>,
+    Path((thread_id, message_id, attachment_id)): Path<(i64, i64, i64)>,
+) -> Result<Response, ApiError> {
+    let message = app_context
+        .discord_client()
+        .get_message(thread_id, message_id)
+        .await?;
+
+    let attachment = message
+        .attachments
+        .iter()
+        .find(|a| a.id == attachment_id)
+        .ok_or_else(|| {
+            ApiError::NotFound(format!(
+                "Message {message_id} has no attachment {attachment_id}"
+            ))
+        })?;
+
+    let upstream = app_context
+        .discord_client()
+        .stream_attachment(&attachment.url)
+        .await?;
+
+    let content_type = attachment
+        .content_type
+        .clone()
+        .unwrap_or_else(|| "application/octet-stream".to_string());
+    let content_length = upstream.content_length();
+    let filename = attachment.filename.clone();
+
+    let mut response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, content_type)
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("inline; filename=\"{}\"", filename.replace('"', "")),
+        );
+    if let Some(len) = content_length {
+        response = response.header(header::CONTENT_LENGTH, len);
+    }
+
+    response
+        .body(Body::from_stream(upstream.bytes_stream()))
+        .map_err(|e| ApiError::SymbolicationError(anyhow::Error::from(e)))
+}
+
 async fn submit_symbolication_result(
     State(app_context): State<AppContext>,
     Json(req): Json<SymbolicationResultRequest>,
@@ -919,7 +1271,7 @@ async fn submit_symbolication_result(
                 ":ninja: MK Diagnostics {} Symbolicated",
                 row.payload_index
             );
-            app_context
+            let posted = app_context
                 .discord_client()
                 .send_message(
                     row.thread_id,
@@ -927,12 +1279,26 @@ async fn submit_symbolication_result(
                     Some(DiscordFileUpload {
                         content_type: "text/plain".to_string(),
                         filename: "symbolicated.txt".to_string(),
-                        data: text.into_bytes(),
+                        data: text.clone().into_bytes(),
                         paired_messages: vec![],
                     }),
                     Some(&DiscordMessageOptions::default()),
                 )
                 .await?;
+
+            // Track the crash for review, then let the rules engine try to
+            // close it out. A failure here must not fail the symbolication
+            // result the worker just delivered, so everything is logged rather
+            // than propagated.
+            if let Err(err) =
+                auto_review_crash(&app_context, row.thread_id, posted.id, &text).await
+            {
+                tracing::error!(
+                    ?err,
+                    thread_id = row.thread_id,
+                    "Failed to record or auto-review crash"
+                );
+            }
 
             if let Err(err) = tokio::fs::remove_file(&row.payload_path).await {
                 if err.kind() != std::io::ErrorKind::NotFound {
