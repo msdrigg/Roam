@@ -210,12 +210,18 @@ public func clickButton(button: RemoteButton, device: Device?, count: Int = 1) a
     #if os(watchOS)
     if let deviceKey = button.apiValue {
         for _ in 0..<pressCount {
-            let success = await sendKeyToDeviceRawNotRecommended(
+            let result = await sendKeyToDeviceRawNotRecommended(
                 location: targetDevice.location,
                 key: deviceKey,
                 macs: targetDevice.macs()
             )
-            if !success {
+            switch result {
+            case .sent:
+                break
+            case .controlBlockedByDevice:
+                Log.userInteraction.warning("Device is blocking control from apps")
+                throw IntentError.deviceControlBlocked
+            case .failed:
                 Log.userInteraction.warning("Error sending key to device")
                 throw IntentError.deviceNotConnectable
             }
@@ -274,17 +280,22 @@ private func resolvedIntentDevice(_ device: Device?) async throws -> Device {
 private func fetchMutedState(device: Device) async throws -> Bool {
     do {
         return try await withTimeout(delay: 5) {
-            guard let url = URL(string: "\(device.location)query/audio-device") else {
+            let audioDeviceURL = "\(device.location)query/audio-device"
+            guard let url = URL(string: audioDeviceURL) else {
                 throw IntentError.deviceNotConnectable
             }
 
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await URLSession.shared.data(from: url)
+            try validateECPResponse(response, data: data, endpoint: audioDeviceURL)
             let decoder = XMLStreamDecoder()
             return try decoder.decode(AudioDevice.self, from: data).globalInfo.muted
         }
     } catch is TimeoutError {
         Log.userInteraction.warning("Timeout checking mute state from intent")
         throw IntentError.deviceNotConnectable
+    } catch let error as APIError where error.isControlBlockedByDevice {
+        Log.userInteraction.warning("Device is blocking control from apps")
+        throw IntentError.deviceControlBlocked
     } catch {
         Log.userInteraction.error("Error checking mute state from intent: \(error, privacy: .public)")
         throw IntentError.deviceNotConnectable
@@ -328,11 +339,16 @@ public func launchApp(app: AppLink, device: Device?) async throws {
 private enum IntentError: Swift.Error, CustomLocalizedStringResourceConvertible {
     case noSavedDevices
     case deviceNotConnectable
+    case deviceControlBlocked
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
         case .noSavedDevices: LocalizedStringResource("No saved devices", comment: "Error message description")
         case .deviceNotConnectable: LocalizedStringResource("Couldn't connect to the device", comment: "Error message description")
+        case .deviceControlBlocked: LocalizedStringResource(
+                "Your Roku is blocking control from apps. On the Roku, go to Settings > System > Advanced system settings > Control by mobile apps and set Network access to Default.",
+                comment: "Error message description shown when the Roku answers 403"
+            )
         }
     }
 }

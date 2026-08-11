@@ -18,8 +18,19 @@ public func openApp(location: String, app: String) async throws {
     }
 }
 
+/// Outcome of a single ECP keypress.
+///
+/// A device answering 403 is refusing control from apps outright, which the user can fix
+/// in the Roku's own settings. That is worth keeping distinct from a device that is
+/// unreachable or failing for some other reason, because only one of them is actionable.
+public enum KeypressResult {
+    case sent
+    case controlBlockedByDevice
+    case failed
+}
+
 @discardableResult
-private func powerToggleDeviceStateless(location: String, macs: [String]) async -> Bool {
+private func powerToggleDeviceStateless(location: String, macs: [String]) async -> KeypressResult {
     Log.connection.notice("Toggling power for device \(location, privacy: .public)")
 
     // Attempt checking the device power mode
@@ -30,7 +41,7 @@ private func powerToggleDeviceStateless(location: String, macs: [String]) async 
         rawKey: RemoteButton.power.apiValue!,
         timeout: 1.1
     )
-    if !toggleResult {
+    if toggleResult != .sent {
         let interfaces = await allAddressedInterfaces().filter{ iface in
             return (iface.flags & UInt32(IFF_UP) != 0) && (iface.flags & UInt32(IFF_RUNNING) != 0) && iface.nwInterface != nil
         }
@@ -48,14 +59,17 @@ private func powerToggleDeviceStateless(location: String, macs: [String]) async 
                 await wakeOnLAN(macAddress: mac, interface: nil)
             }
         }
-        return true
+
+        // A device that answered 403 is awake and refusing control, so the magic packet
+        // it just ignored was never going to help. Report the refusal instead.
+        return toggleResult == .controlBlockedByDevice ? .controlBlockedByDevice : .sent
     } else {
         Log.connection.notice("API toggle suceeded!")
-        return true
+        return .sent
     }
 }
 
-public func sendKeyToDeviceRawNotRecommended(location: String, key: String, macs: [String]) async -> Bool {
+public func sendKeyToDeviceRawNotRecommended(location: String, key: String, macs: [String]) async -> KeypressResult {
     if key == RemoteButton.power.apiValue {
         Log.connection.notice("Toggling power on device \(location, privacy: .public) with mac \(String(describing: macs), privacy: .public)")
         return await powerToggleDeviceStateless(location: location, macs: macs)
@@ -65,31 +79,28 @@ public func sendKeyToDeviceRawNotRecommended(location: String, key: String, macs
     }
 }
 
-private func internalSendKeyToDevice(location: String, rawKey: String, timeout: TimeInterval? = nil) async -> Bool {
+private func internalSendKeyToDevice(location: String, rawKey: String, timeout: TimeInterval? = nil) async -> KeypressResult {
     let keypressURL = "\(location)/keypress/\(rawKey)"
     guard let url = URL(string: keypressURL) else {
         Log.connection.error("Unable to send key due to bad url url `\(keypressURL, privacy: .public)`")
-        return false
+        return .failed
     }
     var request = URLRequest(url: url, timeoutInterval: timeout ?? 3)
     request.httpMethod = "POST"
 
     do {
-        let (_, response) = try await URLSession.shared.data(for: request)
-        if let httpResponse = response as? HTTPURLResponse {
-            if httpResponse.statusCode == 200 {
-                Log.connection.notice("Sent \(rawKey, privacy: .public) to \(location, privacy: .public)")
-                return true
-            } else {
-                Log.connection.error("Error sending \(rawKey, privacy: .public) to \(location, privacy: .public): \(httpResponse.statusCode, privacy: .public)")
-                return false
-            }
-        }
-
-        return false
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateECPResponse(response, data: data, endpoint: keypressURL)
+        Log.connection.notice("Sent \(rawKey, privacy: .public) to \(location, privacy: .public)")
+        return .sent
+    } catch let error as APIError where error.isControlBlockedByDevice {
+        Log.connection.error(
+            "Refused \(rawKey, privacy: .public) at \(location, privacy: .public): device is blocking control from apps"
+        )
+        return .controlBlockedByDevice
     } catch {
         Log.connection.error("Error sending \(rawKey, privacy: .public) to \(location, privacy: .public): \(error, privacy: .public)")
-        return false
+        return .failed
     }
 }
 

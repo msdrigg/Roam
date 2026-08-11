@@ -336,8 +336,10 @@ func fetchDeviceIcon(info: PreconnectionDeviceInfo) async throws -> Data {
 
 #if os(watchOS) && !WIDGET
 func fetchDeviceCapabilities(location: String) async throws -> DeviceCapabilities {
-    let url = URL(string: "\(location)query/audio-device")!
-    let (data, _) = try await URLSession.shared.data(from: url)
+    let capabilitiesURL = "\(location)query/audio-device"
+    let url = URL(string: capabilitiesURL)!
+    let (data, response) = try await URLSession.shared.data(from: url)
+    try validateECPResponse(response, data: data, endpoint: capabilitiesURL)
 
     let decoder = XMLStreamDecoder()
     let audioDevice = try decoder.decode(AudioDevice.self, from: data)
@@ -359,7 +361,8 @@ func fetchDeviceInfo(location: String) async throws -> DeviceInfo {
     request.httpMethod = "GET"
 
     do {
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateECPResponse(response, data: data, endpoint: deviceInfoURL)
         if let xmlString = String(data: data, encoding: .utf8) {
             let decoder = XMLStreamDecoder(.convertFromKebabCase)
             return try decoder.decode(DeviceInfo.self, from: Data(xmlString.utf8))
@@ -372,10 +375,12 @@ func fetchDeviceInfo(location: String) async throws -> DeviceInfo {
 }
 
 func fetchDeviceApps(location: String) async throws -> [ AppLink] {
-    guard let url = URL(string: "\(location)query/apps") else {
-        throw APIError.badURLError("\(location)query/apps")
+    let appsURL = "\(location)query/apps"
+    guard let url = URL(string: appsURL) else {
+        throw APIError.badURLError(appsURL)
     }
-    let (data, _) = try await URLSession.shared.data(from: url)
+    let (data, response) = try await URLSession.shared.data(from: url)
+    try validateECPResponse(response, data: data, endpoint: appsURL)
 
     let decoder = XMLStreamDecoder()
     let apps = try decoder.decode(Apps.self, from: data)

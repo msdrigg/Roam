@@ -74,6 +74,8 @@ struct DiagnosticsImport: PendingAttachment {
             message += "   - **RTCP Port**: \(String(describing: device.device.rtcpPort))\n"
             message += "   - **Supports Datagram**: \(String(describing: device.device.supportsDatagram))\n"
             message += "   - **Connectable Now**: \(device.successResponse != nil)\n"
+            message += "   - **Device Info Query**: \(device.successResponse.map { "HTTP \($0.statusCode)" } ?? device.errorResponse ?? "--")\n"
+            message += "   - **Apps Query**: \(device.appsResponse.map { "HTTP \($0.statusCode)" } ?? device.appsErrorResponse ?? "--")\n"
             message += "   - **Last Online**: \(device.device.lastOnlineAt?.ISO8601Format() ?? "--")\n"
             message += "   - **Last Scanned**: \(device.device.lastScannedAt?.ISO8601Format() ?? "--")\n"
             message += "   - **Last Selected**: \(device.device.lastSelectedAt?.ISO8601Format() ?? "--")\n"
