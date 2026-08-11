@@ -3,19 +3,18 @@ import Network
 import os.log
 
 public func openApp(location: String, app: String) async throws {
-    guard let url = URL(string: "\(location)launch/\(app)") else { return }
+    let launchURL = "\(location)launch/\(app)"
+    guard let url = URL(string: launchURL) else {
+        Log.connection.error("Unable to open app due to bad url `\(launchURL, privacy: .public)`")
+        throw APIError.badURLError(launchURL)
+    }
 
     var request = URLRequest(url: url, timeoutInterval: 3)
     request.httpMethod = "POST"
 
-    let (_, response) = try await URLSession.shared.data(for: request)
-    if let httpResponse = response as? HTTPURLResponse {
-        if httpResponse.statusCode == 200 {
-            Log.connection.notice("Opened app \(app) to with location \(location, privacy: .public)")
-        } else {
-            Log.connection.error("Error opening app \(app, privacy: .public) at \(location, privacy: .public)launch/\(app, privacy: .public): \(httpResponse.statusCode, privacy: .public)")
-        }
-    }
+    let (data, response) = try await URLSession.shared.data(for: request)
+    try validateECPResponse(response, data: data, endpoint: launchURL)
+    Log.connection.notice("Opened app \(app, privacy: .public) with location \(location, privacy: .public)")
 }
 
 /// Outcome of a single ECP keypress.

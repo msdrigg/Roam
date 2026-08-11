@@ -314,6 +314,9 @@ public func launchApp(app: AppLink, device: Device?) async throws {
         #if os(watchOS)
         do {
             try await openApp(location: targetDevice.location, app: app.id)
+        } catch let error as APIError where error.isControlBlockedByDevice {
+            Log.userInteraction.warning("Device is blocking control from apps")
+            throw IntentError.deviceControlBlocked
         } catch {
             Log.userInteraction.error("Error opening app: \(error, privacy: .public)")
             throw IntentError.deviceNotConnectable
