@@ -62,6 +62,11 @@ struct DeviceDebugInfo: Codable {
     let device: Device
     let successResponse: ResponseData?
     let errorResponse: String?
+    /// Result of querying `query/apps`. A Roku that answers `query/device-info` but
+    /// rejects this one with a 403 is refusing control from apps, which looks identical
+    /// to a healthy device from discovery alone.
+    let appsResponse: ResponseData?
+    let appsErrorResponse: String?
 }
 
 public struct InstallationInfo: Codable, Sendable {
@@ -149,6 +154,48 @@ func trimmedDebugInfoIfNeeded(_ debugInfo: DebugInfo, maxFileSize: Int = 9 * 102
     }
 }
 
+/// Queries one ECP endpoint and records the whole exchange, whatever the status.
+///
+/// Non-200 replies are captured rather than discarded: the status and body are exactly
+/// what distinguishes a device refusing control from one that is unreachable.
+private func probeDeviceEndpoint(
+    location: String,
+    path: String,
+    timeout: TimeInterval = 1.5
+) async -> (response: ResponseData?, error: String?) {
+    let endpoint = "\(location)\(path)"
+    do {
+        guard let url = URL(string: endpoint) else {
+            throw DebugError(message: "Bad URL \(endpoint)")
+        }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = timeout
+        request.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BadResponseError(
+                message: "Got non-http response trying to query \(path) \(String(describing: response))"
+            )
+        }
+        guard let dataString = String(data: data, encoding: .utf8) else {
+            throw BadResponseError(message: "Nonutf8 response from /\(path)")
+        }
+
+        return (
+            ResponseData(
+                headers: headerDictionary(httpResponse),
+                statusCode: httpResponse.statusCode,
+                data: dataString
+            ),
+            nil
+        )
+    } catch {
+        return (nil, "\(error)")
+    }
+}
+
 func getDebugInfo(userInitiated: Bool = false) async -> DebugInfo {
     var debugErrors: [String] = []
     var entries: [LogEntry] = []
@@ -168,44 +215,18 @@ func getDebugInfo(userInitiated: Bool = false) async -> DebugInfo {
     var deviceDebugInfos: [DeviceDebugInfo] = []
 
     for device in devices {
-        do {
-            let deviceInfoURL = "\(device.location)query/device-info"
-            guard let url = URL(string: deviceInfoURL) else {
-                throw DebugError(message: "Bad URL \(deviceInfoURL)")
-            }
-            var request = URLRequest(url: url)
-            request.timeoutInterval = 1.5
-            request.httpMethod = "GET"
+        // Probed independently: a blocked Roku answers device-info but rejects apps, and
+        // that difference is the whole diagnosis.
+        let deviceInfo = await probeDeviceEndpoint(location: device.location, path: "query/device-info")
+        let apps = await probeDeviceEndpoint(location: device.location, path: "query/apps")
 
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            if let httpResponse = response as? HTTPURLResponse {
-                let statusCode = httpResponse.statusCode
-                guard let dataString = String(data: data, encoding: .utf8) else {
-                    throw BadResponseError(message: "Nonutf8 response from /query/device-info")
-                }
-
-                var headers: [String: String] = [:]
-
-                for (key, value) in httpResponse.allHeaderFields {
-                    if let keyString = key as? String, let valueString = value as? String {
-                        headers[keyString] = valueString
-                    }
-                }
-                let responseData = ResponseData(headers: headers, statusCode: statusCode, data: dataString)
-                deviceDebugInfos.append(DeviceDebugInfo(
-                    device: device,
-                    successResponse: responseData,
-                    errorResponse: nil
-                ))
-            } else {
-                throw BadResponseError(
-                    message: "Got non-http response trying to query device info \(String(describing: response))"
-                )
-            }
-        } catch {
-            deviceDebugInfos.append(DeviceDebugInfo(device: device, successResponse: nil, errorResponse: "\(error)"))
-        }
+        deviceDebugInfos.append(DeviceDebugInfo(
+            device: device,
+            successResponse: deviceInfo.response,
+            errorResponse: deviceInfo.error,
+            appsResponse: apps.response,
+            appsErrorResponse: apps.error
+        ))
     }
 
     let localInterfaces = await allAddressedInterfaces()
