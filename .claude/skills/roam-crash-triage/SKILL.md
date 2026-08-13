@@ -1,6 +1,6 @@
 ---
 name: roam-crash-triage
-description: Triage Roam crash reports through the backend API - list unreviewed crashes, read Discord threads and messages with pagination, stream symbolicated reports and other attachments, post replies, and mark threads reviewed. Use when asked to look at crashes, check what crashes are outstanding, read a crash report or thread, reply to a crash, or work through the crash review queue. Needs only BACKEND_URL and BACKEND_API_KEY - never a Discord token.
+description: Triage Roam crash reports through the backend API - list unreviewed crashes, read Discord threads and messages with pagination, stream symbolicated reports and other attachments, post replies, and mark threads reviewed. Use when asked to look at crashes, check what crashes are outstanding, read a crash report or thread, reply to a crash, or work through the crash review queue. Needs only BACKEND_URL and BACKEND_API_KEY, both already in ./backend/.env - never a Discord token.
 ---
 
 # Roam crash triage
@@ -12,6 +12,14 @@ variables are enough:
 ```bash
 export BACKEND_URL=https://backend.roam.msd3.io
 export BACKEND_API_KEY=...            # sent as the x-api-key header
+```
+
+Both already live in `./backend/.env` in this repo — source it rather than
+hunting for the values in 1Password, and source it rather than reading the file,
+so the key never lands in the transcript:
+
+```bash
+set -a && . ./backend/.env && set +a
 ```
 
 A helper script wraps the endpoints below:
