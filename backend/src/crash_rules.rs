@@ -10,6 +10,13 @@
 //! one encodes a diagnosis that was worked out by reading stacks, and its reply
 //! text cites the fix that shipped alongside it. Adding a rule should be a code
 //! review, not a config edit.
+//!
+//! Every rule also records the app version its fix shipped in, and a match is
+//! tagged against the version the crash came from: a crash from before that
+//! release is [`FixStatus::Fixed`] (the user needs to update), one from that
+//! release or later is [`FixStatus::Unfixed`] — the same stack surviving the
+//! fix, which is news — and a report with no readable version is
+//! [`FixStatus::Unknown`].
 
 use std::sync::LazyLock;
 
@@ -66,11 +73,49 @@ impl CrashFacts {
     }
 }
 
+/// Parses a dotted numeric version into comparable components.
+///
+/// Anything after the leading `[0-9.]` run is dropped, so `1.51 (204)` and
+/// `1.51-beta` both read as `1.51`. Returns `None` when there is no numeric
+/// component at all.
+fn parse_version(version: &str) -> Option<Vec<u64>> {
+    let numeric: String = version
+        .trim()
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    let parts: Vec<u64> = numeric
+        .split('.')
+        .filter(|part| !part.is_empty())
+        .map(|part| part.parse().ok())
+        .collect::<Option<_>>()?;
+    (!parts.is_empty()).then_some(parts)
+}
+
+/// How a matched rule's fix relates to the version the crash came from.
+///
+/// Comparison is component-wise, so `1.50 < 1.51 < 1.51.1` — a plain string
+/// compare would put `1.5` after `1.50`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FixStatus {
+    /// The crash predates the release that fixed it: updating resolves it.
+    Fixed,
+    /// The crash is from the release that fixed it, or later. The fix did not
+    /// hold, so this needs a human even though the stack is recognised.
+    Unfixed,
+    /// No usable `appVersion` on the report, or no fix version on the rule.
+    Unknown,
+}
+
 /// A single auto-review rule. All specified conditions must hold.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct CrashRule {
     pub id: &'static str,
     pub title: &'static str,
+    /// App version that shipped this rule's fix, e.g. `"1.51"`. Crashes from
+    /// this version onwards are tagged [`FixStatus::Unfixed`].
+    pub fixed_in: Option<&'static str>,
     /// Mach exception type, e.g. 10 for `EXC_CRASH`, 12 for `EXC_GUARD`.
     pub exception_type: Option<i64>,
     pub signal: Option<i64>,
@@ -109,11 +154,82 @@ impl CrashRule {
         }
         true
     }
+
+    /// Places the crash's app version against the release that fixed this rule.
+    pub fn fix_status(&self, facts: &CrashFacts) -> FixStatus {
+        let Some(fixed_in) = self.fixed_in.and_then(parse_version) else {
+            return FixStatus::Unknown;
+        };
+        let Some(crashed_on) = facts.app_version.as_deref().and_then(parse_version) else {
+            return FixStatus::Unknown;
+        };
+        if crashed_on < fixed_in {
+            FixStatus::Fixed
+        } else {
+            FixStatus::Unfixed
+        }
+    }
+}
+
+/// A rule matched against one crash, together with where that crash sits
+/// relative to the rule's fix.
+#[derive(Debug, Clone, Copy)]
+pub struct RuleMatch {
+    pub rule: &'static CrashRule,
+    pub status: FixStatus,
+}
+
+impl RuleMatch {
+    /// The markdown to post in-thread: the rule's diagnosis, then a line
+    /// placing this particular crash against the fix.
+    pub fn reply(&self, facts: &CrashFacts) -> String {
+        let fixed_in = self.rule.fixed_in.unwrap_or("a later release");
+        let verdict = match self.status {
+            FixStatus::Fixed => format!(
+                ":white_check_mark: **Fixed in {fixed_in}.** This report is from {}, which predates the fix — updating to {fixed_in} or later resolves it.",
+                facts.app_version.as_deref().unwrap_or("an earlier version"),
+            ),
+            FixStatus::Unfixed => format!(
+                ":rotating_light: **UNFIXED.** The fix above shipped in {fixed_in}, and this report is from {} — the crash survived it. Left unreviewed for a human.",
+                facts.app_version.as_deref().unwrap_or("that release or later"),
+            ),
+            FixStatus::Unknown => match self.rule.fixed_in {
+                Some(version) => format!(
+                    ":grey_question: **Fix status unknown.** The fix shipped in {version}, but this report carries no readable `appVersion`, so whether it predates the fix is unclear."
+                ),
+                None => ":grey_question: **Fix status unknown.** No fix version is recorded for this rule.".to_string(),
+            },
+        };
+        format!(
+            "{}\n\n{verdict}\n\n_Matched automatically by rule `{}`._",
+            self.rule.reply, self.rule.id
+        )
+    }
+
+    /// One line for the review row, so the triage list carries the tag without
+    /// anyone opening the thread.
+    pub fn review_note(&self, facts: &CrashFacts) -> String {
+        let title = self.rule.title;
+        match (self.status, self.rule.fixed_in) {
+            (FixStatus::Fixed, Some(fixed_in)) => format!("{title} (fixed in {fixed_in})"),
+            (FixStatus::Unfixed, Some(fixed_in)) => format!(
+                "UNFIXED — still crashing on {} after the {fixed_in} fix: {title}",
+                facts.app_version.as_deref().unwrap_or("a later version"),
+            ),
+            _ => format!("{title} (fix status unknown)"),
+        }
+    }
 }
 
 /// Returns the first rule matching the report, if any.
-pub fn match_rule(report: &str, facts: &CrashFacts) -> Option<&'static CrashRule> {
-    RULES.iter().find(|rule| rule.matches(report, facts))
+pub fn match_rule(report: &str, facts: &CrashFacts) -> Option<RuleMatch> {
+    RULES
+        .iter()
+        .find(|rule| rule.matches(report, facts))
+        .map(|rule| RuleMatch {
+            rule,
+            status: rule.fix_status(facts),
+        })
 }
 
 const DEAD10CC_REPLY: &str = ":ninja: **Auto-review: `0xdead10cc` — suspended while holding the database lock**
@@ -122,12 +238,10 @@ const DEAD10CC_REPLY: &str = ":ninja: **Auto-review: `0xdead10cc` — suspended 
 
 Persistent writes hold an exclusive `flock` on a lock file in the shared app-group container, on top of the SQLite/WAL locks on `Roam.sqlite` beside it. A suspended process still holding those can block the widget extension indefinitely, so the system terminates it.
 
-**Known cause, fix shipped:**
+**Known cause, fix:**
 - a background-task assertion is held across every persistent write, so the process stays alive long enough to commit and release the lock
 - the file lock covers the transaction only — it used to be held across a full snapshot reload that scans every table
-- automatic device discovery stops when the app is backgrounded, removing the main source of writes still in flight at suspension time
-
-_Matched automatically by rule `database-lock-suspension`._";
+- automatic device discovery stops when the app is backgrounded, removing the main source of writes still in flight at suspension time";
 
 const EXC_GUARD_REPLY: &str = ":ninja: **Auto-review: `EXC_GUARD` — the SSDP socket was closed twice**
 
@@ -137,9 +251,7 @@ That function closed its UDP socket in two places: the `onCancel` handler of `wi
 
 `try? socket.close()` cannot defend against this: `EXC_GUARD` is a Mach exception, not an `errno`.
 
-**Known cause, fix shipped:** both paths now go through a close-once wrapper, so the descriptor reaches `close(2)` exactly once regardless of which path wins the race.
-
-_Matched automatically by rule `ssdp-socket-double-close`._";
+**Known cause, fix:** both paths now go through a close-once wrapper, so the descriptor reaches `close(2)` exactly once regardless of which path wins the race.";
 
 const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — main thread blocked cancelling the Bonjour browser**
 
@@ -149,15 +261,14 @@ The attributed thread is the **main thread**, parked in `nw_browser_cancel`, rea
 
 `onCancel` runs synchronously on whichever thread cancels the task, and SwiftUI cancels `.task` work on the main thread while it applies a scene-phase change. `NWBrowser.cancel()` and `NWListener.cancel()` block on an internal Network.framework lock, so when the network queue is busy the main thread stalls past the termination budget and the watchdog kills the app.
 
-**Known cause, fix shipped:** listener/browser teardown is dispatched onto the queue those objects already run on, so the cancelling thread is never blocked.
-
-_Matched automatically by rule `local-network-cancel-watchdog`._";
+**Known cause, fix:** listener/browser teardown is dispatched onto the queue those objects already run on, so the cancelling thread is never blocked.";
 
 /// Ordered: the first match wins, so put narrower rules first.
 pub static RULES: &[CrashRule] = &[
     CrashRule {
         id: "local-network-cancel-watchdog",
         title: "0x8BADF00D watchdog cancelling NWBrowser on the main thread",
+        fixed_in: Some("1.51"),
         exception_type: None,
         signal: None,
         termination_code: Some("0x8badf00d"),
@@ -168,6 +279,7 @@ pub static RULES: &[CrashRule] = &[
     CrashRule {
         id: "ssdp-socket-double-close",
         title: "EXC_GUARD from double-closing the SSDP socket",
+        fixed_in: Some("1.51"),
         exception_type: Some(12),
         signal: None,
         termination_code: None,
@@ -178,6 +290,7 @@ pub static RULES: &[CrashRule] = &[
     CrashRule {
         id: "database-lock-suspension",
         title: "0xdead10cc suspension while holding the database file lock",
+        fixed_in: Some("1.51"),
         exception_type: Some(10),
         signal: Some(9),
         termination_code: None,
@@ -253,9 +366,63 @@ Thread 0 (attributed):
             (WATCHDOG_REPORT, "local-network-cancel-watchdog"),
         ] {
             let facts = CrashFacts::from_report(report);
-            let rule = match_rule(report, &facts).unwrap_or_else(|| panic!("no rule for {expected}"));
-            assert_eq!(rule.id, expected);
+            let matched =
+                match_rule(report, &facts).unwrap_or_else(|| panic!("no rule for {expected}"));
+            assert_eq!(matched.rule.id, expected);
+            // Every sample report is from 1.50; all three fixes shipped in 1.51.
+            assert_eq!(matched.status, FixStatus::Fixed);
         }
+    }
+
+    #[test]
+    fn crash_from_the_fixing_release_is_tagged_unfixed() {
+        let report = GUARD_REPORT.replace("appVersion: 1.50", "appVersion: 1.51");
+        let facts = CrashFacts::from_report(&report);
+        let matched = match_rule(&report, &facts).expect("still matches the rule");
+        assert_eq!(matched.rule.id, "ssdp-socket-double-close");
+        assert_eq!(matched.status, FixStatus::Unfixed);
+        assert!(matched.reply(&facts).contains("UNFIXED"));
+    }
+
+    #[test]
+    fn crash_from_after_the_fixing_release_is_tagged_unfixed() {
+        let report = GUARD_REPORT.replace("appVersion: 1.50", "appVersion: 1.52");
+        let facts = CrashFacts::from_report(&report);
+        assert_eq!(
+            match_rule(&report, &facts).map(|m| m.status),
+            Some(FixStatus::Unfixed)
+        );
+    }
+
+    #[test]
+    fn crash_without_a_version_is_tagged_unknown() {
+        let report = GUARD_REPORT.replace("  appVersion: 1.50\n", "");
+        let facts = CrashFacts::from_report(&report);
+        let matched = match_rule(&report, &facts).expect("matching does not depend on the version");
+        assert_eq!(matched.status, FixStatus::Unknown);
+        assert!(matched.reply(&facts).contains("Fix status unknown"));
+    }
+
+    #[test]
+    fn reply_carries_the_diagnosis_and_the_rule_footer() {
+        let facts = CrashFacts::from_report(DEAD10CC_REPORT);
+        let reply = match_rule(DEAD10CC_REPORT, &facts).unwrap().reply(&facts);
+        assert!(reply.contains("suspended while holding the database lock"));
+        assert!(reply.contains("Fixed in 1.51"));
+        assert!(reply.ends_with("_Matched automatically by rule `database-lock-suspension`._"));
+    }
+
+    #[test]
+    fn versions_compare_component_wise_not_lexically() {
+        // The trap: "1.5" sorts after "1.50" as a string.
+        assert!(parse_version("1.5") < parse_version("1.50"));
+        assert!(parse_version("1.50") < parse_version("1.51"));
+        assert!(parse_version("1.51") < parse_version("1.51.1"));
+        assert!(parse_version("1.51") < parse_version("2.0"));
+        assert_eq!(parse_version("1.51 (204)"), parse_version("1.51"));
+        assert_eq!(parse_version("1.51-beta"), parse_version("1.51"));
+        assert_eq!(parse_version("unknown"), None);
+        assert_eq!(parse_version(""), None);
     }
 
     #[test]
@@ -266,7 +433,7 @@ Thread 0 (attributed):
         assert_eq!(facts.exception_type, Some(10));
         assert_eq!(facts.signal, Some(9));
         assert_eq!(
-            match_rule(WATCHDOG_REPORT, &facts).map(|r| r.id),
+            match_rule(WATCHDOG_REPORT, &facts).map(|m| m.rule.id),
             Some("local-network-cancel-watchdog")
         );
     }

@@ -460,6 +460,33 @@ impl DatabaseClient {
     ///
     /// `reviewed_by` is free-form: `auto:<rule id>` for the rules engine, or
     /// whatever a human caller supplies.
+    /// Records which rule matched a crash without reviewing it.
+    ///
+    /// Used when a rule matches a crash from a build that already carries its
+    /// fix: the diagnosis is worth keeping on the row, but `reviewed_at_ms`
+    /// stays null so the thread remains in the unreviewed queue.
+    pub async fn note_rule_match(
+        &self,
+        thread_id: i64,
+        matched_rule_id: &str,
+        review_note: &str,
+    ) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            r#"
+            UPDATE crash_reviews
+            SET matched_rule_id = ?, review_note = ?
+            WHERE thread_id = ?
+            "#,
+            matched_rule_id,
+            review_note,
+            thread_id,
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error recording rule match")?;
+        Ok(())
+    }
+
     pub async fn mark_thread_reviewed(
         &self,
         thread_id: i64,
