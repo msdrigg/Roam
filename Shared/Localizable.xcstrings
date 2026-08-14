@@ -8138,6 +8138,89 @@
         }
       }
     },
+    "Custom": {
+      "comment": "Device sort option: the order the user arranged devices in",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مخصص"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benutzerdefiniert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalizado"
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalizado"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pasadya"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personnalisé"
+          }
+        },
+        "fr-CA": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personnalisé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalizzato"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਕਸਟਮ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalizada"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalizada"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tùy chỉnh"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义"
+          }
+        }
+      }
+    },
     "Cut": {
       "comment": "Keyboard shortcut to cut",
       "localizations": {
@@ -8639,7 +8722,7 @@
       }
     },
     "Developer unlocked tip-based functionality": {
-      "comment": "Confirmation shown in the chat after the developer unlock code is sent"
+      "comment": "Confirmation shown in the chat when support sends the developer unlock code"
     },
     "Device": {
       "comment": "Configuration field title for a device selection field\nDescription on a configuration field\nTV Device Selection Option",
@@ -8803,6 +8886,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "在指定的IP地址上找不到设备"
+          }
+        }
+      }
+    },
+    "Device returned HTTP %lld for %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Device returned HTTP %1$lld for %2$@"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أرجع الجهاز HTTP %1$lld لـ %2$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerät hat HTTP %1$lld für %2$@ zurückgegeben"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El dispositivo devolvió HTTP %1$lld para %2$@"
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El dispositivo devolvió HTTP %1$lld para %2$@"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nagbalik ang device ng HTTP %1$lld para sa %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’appareil a renvoyé le code HTTP %1$lld pour %2$@"
+          }
+        },
+        "fr-CA": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’appareil a retourné le code HTTP %1$lld pour %2$@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il dispositivo ha restituito HTTP %1$lld per %2$@"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਡਿਵਾਈਸ ਨੇ %2$@ ਲਈ HTTP %1$lld ਵਾਪਸ ਕੀਤਾ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O dispositivo retornou HTTP %1$lld para %2$@"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O dispositivo devolveu HTTP %1$lld para %2$@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thiết bị trả về HTTP %1$lld cho %2$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备针对 %2$@ 返回了 HTTP %1$lld"
           }
         }
       }
@@ -18039,7 +18210,7 @@
       }
     },
     "Name": {
-      "comment": "Settings field label for the device name",
+      "comment": "Device sort option: alphabetical by device name\nSettings field label for the device name",
       "localizations": {
         "ar": {
           "stringUnit": {
@@ -23675,6 +23846,89 @@
         }
       }
     },
+    "Recently used": {
+      "comment": "Device sort option: most recently opened device first",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المستخدمة مؤخرًا"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuletzt verwendet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usados recientemente"
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usados recientemente"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamakailang ginamit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récemment utilisés"
+          }
+        },
+        "fr-CA": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récemment utilisés"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usati di recente"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਹਾਲ ਹੀ ਵਿੱਚ ਵਰਤੇ ਗਏ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usados recentemente"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilizados recentemente"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã sử dụng gần đây"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近使用"
+          }
+        }
+      }
+    },
     "Refresh Chat Messages": {
       "localizations": {
         "ar": {
@@ -27235,6 +27489,172 @@
           "stringUnit": {
             "state": "translated",
             "value": "某些 Roku 设备支持直接流式传输音频到 Roam。不幸的是，您的设备不支持此功能。请访问 https://www.roku.com/products/compare 了解支持此功能的设备。"
+          }
+        }
+      }
+    },
+    "Sort by": {
+      "comment": "Header above the device sort options",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فرز حسب"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortieren nach"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar por"
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar por"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayusin ayon sa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trier par"
+          }
+        },
+        "fr-CA": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trier par"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordina per"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਇਸ ਮੁਤਾਬਕ ਕ੍ਰਮਬੱਧ ਕਰੋ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar por"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar por"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sắp xếp theo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排序依据"
+          }
+        }
+      }
+    },
+    "Sort devices": {
+      "comment": "Accessibility label for the iPhone home button that changes the device order\nAccessibility label for the sidebar button that changes the device order",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ترتيب الأجهزة"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geräte sortieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar dispositivos"
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar dispositivos"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ayusin ang pagkakasunod-sunod ng mga device"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trier les appareils"
+          }
+        },
+        "fr-CA": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trier les appareils"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordina dispositivi"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਡਿਵਾਈਸਾਂ ਨੂੰ ਕ੍ਰਮਬੱਧ ਕਰੋ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar dispositivos"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordenar dispositivos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sắp xếp thiết bị"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对设备排序"
           }
         }
       }
@@ -31292,6 +31712,171 @@
           "stringUnit": {
             "state": "translated",
             "value": "您的 Roku 设备支持直接流式传输音频到 Roam。点击主视图中的耳机按钮查看效果！"
+          }
+        }
+      }
+    },
+    "Your Roku is blocking control from apps. On the Roku, go to Settings > System > Advanced system settings > Control by mobile apps and set Network access to Default.": {
+      "comment": "Error message description shown when the Roku answers 403",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يحظر جهاز Roku التحكم من التطبيقات. على جهاز Roku، انتقل إلى الإعدادات > النظام > إعدادات النظام المتقدمة > التحكم بواسطة تطبيقات الهاتف المحمول واضبط الوصول إلى الشبكة على افتراضي."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ihr Roku blockiert die Steuerung durch Apps. Gehen Sie auf dem Roku zu Einstellungen > System > Erweiterte Systemeinstellungen > Steuerung durch mobile Apps und setzen Sie Netzwerkzugriff auf Standard."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Roku está bloqueando el control desde las aplicaciones. En tu Roku, ve a Configuración > Sistema > Configuración avanzada del sistema > Control por aplicaciones móviles y configura Acceso a la red como Predeterminado."
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Roku está bloqueando el control desde apps. En el Roku, ve a Configuración > Sistema > Configuración avanzada del sistema > Control por apps móviles y establece Acceso a la red en Predeterminado."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinaharang ng iyong Roku ang pagkontrol mula sa mga app. Sa Roku, pumunta sa Settings > System > Advanced system settings > Control by mobile apps at itakda ang Network access sa Default."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre Roku bloque le contrôle depuis les applications. Sur le Roku, accédez à Paramètres > Système > Paramètres système avancés > Contrôle par applications mobiles et définissez Accès au réseau sur Par défaut."
+          }
+        },
+        "fr-CA": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre Roku bloque le contrôle à partir des applications. Sur le Roku, accédez à Paramètres > Système > Paramètres système avancés > Contrôle par les applications mobiles et réglez Accès au réseau à Par défaut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo Roku sta bloccando il controllo dalle app. Sul Roku, vai su Impostazioni > Sistema > Impostazioni di sistema avanzate > Controllo tramite app mobili e imposta Accesso alla rete su Predefinito."
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਤੁਹਾਡਾ Roku ਐਪਾਂ ਤੋਂ ਕੰਟਰੋਲ ਨੂੰ ਬਲੌਕ ਕਰ ਰਿਹਾ ਹੈ। Roku 'ਤੇ, Settings > System > Advanced system settings > Control by mobile apps 'ਤੇ ਜਾਓ ਅਤੇ Network access ਨੂੰ Default 'ਤੇ ਸੈੱਟ ਕਰੋ।"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seu Roku está bloqueando o controle por aplicativos. No Roku, acesse Configurações > Sistema > Configurações avançadas do sistema > Controle por aplicativos móveis e defina Acesso à rede como Padrão."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O seu Roku está a bloquear o controlo por aplicações. No Roku, aceda a Definições > Sistema > Definições avançadas do sistema > Controlo por aplicações móveis e defina Acesso à rede como Predefinido."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roku của bạn đang chặn việc điều khiển từ ứng dụng. Trên Roku, hãy vào Cài đặt > Hệ thống > Cài đặt hệ thống nâng cao > Điều khiển bằng ứng dụng di động và đặt Truy cập mạng thành Mặc định."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "您的 Roku 正在阻止应用控制它。在 Roku 上，前往设置 > 系统 > 高级系统设置 > 通过移动应用控制，然后将网络访问设置为默认。"
+          }
+        }
+      }
+    },
+    "Your Roku is blocking control from apps. On the Roku, open Settings > System > Advanced system settings > Control by mobile apps and set Network access to Default.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يحظر جهاز Roku الخاص بك التحكم من التطبيقات. على جهاز Roku، افتح الإعدادات > النظام > إعدادات النظام المتقدمة > التحكم بواسطة تطبيقات الجوال واضبط الوصول إلى الشبكة على افتراضي."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ihr Roku blockiert die Steuerung durch Apps. Öffnen Sie auf dem Roku Einstellungen > System > Erweiterte Systemeinstellungen > Steuerung durch mobile Apps und setzen Sie den Netzwerkzugriff auf Standard."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Roku está bloqueando el control desde apps. En el Roku, abre Configuración > Sistema > Configuración avanzada del sistema > Control mediante apps móviles y establece Acceso a la red en Predeterminado."
+          }
+        },
+        "es-419": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu Roku está bloqueando el control desde apps. En el Roku, abre Configuración > Sistema > Configuración avanzada del sistema > Control mediante apps móviles y establece Acceso a la red en Predeterminado."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinaharang ng iyong Roku ang pagkontrol mula sa mga app. Sa Roku, buksan ang Settings > System > Advanced system settings > Control by mobile apps at itakda ang Network access sa Default."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre Roku bloque le contrôle depuis les applications. Sur le Roku, ouvrez Paramètres > Système > Paramètres système avancés > Contrôle par applications mobiles et définissez Accès réseau sur Par défaut."
+          }
+        },
+        "fr-CA": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre Roku bloque le contrôle à partir d’applications. Sur le Roku, ouvrez Paramètres > Système > Paramètres système avancés > Contrôle par les applications mobiles et réglez Accès au réseau à Par défaut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo Roku sta bloccando il controllo dalle app. Sul Roku, apri Impostazioni > Sistema > Impostazioni di sistema avanzate > Controllo da app mobili e imposta Accesso alla rete su Predefinito."
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਤੁਹਾਡਾ Roku ਐਪਾਂ ਤੋਂ ਕੰਟਰੋਲ ਨੂੰ ਬਲੌਕ ਕਰ ਰਿਹਾ ਹੈ। Roku 'ਤੇ, ਸੈਟਿੰਗਾਂ > ਸਿਸਟਮ > ਉੱਨਤ ਸਿਸਟਮ ਸੈਟਿੰਗਾਂ > ਮੋਬਾਈਲ ਐਪਾਂ ਦੁਆਰਾ ਕੰਟਰੋਲ ਖੋਲ੍ਹੋ ਅਤੇ ਨੈੱਟਵਰਕ ਪਹੁੰਚ ਨੂੰ ਡਿਫੌਲਟ 'ਤੇ ਸੈੱਟ ਕਰੋ।"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seu Roku está bloqueando o controle por aplicativos. No Roku, abra Configurações > Sistema > Configurações avançadas do sistema > Controle por aplicativos móveis e defina Acesso à rede como Padrão."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O seu Roku está a bloquear o controlo a partir de aplicações. No Roku, abra Definições > Sistema > Definições avançadas do sistema > Controlo por aplicações móveis e defina Acesso à rede como Predefinido."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roku của bạn đang chặn điều khiển từ các ứng dụng. Trên Roku, mở Cài đặt > Hệ thống > Cài đặt hệ thống nâng cao > Điều khiển bằng ứng dụng di động và đặt Truy cập mạng thành Mặc định."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的 Roku 正在阻止来自应用的控制。在 Roku 上，打开 设置 > 系统 > 高级系统设置 > 通过移动应用控制，并将 网络访问 设置为 默认。"
           }
         }
       }

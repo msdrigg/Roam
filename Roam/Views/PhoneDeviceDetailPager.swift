@@ -22,6 +22,12 @@ struct PhoneDeviceDetailPager: View {
     let onBackToHome: () -> Void
 
     @State private var selectedDeviceId: String
+    // The page order is frozen at push time. `allDeviceIds` reorders itself
+    // underneath us — discovery inserts new devices at the front, and the
+    // "recently used" sort moves whatever page the user lands on to the top —
+    // and letting that reach the ForEach would slide pages sideways under the
+    // user's thumb. Only membership changes are reconciled; see `syncPages`.
+    @State private var pagerDeviceIds: [String]
     @State private var showKeyboard: Bool = CommandLine.arguments.contains("-OpenKeyboard")
     @State private var isInteractivelyPopping: Bool = false
     @State private var isAppsScrolling: Bool = false
@@ -48,12 +54,13 @@ struct PhoneDeviceDetailPager: View {
         self.onBackToHome = onBackToHome
         _selectedDeviceId = State(initialValue: startingDeviceId)
         _scrollPositionId = State(initialValue: startingDeviceId)
+        _pagerDeviceIds = State(initialValue: allDeviceIds)
     }
 
     var body: some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
-                ForEach(allDeviceIds, id: \.self) { deviceId in
+                ForEach(pagerDeviceIds, id: \.self) { deviceId in
                     PhoneDetailPage(
                         deviceId: deviceId,
                         unreadMessages: unreadMessages,
@@ -121,6 +128,9 @@ struct PhoneDeviceDetailPager: View {
         // revealed home view don't actually press remote buttons.
         .allowsHitTesting(!isInteractivelyPopping)
         .background(InteractivePopObserver { isInteractivelyPopping = $0 })
+        .onChange(of: allDeviceIds) { _, newIds in
+            syncPages(with: newIds)
+        }
         .onChange(of: selectedDeviceId) { _, newId in
             Task {
                 do {
@@ -131,6 +141,16 @@ struct PhoneDeviceDetailPager: View {
                 }
             }
         }
+    }
+
+    /// Reconciles the frozen page order with the live device list: devices
+    /// that went away are dropped and new ones are appended at the end, but
+    /// the pages already on screen keep the positions the user learned.
+    private func syncPages(with newIds: [String]) {
+        guard Set(newIds) != Set(pagerDeviceIds) else { return }
+        var next = pagerDeviceIds.filter(newIds.contains)
+        next.append(contentsOf: newIds.filter { !next.contains($0) })
+        pagerDeviceIds = next
     }
 
     /// On a real width change (rotation, split-view resize) the paged
@@ -166,7 +186,7 @@ struct PhoneDeviceDetailPager: View {
         HStack {
             keyboardButton
             Spacer()
-            if allDeviceIds.count > 1 {
+            if pagerDeviceIds.count > 1 {
                 pageIndicator
                 Spacer()
             }
@@ -176,7 +196,7 @@ struct PhoneDeviceDetailPager: View {
 
     private var pageIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(allDeviceIds, id: \.self) { deviceId in
+            ForEach(pagerDeviceIds, id: \.self) { deviceId in
                 Circle()
                     .fill(deviceId == selectedDeviceId ? Color.primary : Color.secondary.opacity(0.45))
                     .frame(width: 7, height: 7)
@@ -192,7 +212,7 @@ struct PhoneDeviceDetailPager: View {
     }
 
     private var pageIndicatorAccessibility: String {
-        guard let idx = allDeviceIds.firstIndex(of: selectedDeviceId) else {
+        guard let idx = pagerDeviceIds.firstIndex(of: selectedDeviceId) else {
             return ""
         }
         return String(
@@ -201,7 +221,7 @@ struct PhoneDeviceDetailPager: View {
                 comment: "Accessibility label for the iPhone detail pager indicator. First int is the current page, second is the total."
             ),
             idx + 1,
-            allDeviceIds.count
+            pagerDeviceIds.count
         )
     }
 

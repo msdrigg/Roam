@@ -293,6 +293,7 @@ struct RoamApp: App {
                 "Roam Menu Bar", systemImage: "appletvremote.gen3", isInserted: self.$showMenuBar
             ) {
                 RemoteViewContained(isInMenuBar: true)
+                    .menuBarPanelBackground()
                     .environmentObject(appDelegate)
                     .environmentObject(appDelegate)
                     .onReceive(

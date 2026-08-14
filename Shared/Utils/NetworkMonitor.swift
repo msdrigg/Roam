@@ -66,3 +66,140 @@ final class NetworkMonitor {
         case none
     }
 }
+
+/// Live reachability for every device in a list, not just the connected one.
+///
+/// `Device.lastOnlineAt` is only stamped by `refreshDevice`, which only ever
+/// runs against the device the app currently holds an ECP session with — so
+/// every other device's status dot was permanently grey no matter what was
+/// actually powered on. This asks each device directly, with one small
+/// `query/device-info` GET, while a list of devices is on screen.
+///
+/// Results stay in memory. The probe is a display concern, and writing a
+/// timestamp per device per cycle would put app-group database writes in the
+/// path of a suspension (0xdead10cc) for no lasting benefit — the record's own
+/// `lastOnlineAt` is still the fallback until the first probe lands.
+@MainActor @Observable
+final class DeviceLivenessMonitor {
+    static let shared = DeviceLivenessMonitor()
+
+    /// How long a probe result is trusted before falling back to the record.
+    private static let resultTTL: TimeInterval = 90
+    /// Floor between two probes of the same device, so several views watching
+    /// the same devices don't multiply the traffic.
+    private static let minProbeInterval: TimeInterval = 8
+    private static let probeTimeout: TimeInterval = 2
+    private static let maxConcurrentProbes = 6
+    private static let probeInterval: TimeInterval = 15
+
+    private struct ProbeResult {
+        let isOnline: Bool
+        let checkedAt: Date
+    }
+
+    private var results: [String: ProbeResult] = [:]
+    private var inFlight: Set<String> = []
+
+    private init() {}
+
+    /// Whether the device is reachable right now, falling back to its own
+    /// `lastOnlineAt` until this device has been probed.
+    func isOnline(_ device: Device?) -> Bool {
+        if inScreenshotTestingContext() { return true }
+        guard let device else { return false }
+
+        if let result = results[device.id],
+            Date().timeIntervalSince(result.checkedAt) < Self.resultTTL
+        {
+            return result.isOnline
+        }
+        return device.isOnline()
+    }
+
+    /// Probes `deviceIds` on a loop until the surrounding task is cancelled.
+    func probeContinually(deviceIds: [String]) async {
+        while !Task.isCancelled {
+            await probe(deviceIds: deviceIds)
+            do {
+                try await Task.sleep(for: .seconds(Self.probeInterval))
+            } catch {
+                return
+            }
+        }
+    }
+
+    func probe(deviceIds: [String]) async {
+        guard !inScreenshotTestingContext(), !deviceIds.isEmpty else { return }
+
+        let now = Date()
+        let due = deviceIds.filter { id in
+            guard !inFlight.contains(id) else { return false }
+            guard let result = results[id] else { return true }
+            return now.timeIntervalSince(result.checkedAt) >= Self.minProbeInterval
+        }
+        guard !due.isEmpty else { return }
+
+        // Claimed before the first `await`, so two views watching the same
+        // devices can't both get past the filter and probe them twice.
+        inFlight.formUnion(due)
+        defer { inFlight.subtract(due) }
+
+        let targets = await RoamDataHandler.shared.requestAllDevices(due)
+            .map { (id: $0.id, location: $0.location) }
+        guard !targets.isEmpty else { return }
+
+        let timeout = Self.probeTimeout
+        let stream = processConcurrently(
+            items: targets, maxConcurrent: Self.maxConcurrentProbes
+        ) { target in
+            (target.id, await deviceRespondsToECP(location: target.location, timeout: timeout))
+        }
+
+        for await (id, isOnline) in stream {
+            results[id] = ProbeResult(isOnline: isOnline, checkedAt: Date())
+        }
+    }
+}
+
+/// A single cheap request to a device's ECP port, used only to decide whether
+/// it is reachable right now.
+///
+/// The response body is deliberately not parsed — a status line is all the
+/// caller needs, and skipping the XML is what makes this affordable for a whole
+/// device list at once. Asking for `query/device-info` rather than just opening
+/// a socket means a Roku that has since handed its DHCP lease to some other
+/// machine reads as offline instead of as whatever now answers on that address.
+func deviceRespondsToECP(location: String, timeout: TimeInterval) async -> Bool {
+    guard let url = URL(string: "\(location)query/device-info") else {
+        return false
+    }
+    var request = URLRequest(
+        url: url,
+        cachePolicy: .reloadIgnoringLocalCacheData,
+        timeoutInterval: timeout
+    )
+    request.httpMethod = "GET"
+
+    do {
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { return false }
+        // 403 is a Roku refusing control from apps. It is very much powered on
+        // and worth showing as such — the remote surfaces that refusal itself.
+        return (200...299).contains(http.statusCode) || http.statusCode == 403
+    } catch {
+        return false
+    }
+}
+
+extension View {
+    /// Keeps the online dots for `deviceIds` fresh while this view is on screen.
+    ///
+    /// Pass `isActive: false` to stand down (backgrounded, or a list that isn't
+    /// being shown) — the probes are read-only, but there's no one to show them to.
+    func probingDeviceLiveness(_ deviceIds: [String], isActive: Bool = true) -> some View {
+        task(id: "\(isActive)-\(deviceIds.joined(separator: "|"))") {
+            guard isActive else { return }
+            await DeviceLivenessMonitor.shared.probeContinually(deviceIds: deviceIds)
+        }
+    }
+}
