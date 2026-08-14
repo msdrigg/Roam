@@ -201,8 +201,13 @@ fly secrets set \
 Deploy from the repository root, not from `backend/`, because the Docker image needs both `backend/` and `docs/src/pages` in the build context:
 
 ```sh
-fly deploy --config backend/fly.toml --ignorefile backend/.dockerignore
+fly deploy . --config backend/fly.toml --dockerfile backend/Dockerfile
 ```
+
+`--dockerfile` is needed because the `dockerfile` path in `fly.toml` resolves
+relative to that file, not to the build context. The root `.dockerignore`
+applies automatically and is what keeps `backend/target` (many GB) out of the
+context — don't pass `--ignorefile`, which would override it.
 
 Useful checks after deploy:
 
