@@ -34,8 +34,15 @@ When a crash finishes symbolicating, the backend posts `symbolicated.txt` into
 the reporter's Discord thread and records the crash in `crash_reviews`. It then
 runs the report against the auto-review rules:
 
-- **A rule matches** → the backend replies in-thread with the known diagnosis
+- **A rule matches a build older than the rule's `fixed_in` version** → the
+  backend replies in-thread with the known diagnosis, tagged `Fixed in <version>`,
   and marks the thread reviewed as `auto:<rule id>`. Nothing left to do.
+- **A rule matches a build at or past its `fixed_in` version** → the reply goes
+  out tagged **UNFIXED**, the rule id and note land on the row, but the thread
+  is deliberately left **unreviewed**. The stack outlived its fix, so it needs
+  you: expect these in the queue with a `matched_rule_id` already set.
+- **A rule matches a report with no readable `appVersion`** → replied to as
+  `Fix status unknown` and reviewed, same as the fixed case.
 - **No rule matches** → the thread stays unreviewed. That is the queue you work.
 
 A thread is unreviewed when it was never reviewed *or* when a newer crash

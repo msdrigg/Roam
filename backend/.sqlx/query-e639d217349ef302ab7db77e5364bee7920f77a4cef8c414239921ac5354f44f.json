@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE crash_reviews\n            SET matched_rule_id = ?, review_note = ?\n            WHERE thread_id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e639d217349ef302ab7db77e5364bee7920f77a4cef8c414239921ac5354f44f"
+}

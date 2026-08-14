@@ -930,7 +930,11 @@ struct SymbolicationResultRequest {
 /// replies in-thread and marks it reviewed.
 ///
 /// Crashes that match nothing are left unreviewed on purpose — that is the
-/// queue a human works through via `GET /v2/crashes?unreviewed=true`.
+/// queue a human works through via `GET /v2/crashes?unreviewed=true`. A match
+/// from a version that already carries the rule's fix
+/// ([`FixStatus::Unfixed`](crate::crash_rules::FixStatus::Unfixed)) is replied
+/// to but *also* left in that queue: the diagnosis is worth posting, but a
+/// stack outliving its fix is not something to close automatically.
 async fn auto_review_crash(
     app_context: &AppContext,
     thread_id: i64,
@@ -943,7 +947,7 @@ async fn auto_review_crash(
         .record_crash_for_review(thread_id, Some(crash_message_id), &facts)
         .await?;
 
-    let Some(rule) = crate::crash_rules::match_rule(report, &facts) else {
+    let Some(matched) = crate::crash_rules::match_rule(report, &facts) else {
         tracing::info!(
             thread_id,
             app_version = ?facts.app_version,
@@ -951,11 +955,34 @@ async fn auto_review_crash(
         );
         return Ok(());
     };
+    let rule = matched.rule;
 
     let reply = app_context
         .discord_client()
-        .send_reply(thread_id, rule.reply, Some(crash_message_id), false)
+        .send_reply(
+            thread_id,
+            &matched.reply(&facts),
+            Some(crash_message_id),
+            false,
+        )
         .await?;
+
+    let review_note = matched.review_note(&facts);
+
+    if matched.status == crate::crash_rules::FixStatus::Unfixed {
+        app_context
+            .db_client()
+            .note_rule_match(thread_id, rule.id, &review_note)
+            .await?;
+        tracing::warn!(
+            thread_id,
+            rule = rule.id,
+            app_version = ?facts.app_version,
+            fixed_in = ?rule.fixed_in,
+            "Crash matched a rule whose fix already shipped; replied but left unreviewed"
+        );
+        return Ok(());
+    }
 
     app_context
         .db_client()
@@ -964,11 +991,16 @@ async fn auto_review_crash(
             Some(&format!("auto:{}", rule.id)),
             Some(reply.id),
             Some(rule.id),
-            Some(rule.title),
+            Some(&review_note),
         )
         .await?;
 
-    tracing::info!(thread_id, rule = rule.id, "Auto-reviewed crash");
+    tracing::info!(
+        thread_id,
+        rule = rule.id,
+        status = ?matched.status,
+        "Auto-reviewed crash"
+    );
     Ok(())
 }
 
