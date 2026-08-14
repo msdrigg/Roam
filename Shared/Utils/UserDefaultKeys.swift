@@ -16,6 +16,7 @@ enum UserDefaultKeys {
     static let localNetworkPermissionGranted = "localNetworkPermissionGranted"
     static let macosKeysWindowHorizontal = "macosKeysWindowHorizontal"
     static let disablePastedUrlSuggestions = "disablePastedUrlSuggestions"
+    static let deviceSortOrder = "deviceSortOrder"
 
     // Tips
     static let headphonesModeUsed = "headphonesModeUsed"

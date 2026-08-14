@@ -167,7 +167,7 @@
         }
 
         private var isDeviceOnline: Bool {
-            selectedDevice?.isOnline() ?? false || inScreenshotTestingContext()
+            DeviceLivenessMonitor.shared.isOnline(selectedDevice)
         }
 
         private var runningInPreview: Bool {

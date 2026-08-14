@@ -24,7 +24,7 @@ struct DeviceListItem: View {
                 VStack(alignment: .leading) {
                     HStack(alignment: .center, spacing: 8) {
                         Circle()
-                            .foregroundColor(device.isOnline() || inScreenshotTestingContext() ? Color.green : Color.gray)
+                            .foregroundColor(DeviceLivenessMonitor.shared.isOnline(device) ? Color.green : Color.gray)
                             .frame(width: circleSize, height: circleSize)
                         Text(device.name).lineLimit(1)
                     }

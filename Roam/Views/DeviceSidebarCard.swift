@@ -62,7 +62,10 @@ struct DeviceSidebarCard: View {
     }
 
     private var isOnline: Bool {
-        device?.isOnline() ?? false || inScreenshotTestingContext()
+        // Reading through the monitor rather than `device.isOnline()` — only
+        // the connected device gets its `lastOnlineAt` refreshed, so the record
+        // alone can't say anything about the rest of the list.
+        DeviceLivenessMonitor.shared.isOnline(device)
     }
 
     private var statusText: String {
@@ -70,6 +73,46 @@ struct DeviceSidebarCard: View {
             return getHostPortDisplay(from: device.location)
         }
         return ""
+    }
+}
+
+/// Picks the order every device list is shown in.
+///
+/// Lives next to the lists it reorders — the iPhone home screen's `⇅` menu and
+/// the sidebar footer — rather than in Settings, where a sort control for a
+/// handful of devices reads as heavier than the thing it sorts.
+///
+/// Writing through the data handler is what makes the change take effect
+/// immediately: it republishes the device list, so every open list re-renders
+/// in the new order rather than waiting for the next thing to touch it.
+struct DeviceSortOrderPicker: View {
+    @AppStorage(UserDefaultKeys.deviceSortOrder) private var storedOrder: String =
+        DeviceSortOrder.manual.rawValue
+
+    private var selection: Binding<DeviceSortOrder> {
+        Binding {
+            DeviceSortOrder(rawValue: storedOrder) ?? .manual
+        } set: { newOrder in
+            storedOrder = newOrder.rawValue
+            Task {
+                await RoamDataHandler.shared.setDeviceSortOrder(newOrder)
+            }
+        }
+    }
+
+    var body: some View {
+        Picker(selection: selection) {
+            ForEach(DeviceSortOrder.allCases) { order in
+                Text(order.label).tag(order)
+            }
+        } label: {
+            Text("Sort by", comment: "Header above the device sort options")
+        }
+        // Inline, so the options sit directly in the menu under a "Sort by"
+        // header. The default style nests them behind a submenu, which put two
+        // taps between the button and a one-of-three choice.
+        .pickerStyle(.inline)
+        .accessibilityIdentifier("DeviceSortOrderPicker")
     }
 }
 

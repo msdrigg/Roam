@@ -377,15 +377,46 @@ actor RoamDataHandler {
         }
     }
 
+    // MARK: - Sorting
+    //
+    // `cachedDeviceList` (and the list on disk) is always the user's own
+    // arrangement. The chosen sort is applied on the way out — in
+    // `requestDeviceList` and in `notifyDeviceListUpdated` — so every surface
+    // gets the same order without each one having to load device records and
+    // sort them itself, and so switching sorts never rewrites stored state.
+
+    private func deviceRecord(id: String) -> Device? {
+        cachedDeviceData[id] ?? database.device(id: id)
+    }
+
+    private func displayOrdered(_ ids: [String]) -> [String] {
+        let order = DeviceSortOrder.current
+        guard order != .manual else { return ids }
+
+        // Collected up front: the comparator runs O(n log n) times and
+        // `deviceRecord` can reach past the cache into the database.
+        var records: [String: Device] = [:]
+        for id in ids {
+            records[id] = deviceRecord(id: id)
+        }
+        return order.apply(to: ids) { records[$0] }
+    }
+
+    /// Persists a new sort order and republishes the device list under it.
+    func setDeviceSortOrder(_ order: DeviceSortOrder) {
+        DeviceSortOrder.store(order)
+        notifyDeviceListUpdated(devices: cachedDeviceList ?? (try? loadDeviceListFromDisk()) ?? [])
+    }
+
     // MARK: - Request Functions
     func requestDeviceList() -> [String] {
-        if let cachedDeviceList { return cachedDeviceList }
+        if let cachedDeviceList { return displayOrdered(cachedDeviceList) }
 
         do {
             let devices = try loadDeviceListFromDisk()
             cachedDeviceList = devices
             notifyDeviceListUpdated(devices: devices)
-            return devices
+            return displayOrdered(devices)
         } catch {
             Log.data.error("Error loading device list: \(error, privacy: .public)")
             cachedDeviceList = []
@@ -663,7 +694,10 @@ actor RoamDataHandler {
         }
 
         if device.id == self.requestPrimaryDevice()?.id {
-            if let newDeviceId = self.requestDeviceList().first {
+            // The device is still in the list at this point, so it has to be
+            // excluded explicitly or deleting the primary device just reselects it.
+            let remaining = self.requestDeviceList().filter { $0 != id }
+            if let newDeviceId = self.mostRecentlySelected(among: remaining) ?? remaining.first {
                 try await self.makePrimaryDevice(id: newDeviceId)
             }
         }
@@ -959,16 +993,72 @@ actor RoamDataHandler {
         if let apps = self.cachedPrimaryApps {
             self.notifyPrimaryAppsUpdated(apps: apps)
         }
+
+        // Selecting a device is what "recently used" sorts on, so the list has
+        // to be republished or the order stays stale until something else
+        // happens to touch it.
+        if DeviceSortOrder.current == .recentlyUsed, let cachedDeviceList {
+            self.notifyDeviceListUpdated(devices: cachedDeviceList)
+        }
     }
 
+    /// Applies a drag from a device list.
+    ///
+    /// The offsets come from what the user is looking at, which is the sorted
+    /// list. Dragging inside a computed sort is itself a statement that the
+    /// user wants their own order, so the displayed order is written back as
+    /// the stored one and the sort switches to `.manual` — otherwise the row
+    /// would snap straight back to where the sort put it.
     func reorderDevices(fromOffsets: IndexSet, toOffset: Int) async throws {
-        var devices = try cachedDeviceList ?? loadDeviceListFromDisk()
+        let stored = try cachedDeviceList ?? loadDeviceListFromDisk()
+        var devices = displayOrdered(stored)
         devices.move(fromOffsets: fromOffsets, toOffset: toOffset)
+
+        if DeviceSortOrder.current != .manual {
+            DeviceSortOrder.store(.manual)
+        }
 
         try await saveDeviceListToDisk(devices)
         cachedDeviceList = devices
 
         self.notifyDeviceListUpdated(devices: devices)
+    }
+
+    /// The device the user opened most recently, out of `ids`.
+    private func mostRecentlySelected(among ids: [String]) -> String? {
+        ids
+            .compactMap { id -> (String, Date)? in
+                guard let lastSelectedAt = deviceRecord(id: id)?.lastSelectedAt else { return nil }
+                return (id, lastSelectedAt)
+            }
+            .max { $0.1 < $1.1 }?
+            .0
+    }
+
+    /// Makes sure the primary device is one that still exists, and otherwise
+    /// falls back to the device the user opened most recently.
+    ///
+    /// Views used to do this themselves off a `PrimaryDeviceLoader`, which
+    /// publishes asynchronously — so a view that ran the check before its
+    /// loader had caught up saw "no primary device" and helpfully overwrote the
+    /// user's last-viewed remote with whatever was at the top of the list.
+    /// Deciding it here means the check reads the already-loaded state.
+    @discardableResult
+    func ensureValidPrimaryDevice() async throws -> String? {
+        let devices = requestDeviceList()
+        guard !devices.isEmpty else { return nil }
+
+        if let current = requestPrimaryDevice(), devices.contains(current.id) {
+            return current.id
+        }
+
+        guard let fallback = mostRecentlySelected(among: devices) ?? devices.first else {
+            return nil
+        }
+        Log.data.notice(
+            "Selecting device \(fallback, privacy: .public) because the primary device is missing")
+        try await makePrimaryDevice(id: fallback)
+        return fallback
     }
 
     // MARK: - Preload Functions
@@ -1197,6 +1287,9 @@ extension RoamDataHandler {
 
     // MARK: - Notification Methods
     private func notifyDeviceListUpdated(devices: [String]) {
+        // Listeners drive the UI, so they always see the list in the order the
+        // user asked for rather than the stored arrangement.
+        let ordered = displayOrdered(devices)
         let change = ChangeOperation.updateDeviceList
         self.updateRegistrations[change]?.forEach { token in
             guard let listener = self.updateListeners[token]?.listener else {
@@ -1205,7 +1298,7 @@ extension RoamDataHandler {
             }
 
             DispatchQueue.main.async {
-                listener.deviceListUpdated(devices: devices)
+                listener.deviceListUpdated(devices: ordered)
             }
         }
     }

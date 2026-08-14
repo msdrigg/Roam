@@ -14,6 +14,7 @@ struct DeviceSplitRoot<Detail: View>: View {
     @Environment(\.openSettings) private var openMacSettings
     #endif
     @Environment(\.layoutDirection) private var systemLayoutDirection
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var devicesLoader = DeviceListLoader(dataHandler: .shared)
     @State private var primaryDeviceLoader = PrimaryDeviceLoader(dataHandler: .shared)
@@ -87,6 +88,19 @@ struct DeviceSplitRoot<Detail: View>: View {
         .onAppear {
             if scanIPV4Actor == nil { scanIPV4Actor = DeviceDiscoveryActor() }
             if scanSSDPActor == nil { scanSSDPActor = DeviceDiscoveryActor() }
+        }
+        // The sidebar shows every device at once, but only the selected one
+        // refreshes its own record — probe the rest so their dots mean something.
+        .probingDeviceLiveness(deviceIds, isActive: scenePhase != .background)
+        // Restore the last-viewed device rather than falling to the top of the
+        // list, and re-pick only when the remembered one is actually gone.
+        .task(id: deviceIds) {
+            do {
+                try await RoamDataHandler.shared.ensureValidPrimaryDevice()
+            } catch {
+                Log.userInteraction.error(
+                    "Error selecting an initial device \(error, privacy: .public)")
+            }
         }
     }
 
@@ -168,26 +182,60 @@ struct DeviceSplitRoot<Detail: View>: View {
     private var addDeviceFooter: some View {
         VStack(spacing: 0) {
             Divider()
-            Button {
-                appDelegate.navigationPath.showAddDevice = true
-            } label: {
-                Label(
-                    String(
-                        localized: "Add device",
-                        comment: "Footer button under the sidebar device list to add a new device"
-                    ),
-                    systemImage: "plus.circle"
-                )
-                .labelStyle(.titleAndIcon)
-                .font(.callout)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+            HStack(spacing: 0) {
+                Button {
+                    appDelegate.navigationPath.showAddDevice = true
+                } label: {
+                    Label(
+                        String(
+                            localized: "Add device",
+                            comment: "Footer button under the sidebar device list to add a new device"
+                        ),
+                        systemImage: "plus.circle"
+                    )
+                    .labelStyle(.titleAndIcon)
+                    .font(.callout)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+
+                if deviceIds.count > 1 {
+                    sortMenu
+                }
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .contentShape(Rectangle())
         }
+    }
+
+    /// Sorting sits under the list it reorders. Rows themselves are draggable,
+    /// which covers a custom arrangement; this is for the computed orders.
+    private var sortMenu: some View {
+        Menu {
+            DeviceSortOrderPicker()
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.callout)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+        }
+        // `.borderlessButton` draws the label in the control's own colour,
+        // which came out full-white next to the muted "Add device" beside it.
+        // The plain button style leaves the label alone, so it takes the
+        // secondary style like its neighbour.
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityIdentifier("SortDevicesButton")
+        .accessibilityLabel(String(
+            localized: "Sort devices",
+            comment: "Accessibility label for the sidebar button that changes the device order"
+        ))
     }
 
     // MARK: - Toolbar

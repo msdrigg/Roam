@@ -238,6 +238,88 @@ public struct Device: AppEntity, Equatable, Identifiable, Hashable, Codable {
     }
 }
 
+/// How the device list is ordered everywhere it is shown — the iPhone grid, the
+/// iPad / macOS sidebar, the macOS device menu, and Settings.
+///
+/// The stored device list is always the user's own order: it is what `.manual`
+/// returns, and it is the tiebreaker for the computed orders, so toggling back
+/// to `.manual` never loses an arrangement the user dragged into place.
+public enum DeviceSortOrder: String, CaseIterable, Identifiable, Sendable {
+    case manual
+    case name
+    case recentlyUsed
+
+    public var id: String { rawValue }
+
+    /// The order the user has chosen, defaulting to their own arrangement.
+    public static var current: DeviceSortOrder {
+        UserDefaults.standard.string(forKey: UserDefaultKeys.deviceSortOrder)
+            .flatMap(DeviceSortOrder.init(rawValue:)) ?? .manual
+    }
+
+    public static func store(_ order: DeviceSortOrder) {
+        UserDefaults.standard.set(order.rawValue, forKey: UserDefaultKeys.deviceSortOrder)
+    }
+
+    public var label: String {
+        switch self {
+        case .manual:
+            return String(
+                localized: "Custom",
+                comment: "Device sort option: the order the user arranged devices in"
+            )
+        case .name:
+            return String(
+                localized: "Name",
+                comment: "Device sort option: alphabetical by device name"
+            )
+        case .recentlyUsed:
+            return String(
+                localized: "Recently used",
+                comment: "Device sort option: most recently opened device first"
+            )
+        }
+    }
+
+    /// Orders `ids` for display. `ids` must be the stored (user-arranged) list.
+    ///
+    /// `sorted(by:)` isn't stable, so every comparison falls through to the
+    /// stored position rather than leaving equal elements to swap around
+    /// between calls — two devices with the same name would otherwise trade
+    /// places on every refresh.
+    public func apply(to ids: [String], device: (String) -> Device?) -> [String] {
+        guard self != .manual else { return ids }
+
+        let storedPosition = Dictionary(
+            ids.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+
+        return ids.sorted { lhs, rhs in
+            switch self {
+            case .manual:
+                break
+            case .name:
+                let leftName = device(lhs)?.name ?? ""
+                let rightName = device(rhs)?.name ?? ""
+                let comparison = leftName.localizedStandardCompare(rightName)
+                if comparison != .orderedSame {
+                    return comparison == .orderedAscending
+                }
+            case .recentlyUsed:
+                let leftSelected = device(lhs)?.lastSelectedAt
+                let rightSelected = device(rhs)?.lastSelectedAt
+                if leftSelected != rightSelected {
+                    // A device that has never been opened sorts last.
+                    guard let leftSelected else { return false }
+                    guard let rightSelected else { return true }
+                    return leftSelected > rightSelected
+                }
+            }
+
+            return (storedPosition[lhs] ?? 0) < (storedPosition[rhs] ?? 0)
+        }
+    }
+}
+
 #if !os(watchOS)
 import CoreSpotlight
 

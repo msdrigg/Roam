@@ -161,6 +161,9 @@ struct SettingsView: View {
                 .task(id: allDeviceRefreshKey) {
                     allDevices = await RoamDataHandler.shared.requestAllDevices(allDeviceIds)
                 }
+                // Keeps the status dot next to each device honest — the record's
+                // own `lastOnlineAt` only moves for the connected device.
+                .probingDeviceLiveness(allDeviceIds, isActive: scenePhase == .active)
 #if !os(watchOS)
                 .task(id: "\(scanIpAutomatically)-\(discoveryPaused(for: scenePhase))", priority: .background) {
                     Log.scanning.notice(
@@ -204,6 +207,18 @@ struct SettingsView: View {
                     ForEach(Array(devices.enumerated()), id: \.element.displayHash) { idx, device in
                         DeviceListItem(device: device, idx: idx)
                     }
+#if !os(watchOS)
+                    .onMove { fromOffsets, toOffset in
+                        Task {
+                            do {
+                                try await RoamDataHandler.shared.reorderDevices(
+                                    fromOffsets: fromOffsets, toOffset: toOffset)
+                            } catch {
+                                Log.userInteraction.error("Error reordering devices \(error, privacy: .public)")
+                            }
+                        }
+                    }
+#endif
                     .onDelete { indexSet in
                         let devicesToDelete = indexSet.compactMap { devices[safe: $0] }
                         Task {

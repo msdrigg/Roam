@@ -298,6 +298,28 @@ extension UserDefaults {
     }
 }
 
+#if os(macOS)
+/// The app's backdrop composite: a material for the blur, with a scrim of the
+/// app's own window color laid over the top so the result stays put no matter
+/// what is behind it.
+///
+/// A material on its own samples the desktop, so a light window or wallpaper
+/// underneath drags it toward white and the glass controls stop reading. The
+/// scrim has to sit *above* the material — a sibling underneath is ignored,
+/// since the material samples the backdrop rather than its in-hierarchy
+/// neighbours.
+struct MacAnchoredBackdrop: View {
+    var body: some View {
+        Rectangle()
+            .fill(.thickMaterial)
+            .overlay(
+                Color(nsColor: .windowBackgroundColor)
+                    .opacity(0.82)
+            )
+    }
+}
+#endif
+
 extension View {
     func applyBuilder<V: View>(@ViewBuilder _ block: (Self) -> V) -> V { block(self) }
 
@@ -353,18 +375,34 @@ extension View {
                 // underneath it gets ignored, since the material samples the
                 // window backdrop rather than its in-hierarchy neighbours.
                 $0.containerBackground(for: .window) {
-                    Rectangle()
-                        .fill(.thickMaterial)
-                        .overlay(
-                            Color(nsColor: .windowBackgroundColor)
-                                .opacity(0.82)
-                        )
+                    MacAnchoredBackdrop()
                 }
             } else {
                 $0
             }
             #elseif !os(iOS) && !os(watchOS) && !os(visionOS)
             $0.containerBackground(.thickMaterial, for: .window)
+            #else
+            $0
+            #endif
+        }
+    }
+
+    /// The same anchored backdrop, for the macOS menu-bar panel.
+    ///
+    /// `translucentBackground()` only reaches the app's *windows* — a
+    /// `MenuBarExtra` panel is not a window container, so it kept the system's
+    /// vibrant menu backdrop. That samples whatever happens to be behind the
+    /// menu bar, which over a light desktop washed the panel out until the
+    /// glass buttons had nothing to read against. Paint the window composite
+    /// instead so the panel's contrast doesn't depend on the wallpaper.
+    func menuBarPanelBackground() -> some View {
+        self.applyBuilder {
+            #if os(macOS)
+            $0.background {
+                MacAnchoredBackdrop()
+                    .ignoresSafeArea()
+            }
             #else
             $0
             #endif

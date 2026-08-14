@@ -12,6 +12,7 @@ import SwiftUI
 /// automatically so the app opens to the last-viewed remote.
 struct PhoneHomeView: View {
     @EnvironmentObject private var appDelegate: RoamAppDelegate
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var devicesLoader = DeviceListLoader(dataHandler: .shared)
     @State private var primaryDeviceLoader = PrimaryDeviceLoader(dataHandler: .shared)
@@ -20,6 +21,7 @@ struct PhoneHomeView: View {
     @State private var didAutoOpenPrimary = false
     @State private var scanIPV4Actor: DeviceDiscoveryActor?
     @State private var scanSSDPActor: DeviceDiscoveryActor?
+    @State private var dropTargetId: String?
 
     @Namespace private var cardNamespace
 
@@ -46,6 +48,20 @@ struct PhoneHomeView: View {
         .onAppear {
             if scanIPV4Actor == nil { scanIPV4Actor = DeviceDiscoveryActor() }
             if scanSSDPActor == nil { scanSSDPActor = DeviceDiscoveryActor() }
+        }
+        // Keeps the status dots on the cards live. The grid is the one place
+        // that shows every device at once, and only the device the app is
+        // connected to refreshes its own record.
+        .probingDeviceLiveness(deviceIds, isActive: scenePhase == .active)
+        // If the remembered device has gone away, fall back to the next most
+        // recently viewed one rather than leaving nothing selected.
+        .task(id: deviceIds) {
+            do {
+                try await RoamDataHandler.shared.ensureValidPrimaryDevice()
+            } catch {
+                Log.userInteraction.error(
+                    "Error selecting an initial device \(error, privacy: .public)")
+            }
         }
         .onChange(of: primaryDeviceLoader.device?.id, initial: true) { _, newId in
             guard !didAutoOpenPrimary, let newId, !newId.isEmpty else { return }
@@ -106,6 +122,10 @@ struct PhoneHomeView: View {
 
             Spacer()
 
+            if deviceIds.count > 1 {
+                sortMenu
+            }
+
             Button {
                 appDelegate.navigationPath.append(.settingsDestination(.global))
             } label: {
@@ -127,6 +147,26 @@ struct PhoneHomeView: View {
         .padding(.bottom, -10)
     }
 
+    /// Sort options. A custom arrangement is made by dragging the cards
+    /// themselves, so there's nothing else in here.
+    private var sortMenu: some View {
+        Menu {
+            DeviceSortOrderPicker()
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.title3)
+                .frame(width: 44, height: 44)
+                .background(.regularMaterial, in: Circle())
+                .glassEffectIfSupported(tint: Color.accentColor.opacity(0.18), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("SortDevicesButton")
+        .accessibilityLabel(String(
+            localized: "Sort devices",
+            comment: "Accessibility label for the iPhone home button that changes the device order"
+        ))
+    }
+
     // MARK: - Content
 
     @ViewBuilder
@@ -145,6 +185,7 @@ struct PhoneHomeView: View {
                     deviceCardButton(for: deviceId)
                 }
             }
+            .animation(.snappy, value: deviceIds)
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 24)
@@ -166,6 +207,18 @@ struct PhoneHomeView: View {
         Button {
             if path.last != deviceId {
                 path.append(deviceId)
+                // Opening a remote is what makes it the one to come back to.
+                // The pager only records a device once it is *swiped* to, so
+                // without this a tapped-straight-into device was never recorded
+                // and the next launch reopened whatever came before it.
+                Task {
+                    do {
+                        try await RoamDataHandler.shared.makePrimaryDevice(id: deviceId)
+                    } catch {
+                        Log.userInteraction.error(
+                            "Error selecting tapped device \(error, privacy: .public)")
+                    }
+                }
             }
         } label: {
             if #available(iOS 18.0, *) {
@@ -176,6 +229,54 @@ struct PhoneHomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("DeviceCard_\(deviceId)")
+        // Long-press to lift a card and drop it on another to take its place,
+        // the same idiom as rearranging Home Screen icons. The card keeps its
+        // context menu: a long press that doesn't move still opens the menu.
+        .overlay {
+            if dropTargetId == deviceId {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.accentColor, lineWidth: 2)
+            }
+        }
+        .draggable(deviceId)
+        .dropDestination(for: String.self) { items, _ in
+            dropTargetId = nil
+            guard let draggedId = items.first else { return false }
+            return moveDevice(draggedId, toPositionOf: deviceId)
+        } isTargeted: { isTargeted in
+            withAnimation(.snappy) {
+                if isTargeted {
+                    dropTargetId = deviceId
+                } else if dropTargetId == deviceId {
+                    dropTargetId = nil
+                }
+            }
+        }
+    }
+
+    /// Moves `draggedId` to where `targetId` currently sits.
+    @discardableResult
+    private func moveDevice(_ draggedId: String, toPositionOf targetId: String) -> Bool {
+        guard draggedId != targetId,
+            let from = deviceIds.firstIndex(of: draggedId),
+            let to = deviceIds.firstIndex(of: targetId)
+        else {
+            return false
+        }
+
+        // `move(fromOffsets:toOffset:)` inserts *before* `toOffset`, computed
+        // against the pre-removal indices — so landing on a card further down
+        // the list needs the offset past it, not on it.
+        let destination = to > from ? to + 1 : to
+        Task {
+            do {
+                try await RoamDataHandler.shared.reorderDevices(
+                    fromOffsets: IndexSet(integer: from), toOffset: destination)
+            } catch {
+                Log.userInteraction.error("Error reordering devices \(error, privacy: .public)")
+            }
+        }
+        return true
     }
 
     private var cardBackground: some View {

@@ -91,7 +91,7 @@
         }
 
         private var isDeviceOnline: Bool {
-            selectedDevice?.isOnline() ?? false || inScreenshotTestingContext()
+            DeviceLivenessMonitor.shared.isOnline(selectedDevice)
         }
 
         private var noVolumeControls: Bool {
@@ -194,6 +194,10 @@
                 .task(id: deviceIds) {
                     await ensureSelectedDevice()
                 }
+                // The window's own status dot, and every dot in the menu-bar
+                // device menu, come from these probes — the ECP session only
+                // keeps the connected device's record current.
+                .probingDeviceLiveness(deviceIds, isActive: scenePhase != .background)
                 // Re-probe whenever the app returns to the foreground so the
                 // permission banner clears (or appears) without a relaunch.
                 .task(id: scenePhase) {
@@ -641,28 +645,20 @@
             }
         }
 
+        /// Restores the device the user was last on, and only picks a different
+        /// one when that device is genuinely gone.
+        ///
+        /// This used to decide off `selectedDevice`, which comes from a loader
+        /// that publishes asynchronously — so on launch it usually ran while
+        /// the primary device was still nil and immediately overwrote the
+        /// remembered device with whatever sat at the top of the list. The data
+        /// handler already has the loaded state, so it makes the call.
         private func ensureSelectedDevice() async {
-            guard let firstDeviceId = deviceIds.first else { return }
-            guard selectedDevice == nil || !deviceIds.contains(selectedDevice?.id ?? "") else {
-                return
-            }
-
             do {
-                try await RoamDataHandler.shared.makePrimaryDevice(id: firstDeviceId)
+                try await RoamDataHandler.shared.ensureValidPrimaryDevice()
             } catch {
                 Log.userInteraction.error(
                     "Error setting initial selected device \(error, privacy: .public)")
-            }
-        }
-
-        private func moveDevices(fromOffsets: IndexSet, toOffset: Int) {
-            Task {
-                do {
-                    try await RoamDataHandler.shared.reorderDevices(
-                        fromOffsets: fromOffsets, toOffset: toOffset)
-                } catch {
-                    Log.userInteraction.error("Error reordering devices \(error, privacy: .public)")
-                }
             }
         }
 
@@ -846,7 +842,7 @@
         let selection: Binding<String?>
 
         private var isOnline: Bool {
-            selectedDevice?.isOnline() ?? false || inScreenshotTestingContext()
+            DeviceLivenessMonitor.shared.isOnline(selectedDevice)
         }
 
         var body: some View {
