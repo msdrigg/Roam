@@ -854,6 +854,32 @@ impl MetricKitPayload {
         }
         out
     }
+
+    /// Map each binary's breakpad ID to the name its frames carry, so the
+    /// unresolved-UUID list can say "libxpc.dylib" instead of leaving the
+    /// reader to match a bare hex string against the stacks below it.
+    fn binary_names_by_breakpad_id(&self) -> BTreeMap<String, String> {
+        let mut out = BTreeMap::new();
+        for crash in &self.crash_diagnostics {
+            for stack in &crash.call_stack_tree.call_stacks {
+                for frame in &stack.call_stack_root_frames {
+                    collect_binary_names(frame, &mut out);
+                }
+            }
+        }
+        out
+    }
+}
+
+fn collect_binary_names(frame: &MetricKitCallStackFrame, out: &mut BTreeMap<String, String>) {
+    if let (Some(uuid), Some(name)) = (frame.binary_uuid.as_deref(), frame.binary_name.as_deref()) {
+        if let Some(breakpad_id) = binary_uuid_to_breakpad_id(uuid) {
+            out.entry(breakpad_id).or_insert_with(|| name.to_string());
+        }
+    }
+    for sub in &frame.sub_frames {
+        collect_binary_names(sub, out);
+    }
 }
 
 /// Recover the message from a caught panic payload. `panic!` payloads are
@@ -1430,6 +1456,87 @@ fn exception_type_name(exception_type: u64) -> Option<&'static str> {
     })
 }
 
+/// `kern_return_t` values that show up as `exceptionCode` under
+/// EXC_BAD_ACCESS, from `<mach/kern_return.h>`. Other exception types encode
+/// entirely different things in the same field, so only decode the one.
+fn bad_access_code_name(exception_type: u64, code: u64) -> Option<&'static str> {
+    if exception_type != 1 {
+        return None;
+    }
+    Some(match code {
+        1 => "KERN_INVALID_ADDRESS",
+        2 => "KERN_PROTECTION_FAILURE",
+        _ => return None,
+    })
+}
+
+/// True when the address that faulted sits in a guard region below a thread
+/// stack — the signature of a stack overflow.
+///
+/// `virtualMemoryRegionInfo` is a small VM map with the region containing the
+/// faulting address marked by a leading `--->`:
+///
+/// ```text
+/// 0x16eddbda0 is in 0x16b5d8000-0x16eddc000;  bytes after start: 58736032  bytes before end: 607
+///       REGION TYPE                    START - END         [ VSIZE] PRT/MAX SHRMOD  REGION DETAIL
+///       MALLOC metadata             13a600000-13a604000    [   16K] rw-/rwx SM=PRV
+///       GAP OF 0x30fd4000 BYTES
+/// --->  Stack Guard                 16b5d8000-16eddc000    [ 56.0M] ---/rwx SM=PRV
+///       Stack                       16eddc000-16f5d8000    [ 8176K] rw-/rwx SM=SHM
+/// ```
+fn faulting_address_is_in_stack_guard(region_info: &str) -> bool {
+    region_info.lines().any(|line| {
+        let line = line.trim_start();
+        line.starts_with("--->") && line.to_ascii_lowercase().contains("stack guard")
+    })
+}
+
+/// Collapse a samply candidate-path error into one readable line.
+///
+/// `SymbolManager` reports every path it tried, and it tries every dyld shared
+/// cache we have on disk crossed with every plausible install path for the
+/// dylib. One missing system cache therefore produces hundreds of near-identical
+/// lines, all saying the same two things.
+fn summarize_lookup_error(error: &str) -> String {
+    let mut absent_paths = 0usize;
+    let mut build_mismatches = 0usize;
+    let mut other: Vec<String> = Vec::new();
+
+    for line in error.lines().map(str::trim).filter(|line| !line.is_empty()) {
+        if line.starts_with("All candidate paths encountered failures") {
+            continue;
+        }
+        if line.contains("dyld shared cache file did not include an entry") {
+            absent_paths += 1;
+        } else if line.starts_with("Unmatched breakpad_id") {
+            build_mismatches += 1;
+        } else if !other.iter().any(|seen| seen == line) {
+            other.push(line.to_string());
+        }
+    }
+
+    let mut parts: Vec<String> = Vec::new();
+    if build_mismatches > 0 {
+        parts.push(format!(
+            "{build_mismatches} cached dyld shared cache(s) had this dylib but from a different \
+             OS build — the cache for this crash's OS build was never downloaded"
+        ));
+    }
+    if absent_paths > 0 {
+        parts.push(format!(
+            "{absent_paths} candidate path(s) not present in any cached dyld shared cache"
+        ));
+    }
+    // Anything we don't recognise is likely the interesting part (a missing
+    // dSYM, a parse failure, a panic), so keep it rather than counting it.
+    parts.extend(other.into_iter().take(4));
+
+    if parts.is_empty() {
+        return error.split_whitespace().collect::<Vec<_>>().join(" ");
+    }
+    parts.join("; ")
+}
+
 /// Unix signal names, from `<sys/signal.h>`.
 fn signal_name(signal: u64) -> Option<&'static str> {
     Some(match signal {
@@ -1497,6 +1604,7 @@ fn parse_termination_code(termination_reason: &str) -> Option<u64> {
 fn describe_termination(
     metadata: &BTreeMap<String, serde_json::Value>,
     termination_reason: Option<&str>,
+    region_info: Option<&str>,
 ) -> Option<String> {
     let exception_type = metadata_u64(metadata, "exceptionType");
     let signal = metadata_u64(metadata, "signal");
@@ -1504,10 +1612,21 @@ fn describe_termination(
     let mut parts: Vec<String> = Vec::new();
 
     if let Some(exception_type) = exception_type {
-        parts.push(match exception_type_name(exception_type) {
+        let mut part = match exception_type_name(exception_type) {
             Some(name) => format!("{name} ({exception_type})"),
             None => format!("exception type {exception_type}"),
-        });
+        };
+        // exceptionCode is a `kern_return_t` whose meaning depends on the
+        // exception type; for EXC_BAD_ACCESS it says whether the address was
+        // unmapped or merely unwritable/unreadable, which is the first thing
+        // you want to know.
+        if let Some(code) = metadata_u64(metadata, "exceptionCode") {
+            match bad_access_code_name(exception_type, code) {
+                Some(name) => part.push_str(&format!(" / {name} ({code})")),
+                None => part.push_str(&format!(" / code {code}")),
+            }
+        }
+        parts.push(part);
     }
 
     if let Some(signal) = signal {
@@ -1522,6 +1641,21 @@ fn describe_termination(
     }
 
     let mut description = parts.join(" / ");
+
+    // A bad access whose faulting address lands in the guard region below a
+    // thread's stack is a stack overflow, not a wild pointer. This is worth
+    // calling out loudly: it is the one crash class where the backtrace is
+    // routinely empty, so the metadata is all the evidence there is.
+    if region_info.is_some_and(faulting_address_is_in_stack_guard) {
+        if !description.is_empty() {
+            description.push_str(" — ");
+        }
+        description.push_str(
+            "stack overflow: the faulting address is inside the Stack Guard region directly \
+             below a thread stack, so the thread ran off the end of its stack. Look for \
+             unbounded recursion or a very large stack allocation, not a dangling pointer.",
+        );
+    }
 
     match termination_reason.and_then(parse_termination_code) {
         Some(code) => {
@@ -1591,9 +1725,7 @@ fn likely_dylib_paths(library_info: &LibraryInfo) -> Vec<String> {
         // sometimes Versions/C/<Name> for AppKit/Foundation). iOS-style
         // caches use the bare path. Try both layouts.
         for parent in ["Frameworks", "PrivateFrameworks"] {
-            paths.insert(format!(
-                "/System/Library/{parent}/{name}.framework/{name}"
-            ));
+            paths.insert(format!("/System/Library/{parent}/{name}.framework/{name}"));
             for ver in ["A", "B", "C"] {
                 paths.insert(format!(
                     "/System/Library/{parent}/{name}.framework/Versions/{ver}/{name}"
@@ -1668,9 +1800,18 @@ fn render_metric_report(
     writeln!(report)?;
 
     if !lookup_errors.is_empty() {
+        let binary_names = payload.binary_names_by_breakpad_id();
         writeln!(report, "Unresolved UUIDs")?;
         for (breakpad_id, error) in lookup_errors {
-            writeln!(report, "- {breakpad_id}: {error}")?;
+            let name = binary_names
+                .get(breakpad_id)
+                .map(|name| format!(" ({name})"))
+                .unwrap_or_default();
+            writeln!(
+                report,
+                "- {breakpad_id}{name}: {}",
+                summarize_lookup_error(error)
+            )?;
         }
         writeln!(report)?;
     }
@@ -1691,15 +1832,21 @@ fn render_metric_report(
         // ones that say whether the OS killed the process and why, and they are
         // easy to miss inside an alphabetical key/value list.
         let termination_reason = crash.termination_reason();
+        let region_info = crash.virtual_memory_region_info();
+        let stack_overflow = region_info
+            .as_deref()
+            .is_some_and(faulting_address_is_in_stack_guard);
         if let Some(termination_reason) = termination_reason.as_deref() {
             writeln!(report, "Termination reason: {termination_reason}")?;
         }
-        if let Some(diagnosis) =
-            describe_termination(&crash.diagnostic_meta_data, termination_reason.as_deref())
-        {
+        if let Some(diagnosis) = describe_termination(
+            &crash.diagnostic_meta_data,
+            termination_reason.as_deref(),
+            region_info.as_deref(),
+        ) {
             writeln!(report, "Diagnosis: {diagnosis}")?;
         }
-        if let Some(region_info) = crash.virtual_memory_region_info() {
+        if let Some(region_info) = region_info.as_deref() {
             writeln!(report, "Faulting VM region: {region_info}")?;
         }
 
@@ -1710,19 +1857,44 @@ fn render_metric_report(
             }
         }
 
+        if !crash.call_stack_tree.call_stacks.is_empty() {
+            writeln!(report, "Threads (frame 0 is innermost):")?;
+        }
         for (stack_index, call_stack) in crash.call_stack_tree.call_stacks.iter().enumerate() {
             writeln!(
                 report,
                 "Thread {}{}:",
                 stack_index,
                 if call_stack.thread_attributed {
-                    " (attributed)"
+                    " (attributed — this is the thread that crashed)"
                 } else {
                     ""
                 }
             )?;
-            for frame in &call_stack.call_stack_root_frames {
-                render_frame(&mut report, frame, 1, symbolicated_addresses, lookup_errors)?;
+            if call_stack.call_stack_root_frames.is_empty() {
+                // An empty thread is not "nothing happened here" — it means the
+                // unwinder produced no frames, which on the attributed thread is
+                // the difference between a diagnosable crash and an unusable
+                // report. Say so instead of printing a blank line.
+                writeln!(report, "  (no frames — MetricKit captured no backtrace)")?;
+                if call_stack.thread_attributed && stack_overflow {
+                    writeln!(
+                        report,
+                        "  The crash is a stack overflow, and MetricKit unwinds in-process: \
+                         there was no stack left to walk, so the frames that would name the \
+                         runaway call are unrecoverable from this payload."
+                    )?;
+                }
+            } else {
+                let mut next_index = 0usize;
+                render_call_stack(
+                    &mut report,
+                    &call_stack.call_stack_root_frames,
+                    0,
+                    &mut next_index,
+                    symbolicated_addresses,
+                    lookup_errors,
+                )?;
             }
             writeln!(report)?;
         }
@@ -1731,37 +1903,55 @@ fn render_metric_report(
     Ok(report)
 }
 
-fn render_frame(
+/// Render one thread's frames.
+///
+/// MetricKit nests each *caller* inside its callee's `subFrames`, so a crash
+/// thread arrives as a chain rooted at the innermost frame and ending at
+/// `thread_start`. Rendering that chain as a tree indented one level per frame
+/// pushed a 15-frame stack 30 columns to the right and read backwards from
+/// every other crash report. Print it flat and numbered instead — frame 0 is
+/// innermost, matching Apple's crash-report convention. Aggregated call-stack
+/// trees can genuinely branch (one caller, several callees); indent only there,
+/// where the nesting actually carries information.
+fn render_call_stack(
     report: &mut String,
-    frame: &MetricKitCallStackFrame,
-    depth: usize,
+    frames: &[MetricKitCallStackFrame],
+    branch_depth: usize,
+    next_index: &mut usize,
     symbolicated_addresses: &BTreeMap<String, LookedUpAddresses>,
     lookup_errors: &BTreeMap<String, String>,
 ) -> Result<()> {
-    let indent = "  ".repeat(depth);
-    let binary_name = frame.binary_name.as_deref().unwrap_or("<unknown>");
-    let offset = frame.offset_into_binary_text_segment;
-    let symbol = frame_symbol(frame, symbolicated_addresses, lookup_errors);
-    let sample_count = frame
-        .sample_count
-        .map(|count| format!(" samples={count}"))
-        .unwrap_or_default();
+    let branches = frames.len() > 1;
+    for frame in frames {
+        let index = *next_index;
+        *next_index += 1;
 
-    writeln!(
-        report,
-        "{indent}{binary_name} {} {}{}",
-        offset
+        let indent = "  ".repeat(branch_depth + 1);
+        let binary_name = frame.binary_name.as_deref().unwrap_or("<unknown>");
+        let offset = frame
+            .offset_into_binary_text_segment
             .map(|offset| format!("+0x{offset:x}"))
-            .unwrap_or_else(|| "+?".to_string()),
-        symbol,
-        sample_count
-    )?;
+            .unwrap_or_else(|| "+?".to_string());
+        let symbol = frame_symbol(frame, symbolicated_addresses, lookup_errors);
+        let sample_count = frame
+            .sample_count
+            .map(|count| format!(" samples={count}"))
+            .unwrap_or_default();
 
-    for sub_frame in &frame.sub_frames {
-        render_frame(
+        writeln!(
             report,
-            sub_frame,
-            depth + 1,
+            "{indent}{index:<3} {binary_name:<28} {offset:<12} {symbol}{sample_count}"
+        )?;
+
+        render_call_stack(
+            report,
+            &frame.sub_frames,
+            if branches {
+                branch_depth + 1
+            } else {
+                branch_depth
+            },
+            next_index,
             symbolicated_addresses,
             lookup_errors,
         )?;
@@ -1804,10 +1994,11 @@ fn frame_symbol(
         return format!("(no symbol for {binary_uuid} +0x{offset:x})");
     }
 
-    if let Some(error) = lookup_errors.get(&breakpad_id) {
-        return format!("(unresolved {binary_uuid}: {error})");
-    }
-
+    // Deliberately *not* the lookup error: samply reports one line per
+    // candidate path per dyld cache on disk, so pasting it under every frame
+    // turned a 100-line report into a 6,500-line one. The full reason is
+    // printed once, in the "Unresolved UUIDs" section.
+    let _ = lookup_errors;
     format!("(unresolved {binary_uuid})")
 }
 
@@ -1881,11 +2072,7 @@ fn find_dwarf_files(root: &Path) -> Result<Vec<PathBuf>> {
     Ok(result)
 }
 
-fn find_dwarf_files_impl(
-    path: &Path,
-    result: &mut Vec<PathBuf>,
-    inside_dsym: bool,
-) -> Result<()> {
+fn find_dwarf_files_impl(path: &Path, result: &mut Vec<PathBuf>, inside_dsym: bool) -> Result<()> {
     let metadata = fs::metadata(path).with_context(|| format!("reading {}", path.display()))?;
     if metadata.is_file() {
         if path
@@ -2106,6 +2293,7 @@ mod tests {
         let description = describe_termination(
             &crash.diagnostic_meta_data,
             crash.termination_reason().as_deref(),
+            crash.virtual_memory_region_info().as_deref(),
         )
         .expect("description");
 
@@ -2130,6 +2318,7 @@ mod tests {
         let description = describe_termination(
             &crash.diagnostic_meta_data,
             crash.termination_reason().as_deref(),
+            crash.virtual_memory_region_info().as_deref(),
         )
         .expect("description");
 
@@ -2149,6 +2338,7 @@ mod tests {
         let description = describe_termination(
             &crash.diagnostic_meta_data,
             crash.termination_reason().as_deref(),
+            crash.virtual_memory_region_info().as_deref(),
         )
         .expect("description");
 
@@ -2165,7 +2355,8 @@ mod tests {
         assert_eq!(
             describe_termination(
                 &crash.diagnostic_meta_data,
-                crash.termination_reason().as_deref()
+                crash.termination_reason().as_deref(),
+                crash.virtual_memory_region_info().as_deref(),
             ),
             None
         );
@@ -2212,6 +2403,217 @@ mod tests {
         let diagnosis_at = report.find("Diagnosis:").expect("diagnosis line");
         let metadata_at = report.find("Metadata:").expect("metadata block");
         assert!(diagnosis_at < metadata_at, "{report}");
+    }
+
+    /// The `virtualMemoryRegionInfo` from the macOS 26.6.2 crash that motivated
+    /// this: the faulting address is 607 bytes below the base of an 8 MB main
+    /// thread stack, i.e. inside its guard region.
+    const STACK_GUARD_REGION_INFO: &str = "0x16eddbda0 is in 0x16b5d8000-0x16eddc000;  bytes after start: 58736032  bytes before end: 607\n\
+         \x20     REGION TYPE                    START - END         [ VSIZE] PRT/MAX SHRMOD  REGION DETAIL\n\
+         \x20     MALLOC metadata             13a600000-13a604000    [   16K] rw-/rwx SM=PRV  \n\
+         \x20     GAP OF 0x30fd4000 BYTES\n\
+         --->  Stack Guard                 16b5d8000-16eddc000    [ 56.0M] ---/rwx SM=PRV  \n\
+         \x20     Stack                       16eddc000-16f5d8000    [ 8176K] rw-/rwx SM=SHM  ";
+
+    #[test]
+    fn detects_a_stack_overflow_from_the_faulting_vm_region() {
+        assert!(faulting_address_is_in_stack_guard(STACK_GUARD_REGION_INFO));
+
+        // The arrow must point at the guard, not merely appear in the map. A
+        // fault inside the stack itself is an ordinary bad access.
+        let in_stack = STACK_GUARD_REGION_INFO
+            .replace("--->  Stack Guard", "      Stack Guard")
+            .replace("      Stack     ", "--->  Stack     ");
+        assert!(!faulting_address_is_in_stack_guard(&in_stack));
+        assert!(!faulting_address_is_in_stack_guard(
+            "0x0 is not in any region"
+        ));
+    }
+
+    #[test]
+    fn describes_a_stack_guard_fault_as_a_stack_overflow() {
+        let crash = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": {
+                "exceptionType": 1,
+                "exceptionCode": 2,
+                "signal": 11,
+                "virtualMemoryRegionInfo": STACK_GUARD_REGION_INFO
+            }
+        }));
+
+        let description = describe_termination(
+            &crash.diagnostic_meta_data,
+            crash.termination_reason().as_deref(),
+            crash.virtual_memory_region_info().as_deref(),
+        )
+        .expect("description");
+
+        assert!(description.contains("EXC_BAD_ACCESS (1)"), "{description}");
+        assert!(
+            description.contains("KERN_PROTECTION_FAILURE (2)"),
+            "{description}"
+        );
+        assert!(description.contains("SIGSEGV (11)"), "{description}");
+        assert!(description.contains("stack overflow"), "{description}");
+        assert!(description.contains("unbounded recursion"), "{description}");
+    }
+
+    #[test]
+    fn report_explains_an_empty_attributed_thread_on_a_stack_overflow() {
+        // Exactly the payload shape that produced an unusable report: the
+        // crashing thread carries no frames at all.
+        let payload: MetricKitPayload = serde_json::from_value(serde_json::json!({
+            "crashDiagnostics": [{
+                "callStackTree": { "callStacks": [
+                    { "threadAttributed": true, "callStackRootFrames": [] },
+                    { "callStackRootFrames": [
+                        { "binaryName": "AttributeGraph",
+                          "binaryUUID": "DDC826E2-4B0E-35CA-AAB1-82A1DC9EA6B4",
+                          "offsetIntoBinaryTextSegment": 0xa434,
+                          "subFrames": [
+                            { "binaryName": "libdispatch.dylib",
+                              "binaryUUID": "B2000CD5-F580-314A-A141-E036719D854E",
+                              "offsetIntoBinaryTextSegment": 0x1b4b0 }
+                          ] }
+                    ] }
+                ] },
+                "diagnosticMetaData": {
+                    "exceptionType": 1,
+                    "signal": 11,
+                    "virtualMemoryRegionInfo": STACK_GUARD_REGION_INFO
+                }
+            }]
+        }))
+        .expect("payload deserializes");
+
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(report.contains("Diagnosis:"), "{report}");
+        assert!(report.contains("stack overflow"), "{report}");
+        assert!(
+            report.contains("Thread 0 (attributed — this is the thread that crashed)"),
+            "{report}"
+        );
+        assert!(report.contains("no frames"), "{report}");
+        assert!(report.contains("no stack left to walk"), "{report}");
+
+        // A linear chain must stay flat and numbered rather than stepping one
+        // indent level deeper per frame.
+        let libdispatch_line = report
+            .lines()
+            .find(|line| line.contains("libdispatch.dylib"))
+            .expect("libdispatch frame");
+        let attributegraph_line = report
+            .lines()
+            .find(|line| line.contains("AttributeGraph"))
+            .expect("AttributeGraph frame");
+        assert_eq!(
+            libdispatch_line.len() - libdispatch_line.trim_start().len(),
+            attributegraph_line.len() - attributegraph_line.trim_start().len(),
+            "chain frames must share one indent level:\n{report}"
+        );
+        assert!(
+            attributegraph_line.trim_start().starts_with("0 "),
+            "{report}"
+        );
+        assert!(libdispatch_line.trim_start().starts_with("1 "), "{report}");
+    }
+
+    #[test]
+    fn report_keeps_lookup_errors_out_of_every_frame() {
+        // samply's real error text: one line per candidate path, per cache.
+        let error = "All candidate paths encountered failures:\n\
+             The dyld shared cache file did not include an entry for the dylib at /usr/lib/libxpc.dylib\n\
+             The dyld shared cache file did not include an entry for the dylib at /usr/lib/swift/libxpc.dylib\n\
+             Unmatched breakpad_id: Expected 00b71270-124e-31fa-b7d2-5d747da4bce1, but received 33e44c2d-d65e-37a6-b85f-1a4cf524a050\n\
+             The dyld shared cache file did not include an entry for the dylib at /usr/lib/libxpc.dylib\n\
+             Unmatched breakpad_id: Expected a08d6f00-102f-31a3-92d5-e65ac7b776df, but received 33e44c2d-d65e-37a6-b85f-1a4cf524a050";
+
+        let payload: MetricKitPayload = serde_json::from_value(serde_json::json!({
+            "crashDiagnostics": [{
+                "callStackTree": { "callStacks": [
+                    { "threadAttributed": true, "callStackRootFrames": [
+                        { "binaryName": "libxpc.dylib",
+                          "binaryUUID": "33E44C2D-D65E-37A6-B85F-1A4CF524A050",
+                          "offsetIntoBinaryTextSegment": 0x344ec,
+                          "subFrames": [
+                            { "binaryName": "libxpc.dylib",
+                              "binaryUUID": "33E44C2D-D65E-37A6-B85F-1A4CF524A050",
+                              "offsetIntoBinaryTextSegment": 0x33bd8 }
+                          ] }
+                    ] }
+                ] },
+                "diagnosticMetaData": { "signal": 11 }
+            }]
+        }))
+        .expect("payload deserializes");
+
+        let mut lookup_errors = BTreeMap::new();
+        lookup_errors.insert(
+            "33E44C2DD65E37A6B85F1A4CF524A0500".to_string(),
+            error.to_string(),
+        );
+
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload,
+            &BTreeMap::new(),
+            &lookup_errors,
+        )
+        .expect("report renders");
+
+        // The candidate-path spam appears nowhere — not per frame, and not in
+        // the unresolved section either.
+        assert!(
+            !report.contains("did not include an entry"),
+            "raw candidate-path lines leaked into the report:\n{report}"
+        );
+        assert!(
+            !report.contains("Unmatched breakpad_id"),
+            "raw mismatch lines leaked into the report:\n{report}"
+        );
+
+        // The unresolved section still says which binary and why, once.
+        assert!(
+            report.contains("- 33E44C2DD65E37A6B85F1A4CF524A0500 (libxpc.dylib):"),
+            "{report}"
+        );
+        assert!(report.contains("2 cached dyld shared cache(s)"), "{report}");
+        assert!(report.contains("3 candidate path(s)"), "{report}");
+
+        // Frames name the unresolved UUID and stop there.
+        assert_eq!(
+            report
+                .matches("(unresolved 33E44C2D-D65E-37A6-B85F-1A4CF524A050)")
+                .count(),
+            2,
+            "{report}"
+        );
+    }
+
+    #[test]
+    fn summarize_lookup_error_preserves_unrecognized_reasons() {
+        // A missing dSYM or a parse failure is the interesting case; it must
+        // survive summarisation verbatim rather than being counted away.
+        let summary =
+            summarize_lookup_error("symbol lookup panicked: attempt to subtract with overflow");
+        assert_eq!(
+            summary,
+            "symbol lookup panicked: attempt to subtract with overflow"
+        );
+
+        // Repeated identical reasons collapse to one.
+        let summary = summarize_lookup_error("no dSYM on file\nno dSYM on file\nno dSYM on file");
+        assert_eq!(summary, "no dSYM on file");
     }
 
     #[test]
