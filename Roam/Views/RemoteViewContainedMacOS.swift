@@ -94,9 +94,10 @@
             DeviceLivenessMonitor.shared.isOnline(selectedDevice)
         }
 
-        private var noVolumeControls: Bool {
-            // Only disable volume controls when we know the device is not a TV.
-            // Enable for TVs (isTV == true) and when unknown (isTV == nil).
+        /// True when the device tells us it isn't a TV, i.e. a stick or Express
+        /// with no speakers of its own. Volume still gets sent — it leaves over
+        /// HDMI-CEC — this only drives a one-time hint about enabling CEC.
+        private var volumeRoutedOverHDMI: Bool {
             selectedDevice?.isTV == false
         }
 
@@ -610,7 +611,7 @@
                         enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
                         disabled: Set([]),
                         usesNativeGlassButtons: isInMenuBar,
-                        noVolumeControls: noVolumeControls,
+                        volumeRoutedOverHDMI: volumeRoutedOverHDMI,
                         headphonesModeUnsupported: headphonesModeDisabled
                     )
                     .transition(.scale.combined(with: .opacity))
