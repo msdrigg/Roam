@@ -1518,14 +1518,27 @@ fn summarize_lookup_error(error: &str) -> String {
 
     let mut parts: Vec<String> = Vec::new();
     if build_mismatches > 0 {
+        // Some cache on disk *did* hold this dylib, just built from a different
+        // OS — so it is a system library and the fix is fetching the right
+        // dyld shared cache.
         parts.push(format!(
             "{build_mismatches} cached dyld shared cache(s) had this dylib but from a different \
              OS build — the cache for this crash's OS build was never downloaded"
         ));
-    }
-    if absent_paths > 0 {
+        if absent_paths > 0 {
+            parts.push(format!(
+                "{absent_paths} candidate path(s) not present in any cached dyld shared cache"
+            ));
+        }
+    } else if absent_paths > 0 {
+        // No cache anywhere held anything at these paths, and no dSYM was on
+        // file either or it would have been tried first. That is the signature
+        // of one of our own binaries with no dSYM uploaded — a system library
+        // would have turned up at some build.
         parts.push(format!(
-            "{absent_paths} candidate path(s) not present in any cached dyld shared cache"
+            "no dSYM on file, and none of the {absent_paths} candidate path(s) exists in any \
+             cached dyld shared cache — the signature of an app binary whose dSYM was never \
+             uploaded. Upload the dSYM for this build to symbolicate these frames"
         ));
     }
     // Anything we don't recognise is likely the interesting part (a missing
@@ -1678,6 +1691,23 @@ fn describe_termination(
                      the payload, so the specific policy is unconfirmed; the usual candidates \
                      are 0xdead10cc (suspended while holding a file/SQLite lock in a shared \
                      container), 0x8badf00d (watchdog), and 0xc51bad0* (background task budget).",
+                );
+            }
+
+            // EXC_BREAKPOINT / SIGTRAP in a shipped build is not a memory bug
+            // and not a debugger: it is the Swift runtime trapping on purpose.
+            // The innermost frame is always libswiftCore, so the frame that
+            // matters is the first one below it in the app's own binary.
+            if exception_type == Some(6) || signal == Some(5) {
+                if !description.is_empty() {
+                    description.push_str(" — ");
+                }
+                description.push_str(
+                    "a deliberate Swift runtime trap, not a memory fault: force-unwrapping a \
+                     nil Optional, indexing out of range, arithmetic overflow, a failed \
+                     precondition/assert, or an explicit fatalError. Read the first frame \
+                     below libswiftCore that belongs to the app — that is the call that \
+                     trapped.",
                 );
             }
         }
@@ -2734,6 +2764,9 @@ mod tests {
         );
         assert!(report.contains("2 cached dyld shared cache(s)"), "{report}");
         assert!(report.contains("3 candidate path(s)"), "{report}");
+        // A system library that turned up at other builds must not be
+        // misreported as a missing app dSYM.
+        assert!(!report.contains("no dSYM on file"), "{report}");
 
         // Frames name the unresolved UUID and stop there.
         assert_eq!(
@@ -2743,6 +2776,50 @@ mod tests {
             2,
             "{report}"
         );
+    }
+
+    #[test]
+    fn describes_a_swift_runtime_trap() {
+        // The iOS 27.0 crash: EXC_BREAKPOINT / SIGTRAP with libswiftCore
+        // innermost and no faulting VM region at all.
+        let crash = crash_from(serde_json::json!({
+            "callStackTree": { "callStacks": [] },
+            "diagnosticMetaData": { "exceptionType": 6, "exceptionCode": 1, "signal": 5 }
+        }));
+
+        let description = describe_termination(
+            &crash.diagnostic_meta_data,
+            crash.termination_reason().as_deref(),
+            crash.virtual_memory_region_info().as_deref(),
+        )
+        .expect("description");
+
+        assert!(description.contains("EXC_BREAKPOINT (6)"), "{description}");
+        assert!(description.contains("SIGTRAP (5)"), "{description}");
+        assert!(description.contains("Swift runtime trap"), "{description}");
+        assert!(description.contains("libswiftCore"), "{description}");
+        // It must not be described as a memory fault; that sends you hunting
+        // for a pointer bug that isn't there.
+        assert!(description.contains("not a memory fault"), "{description}");
+    }
+
+    #[test]
+    fn summarize_lookup_error_names_a_missing_app_dsym() {
+        // Roam.debug.dylib will never live in a dyld shared cache, so every
+        // candidate path is absent and nothing ever mismatches. That pairing
+        // means the dSYM for this build was never uploaded.
+        let error = "All candidate paths encountered failures:\n\
+             The dyld shared cache file did not include an entry for the dylib at /usr/lib/Roam.debug.dylib\n\
+             The dyld shared cache file did not include an entry for the dylib at /usr/lib/swift/Roam.debug.dylib\n\
+             The dyld shared cache file did not include an entry for the dylib at /usr/lib/system/Roam.debug.dylib";
+
+        let summary = summarize_lookup_error(error);
+        assert!(summary.contains("no dSYM on file"), "{summary}");
+        assert!(
+            summary.contains("Upload the dSYM for this build"),
+            "{summary}"
+        );
+        assert!(summary.contains("3 candidate path(s)"), "{summary}");
     }
 
     #[test]
