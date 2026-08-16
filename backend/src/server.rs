@@ -4,7 +4,7 @@ use crate::{
     database::{DeviceInfo, PendingSymbolication, User, UserUpdate},
     discord::{DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessageOptions},
     presence::UserPresenceInfo,
-    symbolicate::{parse_metrickit_payload, DsymUploadMetadata, MetricKitPayload, RoamDebugInfo},
+    symbolicate::{scan_binary_uuids, DsymUploadMetadata, RoamDebugInfo},
     utils::{i64_to_string, string_to_i64_optional},
 };
 use anyhow::Context;
@@ -505,29 +505,17 @@ async fn upload_metric_diagnostics(
         .map_err(|e| ApiError::BadRequest(format!("Error serializing installation info: {e}")))?;
 
     for (idx, payload_json) in metrics_payloads.into_iter().enumerate() {
-        // Parse defensively: if a payload doesn't deserialize we still want to
-        // surface it for manual triage rather than swallowing the upload.
-        // Shares the worker's parser so the depth cap is lifted here too.
-        // Otherwise a deep-stack crash still parsed as empty at ingest, the row
-        // recorded no binary UUIDs, and the worker never pre-fetched the app's
-        // own dSYM — leaving the crash unsymbolicated even once it parsed.
-        let parsed: MetricKitPayload = match parse_metrickit_payload(payload_json.as_bytes()) {
-            Ok(p) => p,
-            Err(err) => {
-                tracing::warn!(
-                    idx,
-                    user_id = %device_id,
-                    error = ?err,
-                    "Could not parse MetricKit payload; storing without binary UUID hints"
-                );
-                MetricKitPayload {
-                    time_stamp_begin: None,
-                    time_stamp_end: None,
-                    crash_diagnostics: Vec::new(),
-                }
-            }
-        };
-        let binary_uuids: Vec<String> = parsed.binary_uuids().into_iter().collect();
+        // Scan for binary UUIDs rather than parsing the payload. Ingest only
+        // needs the UUID list as a dSYM pre-fetch hint, and the parser reserves
+        // a 256 MiB stack to survive deep `subFrames` nesting — a reservation
+        // this 256 MB VM cannot map, so calling it here panicked *after* the
+        // Discord posts and before the insert, silently dropping every crash
+        // uploaded while it was deployed. `scan_binary_uuids` is a flat pass
+        // over bytes already in memory and cannot fail; the worker still parses
+        // the payload properly on a machine with room for it.
+        let binary_uuids: Vec<String> = scan_binary_uuids(payload_json.as_bytes())
+            .into_iter()
+            .collect();
         let binary_uuids_json = serde_json::to_string(&binary_uuids).map_err(|e| {
             ApiError::SymbolicationError(anyhow::anyhow!(
                 "Error serializing binary UUIDs: {e}"

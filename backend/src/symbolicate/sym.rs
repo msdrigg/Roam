@@ -11,12 +11,13 @@ use samply_symbols::{
     FramesLookupResult, LibraryInfo, LookupAddress, OptionallySendFuture, SymbolManager,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{Display, Write as _};
 use std::fs::{self, File};
 use std::io::{BufReader, Cursor, Read, Seek};
 use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, OnceLock};
 use symbolic_common::Name;
 use symbolic_demangle::{Demangle, DemangleOptions};
 use uuid::Uuid;
@@ -633,6 +634,34 @@ impl SymbolicationClient {
             return Ok(());
         }
 
+        // One download per cache, however many payloads want it. A batch
+        // routinely leases several crashes from the same device on the same
+        // build, and each spawned its own `ipsw`. Two of them raced the same
+        // remote DMG, whose FUSE mountpoint is named after the DMG and so is
+        // identical for both: one mounted it, the other got EACCES on the
+        // mountpoint, then the first unmounted and the survivor's copy found
+        // nothing. Both failed after ~14 minutes and left a half-copied cache
+        // behind. Serialize on the cache identity and re-check afterwards, so
+        // the losers of the race find the winner's download and return.
+        let cache_key = format!(
+            "{}/{}/{}",
+            requirement.device_type,
+            requirement.build_id,
+            requirement.arch.as_deref().unwrap_or("--")
+        );
+        let gate = download_gate(&cache_key);
+        let _guard = gate.lock().await;
+
+        if dyld_cache_exists(&dyld_dir, requirement.arch.as_deref()).await? {
+            tracing::info!(
+                device_type = %requirement.device_type,
+                build_id = %requirement.build_id,
+                "System dyld_shared_cache downloaded by a concurrent payload"
+            );
+            touch_last_used(&cache_entry_dir);
+            return Ok(());
+        }
+
         tracing::info!(
             device_type = %requirement.device_type,
             build_id = %requirement.build_id,
@@ -641,19 +670,51 @@ impl SymbolicationClient {
             "Downloading system dyld_shared_cache via ipsw"
         );
 
+        // Anything already here is the debris of a download that did not finish
+        // — a complete one would have satisfied `dyld_cache_exists` above. Clear
+        // it so `ipsw` writes into an empty directory and cannot mistake a
+        // truncated file for one it already fetched.
+        if let Err(err) = tokio::fs::remove_dir_all(&dyld_dir).await {
+            if err.kind() != std::io::ErrorKind::NotFound {
+                tracing::warn!(
+                    ?err,
+                    dir = %dyld_dir.display(),
+                    "Could not clear an incomplete dyld cache before re-downloading"
+                );
+            }
+        }
+
         tokio::fs::create_dir_all(&dyld_dir)
             .await
             .with_context(|| format!("creating dyld cache directory {}", dyld_dir.display()))?;
 
         let started = std::time::Instant::now();
-        extract_dyld_shared_cache(
+        let outcome = extract_dyld_shared_cache(
             &requirement.device_type,
             &requirement.build_id,
             &dyld_dir,
             requirement.arch.as_deref(),
             requirement.os_family.as_deref(),
         )
-        .await?;
+        .await;
+
+        // A failed download leaves whatever it managed to copy. That debris is
+        // worse than nothing: `dyld_cache_exists` only looks for a file named
+        // `dyld_shared_cache*`, so a cache truncated mid-copy reads as present
+        // forever, is never re-downloaded, and fails to parse every time it is
+        // consulted ("Incorrect number of SubCaches"). Clear the entry so the
+        // next attempt starts from scratch.
+        if let Err(err) = outcome {
+            if let Err(remove_err) = tokio::fs::remove_dir_all(&cache_entry_dir).await {
+                tracing::warn!(
+                    ?remove_err,
+                    dir = %cache_entry_dir.display(),
+                    "Could not remove partial dyld cache after a failed download"
+                );
+            }
+            return Err(err);
+        }
+
         normalize_dyld_dir(&dyld_dir);
         touch_last_used(&cache_entry_dir);
         tracing::info!(
@@ -918,7 +979,79 @@ impl SymbolicationClient {
 ///
 /// Costs address space rather than memory: the pages are committed only as the
 /// parser actually touches them, so a shallow payload pays nothing.
+///
+/// "Costs address space rather than memory" holds only where the reservation is
+/// allowed in the first place. Linux's heuristic overcommit refuses a single
+/// mapping larger than RAM outright, so on the 256 MB backend VM (207 MiB after
+/// the kernel) this `mmap` fails, `Builder::spawn` returns `Err`, and the caller
+/// panics. That is why nothing but the worker — which runs on a real machine —
+/// may call `parse_metrickit_payload`; see `scan_binary_uuids` for the
+/// constant-memory scan the backend uses instead.
 const PAYLOAD_PARSE_STACK_SIZE: usize = 256 * 1024 * 1024;
+
+/// Collect `binaryUUID` values straight out of the raw payload bytes.
+///
+/// The backend needs the UUID list at ingest to tell a leasing worker which
+/// dSYMs it already holds, but it runs on a 256 MB VM and must never build the
+/// frame tree to get it: `parse_metrickit_payload` reserves a 256 MiB stack,
+/// which that VM cannot map, so ingest panicked after posting to Discord and
+/// before inserting the row. Every crash uploaded between the deploy that
+/// introduced the call and the deploy that removed it was dropped on the floor.
+///
+/// This is a flat forward scan — no recursion, no tree, one pass, bounded by the
+/// payload that is already in memory. It is a hint rather than a parse: the
+/// worker re-derives the authoritative set from the parsed payload, so a UUID
+/// this misses costs a dSYM pre-fetch, not a symbol.
+pub(crate) fn scan_binary_uuids(bytes: &[u8]) -> BTreeSet<String> {
+    const KEY: &[u8] = b"\"binaryUUID\"";
+
+    let mut out = BTreeSet::new();
+    let mut cursor = 0usize;
+
+    while let Some(found) = find_subslice(&bytes[cursor..], KEY) {
+        let after_key = cursor + found + KEY.len();
+        cursor = after_key;
+
+        // Expect `: "<uuid>"`, allowing arbitrary whitespace either side of the
+        // colon — MetricKit pretty-prints with a space, but nothing guarantees
+        // it and a compact payload must still scan.
+        let rest = &bytes[after_key..];
+        let Some(colon) = rest.iter().position(|b| !b.is_ascii_whitespace()) else {
+            break;
+        };
+        if rest[colon] != b':' {
+            continue;
+        }
+        let Some(quote) = rest[colon + 1..]
+            .iter()
+            .position(|b| !b.is_ascii_whitespace())
+            .filter(|offset| rest[colon + 1 + offset] == b'"')
+        else {
+            continue;
+        };
+        let value_start = colon + 1 + quote + 1;
+        let Some(len) = rest[value_start..].iter().position(|b| *b == b'"') else {
+            break;
+        };
+        cursor = after_key + value_start + len + 1;
+
+        if let Ok(uuid) = std::str::from_utf8(&rest[value_start..value_start + len]) {
+            // Same shape filter the parsed path applies, so a stray string keyed
+            // "binaryUUID" somewhere in the payload cannot enter the hint set.
+            if binary_uuid_to_breakpad_id(uuid).is_some() {
+                out.insert(uuid.to_string());
+            }
+        }
+    }
+
+    out
+}
+
+fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    haystack
+        .windows(needle.len())
+        .position(|window| window == needle)
+}
 
 /// Parse a MetricKit payload with serde_json's recursion cap lifted.
 ///
@@ -985,6 +1118,12 @@ impl MetricKitPayload {
     /// Walk every call-stack frame and collect the binary UUIDs referenced.
     /// Used by the upload handler to record which dSYMs the symbolicator will
     /// need before the row gets handed to a worker.
+    /// Every `binaryUUID` in the payload, walked from the parsed frame tree.
+    ///
+    /// Kept as the reference implementation `scan_binary_uuids` is checked
+    /// against — production reads UUIDs with the scan, because the only caller
+    /// that needed them (ingest) runs where this parse cannot.
+    #[cfg(test)]
     pub(crate) fn binary_uuids(&self) -> BTreeSet<String> {
         let mut out = BTreeSet::new();
         for crash in &self.crash_diagnostics {
@@ -1038,6 +1177,7 @@ fn describe_panic(payload: &(dyn std::any::Any + Send)) -> String {
     }
 }
 
+#[cfg(test)]
 fn collect_binary_uuids(frame: &MetricKitCallStackFrame, out: &mut BTreeSet<String>) {
     for_each_frame(std::slice::from_ref(frame), |frame| {
         if let Some(uuid) = frame.binary_uuid.as_deref() {
@@ -1170,6 +1310,58 @@ impl MetricKitCrashDiagnostic {
     }
 }
 
+/// A private temp directory for one `ipsw` invocation, removed on drop.
+///
+/// Held across every exit path of `run_ipsw_dyld_download`, including the
+/// timeout kill and the `bail!` on a non-zero exit, so a failed download does
+/// not leave a partly extracted IPSW behind.
+struct ScratchDir(Option<PathBuf>);
+
+impl ScratchDir {
+    fn new() -> Self {
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+        let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!("roam-ipsw-{}-{seq}", std::process::id()));
+        match fs::create_dir_all(&path) {
+            Ok(()) => Self(Some(path)),
+            Err(err) => {
+                tracing::warn!(?err, dir = %path.display(), "Could not create ipsw scratch dir; sharing the default TMPDIR");
+                Self(None)
+            }
+        }
+    }
+
+    fn path(&self) -> Option<&Path> {
+        self.0.as_deref()
+    }
+}
+
+impl Drop for ScratchDir {
+    fn drop(&mut self) {
+        if let Some(path) = &self.0 {
+            let _ = fs::remove_dir_all(path);
+        }
+    }
+}
+
+/// Per-cache download locks, keyed by `<device>/<build>/<arch>`.
+///
+/// Entries are never removed: one small `Arc<Mutex>` per distinct cache the
+/// process has touched, bounded by the device/build pairs in the fleet.
+fn download_gate(cache_key: &str) -> Arc<tokio::sync::Mutex<()>> {
+    static GATES: OnceLock<std::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> =
+        OnceLock::new();
+
+    let gates = GATES.get_or_init(|| std::sync::Mutex::new(HashMap::new()));
+    let mut gates = gates.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    Arc::clone(
+        gates
+            .entry(cache_key.to_string())
+            .or_insert_with(|| Arc::new(tokio::sync::Mutex::new(()))),
+    )
+}
+
 async fn extract_dyld_shared_cache(
     device_type: &str,
     build_id: &str,
@@ -1179,29 +1371,25 @@ async fn extract_dyld_shared_cache(
 ) -> Result<()> {
     let mut failures: Vec<String> = Vec::new();
 
-    // ipsw.me indexes iOS restore images only — a macOS build makes it spend
-    // ~30s enumerating before answering "build did not match a version in the
-    // ipsw.me API". appledb is the only source that carries macOS, so for Macs
-    // it goes first and ipsw.me is skipped entirely.
-    let is_macos = os_family.is_some_and(|os| os.eq_ignore_ascii_case("macOS"));
-
-    if !is_macos {
-        // ipsw.me is the fastest source but lags for very new builds and doesn't
-        // index Rapid Security Response variants separately. Try it first.
-        match run_ipsw_dyld_download(
-            "ipsw.me",
-            ipsw_me_args(device_type, build_id, output_dir, arch),
-        )
-        .await
-        {
-            Ok(()) => return Ok(()),
-            Err(e) => failures.push(format!("ipsw.me: {e:#}")),
-        }
+    // ipsw.me first, for every platform. It was moved behind appledb for Macs
+    // on the belief that it indexes iOS restore images only — but it served
+    // iMac21,1 on 25F80 in production, and did so on the retry *after* appledb
+    // had exhausted its GitHub quota. appledb is community-maintained and picks
+    // up very new builds sooner, which makes it the better fallback rather than
+    // the better first choice.
+    match run_ipsw_dyld_download(
+        "ipsw.me",
+        ipsw_me_args(device_type, build_id, output_dir, arch),
+    )
+    .await
+    {
+        Ok(()) => return Ok(()),
+        Err(e) => failures.push(format!("ipsw.me: {e:#}")),
     }
 
-    // appledb has a broader catalog (community-maintained), often picks up
-    // newer builds before ipsw.me does, and is the only macOS source.
-    // Requires the OS family.
+    // appledb has a broader catalog and often carries a build before ipsw.me
+    // indexes it. Requires the OS family, since `--os` is mandatory and it
+    // rejects anything outside its own vocabulary.
     if let Some(os) = os_family {
         match run_ipsw_dyld_download(
             "appledb",
@@ -1210,24 +1398,24 @@ async fn extract_dyld_shared_cache(
         .await
         {
             Ok(()) => return Ok(()),
-            Err(e) => failures.push(format!("appledb: {e:#}")),
+            Err(e) => {
+                // Unauthenticated appledb gets 60 GitHub requests/hour per IP
+                // and one build lookup can spend all of them, so the 403 is the
+                // expected steady state rather than bad luck. Say which knob
+                // fixes it, in the message that reaches the crash report.
+                let hint = if appledb_api_token().is_none()
+                    && format!("{e:#}").contains("rate limit")
+                {
+                    " (no IPSW_GITHUB_TOKEN set; unauthenticated appledb gets 60 GitHub \
+                       requests/hour, which one build lookup can exhaust)"
+                } else {
+                    ""
+                };
+                failures.push(format!("appledb: {e:#}{hint}"));
+            }
         }
     } else {
         failures.push("appledb: skipped (no osVersion family in payload)".to_string());
-    }
-
-    // Fall back to ipsw.me for a Mac only after appledb has failed: it will
-    // almost certainly miss, but a long shot beats no symbols at all.
-    if is_macos {
-        match run_ipsw_dyld_download(
-            "ipsw.me",
-            ipsw_me_args(device_type, build_id, output_dir, arch),
-        )
-        .await
-        {
-            Ok(()) => return Ok(()),
-            Err(e) => failures.push(format!("ipsw.me: {e:#}")),
-        }
     }
 
     anyhow::bail!(
@@ -1328,6 +1516,18 @@ async fn run_ipsw_dyld_download(label: &str, args: Vec<std::ffi::OsString>) -> R
     use portable_pty::{native_pty_system, CommandBuilder, PtySize};
     use std::io::Read;
 
+    // Cap how many caches download at once. A batch of five crashes from five
+    // different device/build pairs used to run five `ipsw` processes over one
+    // link: each got a fifth of the bandwidth, so all five finished late rather
+    // than one finishing early — the iMac cache took 48 minutes that way. The
+    // gate below is about throughput; `download_gate` is about correctness.
+    static DOWNLOAD_SLOTS: OnceLock<tokio::sync::Semaphore> = OnceLock::new();
+    let _slot = DOWNLOAD_SLOTS
+        .get_or_init(|| tokio::sync::Semaphore::new(2))
+        .acquire()
+        .await
+        .expect("download semaphore is never closed");
+
     tracing::info!(strategy = label, "Trying ipsw dyld download");
     let started = std::time::Instant::now();
 
@@ -1374,6 +1574,19 @@ async fn run_ipsw_dyld_download(label: &str, args: Vec<std::ffi::OsString>) -> R
     // mpb consults TERM as a sanity check before drawing; give it something
     // unambiguously real so it doesn't fall back to the no-tty path.
     cmd.env("TERM", "xterm-256color");
+
+    // Give this run its own TMPDIR. `ipsw` mounts the IPSW's filesystem DMG at
+    // `$TMPDIR/<dmg-name>.mount`, a path derived purely from the DMG, so two
+    // runs touching the same remote DMG collide there — and the collision
+    // surfaces as `fusermount3: Permission denied` on the mountpoint, which
+    // reads like a sandbox problem rather than the race it is. `download_gate`
+    // stops same-cache races; this stops the cross-cache case, where different
+    // builds happen to ship an identically named DMG. Best-effort: if the
+    // directory cannot be made, fall through to the shared /tmp.
+    let scratch = ScratchDir::new();
+    if let Some(path) = scratch.path() {
+        cmd.env("TMPDIR", path);
+    }
 
     let mut child = pair.slave.spawn_command(cmd).with_context(|| {
         format!(
@@ -1757,6 +1970,17 @@ async fn enforce_system_cache_budget(system_root: &Path, keep: &Path, max_bytes:
     }
 }
 
+/// Files Apple ships alongside the split cache, and `ipsw` copies out last.
+///
+/// Their presence is what separates a finished download from a truncated one.
+/// Checking for `dyld_shared_cache*` alone is not enough: a cache cut off
+/// mid-copy still has a base file and dozens of subcaches, reads as cached
+/// forever, and then fails to parse on every lookup — which is exactly how
+/// iPhone15,5 on 23F84 ended up permanently unsymbolicatable after two `ipsw`
+/// runs raced each other. Every intact cache on disk carries `.atlas`; iOS adds
+/// `.symbols` and macOS adds `.map`, so any of the three will do.
+const DYLD_CACHE_TRAILER_SUFFIXES: [&str; 3] = [".atlas", ".symbols", ".map"];
+
 async fn dyld_cache_exists(dyld_dir: &Path, arch: Option<&str>) -> Result<bool> {
     normalize_dyld_dir(dyld_dir);
 
@@ -1764,15 +1988,28 @@ async fn dyld_cache_exists(dyld_dir: &Path, arch: Option<&str>) -> Result<bool> 
         return Ok(false);
     };
 
+    let mut has_cache_for_arch = false;
+    let mut has_trailer = false;
+
     while let Some(entry) = entries.next_entry().await? {
         let filename = entry.file_name().to_string_lossy().to_string();
-        if filename.starts_with("dyld_shared_cache")
-            && arch.is_none_or(|arch| filename.contains(arch))
+        if !filename.starts_with("dyld_shared_cache") {
+            continue;
+        }
+        if !arch.is_none_or(|arch| filename.contains(arch)) {
+            continue;
+        }
+        if DYLD_CACHE_TRAILER_SUFFIXES
+            .iter()
+            .any(|suffix| filename.ends_with(suffix))
         {
-            return Ok(true);
+            has_trailer = true;
+        } else {
+            has_cache_for_arch = true;
         }
     }
-    Ok(false)
+
+    Ok(has_cache_for_arch && has_trailer)
 }
 
 /// `ipsw download ipsw --dyld --output X` extracts the dyld_shared_cache
@@ -3655,6 +3892,34 @@ mod tests {
         assert!(!report.contains(&huge), "untruncated message in report");
     }
 
+    #[tokio::test]
+    async fn a_truncated_dyld_cache_does_not_count_as_cached() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let dyld = temp.path().join("dyld");
+        fs::create_dir_all(&dyld).expect("dyld dir");
+
+        // What a download killed mid-copy leaves: a base cache and a run of
+        // subcaches, and nothing else. Treating this as cached is how a device
+        // stopped symbolicating for good — the files satisfied the old check,
+        // so it was never re-downloaded, and samply rejected it every time with
+        // "Incorrect number of SubCaches".
+        fs::write(dyld.join("dyld_shared_cache_arm64e"), b"base").expect("base");
+        for n in 1..=35 {
+            fs::write(dyld.join(format!("dyld_shared_cache_arm64e.{n:02}")), b"sub").expect("sub");
+        }
+        assert!(
+            !dyld_cache_exists(&dyld, Some("arm64e")).await.expect("check"),
+            "a cache missing its trailer files is not usable"
+        );
+
+        // The trailer `ipsw` writes last is what makes it complete.
+        fs::write(dyld.join("dyld_shared_cache_arm64e.atlas"), b"atlas").expect("atlas");
+        assert!(dyld_cache_exists(&dyld, Some("arm64e")).await.expect("check"));
+
+        // And a complete cache for another arch does not vouch for this one.
+        assert!(!dyld_cache_exists(&dyld, Some("x86_64")).await.expect("check"));
+    }
+
     #[test]
     fn extract_ipsw_error_message_keeps_only_diagnostics() {
         let stderr =
@@ -3709,6 +3974,52 @@ mod tests {
         let uuids = payload.binary_uuids();
         assert_eq!(uuids.len(), 1);
         assert!(uuids.contains("4068B2EE-A54F-397E-882D-C5E3A40B789A"));
+    }
+
+    #[test]
+    fn scanning_uuids_agrees_with_parsing_them() {
+        // The backend cannot afford `parse_metrickit_payload` — its 256 MiB
+        // stack reservation is larger than the VM's whole RAM — so ingest reads
+        // UUIDs with a flat scan instead. The two must not drift: the scan
+        // decides which dSYMs a worker is offered when it leases the payload.
+        let real = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/symbolicate/test-crash-payload.json"
+        ))
+        .expect("test payload readable");
+        let parsed = parse_metrickit_payload(&real).expect("test payload parses");
+        assert!(
+            !parsed.binary_uuids().is_empty(),
+            "test payload should carry UUIDs for this comparison to mean anything"
+        );
+        assert_eq!(scan_binary_uuids(&real), parsed.binary_uuids());
+
+        // Including on the deep payloads that motivated the oversized stack:
+        // the scan has no notion of depth, which is the point.
+        let deep = deeply_nested_payload_json(4096);
+        assert_eq!(
+            scan_binary_uuids(deep.as_bytes()),
+            parse_metrickit_payload(deep.as_bytes())
+                .expect("deep payload parses")
+                .binary_uuids()
+        );
+    }
+
+    #[test]
+    fn scanning_uuids_tolerates_spacing_and_rejects_non_uuids() {
+        // MetricKit pretty-prints `"binaryUUID" : "..."`, but nothing promises
+        // that spacing, and a value that is not a UUID must not become a dSYM
+        // lookup key.
+        let compact = br#"{"binaryUUID":"4068B2EE-A54F-397E-882D-C5E3A40B789A"}"#;
+        let spaced = b"{\"binaryUUID\"\n  :\t \"4068B2EE-A54F-397E-882D-C5E3A40B789A\"}";
+        for payload in [compact.as_slice(), spaced.as_slice()] {
+            let found = scan_binary_uuids(payload);
+            assert_eq!(found.len(), 1, "failed on {:?}", String::from_utf8_lossy(payload));
+            assert!(found.contains("4068B2EE-A54F-397E-882D-C5E3A40B789A"));
+        }
+
+        assert!(scan_binary_uuids(br#"{"binaryUUID": "not-a-uuid"}"#).is_empty());
+        assert!(scan_binary_uuids(br#"{"binaryUUIDs": ["4068B2EE-A54F-397E-882D-C5E3A40B789A"]}"#).is_empty());
     }
 
     #[test]

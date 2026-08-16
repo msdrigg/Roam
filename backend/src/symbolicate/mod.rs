@@ -3,5 +3,5 @@ mod sym;
 pub mod worker;
 
 pub use diagnostics::RoamDebugInfo;
-pub(crate) use sym::{parse_metrickit_payload, MetricKitPayload};
+pub(crate) use sym::scan_binary_uuids;
 pub use sym::{DsymUploadMetadata, StoredDsymArchive, SymbolicationClient};
