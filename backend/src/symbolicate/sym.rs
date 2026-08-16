@@ -618,6 +618,10 @@ impl SymbolicationClient {
             .join(&requirement.device_type)
             .join(&requirement.build_id)
             .join("dyld");
+        // `<device>/<build>` is the eviction unit; the arch-specific caches live
+        // one level below it.
+        let cache_entry_dir = dyld_dir.parent().unwrap_or(&dyld_dir).to_path_buf();
+
         if dyld_cache_exists(&dyld_dir, requirement.arch.as_deref()).await? {
             tracing::info!(
                 device_type = %requirement.device_type,
@@ -625,6 +629,7 @@ impl SymbolicationClient {
                 arch = requirement.arch.as_deref().unwrap_or("--"),
                 "System dyld_shared_cache already cached"
             );
+            touch_last_used(&cache_entry_dir);
             return Ok(());
         }
 
@@ -650,12 +655,24 @@ impl SymbolicationClient {
         )
         .await?;
         normalize_dyld_dir(&dyld_dir);
+        touch_last_used(&cache_entry_dir);
         tracing::info!(
             device_type = %requirement.device_type,
             build_id = %requirement.build_id,
             elapsed_ms = started.elapsed().as_millis() as u64,
             "Downloaded system dyld_shared_cache"
         );
+
+        // Evict only after a successful download: that is the only moment the
+        // cache grows, and it guarantees the entry we just paid for is the most
+        // recently used, so it is never the one dropped.
+        enforce_system_cache_budget(
+            &self.symbolication_root.join("system"),
+            &cache_entry_dir,
+            system_cache_budget(),
+        )
+        .await;
+
         Ok(())
     }
 }
@@ -665,23 +682,21 @@ impl SymbolicationClient {
         frame: &MetricKitCallStackFrame,
         requests: &mut BTreeMap<String, SymbolicationRequest>,
     ) {
-        if let (Some(binary_uuid), Some(offset)) = (
-            frame.binary_uuid.as_deref(),
-            frame.offset_into_binary_text_segment,
-        ) {
-            if let Some(breakpad_id) = binary_uuid_to_breakpad_id(binary_uuid) {
-                if let Ok(offset) = u32::try_from(offset) {
-                    requests
-                        .entry(breakpad_id)
-                        .or_default()
-                        .add(offset, frame.binary_name.as_deref());
+        for_each_frame(std::slice::from_ref(frame), |frame| {
+            if let (Some(binary_uuid), Some(offset)) = (
+                frame.binary_uuid.as_deref(),
+                frame.offset_into_binary_text_segment,
+            ) {
+                if let Some(breakpad_id) = binary_uuid_to_breakpad_id(binary_uuid) {
+                    if let Ok(offset) = u32::try_from(offset) {
+                        requests
+                            .entry(breakpad_id)
+                            .or_default()
+                            .add(offset, frame.binary_name.as_deref());
+                    }
                 }
             }
-        }
-
-        for sub_frame in &frame.sub_frames {
-            Self::collect_symbolication_requests(sub_frame, requests);
-        }
+        });
     }
 
     pub async fn symbolicate_diagnostics(
@@ -704,7 +719,7 @@ impl SymbolicationClient {
         let payload_bytes = tokio::fs::read(metrics_payload)
             .await
             .with_context(|| format!("reading MetricKit payload {}", metrics_payload.display()))?;
-        let payload: MetricKitPayload = serde_json::from_slice(&payload_bytes)
+        let payload = parse_metrickit_payload(&payload_bytes)
             .with_context(|| format!("parsing MetricKit payload {}", metrics_payload.display()))?;
         tracing::info!(
             payload_bytes = payload_bytes.len(),
@@ -712,9 +727,16 @@ impl SymbolicationClient {
             "Parsed MetricKit payload"
         );
 
-        if let Err(error) = self.ensure_system_symbols_cached(&payload).await {
-            tracing::warn!(?error, "Could not prepare IPSW/dyld shared cache symbols");
-        }
+        // Kept rather than just logged: whether the system symbol source was
+        // reachable decides, further down, if a report that resolved nothing is
+        // worth retrying or is simply missing a dSYM we will never have.
+        let system_symbols_error = match self.ensure_system_symbols_cached(&payload).await {
+            Ok(()) => None,
+            Err(error) => {
+                tracing::warn!(?error, "Could not prepare IPSW/dyld shared cache symbols");
+                Some(format!("{error:#}"))
+            }
+        };
 
         let mut requests = BTreeMap::new();
         for crash in &payload.crash_diagnostics {
@@ -736,6 +758,7 @@ impl SymbolicationClient {
         );
         let mut symbolicated_addresses = BTreeMap::new();
         let mut lookup_errors = BTreeMap::new();
+        let mut resolved_addresses = 0usize;
         for (breakpad_id, request) in requests {
             let address_count = request.addresses.len();
             let binary_name = request
@@ -799,6 +822,7 @@ impl SymbolicationClient {
                         elapsed_ms = lib_started.elapsed().as_millis() as u64,
                         "Symbolicated binary"
                     );
+                    resolved_addresses += resolved;
                     symbolicated_addresses.insert(breakpad_id, result);
                 }
                 Err(message) => {
@@ -807,13 +831,41 @@ impl SymbolicationClient {
             }
         }
 
-        let report = render_metric_report(
+        let mut report = render_metric_report(
             diagnostics,
             installation_info,
             &payload,
             &symbolicated_addresses,
             &lookup_errors,
         )?;
+
+        // A report where nothing resolved is a wall of hex. Posting it with no
+        // comment is how a macOS crash went out looking like a delivered crash
+        // report when in truth every symbol source had failed. Say so at the
+        // top, where it cannot be mistaken for a normal report.
+        if total_addresses > 0 && resolved_addresses == 0 {
+            let mut banner = String::from(
+                "!! NO SYMBOLS RESOLVED — every address in this report is unsymbolicated.\n",
+            );
+            match &system_symbols_error {
+                Some(error) => {
+                    let _ = writeln!(banner, "!! System symbol source unavailable: {error}");
+                    let _ = writeln!(
+                        banner,
+                        "!! This is usually transient (rate limiting); the payload will be retried."
+                    );
+                }
+                None => {
+                    let _ = writeln!(
+                        banner,
+                        "!! No dSYM on file for the binaries below — upload it and re-symbolicate."
+                    );
+                }
+            }
+            banner.push('\n');
+            report.insert_str(0, &banner);
+        }
+
         tokio::fs::write(&report_path, &report)
             .await
             .with_context(|| format!("writing symbolicated report {}", report_path.display()))?;
@@ -822,10 +874,99 @@ impl SymbolicationClient {
             report_bytes = report.len(),
             resolved_binaries = symbolicated_addresses.len(),
             unresolved_binaries = lookup_errors.len(),
+            resolved_addresses,
+            total_addresses,
             elapsed_ms = started.elapsed().as_millis() as u64,
             "Wrote symbolicated report"
         );
+
+        // Nothing resolved *and* the system symbol source was unreachable means
+        // the inputs were missing, not the symbols: the dyld cache download was
+        // rate-limited or the build was unavailable, both of which usually pass.
+        // Fail so the payload retries with backoff rather than burning its one
+        // delivery on an all-hex report.
+        //
+        // A missing dSYM is the opposite case — it will not fix itself, and the
+        // report's "Unresolved UUIDs" section names exactly which dSYM to
+        // upload, so that report is worth delivering. It ships with the banner.
+        if total_addresses > 0 && resolved_addresses == 0 {
+            if let Some(error) = system_symbols_error {
+                anyhow::bail!(
+                    "symbolicated 0 of {total_addresses} addresses and the system symbol \
+                     source was unavailable ({error}); retrying rather than posting an \
+                     unsymbolicated report"
+                );
+            }
+            tracing::error!(
+                total_addresses,
+                unresolved_binaries = lookup_errors.len(),
+                "Report resolved no addresses; delivering with a no-symbols banner"
+            );
+        }
+
         Ok(report_path)
+    }
+}
+
+/// Stack budget for the payload parse thread.
+///
+/// serde_json recurses once per nesting level, so lifting the depth cap moves
+/// the failure mode from "clean parse error" to "stack overflow". Unoptimized
+/// builds spend a few KB of frame per level, so this clears tens of thousands
+/// of frames there and far more with optimizations on — well past the few
+/// thousand MetricKit actually emits for a runaway recursion.
+///
+/// Costs address space rather than memory: the pages are committed only as the
+/// parser actually touches them, so a shallow payload pays nothing.
+const PAYLOAD_PARSE_STACK_SIZE: usize = 256 * 1024 * 1024;
+
+/// Parse a MetricKit payload with serde_json's recursion cap lifted.
+///
+/// `MetricKitCallStackFrame::sub_frames` is self-referential and MetricKit
+/// nests one JSON level per stack frame, so the default 128-deep cap rejected
+/// any crash with a deeper stack. That is precisely the shape a stack overflow
+/// produces — the crash class `describe_stack_overflow` exists to name — so
+/// the reports we most wanted to read were the only ones we could not parse.
+///
+/// The parse runs on a thread with an oversized stack because
+/// `disable_recursion_limit` removes serde_json's own depth guard. Every
+/// walker over the resulting tree is iterative (see `for_each_frame`), so once
+/// the payload is parsed, depth costs heap rather than stack.
+pub(crate) fn parse_metrickit_payload(bytes: &[u8]) -> Result<MetricKitPayload, serde_json::Error> {
+    std::thread::scope(|scope| {
+        let handle = std::thread::Builder::new()
+            .name("metrickit-parse".into())
+            .stack_size(PAYLOAD_PARSE_STACK_SIZE)
+            .spawn_scoped(scope, || {
+                let mut deserializer = serde_json::Deserializer::from_slice(bytes);
+                deserializer.disable_recursion_limit();
+                MetricKitPayload::deserialize(&mut deserializer)
+            })
+            .expect("spawning MetricKit parse thread");
+        match handle.join() {
+            Ok(result) => result,
+            // The parse thread only panics by overflowing its stack, which
+            // aborts the process rather than unwinding, so this arm is
+            // effectively unreachable; resume rather than invent an error.
+            Err(panic) => std::panic::resume_unwind(panic),
+        }
+    })
+}
+
+/// Visit every frame in `roots` and their descendants, deepest-last.
+///
+/// Deliberately iterative: payloads are parsed with the depth cap lifted, so a
+/// recursive walk here would just relocate the stack overflow from serde_json
+/// into our own code. The traversal order is not significant to any caller —
+/// all three collectors accumulate into maps keyed by breakpad ID.
+fn for_each_frame(
+    roots: &[MetricKitCallStackFrame],
+    mut visit: impl FnMut(&MetricKitCallStackFrame),
+) {
+    let mut stack: Vec<&MetricKitCallStackFrame> = roots.iter().collect();
+    while let Some(frame) = stack.pop() {
+        visit(frame);
+        stack.extend(frame.sub_frames.iter());
     }
 }
 
@@ -873,14 +1014,15 @@ impl MetricKitPayload {
 }
 
 fn collect_binary_names(frame: &MetricKitCallStackFrame, out: &mut BTreeMap<String, String>) {
-    if let (Some(uuid), Some(name)) = (frame.binary_uuid.as_deref(), frame.binary_name.as_deref()) {
-        if let Some(breakpad_id) = binary_uuid_to_breakpad_id(uuid) {
-            out.entry(breakpad_id).or_insert_with(|| name.to_string());
+    for_each_frame(std::slice::from_ref(frame), |frame| {
+        if let (Some(uuid), Some(name)) =
+            (frame.binary_uuid.as_deref(), frame.binary_name.as_deref())
+        {
+            if let Some(breakpad_id) = binary_uuid_to_breakpad_id(uuid) {
+                out.entry(breakpad_id).or_insert_with(|| name.to_string());
+            }
         }
-    }
-    for sub in &frame.sub_frames {
-        collect_binary_names(sub, out);
-    }
+    });
 }
 
 /// Recover the message from a caught panic payload. `panic!` payloads are
@@ -897,16 +1039,15 @@ fn describe_panic(payload: &(dyn std::any::Any + Send)) -> String {
 }
 
 fn collect_binary_uuids(frame: &MetricKitCallStackFrame, out: &mut BTreeSet<String>) {
-    if let Some(uuid) = frame.binary_uuid.as_deref() {
-        if let Ok(parsed) = Uuid::parse_str(uuid) {
-            if !parsed.is_nil() {
-                out.insert(parsed.to_string().to_ascii_uppercase());
+    for_each_frame(std::slice::from_ref(frame), |frame| {
+        if let Some(uuid) = frame.binary_uuid.as_deref() {
+            if let Ok(parsed) = Uuid::parse_str(uuid) {
+                if !parsed.is_nil() {
+                    out.insert(parsed.to_string().to_ascii_uppercase());
+                }
             }
         }
-    }
-    for sub in &frame.sub_frames {
-        collect_binary_uuids(sub, out);
-    }
+    });
 }
 
 #[derive(Debug, Deserialize)]
@@ -977,6 +1118,26 @@ pub(crate) struct MetricKitCallStackFrame {
     pub(crate) sub_frames: Vec<MetricKitCallStackFrame>,
 }
 
+impl Drop for MetricKitCallStackFrame {
+    /// Free the frame tree iteratively.
+    ///
+    /// The derived drop glue recurses once per nesting level, so now that
+    /// arbitrarily deep payloads parse (see `parse_metrickit_payload`), simply
+    /// letting a stack-overflow crash's frame tree go out of scope would
+    /// overflow our own stack — after the parse and the render had both
+    /// carefully avoided doing so.
+    ///
+    /// Each frame moved into `pending` has already had its children taken, so
+    /// dropping it at the end of an iteration re-enters this impl with an empty
+    /// vector and stops there.
+    fn drop(&mut self) {
+        let mut pending: Vec<MetricKitCallStackFrame> = std::mem::take(&mut self.sub_frames);
+        while let Some(mut frame) = pending.pop() {
+            pending.extend(std::mem::take(&mut frame.sub_frames));
+        }
+    }
+}
+
 #[derive(Debug)]
 struct SystemSymbolRequirement {
     device_type: String,
@@ -1018,20 +1179,29 @@ async fn extract_dyld_shared_cache(
 ) -> Result<()> {
     let mut failures: Vec<String> = Vec::new();
 
-    // ipsw.me is the fastest source but lags for very new builds and doesn't
-    // index Rapid Security Response variants separately. Try it first.
-    match run_ipsw_dyld_download(
-        "ipsw.me",
-        ipsw_me_args(device_type, build_id, output_dir, arch),
-    )
-    .await
-    {
-        Ok(()) => return Ok(()),
-        Err(e) => failures.push(format!("ipsw.me: {e:#}")),
+    // ipsw.me indexes iOS restore images only — a macOS build makes it spend
+    // ~30s enumerating before answering "build did not match a version in the
+    // ipsw.me API". appledb is the only source that carries macOS, so for Macs
+    // it goes first and ipsw.me is skipped entirely.
+    let is_macos = os_family.is_some_and(|os| os.eq_ignore_ascii_case("macOS"));
+
+    if !is_macos {
+        // ipsw.me is the fastest source but lags for very new builds and doesn't
+        // index Rapid Security Response variants separately. Try it first.
+        match run_ipsw_dyld_download(
+            "ipsw.me",
+            ipsw_me_args(device_type, build_id, output_dir, arch),
+        )
+        .await
+        {
+            Ok(()) => return Ok(()),
+            Err(e) => failures.push(format!("ipsw.me: {e:#}")),
+        }
     }
 
     // appledb has a broader catalog (community-maintained), often picks up
-    // newer builds before ipsw.me does. Requires the OS family.
+    // newer builds before ipsw.me does, and is the only macOS source.
+    // Requires the OS family.
     if let Some(os) = os_family {
         match run_ipsw_dyld_download(
             "appledb",
@@ -1044,6 +1214,20 @@ async fn extract_dyld_shared_cache(
         }
     } else {
         failures.push("appledb: skipped (no osVersion family in payload)".to_string());
+    }
+
+    // Fall back to ipsw.me for a Mac only after appledb has failed: it will
+    // almost certainly miss, but a long shot beats no symbols at all.
+    if is_macos {
+        match run_ipsw_dyld_download(
+            "ipsw.me",
+            ipsw_me_args(device_type, build_id, output_dir, arch),
+        )
+        .await
+        {
+            Ok(()) => return Ok(()),
+            Err(e) => failures.push(format!("ipsw.me: {e:#}")),
+        }
     }
 
     anyhow::bail!(
@@ -1091,7 +1275,7 @@ fn appledb_args(
     // --api forces use of the GitHub API instead of a full local clone of
     // appledb (~250 MB). The clone often hangs the first run on stateless
     // containers; the API path is a few HTTP calls.
-    vec![
+    let mut args: Vec<std::ffi::OsString> = vec![
         "download".into(),
         "appledb".into(),
         "--api".into(),
@@ -1106,7 +1290,33 @@ fn appledb_args(
         "--output".into(),
         output_dir.as_os_str().to_owned(),
         "--no-color".into(),
-    ]
+    ];
+
+    // Unauthenticated GitHub API calls get 60 requests/hour per IP, and
+    // resolving one build walks a directory of per-build JSON files — enough to
+    // blow the whole budget on a single crash and then 429 on every retry.
+    // A token raises this to 5000/hour. Optional: without one the download
+    // still works when the quota happens to be free.
+    if let Some(token) = appledb_api_token() {
+        args.push("--api-token".into());
+        args.push(token.into());
+    }
+
+    args
+}
+
+/// GitHub token for appledb's API lookups, if configured.
+///
+/// Read from the environment rather than plumbed through `RoamCli` so the
+/// worker deployment can set it alongside the other `ipsw` credentials in
+/// `/etc/roam-symbolicator/env`. `GITHUB_TOKEN` is accepted as a fallback
+/// because that is the name CI runners already export.
+fn appledb_api_token() -> Option<String> {
+    ["IPSW_GITHUB_TOKEN", "GITHUB_TOKEN"]
+        .iter()
+        .find_map(|key| std::env::var(key).ok())
+        .map(|token| token.trim().to_string())
+        .filter(|token| !token.is_empty())
 }
 
 /// Upper bound for any single ipsw download attempt. Real macOS dyld
@@ -1121,10 +1331,23 @@ async fn run_ipsw_dyld_download(label: &str, args: Vec<std::ffi::OsString>) -> R
     tracing::info!(strategy = label, "Trying ipsw dyld download");
     let started = std::time::Instant::now();
 
-    tracing::info!(
-        "Running ipsw with args: {:?}",
-        args.iter().map(|s| s.to_string_lossy()).collect::<Vec<_>>()
-    );
+    // Redact the value following --api-token: these args are logged verbatim to
+    // the journal, and the GitHub token would otherwise sit there in plaintext.
+    let mut redact_next = false;
+    let logged_args: Vec<String> = args
+        .iter()
+        .map(|arg| {
+            let arg = arg.to_string_lossy();
+            let rendered = if redact_next {
+                "<redacted>".to_string()
+            } else {
+                arg.to_string()
+            };
+            redact_next = arg == "--api-token";
+            rendered
+        })
+        .collect();
+    tracing::info!("Running ipsw with args: {:?}", logged_args);
 
     // ipsw uses the `mpb` Go progress bar library, which checks `isatty` on its
     // output and renders nothing when the fd isn't a terminal. Without a pty we
@@ -1349,6 +1572,188 @@ fn extract_ipsw_error_message(stderr: &str, stdout: &str) -> String {
         "(no error output from ipsw)".to_string()
     } else {
         interesting.join(" | ")
+    }
+}
+
+/// On-disk budget for downloaded system dyld shared caches.
+///
+/// Each cache is 5-6 GB and one is kept per `<device>/<build>` pair, because
+/// Apple builds the shared cache per device family — caches for the same build
+/// and arch on two different models are genuinely different files with
+/// different layouts, so they cannot be shared. The directory therefore grows
+/// without bound as the fleet spreads across models and OS builds.
+const DEFAULT_SYSTEM_CACHE_MAX_BYTES: u64 = 256 * 1024 * 1024 * 1024;
+
+/// Deliberately covers `system/` only.
+///
+/// `uploads/` holds our own app's dSYMs, which are three orders of magnitude
+/// smaller (~50 MB against ~150 GB) and, unlike system caches, are not
+/// re-downloadable: dropping one makes every past crash from that build
+/// permanently unsymbolicatable. They are not what fills the disk and they are
+/// not safe to evict.
+fn system_cache_budget() -> u64 {
+    std::env::var("SYMBOLICATE_CACHE_MAX_BYTES")
+        .ok()
+        .and_then(|raw| raw.trim().parse::<u64>().ok())
+        .filter(|bytes| *bytes > 0)
+        .unwrap_or(DEFAULT_SYSTEM_CACHE_MAX_BYTES)
+}
+
+/// Marker file whose mtime records when a cached dyld cache was last used.
+///
+/// Recorded explicitly rather than read from the cache files' atime, because
+/// the caches are mmapped and every practical mount option (`relatime`,
+/// `noatime`) makes atime either coarse or entirely absent.
+const LAST_USED_MARKER: &str = ".last-used";
+
+/// Record that `cache_entry_dir` was used just now. Best-effort: a cache that
+/// cannot be marked simply looks older than it is, which costs a re-download
+/// rather than correctness.
+fn touch_last_used(cache_entry_dir: &Path) {
+    let marker = cache_entry_dir.join(LAST_USED_MARKER);
+    if let Err(err) = fs::write(&marker, b"") {
+        tracing::debug!(?err, path = %marker.display(), "Could not update cache last-used marker");
+    }
+}
+
+/// When `cache_entry_dir` was last used, falling back to the directory's own
+/// mtime for entries downloaded before markers existed.
+fn last_used_at(cache_entry_dir: &Path) -> std::time::SystemTime {
+    let marker = cache_entry_dir.join(LAST_USED_MARKER);
+    fs::metadata(&marker)
+        .or_else(|_| fs::metadata(cache_entry_dir))
+        .and_then(|meta| meta.modified())
+        .unwrap_or(std::time::UNIX_EPOCH)
+}
+
+/// Recursive on-disk size of a directory, counting allocated blocks rather than
+/// apparent length so the number matches what `df` reports.
+fn dir_size_bytes(dir: &Path) -> u64 {
+    let mut total = 0;
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(path) = stack.pop() {
+        let Ok(entries) = fs::read_dir(&path) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let Ok(file_type) = entry.file_type() else {
+                continue;
+            };
+            if file_type.is_dir() {
+                stack.push(entry.path());
+            } else if let Ok(meta) = entry.metadata() {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::MetadataExt as _;
+                    total += meta.blocks() * 512;
+                }
+                #[cfg(not(unix))]
+                {
+                    total += meta.len();
+                }
+            }
+        }
+    }
+    total
+}
+
+/// Drop least-recently-used `<device>/<build>` caches until the tree fits in
+/// `max_bytes`.
+///
+/// Evicting whole entries rather than individual files keeps the cache
+/// self-consistent: a half-deleted entry would still satisfy
+/// `dyld_cache_exists` and then fail to symbolicate. `keep` is never evicted —
+/// it is the entry the caller just downloaded and is about to use.
+///
+/// Best-effort throughout. Failing to reclaim space must not fail the
+/// symbolication that triggered it.
+async fn enforce_system_cache_budget(system_root: &Path, keep: &Path, max_bytes: u64) {
+    let system_root = system_root.to_path_buf();
+    let keep = keep.to_path_buf();
+
+    // Sizing walks tens of thousands of directory entries; keep it off the
+    // async worker threads.
+    let result = tokio::task::spawn_blocking(move || {
+        let mut entries: Vec<(PathBuf, u64, std::time::SystemTime)> = Vec::new();
+
+        let Ok(devices) = fs::read_dir(&system_root) else {
+            return None;
+        };
+        for device in devices.flatten() {
+            if !device.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                continue;
+            }
+            let Ok(builds) = fs::read_dir(device.path()) else {
+                continue;
+            };
+            for build in builds.flatten() {
+                if !build.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                    continue;
+                }
+                let path = build.path();
+                let size = dir_size_bytes(&path);
+                let used = last_used_at(&path);
+                entries.push((path, size, used));
+            }
+        }
+
+        let total: u64 = entries.iter().map(|(_, size, _)| size).sum();
+        if total <= max_bytes {
+            return Some((total, total, 0usize));
+        }
+
+        // Least-recently-used first.
+        entries.sort_by_key(|(_, _, used)| *used);
+
+        let mut remaining = total;
+        let mut evicted = 0usize;
+        for (path, size, _) in entries {
+            if remaining <= max_bytes {
+                break;
+            }
+            if path == keep {
+                continue;
+            }
+            match fs::remove_dir_all(&path) {
+                Ok(()) => {
+                    tracing::info!(
+                        path = %path.display(),
+                        freed_bytes = size,
+                        "Evicted least-recently-used system dyld cache"
+                    );
+                    remaining = remaining.saturating_sub(size);
+                    evicted += 1;
+                }
+                Err(err) => {
+                    tracing::warn!(?err, path = %path.display(), "Could not evict system dyld cache");
+                }
+            }
+        }
+        Some((total, remaining, evicted))
+    })
+    .await;
+
+    match result {
+        Ok(Some((before, after, evicted))) if evicted > 0 => {
+            tracing::info!(
+                bytes_before = before,
+                bytes_after = after,
+                max_bytes,
+                evicted_entries = evicted,
+                "Enforced system dyld cache budget"
+            );
+        }
+        Ok(Some((before, _, _))) => {
+            tracing::debug!(
+                bytes = before,
+                max_bytes,
+                "System dyld cache within budget; nothing evicted"
+            );
+        }
+        Ok(None) => {}
+        Err(err) => {
+            tracing::warn!(?err, "System dyld cache eviction task failed");
+        }
     }
 }
 
@@ -2162,12 +2567,31 @@ fn render_call_stack(
     symbolicated_addresses: &BTreeMap<String, LookedUpAddresses>,
     lookup_errors: &BTreeMap<String, String>,
 ) -> Result<()> {
-    let branches = frames.len() > 1;
-    for frame in frames {
+    // Walked with an explicit stack rather than recursion. Payloads now parse
+    // with serde_json's depth cap lifted, and the deepest tree we will ever be
+    // handed is a stack overflow — the one report this function exists to make
+    // readable. Recursing here would overflow rendering it.
+    //
+    // Each entry carries the frame, the depth to indent it at, and the depth
+    // its own children inherit. A level only pushes its children one column
+    // deeper when that level actually branched, which is why the child depth is
+    // fixed by the sibling list rather than recomputed per frame.
+    let mut stack: Vec<(&MetricKitCallStackFrame, usize, usize)> = Vec::new();
+    let child_depth = if frames.len() > 1 {
+        branch_depth + 1
+    } else {
+        branch_depth
+    };
+    // Pushed in reverse so siblings pop in source order.
+    for frame in frames.iter().rev() {
+        stack.push((frame, branch_depth, child_depth));
+    }
+
+    while let Some((frame, depth, child_depth)) = stack.pop() {
         let index = *next_index;
         *next_index += 1;
 
-        let indent = "  ".repeat(branch_depth + 1);
+        let indent = "  ".repeat(depth + 1);
         let binary_name = frame.binary_name.as_deref().unwrap_or("<unknown>");
         let offset = frame
             .offset_into_binary_text_segment
@@ -2184,18 +2608,16 @@ fn render_call_stack(
             "{indent}{index:<3} {binary_name:<28} {offset:<12} {symbol}{sample_count}"
         )?;
 
-        render_call_stack(
-            report,
-            &frame.sub_frames,
-            if branches {
-                branch_depth + 1
-            } else {
-                branch_depth
-            },
-            next_index,
-            symbolicated_addresses,
-            lookup_errors,
-        )?;
+        let grandchild_depth = if frame.sub_frames.len() > 1 {
+            child_depth + 1
+        } else {
+            child_depth
+        };
+        // Children go on top of the stack so they render immediately after
+        // this frame, keeping the numbering depth-first like the recursion did.
+        for sub_frame in frame.sub_frames.iter().rev() {
+            stack.push((sub_frame, child_depth, grandchild_depth));
+        }
     }
 
     Ok(())
@@ -3167,6 +3589,227 @@ mod tests {
         let summary = extract_ipsw_error_message(stderr, stdout);
         assert!(summary.starts_with("⨯ failed to query ipsw.me"));
         assert!(!summary.contains("Usage"));
+    }
+
+    /// Build a payload whose attributed thread is a single chain `depth` frames
+    /// deep — the shape MetricKit emits for a runaway recursion.
+    ///
+    /// Assembled as text rather than with `serde_json::json!`, because building
+    /// and serializing a `Value` that deep recurses too — the test would fall
+    /// over on its own fixture before reaching the code under test.
+    fn deeply_nested_payload_json(depth: usize) -> String {
+        const FRAME: &str = r#"{"binaryName":"Roam","binaryUUID":"4068B2EE-A54F-397E-882D-C5E3A40B789A","offsetIntoBinaryTextSegment":4096"#;
+
+        let mut json = String::from(
+            r#"{"crashDiagnostics":[{"callStackTree":{"callStacks":[{"threadAttributed":true,"callStackRootFrames":["#,
+        );
+        for _ in 0..depth {
+            json.push_str(FRAME);
+            json.push_str(r#","subFrames":["#);
+        }
+        // Innermost frame closes with an empty subFrames array, then every
+        // enclosing frame closes its array and its object.
+        json.push_str("]}".repeat(depth).as_str());
+        json.push_str(r#"]}]},"diagnosticMetaData":{"signal":11}}]}"#);
+        json
+    }
+
+    #[test]
+    fn parses_a_stack_deeper_than_serde_jsons_default_limit() {
+        // serde_json caps nesting at 128 by default. A stack overflow — the
+        // crash we most need symbolicated — nests one level per frame and blew
+        // straight through it, failing with "recursion limit exceeded" before
+        // any symbolication could run.
+        let json = deeply_nested_payload_json(4096);
+
+        // The default parser is why this needed fixing.
+        assert!(
+            serde_json::from_str::<MetricKitPayload>(&json).is_err(),
+            "expected serde_json's default depth limit to reject this payload"
+        );
+
+        let payload = parse_metrickit_payload(json.as_bytes()).expect("deep payload parses");
+        assert_eq!(payload.crash_diagnostics.len(), 1);
+
+        // And every frame is reachable, not just the outermost 128.
+        let uuids = payload.binary_uuids();
+        assert_eq!(uuids.len(), 1);
+        assert!(uuids.contains("4068B2EE-A54F-397E-882D-C5E3A40B789A"));
+    }
+
+    #[test]
+    fn renders_a_stack_deeper_than_the_recursion_limit() {
+        // Parsing a deep stack is only half the job: rendering walked the same
+        // tree recursively, so a payload deep enough to need the parser fix was
+        // also deep enough to overflow the renderer.
+        let payload = parse_metrickit_payload(deeply_nested_payload_json(10_000).as_bytes())
+            .expect("deep payload parses");
+
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("deep report renders");
+
+        // Frames are numbered from 0 and every one of them made it out.
+        assert!(
+            report.contains("0   Roam"),
+            "{}",
+            &report[..2000.min(report.len())]
+        );
+        assert!(report.contains("9999"), "deepest frame missing from report");
+    }
+
+    #[test]
+    fn renders_branching_stacks_the_same_way_recursion_did() {
+        // The renderer was converted from recursion to an explicit stack. The
+        // contract it has to preserve: depth-first numbering, and indentation
+        // that steps in only at levels that actually branch.
+        let payload: MetricKitPayload = serde_json::from_value(serde_json::json!({
+            "crashDiagnostics": [{
+                "callStackTree": { "callStacks": [
+                    { "threadAttributed": true, "callStackRootFrames": [
+                        { "binaryName": "root", "binaryUUID": "4068B2EE-A54F-397E-882D-C5E3A40B789A",
+                          "offsetIntoBinaryTextSegment": 0,
+                          "subFrames": [
+                            { "binaryName": "left", "binaryUUID": "4068B2EE-A54F-397E-882D-C5E3A40B789A",
+                              "offsetIntoBinaryTextSegment": 1,
+                              "subFrames": [
+                                { "binaryName": "left_child", "binaryUUID": "4068B2EE-A54F-397E-882D-C5E3A40B789A",
+                                  "offsetIntoBinaryTextSegment": 2 }
+                              ] },
+                            { "binaryName": "right", "binaryUUID": "4068B2EE-A54F-397E-882D-C5E3A40B789A",
+                              "offsetIntoBinaryTextSegment": 3 }
+                          ] }
+                    ] }
+                ] },
+                "diagnosticMetaData": { "signal": 11 }
+            }]
+        }))
+        .expect("payload deserializes");
+
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        let frames: Vec<&str> = report
+            .lines()
+            .filter(|line| {
+                ["root", "left", "left_child", "right"]
+                    .iter()
+                    .any(|name| line.contains(name))
+            })
+            .collect();
+
+        // Depth-first: a subtree is fully emitted before its parent's next
+        // sibling, so left_child (2) precedes right (3).
+        let order: Vec<String> = frames
+            .iter()
+            .map(|line| line.split_whitespace().take(2).collect::<Vec<_>>().join(" "))
+            .collect();
+        assert_eq!(
+            order,
+            vec!["0 root", "1 left", "2 left_child", "3 right"],
+            "{report}"
+        );
+
+        // `root` has one child, so `left`/`right` do not indent past it; that
+        // pair does branch, so `left_child` steps in one level.
+        let indent = |name: &str| {
+            frames
+                .iter()
+                .find(|line| line.contains(name))
+                .map(|line| line.len() - line.trim_start().len())
+                .expect(name)
+        };
+        assert_eq!(indent("root"), indent("left"), "{report}");
+        assert_eq!(indent("left"), indent("right"), "{report}");
+        assert!(indent("left_child") > indent("left"), "{report}");
+    }
+
+    #[test]
+    fn evicts_least_recently_used_caches_over_budget() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let system = root.path().join("system");
+
+        // Three caches, ~4 KiB of payload each, touched oldest-first.
+        let make = |device: &str, build: &str| {
+            let dir = system.join(device).join(build);
+            fs::create_dir_all(dir.join("dyld")).expect("mkdir");
+            fs::write(dir.join("dyld").join("dyld_shared_cache_arm64e"), vec![0u8; 4096])
+                .expect("write cache");
+            dir
+        };
+
+        let oldest = make("iPhone13,1", "23F84");
+        let middle = make("iPhone15,2", "23G71");
+        let newest = make("iPhone17,1", "23G71");
+
+        for (dir, secs_ago) in [(&oldest, 3000), (&middle, 2000), (&newest, 1000)] {
+            let when = std::time::SystemTime::now() - std::time::Duration::from_secs(secs_ago);
+            let marker = fs::File::create(dir.join(LAST_USED_MARKER)).expect("marker");
+            marker.set_modified(when).expect("set marker mtime");
+        }
+
+        // Budget fits roughly two entries, forcing exactly one eviction.
+        let total = dir_size_bytes(&system);
+        let budget = total - (total / 3);
+
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        rt.block_on(enforce_system_cache_budget(&system, &newest, budget));
+
+        assert!(!oldest.exists(), "least-recently-used cache should be evicted");
+        assert!(middle.exists(), "in-budget cache should survive");
+        assert!(newest.exists(), "the cache just downloaded must never be evicted");
+    }
+
+    #[test]
+    fn never_evicts_the_cache_it_was_told_to_keep() {
+        let root = tempfile::tempdir().expect("tempdir");
+        let system = root.path().join("system");
+        let only = system.join("iPhone17,1").join("23G71");
+        fs::create_dir_all(only.join("dyld")).expect("mkdir");
+        fs::write(only.join("dyld").join("dyld_shared_cache_arm64e"), vec![0u8; 8192])
+            .expect("write cache");
+
+        // A budget of one byte cannot be met without dropping the kept entry.
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        rt.block_on(enforce_system_cache_budget(&system, &only, 1));
+
+        assert!(
+            only.exists(),
+            "eviction must not delete the cache the caller is about to use"
+        );
+    }
+
+    #[test]
+    fn appledb_args_carry_a_token_only_when_one_is_configured() {
+        let args = appledb_args("macOS", "MacBookAir10,1", "24G419", Path::new("/tmp/out"), None);
+        let rendered: Vec<String> = args
+            .iter()
+            .map(|a| a.to_string_lossy().to_string())
+            .collect();
+
+        // The macOS crash that resolved nothing was rate-limited on
+        // unauthenticated GitHub API calls, so the flag has to reach ipsw.
+        assert!(rendered.contains(&"--api".to_string()));
+        assert_eq!(
+            rendered.contains(&"--api-token".to_string()),
+            appledb_api_token().is_some(),
+            "token flag must track whether a token is actually configured"
+        );
     }
 
     #[test]

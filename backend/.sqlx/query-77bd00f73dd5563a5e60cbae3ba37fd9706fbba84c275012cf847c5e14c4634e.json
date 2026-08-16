@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE pending_symbolications\n             SET attempts = 3, failed_at_ms = 99, last_error = 'recursion limit exceeded'\n             WHERE id = 'deep'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "77bd00f73dd5563a5e60cbae3ba37fd9706fbba84c275012cf847c5e14c4634e"
+}

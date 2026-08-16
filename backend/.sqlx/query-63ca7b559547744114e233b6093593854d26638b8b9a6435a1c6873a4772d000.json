@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE pending_symbolications\n             SET attempts = 3, failed_at_ms = 99, last_error = 'payload missing on disk'\n             WHERE id = 'other'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "63ca7b559547744114e233b6093593854d26638b8b9a6435a1c6873a4772d000"
+}

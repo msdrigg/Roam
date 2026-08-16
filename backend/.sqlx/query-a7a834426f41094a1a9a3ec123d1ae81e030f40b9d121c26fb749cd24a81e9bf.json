@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE pending_symbolications SET failed_at_ms = 9000 WHERE id = 'recent'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "a7a834426f41094a1a9a3ec123d1ae81e030f40b9d121c26fb749cd24a81e9bf"
+}

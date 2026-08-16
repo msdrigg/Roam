@@ -23,7 +23,11 @@ base64 = "^0.23"
 chrono = { version = "^0.4", default-features = false, features = ["serde"] }
 ahash = "^0.8"
 thiserror = "^2"
-serde_json = "^1"
+# `unbounded_depth` lets the MetricKit parser lift serde_json's 128-deep
+# recursion cap. Crash payloads nest one JSON level per stack frame, so the
+# cap rejected exactly the deep-stack crashes we most need to read. See
+# `parse_metrickit_payload`.
+serde_json = { version = "^1", features = ["unbounded_depth"] }
 regex = "^1.12"
 object = { version = "0.40.0", default-features = false, features = ["read"] }
 zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate2"] }

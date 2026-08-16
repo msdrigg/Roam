@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE pending_symbolications SET payload_reaped_at_ms = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "4a345e6ac5e08cf1f2fdba66e424092fcf975ece6bcecb90223217bbaaf00764"
+}

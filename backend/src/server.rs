@@ -4,7 +4,7 @@ use crate::{
     database::{DeviceInfo, PendingSymbolication, User, UserUpdate},
     discord::{DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessageOptions},
     presence::UserPresenceInfo,
-    symbolicate::{DsymUploadMetadata, MetricKitPayload, RoamDebugInfo},
+    symbolicate::{parse_metrickit_payload, DsymUploadMetadata, MetricKitPayload, RoamDebugInfo},
     utils::{i64_to_string, string_to_i64_optional},
 };
 use anyhow::Context;
@@ -218,6 +218,7 @@ fn router(app_context: AppContext) -> Router {
         .route("/v2/symbolicate/lease", get(lease_pending_symbolications))
         .route("/v2/symbolicate/dsym/{uuid}", get(get_dsym_by_uuid))
         .route("/v2/symbolicate/result", post(submit_symbolication_result))
+        .route("/v2/symbolicate/requeue", post(requeue_symbolications))
         .route("/new-apns", post(new_apns))
         .route(
             "/upload-diagnostics/{diagnostic_key}",
@@ -506,7 +507,11 @@ async fn upload_metric_diagnostics(
     for (idx, payload_json) in metrics_payloads.into_iter().enumerate() {
         // Parse defensively: if a payload doesn't deserialize we still want to
         // surface it for manual triage rather than swallowing the upload.
-        let parsed: MetricKitPayload = match serde_json::from_str(&payload_json) {
+        // Shares the worker's parser so the depth cap is lifted here too.
+        // Otherwise a deep-stack crash still parsed as empty at ingest, the row
+        // recorded no binary UUIDs, and the worker never pre-fetched the app's
+        // own dSYM — leaving the crash unsymbolicated even once it parsed.
+        let parsed: MetricKitPayload = match parse_metrickit_payload(payload_json.as_bytes()) {
             Ok(p) => p,
             Err(err) => {
                 tracing::warn!(
@@ -776,12 +781,12 @@ async fn lease_pending_symbolications(
         {
             tracing::error!(?err, id = %failed.id, "Failed to post Discord :warning: for exhausted symbolication");
         }
-        if let Err(err) = tokio::fs::remove_file(&failed.payload_path).await {
-            if err.kind() != std::io::ErrorKind::NotFound {
-                tracing::warn!(?err, path = %failed.payload_path, "Failed to remove payload of permanently-failed symbolication");
-            }
-        }
+        // The payload deliberately outlives the failure. Deleting it here made a
+        // symbolicator fix unable to reach the crashes it had already lost;
+        // `reap_expired_failed_payloads` clears it on age instead.
     }
+
+    reap_expired_failed_payloads(&app_context).await;
 
     let mut payloads = Vec::with_capacity(leased.len());
     for row in leased {
@@ -920,6 +925,114 @@ struct SymbolicationResultRequest {
     symbolicated_text: Option<String>,
     #[serde(default)]
     error: Option<String>,
+}
+
+/// How long a permanently-failed symbolication's payload is kept on disk.
+///
+/// Long enough that a symbolicator fix shipped in response to the failure can
+/// still be applied to it, bounded so the volume does not grow without limit.
+const FAILED_PAYLOAD_RETENTION: Duration = Duration::from_secs(30 * 24 * 60 * 60);
+
+/// Delete payload files of symbolications that failed longer ago than
+/// `FAILED_PAYLOAD_RETENTION`.
+///
+/// Driven from the lease endpoint rather than a timer: the worker polls it on a
+/// schedule already, and a sweep that only runs when there is a worker to serve
+/// is a sweep that cannot delete anything behind a stopped worker's back.
+///
+/// Best-effort — a payload that fails to delete is simply retried next sweep.
+async fn reap_expired_failed_payloads(app_context: &AppContext) {
+    let cutoff_ms = chrono::Utc::now().timestamp_millis()
+        - (FAILED_PAYLOAD_RETENTION.as_millis() as i64);
+
+    let expired = match app_context.db_client().expired_failed_payloads(cutoff_ms).await {
+        Ok(rows) => rows,
+        Err(err) => {
+            tracing::warn!(?err, "Could not list expired failed symbolication payloads");
+            return;
+        }
+    };
+
+    for (id, payload_path) in expired {
+        match tokio::fs::remove_file(&payload_path).await {
+            Ok(()) => {}
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+            Err(err) => {
+                tracing::warn!(?err, %id, path = %payload_path, "Could not reap failed symbolication payload");
+                continue;
+            }
+        }
+        if let Err(err) = app_context.db_client().mark_payload_reaped(&id).await {
+            tracing::warn!(?err, %id, "Could not mark symbolication payload as reaped");
+        } else {
+            tracing::info!(%id, path = %payload_path, "Reaped payload of long-failed symbolication");
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RequeueSymbolicationsRequest {
+    /// Restrict the requeue to payloads whose recorded error contains this
+    /// substring. Omitting it requeues every exhausted payload.
+    #[serde(default)]
+    error_contains: Option<String>,
+    /// Report what would be requeued without changing anything.
+    #[serde(default)]
+    dry_run: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RequeueSymbolicationsResponse {
+    requeued: usize,
+    ids: Vec<String>,
+}
+
+/// Returns exhausted symbolications to the queue.
+///
+/// Exists because a payload that fails three times is out of the worker's reach
+/// forever, even once the bug that failed it is fixed — the deep-stack crashes
+/// rejected by the old parser being the case in point. Requeueing is how a
+/// deploy that fixes symbolication gets applied to the crashes it already lost.
+async fn requeue_symbolications(
+    State(app_context): State<AppContext>,
+    Json(req): Json<RequeueSymbolicationsRequest>,
+) -> Result<Json<RequeueSymbolicationsResponse>, ApiError> {
+    if req.dry_run {
+        let candidates = app_context
+            .db_client()
+            .failed_symbolication_ids(req.error_contains.as_deref())
+            .await
+            .map_err(ApiError::DatabaseError)?;
+        tracing::info!(
+            count = candidates.len(),
+            error_contains = req.error_contains.as_deref().unwrap_or("*"),
+            "Dry run: symbolications eligible for requeue"
+        );
+        return Ok(Json(RequeueSymbolicationsResponse {
+            requeued: candidates.len(),
+            ids: candidates,
+        }));
+    }
+
+    let rows = app_context
+        .db_client()
+        .requeue_failed_symbolications(req.error_contains.as_deref())
+        .await
+        .map_err(ApiError::DatabaseError)?;
+
+    let ids: Vec<String> = rows.iter().map(|row| row.id.clone()).collect();
+    tracing::info!(
+        count = ids.len(),
+        error_contains = req.error_contains.as_deref().unwrap_or("*"),
+        "Requeued failed symbolications"
+    );
+
+    Ok(Json(RequeueSymbolicationsResponse {
+        requeued: ids.len(),
+        ids,
+    }))
 }
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE pending_symbolications SET failed_at_ms = 1000 WHERE id = 'old'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "518018376d1dff11f23ceeac624f69b81e3f1bdeff07ab676ee549f24ab9d05c"
+}

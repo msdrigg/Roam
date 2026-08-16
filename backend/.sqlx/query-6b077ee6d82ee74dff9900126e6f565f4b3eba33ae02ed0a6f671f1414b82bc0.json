@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            UPDATE pending_symbolications\n            SET leased_at_ms = NULL, last_error = ?\n            WHERE id = ? AND completed_at_ms IS NULL AND failed_at_ms IS NULL\n            RETURNING\n                id as \"id!: String\",\n                device_id as \"device_id!: String\",\n                thread_id as \"thread_id!\",\n                payload_path as \"payload_path!: String\",\n                diagnostics_json as \"diagnostics_json!: String\",\n                installation_info_json as \"installation_info_json!: String\",\n                binary_uuids_json as \"binary_uuids_json!: String\",\n                payload_index as \"payload_index!\",\n                received_at_ms as \"received_at_ms!\",\n                leased_at_ms,\n                completed_at_ms,\n                failed_at_ms,\n                attempts as \"attempts!\",\n                last_error\n            ",
+  "query": "\n            UPDATE pending_symbolications\n            SET leased_at_ms = ?, attempts = attempts + 1\n            WHERE id IN (\n                SELECT id FROM pending_symbolications\n                WHERE completed_at_ms IS NULL\n                  AND failed_at_ms IS NULL\n                  AND attempts < 3\n                  AND (leased_at_ms IS NULL OR leased_at_ms < ?)\n                  AND (retry_after_ms IS NULL OR retry_after_ms <= ?)\n                ORDER BY received_at_ms\n                LIMIT ?\n            )\n            RETURNING\n                id as \"id!: String\",\n                device_id as \"device_id!: String\",\n                thread_id as \"thread_id!\",\n                payload_path as \"payload_path!: String\",\n                diagnostics_json as \"diagnostics_json!: String\",\n                installation_info_json as \"installation_info_json!: String\",\n                binary_uuids_json as \"binary_uuids_json!: String\",\n                payload_index as \"payload_index!\",\n                received_at_ms as \"received_at_ms!\",\n                leased_at_ms,\n                completed_at_ms,\n                failed_at_ms,\n                attempts as \"attempts!\",\n                last_error\n            ",
   "describe": {
     "columns": [
       {
@@ -159,7 +159,7 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 4
     },
     "nullable": [
       true,
@@ -178,5 +178,5 @@
       true
     ]
   },
-  "hash": "566d862aa7a5c33a280bdedaa74e0553c3dea13ec50f72011518a7c676fccbdf"
+  "hash": "6b077ee6d82ee74dff9900126e6f565f4b3eba33ae02ed0a6f671f1414b82bc0"
 }
