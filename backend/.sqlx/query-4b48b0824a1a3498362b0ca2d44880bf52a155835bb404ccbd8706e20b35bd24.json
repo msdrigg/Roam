@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE pending_symbolications SET retry_after_ms = NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "4b48b0824a1a3498362b0ca2d44880bf52a155835bb404ccbd8706e20b35bd24"
+}

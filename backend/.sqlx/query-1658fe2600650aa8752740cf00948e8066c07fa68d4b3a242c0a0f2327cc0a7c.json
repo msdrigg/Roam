@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT id as \"id!: String\"\n            FROM pending_symbolications\n            WHERE completed_at_ms IS NULL\n              AND (failed_at_ms IS NOT NULL OR attempts >= 3)\n              AND payload_reaped_at_ms IS NULL\n              AND (? IS NULL OR last_error LIKE ?)\n            ORDER BY received_at_ms\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pending_symbolications",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "1658fe2600650aa8752740cf00948e8066c07fa68d4b3a242c0a0f2327cc0a7c"
+}

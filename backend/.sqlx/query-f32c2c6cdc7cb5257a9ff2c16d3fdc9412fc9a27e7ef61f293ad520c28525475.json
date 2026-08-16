@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT id as \"id!: String\", payload_path as \"payload_path!: String\"\n            FROM pending_symbolications\n            WHERE failed_at_ms IS NOT NULL\n              AND failed_at_ms < ?\n              AND payload_reaped_at_ms IS NULL\n            ORDER BY failed_at_ms\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pending_symbolications",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "payload_path!: String",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pending_symbolications",
+            "name": "payload_path"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "f32c2c6cdc7cb5257a9ff2c16d3fdc9412fc9a27e7ef61f293ad520c28525475"
+}
