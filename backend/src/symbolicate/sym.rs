@@ -1,4 +1,5 @@
 use crate::database::DeviceInfo;
+use crate::symbolicate::diagnostics::LogEntry;
 use crate::symbolicate::RoamDebugInfo;
 use anyhow::{Context, Result};
 use futures::FutureExt as _;
@@ -1900,7 +1901,151 @@ fn render_metric_report(
         }
     }
 
+    render_debug_errors(&mut report, diagnostics)?;
+    render_logs(&mut report, diagnostics, payload)?;
+
     Ok(report)
+}
+
+fn render_debug_errors(report: &mut String, diagnostics: &RoamDebugInfo) -> Result<()> {
+    if diagnostics.debug_errors.is_empty() {
+        return Ok(());
+    }
+    writeln!(report, "Debug errors ({})", diagnostics.debug_errors.len())?;
+    for error in &diagnostics.debug_errors {
+        // These are multi-line Swift error dumps; indent continuations so the
+        // section stays scannable.
+        for (index, line) in error.lines().enumerate() {
+            let bullet = if index == 0 { "- " } else { "  " };
+            writeln!(report, "{bullet}{line}")?;
+        }
+    }
+    writeln!(report)?;
+    Ok(())
+}
+
+/// Longest log block we will paste into a report, in entries and in bytes.
+/// The crash report is a Discord attachment people read top to bottom, so the
+/// cap is about readability rather than transport.
+const MAX_LOG_ENTRIES: usize = 2000;
+const MAX_LOG_BYTES: usize = 256 * 1024;
+/// Individual `os_log` messages can carry a whole HTTP body; keep the tail of
+/// the block reachable.
+const MAX_LOG_MESSAGE_CHARS: usize = 2000;
+
+/// Render the captured `os_log` entries, newest last.
+///
+/// The app collects these with `OSLogStore(scope: .currentProcessIdentifier)`
+/// at the moment `MXMetricManager` hands over the payload. MetricKit delivers
+/// crash payloads on a *later launch*, so today these lines describe the
+/// process that reported the crash rather than the one that crashed. Printing
+/// the log window next to the payload window makes that visible instead of
+/// leaving a reader to assume the lines are pre-crash context.
+fn render_logs(
+    report: &mut String,
+    diagnostics: &RoamDebugInfo,
+    payload: &MetricKitPayload,
+) -> Result<()> {
+    if diagnostics.logs.is_empty() {
+        writeln!(report, "Logs (none captured)")?;
+        return Ok(());
+    }
+
+    // The device collects with `.reverse`, so the array arrives newest first.
+    // Sort rather than reverse: the order is the app's choice, not a contract.
+    let mut entries: Vec<&LogEntry> = diagnostics.logs.iter().collect();
+    entries.sort_by_key(|entry| entry.timestamp);
+
+    let total = entries.len();
+    let window = match (entries.first(), entries.last()) {
+        (Some(first), Some(last)) => format!(
+            " {} -> {}",
+            first.timestamp.format("%Y-%m-%d %H:%M:%S%.3fZ"),
+            last.timestamp.format("%Y-%m-%d %H:%M:%S%.3fZ")
+        ),
+        _ => String::new(),
+    };
+
+    writeln!(report, "Logs ({total} entries,{window})")?;
+    writeln!(
+        report,
+        "Captured when MetricKit delivered the payload (crash window: {} -> {}), from this \
+         process only. A log window that starts after the crash is from a later launch and \
+         says nothing about what crashed.",
+        payload.time_stamp_begin.as_deref().unwrap_or("unknown"),
+        payload.time_stamp_end.as_deref().unwrap_or("unknown")
+    )?;
+
+    // Keep the newest entries: whatever the app was doing last is the part
+    // worth reading, and it is the part a byte cap would otherwise cut.
+    let dropped_for_count = total.saturating_sub(MAX_LOG_ENTRIES);
+    let kept = &entries[dropped_for_count..];
+
+    let mut rendered: Vec<String> = Vec::with_capacity(kept.len());
+    let mut bytes = 0usize;
+    let mut dropped_for_bytes = 0usize;
+    for entry in kept.iter().rev() {
+        let line = format_log_entry(entry);
+        if bytes + line.len() > MAX_LOG_BYTES && !rendered.is_empty() {
+            dropped_for_bytes = kept.len() - rendered.len();
+            break;
+        }
+        bytes += line.len();
+        rendered.push(line);
+    }
+    rendered.reverse();
+
+    let dropped = dropped_for_count + dropped_for_bytes;
+    if dropped > 0 {
+        writeln!(
+            report,
+            "  ... {dropped} older entr{} omitted",
+            if dropped == 1 { "y" } else { "ies" }
+        )?;
+    }
+    for line in rendered {
+        report.push_str(&line);
+    }
+    writeln!(report)?;
+    Ok(())
+}
+
+fn format_log_entry(entry: &LogEntry) -> String {
+    let mut out = String::new();
+    let level = entry.level.as_deref().unwrap_or("-");
+    let category = entry.category.as_deref().unwrap_or("-");
+    // The subsystem is the app's own for all but a handful of entries, so it
+    // only earns a place on the line when it is something else.
+    let subsystem = entry
+        .subsystem
+        .as_deref()
+        .filter(|subsystem| !subsystem.starts_with("com.msdrigg."))
+        .map(|subsystem| format!("[{subsystem}] "))
+        .unwrap_or_default();
+
+    let message: String = if entry.message.chars().count() > MAX_LOG_MESSAGE_CHARS {
+        let truncated: String = entry.message.chars().take(MAX_LOG_MESSAGE_CHARS).collect();
+        format!("{truncated}… (truncated)")
+    } else {
+        entry.message.clone()
+    };
+
+    let prefix = format!(
+        "  {}  {level:<8} {category:<15} ",
+        entry.timestamp.format("%H:%M:%S%.3f")
+    );
+    for (index, line) in message.lines().enumerate() {
+        if index == 0 {
+            out.push_str(&format!("{prefix}{subsystem}{line}\n"));
+        } else {
+            // Continuations line up under the message column.
+            out.push_str(&format!("{:width$}{line}\n", "", width = prefix.len()));
+        }
+    }
+    if message.is_empty() {
+        out.push_str(&format!("{prefix}{subsystem}\n"));
+    }
+    out
 }
 
 /// Render one thread's frames.
@@ -2614,6 +2759,161 @@ mod tests {
         // Repeated identical reasons collapse to one.
         let summary = summarize_lookup_error("no dSYM on file\nno dSYM on file\nno dSYM on file");
         assert_eq!(summary, "no dSYM on file");
+    }
+
+    fn log_entry(seconds: i64, level: &str, category: &str, message: &str) -> LogEntry {
+        LogEntry {
+            message: message.to_string(),
+            timestamp: chrono::DateTime::from_timestamp(1_786_000_000 + seconds, 0)
+                .expect("valid timestamp"),
+            level: Some(level.to_string()),
+            category: Some(category.to_string()),
+            subsystem: Some("com.msdrigg.roam".to_string()),
+        }
+    }
+
+    fn diagnostics_with_logs(logs: Vec<LogEntry>) -> RoamDebugInfo {
+        RoamDebugInfo {
+            logs,
+            ..empty_diagnostics()
+        }
+    }
+
+    fn payload_with_window() -> MetricKitPayload {
+        serde_json::from_value(serde_json::json!({
+            "timeStampBegin": "2026-08-15 09:38:00",
+            "timeStampEnd": "2026-08-15 09:38:00",
+            "crashDiagnostics": []
+        }))
+        .expect("payload deserializes")
+    }
+
+    #[test]
+    fn report_renders_logs_oldest_last() {
+        // The device collects with `.reverse`, so the array arrives newest
+        // first; the report must not inherit that order.
+        let diagnostics = diagnostics_with_logs(vec![
+            log_entry(30, "notice", "Backend", "third"),
+            log_entry(20, "error", "Network", "second"),
+            log_entry(10, "info", "Lifecycle", "first"),
+        ]);
+
+        let report = render_metric_report(
+            &diagnostics,
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(report.contains("Logs (3 entries,"), "{report}");
+        let first = report.find("first").expect("first entry");
+        let second = report.find("second").expect("second entry");
+        let third = report.find("third").expect("third entry");
+        assert!(first < second && second < third, "{report}");
+
+        // Level and category earn their own columns; the app's own subsystem
+        // does not, since every line would carry it.
+        assert!(report.contains("error    Network"), "{report}");
+        assert!(!report.contains("com.msdrigg.roam"), "{report}");
+
+        // The crash window sits next to the log window so a reader can see
+        // whether the lines predate the crash at all.
+        assert!(
+            report.contains("crash window: 2026-08-15 09:38:00 -> 2026-08-15 09:38:00"),
+            "{report}"
+        );
+    }
+
+    #[test]
+    fn report_keeps_the_newest_logs_when_truncating() {
+        let logs: Vec<LogEntry> = (0..MAX_LOG_ENTRIES + 50)
+            .map(|index| log_entry(index as i64, "notice", "Backend", &format!("entry-{index}")))
+            .collect();
+
+        let report = render_metric_report(
+            &diagnostics_with_logs(logs),
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(report.contains("50 older entries omitted"), "{report}");
+        // Oldest dropped, newest kept — the tail is the part worth reading.
+        assert!(!report.contains("entry-0\n"), "{report}");
+        assert!(
+            report.contains(&format!("entry-{}", MAX_LOG_ENTRIES + 49)),
+            "{report}"
+        );
+    }
+
+    #[test]
+    fn report_notes_when_no_logs_were_captured() {
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(report.contains("Logs (none captured)"), "{report}");
+    }
+
+    #[test]
+    fn report_renders_debug_errors_and_foreign_subsystems() {
+        let mut diagnostics = diagnostics_with_logs(vec![LogEntry {
+            subsystem: Some("com.apple.coredata".to_string()),
+            ..log_entry(10, "fault", "Data", "line one\nline two")
+        }]);
+        diagnostics.debug_errors =
+            vec!["Error Getting Log Entries: \nmissing entitlement".to_string()];
+
+        let report = render_metric_report(
+            &diagnostics,
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(report.contains("Debug errors (1)"), "{report}");
+        assert!(report.contains("- Error Getting Log Entries:"), "{report}");
+        assert!(report.contains("  missing entitlement"), "{report}");
+
+        // A subsystem that isn't ours is worth naming.
+        assert!(report.contains("[com.apple.coredata] line one"), "{report}");
+        // Continuation lines indent under the message column rather than
+        // restarting at column zero and reading like a new entry.
+        let continuation = report
+            .lines()
+            .find(|line| line.trim_end().ends_with("line two"))
+            .expect("continuation line");
+        assert!(
+            continuation.starts_with("          "),
+            "continuation not indented: {continuation:?}"
+        );
+    }
+
+    #[test]
+    fn truncates_a_single_enormous_log_message() {
+        let huge = "x".repeat(MAX_LOG_MESSAGE_CHARS + 500);
+        let report = render_metric_report(
+            &diagnostics_with_logs(vec![log_entry(10, "notice", "Backend", &huge)]),
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(report.contains("… (truncated)"), "{report}");
+        assert!(!report.contains(&huge), "untruncated message in report");
     }
 
     #[test]
