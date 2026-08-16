@@ -283,7 +283,10 @@
 		AFDB4FFC2D53C0A8004E27A4 /* DeviceListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDB4FFB2D53C0A5004E27A4 /* DeviceListItem.swift */; };
 		AFDB4FFD2D53C0A8004E27A4 /* DeviceListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDB4FFB2D53C0A5004E27A4 /* DeviceListItem.swift */; };
 		AFDB4FFE2D53C7B7004E27A4 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */; };
+		AFF0FEED0000000000000001 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF0FEED0000000000000000 /* FileLog.swift */; };
+		AFF0FEED0000000000000003 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF0FEED0000000000000000 /* FileLog.swift */; };
 		AFDB4FFF2D53C7B7004E27A4 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */; };
+		AFF0FEED0000000000000002 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF0FEED0000000000000000 /* FileLog.swift */; };
 		AFDB50002D53C7B7004E27A4 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */; };
 		AFE6249D2BDCAA5000F4992E /* DataHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataHandler.swift */; };
 		AFE6249E2BDCAA5000F4992E /* DataHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFE6249C2BDCAA5000F4992E /* DataHandler.swift */; };
@@ -306,8 +309,11 @@
 		AFEEF2962E25707500C0A445 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCF22DF2B2A6A720048FFD9 /* NetworkMonitor.swift */; };
 		AFEEF2972E2570F900C0A445 /* NotificationBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCF22DD2B2A52190048FFD9 /* NotificationBanner.swift */; };
 		AFF2B68F2D4FEBBE00A6F3B0 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */; };
+		AFF0FEED0000000000000004 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF0FEED0000000000000000 /* FileLog.swift */; };
 		AFF2B6902D4FEBBE00A6F3B0 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */; };
+		AFF0FEED0000000000000005 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF0FEED0000000000000000 /* FileLog.swift */; };
 		AFF2B6912D4FEBBE00A6F3B0 /* Loggers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */; };
+		AFF0FEED0000000000000006 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFF0FEED0000000000000000 /* FileLog.swift */; };
 		AFF6077F2ADFACBA00A7D657 /* AsyncLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFC6E67E2ADCE5D80036EC90 /* AsyncLock.swift */; };
 		AFF607802ADFACBA00A7D657 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* NetworkUtils.swift */; };
 		AFF607812ADFACBA00A7D657 /* DiscoveryActor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95B7532ADF4435005FC338 /* DiscoveryActor.swift */; };
@@ -612,6 +618,7 @@
 		AFEDCDF42CD1331E0001D959 /* RoamSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RoamSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFEEF2932E2462F900C0A445 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 		AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loggers.swift; sourceTree = "<group>"; };
+		AFF0FEED0000000000000000 /* FileLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileLog.swift; sourceTree = "<group>"; };
 		AFF607892AE0037900A7D657 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
 		AFF6DE0C2BCF0326002C13FC /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		AFFC71E52AD1212100EE8EA0 /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
@@ -853,6 +860,7 @@
 				AF3BDD132DCF8F8F00DABFA6 /* XMLStreamingDecoder.swift */,
 				AFCD235D2DCBC6210000E80E /* QBackgroundExecution.swift */,
 				AFF2B68E2D4FEBBD00A6F3B0 /* Loggers.swift */,
+				AFF0FEED0000000000000000 /* FileLog.swift */,
 				AF468D362D333A9C00DF0F2E /* QSocket.swift */,
 				AF0D09EE2CDE5C3B0098122E /* Helpers.swift */,
 				AF21300B2DFF35E300B3F2D6 /* DispatchQueueExtension.swift */,
@@ -1435,6 +1443,7 @@
 				AFF6DE0E2BCF0326002C13FC /* Message.swift in Sources */,
 				AFEEF2942E256DB700C0A445 /* NetworkConnectivityBanner.swift in Sources */,
 				AFF2B6912D4FEBBE00A6F3B0 /* Loggers.swift in Sources */,
+				AFF0FEED0000000000000006 /* FileLog.swift in Sources */,
 				AF70BB0A2BA7CBD0009A06EC /* HoveredView.swift in Sources */,
 				AFBDE4542DD5341700DD1741 /* FileLock.swift in Sources */,
 				AF60A7DE2E36CDEE00D1D16B /* DataLoaders.swift in Sources */,
@@ -1501,6 +1510,7 @@
 				AF4244302BB1118700334AAF /* SchemaFile.swift in Sources */,
 				AF205B2D2AE02D1C00041CDF /* Device.swift in Sources */,
 				AFF2B68F2D4FEBBE00A6F3B0 /* Loggers.swift in Sources */,
+				AFF0FEED0000000000000004 /* FileLog.swift in Sources */,
 				AF205B202AE02CAF00041CDF /* WidgetHelpers.swift in Sources */,
 				AF0042772AE9BD8F0051BB1E /* UserDefaultKeys.swift in Sources */,
 				AFCD235E2DCBC6270000E80E /* QBackgroundExecution.swift in Sources */,
@@ -1535,6 +1545,7 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 				AFDB4FFE2D53C7B7004E27A4 /* Loggers.swift in Sources */,
+				AFF0FEED0000000000000001 /* FileLog.swift in Sources */,
 				AFA21D342C2C7C83008EF24A /* RoamWatchUITests.swift in Sources */,
 				AFA21D362C2C7C83008EF24A /* RoamWatchScreenshotTests.swift in Sources */,
 			);
@@ -1543,6 +1554,7 @@
 			isa = PBXSourcesBuildPhase;
 			files = (
 				AFDB4FFF2D53C7B7004E27A4 /* Loggers.swift in Sources */,
+				AFF0FEED0000000000000002 /* FileLog.swift in Sources */,
 				AFA21D432C2C7CB6008EF24A /* RoamUITests.swift in Sources */,
 				AFA21D452C2C7CB6008EF24A /* RoamScreenshotTests.swift in Sources */,
 			);
@@ -1592,6 +1604,7 @@
 				AF19CA232AE455B400A42DFF /* DataHelpers.swift in Sources */,
 				AFBDE4552DD5341700DD1741 /* FileLock.swift in Sources */,
 				AFF2B6902D4FEBBE00A6F3B0 /* Loggers.swift in Sources */,
+				AFF0FEED0000000000000005 /* FileLog.swift in Sources */,
 				AF2AF23B2D3B0FDB00AAD5B0 /* StatelessDeviceAPI.swift in Sources */,
 				AFA079DA2AE02561003E2754 /* Device.swift in Sources */,
 				AF60A7DA2E36CD7800D1D16B /* FileDataHandler.swift in Sources */,
@@ -1687,6 +1700,7 @@
 				AFD100412F00000100000001 /* RoamDatabaseTests.swift in Sources */,
 				AF0532852D36DB2B00D68F8E /* RoamSwiftTests.swift in Sources */,
 				AFDB50002D53C7B7004E27A4 /* Loggers.swift in Sources */,
+				AFF0FEED0000000000000003 /* FileLog.swift in Sources */,
 				AF3F350D2D3E99A2009AF2F8 /* ECPMessages.swift in Sources */,
 				AF3F350C2D3E98C9009AF2F8 /* ECPProtocol.swift in Sources */,
 				AFEEF2952E25701100C0A445 /* AsyncLock.swift in Sources */,

@@ -29,6 +29,11 @@ struct RoamApp: App {
 
     var metricManager = RoamMetricManager()
     init() {
+        // Before anything else worth logging: this run's log file has to exist
+        // for this run's lines to survive it, and the backtrace trap is only
+        // useful if it beats the crash.
+        FileLog.start()
+        CrashStackTrap.install()
         Log.lifecycle.notice("Starting Roam")
         #if !os(macOS)
             installAborter()

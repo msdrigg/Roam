@@ -2004,7 +2004,7 @@ protocol RefreshClient: Sendable {
 
 // MARK: - Constants
 public let legacyContainerAppGroup = "group.com.msdrigg.roam.models"
-public let mainAppGroup = "group.com.msdrigg.roam"
+public let mainAppGroup = roamAppGroup
 
 // MARK: - Testing Support
 extension RoamDataHandler {

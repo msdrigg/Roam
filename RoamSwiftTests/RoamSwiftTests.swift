@@ -152,4 +152,48 @@ struct RoamSwiftTests {
             #expect(result == nil, "Expected nil for: '\(testCase)', but got: \(String(describing: result))")
         }
     }
+
+    // MARK: Logging
+
+    @Test func logMessageRendersInterpolationsAndIgnoresPrivacy() {
+        // Every one of the app's ~800 log call sites goes through this, and
+        // most carry `privacy: .public` left over from `Logger`. The annotation
+        // has to keep compiling and the value has to survive it.
+        let count = 3
+        let name: String? = nil
+        let message: LogMessage =
+            "found \(count, privacy: .public) devices, primary \(name ?? "none", privacy: .public)"
+        #expect(message.text == "found 3 devices, primary none")
+
+        // Strings interpolate as themselves, not as `"quoted"`.
+        let bare: LogMessage = "plain \("value") end"
+        #expect(bare.text == "plain value end")
+
+        // A literal with no interpolation at all still works.
+        let literal: LogMessage = "starting up"
+        #expect(literal.text == "starting up")
+    }
+
+    @Test func fileLogLinesDecodeAsFileLogEntry() throws {
+        // `FileLog` writes JSON by hand for speed but reads it back with
+        // `JSONDecoder`. The two are written independently, so the escaping has
+        // to be pinned or a stray quote silently drops a line on read — exactly
+        // the lines around a crash, which is where log messages are least
+        // predictable.
+        let awkward = "quote \" backslash \\ newline \n tab \t control \u{01} unicode ✅"
+        let line = FileLog.encodedLine(
+            timestamp: 1_786_834_162.976,
+            level: "Error",
+            category: "Rendering",
+            message: awkward
+        )
+        #expect(line.hasSuffix("\n"))
+
+        let entry = try JSONDecoder().decode(
+            FileLogEntry.self, from: Data(line.utf8))
+        #expect(entry.message == awkward)
+        #expect(entry.level == "Error")
+        #expect(entry.category == "Rendering")
+        #expect(abs(entry.date.timeIntervalSince1970 - 1_786_834_162.976) < 0.001)
+    }
 }

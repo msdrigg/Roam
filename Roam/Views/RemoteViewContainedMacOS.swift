@@ -129,6 +129,10 @@
         }
 
         var body: some View {
+            // Top of the macOS view tree, and so the re-entry point for any
+            // recursion that runs through our own views. Also where the
+            // main-thread stack gets measured — see `RenderTrace`.
+            let _ = RenderTrace.body("macOS.RemoteViewContained")
             configuredContent
         }
 
@@ -846,6 +850,10 @@
         }
 
         var body: some View {
+            // Menus rebuild their content on every evaluation, and a menu whose
+            // label depends on state its own content changes is the classic
+            // AppKit-side re-entry loop.
+            let _ = RenderTrace.body("macOS.DeviceToolbarMenu")
             Menu {
                 ForEach(deviceIds, id: \.self) { deviceId in
                     MacDeviceToolbarMenuItem(id: deviceId, selectedDeviceId: selectedDevice?.id) {
@@ -881,6 +889,7 @@
         }
 
         var body: some View {
+            let _ = RenderTrace.body("macOS.DeviceToolbarMenuItem")
             Button(action: action) {
                 Label(
                     deviceLoader.device?.name ?? "Loading...",
