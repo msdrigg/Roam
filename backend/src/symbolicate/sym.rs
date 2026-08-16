@@ -2127,13 +2127,44 @@ fn parse_os_build_id(os_version: &str) -> Option<String> {
     Some(os_version[start..end].to_string())
 }
 
+/// Canonicalize MetricKit's `osVersion` into the vocabulary `ipsw download
+/// appledb --os` accepts.
+///
+/// MetricKit names the OS the way Apple does in release notes — "iPhone OS 26.6
+/// (23G71)" — so taking the first whitespace-delimited token yielded "iPhone",
+/// which appledb rejects outright ("valid --os flag choices are: ..."). The
+/// appledb fallback had therefore never once succeeded for an iPhone crash; it
+/// only looked like a rate-limit problem because macOS, the family that does
+/// tokenize correctly, was the one being watched.
+///
+/// Unrecognized families return None so the caller skips appledb rather than
+/// shelling out to a command that cannot succeed. The list is appledb's, not
+/// Apple's: visionOS is deliberately absent because appledb does not accept it.
 fn parse_os_family(os_version: &str) -> Option<String> {
-    let candidate = os_version.split_whitespace().next()?.to_string();
-    if candidate.is_empty() {
-        None
-    } else {
-        Some(candidate)
-    }
+    // Longest-first, so "iPhone OS" is matched before any shorter prefix and
+    // "iPadOS" is never mistaken for "iOS".
+    const FAMILIES: &[(&str, &str)] = &[
+        ("iPhone OS", "iOS"),
+        ("Mac OS X", "macOS"),
+        ("bridgeOS", "bridgeOS"),
+        ("watchOS", "watchOS"),
+        ("audioOS", "audioOS"),
+        ("iPadOS", "iPadOS"),
+        ("iPodOS", "iPodOS"),
+        ("macOS", "macOS"),
+        ("tvOS", "tvOS"),
+        ("iOS", "iOS"),
+    ];
+
+    let trimmed = os_version.trim();
+    FAMILIES
+        .iter()
+        .find(|(prefix, _)| {
+            trimmed
+                .get(..prefix.len())
+                .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
+        })
+        .map(|(_, canonical)| (*canonical).to_string())
 }
 
 fn likely_dylib_paths(library_info: &LibraryInfo) -> Vec<String> {
@@ -2881,6 +2912,49 @@ mod tests {
             Some("iOS")
         );
         assert_eq!(parse_os_family(""), None);
+
+        // The spelling MetricKit actually emits for an iPhone. Tokenizing on
+        // whitespace gave "iPhone", which appledb rejects — so its fallback had
+        // never worked for the platform that produces most of our crashes.
+        assert_eq!(
+            parse_os_family("iPhone OS 26.6 (23G71)").as_deref(),
+            Some("iOS")
+        );
+        assert_eq!(
+            parse_os_family("iPadOS 26.5 (23F84)").as_deref(),
+            Some("iPadOS")
+        );
+        assert_eq!(
+            parse_os_family("Mac OS X 10.15.7 (19H2)").as_deref(),
+            Some("macOS")
+        );
+        assert_eq!(
+            parse_os_family("watchOS 11.2 (22S100)").as_deref(),
+            Some("watchOS")
+        );
+
+        // Every value returned must be one appledb will accept, or the download
+        // fails on the flag before it ever reaches the network.
+        const APPLEDB_CHOICES: &[&str] = &[
+            "audioOS", "bridgeOS", "iOS", "iPadOS", "iPodOS", "macOS", "tvOS", "watchOS",
+        ];
+        for version in [
+            "iPhone OS 26.6 (23G71)",
+            "iPadOS 26.5 (23F84)",
+            "macOS 15.5 (24F74)",
+            "Mac OS X 10.15.7 (19H2)",
+            "watchOS 11.2 (22S100)",
+            "tvOS 18.0 (22J356)",
+        ] {
+            let family = parse_os_family(version).expect(version);
+            assert!(
+                APPLEDB_CHOICES.contains(&family.as_str()),
+                "{version} produced {family}, which appledb does not accept"
+            );
+        }
+
+        // Unrecognized families are skipped rather than guessed at.
+        assert_eq!(parse_os_family("visionOS 2.0 (22N320)"), None);
     }
 
     fn crash_from(value: serde_json::Value) -> MetricKitCrashDiagnostic {
