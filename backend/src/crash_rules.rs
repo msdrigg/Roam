@@ -34,6 +34,14 @@ pub struct CrashFacts {
     pub signal: Option<i64>,
     /// Termination code as lowercase hex with an `0x` prefix, e.g. `0x8badf00d`.
     pub termination_code: Option<String>,
+    /// `Thermal Level:` out of the termination reason's `ThermalInfo` block.
+    /// 0 is nominal; 9 is what the OS also labels `Thermal State: critical`.
+    pub thermal_level: Option<i64>,
+    /// The app's own share of the CPU over the watchdog window, from
+    /// `Elapsed application CPU time (seconds): 0.127, 0% CPU`. Deliberately
+    /// the *application* figure and not the `Elapsed total` one: the gap
+    /// between them is what separates a starved process from a busy one.
+    pub app_cpu_percent: Option<i64>,
 }
 
 /// Reads `  key: value` out of a rendered report's metadata block.
@@ -59,6 +67,26 @@ fn termination_code(report: &str) -> Option<String> {
         .map(|caps| format!("0x{}", caps[1].to_ascii_lowercase()))
 }
 
+/// Reads `Thermal Level:   9` out of the report.
+///
+/// Matched against the whole report rather than the metadata block: the
+/// `ThermalInfo` list lives inside the multi-line `terminationReason` value, so
+/// [`metadata_value`]'s per-line `key: value` shape does not reach it.
+fn thermal_level(report: &str) -> Option<i64> {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"Thermal Level:\s*(\d+)").expect("valid thermal regex"));
+    RE.captures(report)?[1].parse().ok()
+}
+
+/// Reads the percentage off the `Elapsed application CPU time` line.
+fn app_cpu_percent(report: &str) -> Option<i64> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"Elapsed application CPU time \(seconds\): [\d.]+, (\d+)% CPU")
+            .expect("valid app cpu regex")
+    });
+    RE.captures(report)?[1].parse().ok()
+}
+
 impl CrashFacts {
     pub fn from_report(report: &str) -> Self {
         Self {
@@ -69,6 +97,8 @@ impl CrashFacts {
                 .and_then(|v| v.parse().ok()),
             signal: metadata_value(report, "signal").and_then(|v| v.parse().ok()),
             termination_code: termination_code(report),
+            thermal_level: thermal_level(report),
+            app_cpu_percent: app_cpu_percent(report),
         }
     }
 }
@@ -104,6 +134,9 @@ pub enum FixStatus {
     /// The crash is from the release that fixed it, or later. The fix did not
     /// hold, so this needs a human even though the stack is recognised.
     Unfixed,
+    /// The rule describes something that is not a defect in the app, so there is
+    /// no version to compare against. See [`CrashRule::environmental`].
+    NotADefect,
     /// No usable `appVersion` on the report, or no fix version on the rule.
     Unknown,
 }
@@ -116,11 +149,23 @@ pub struct CrashRule {
     /// App version that shipped this rule's fix, e.g. `"1.51"`. Crashes from
     /// this version onwards are tagged [`FixStatus::Unfixed`].
     pub fixed_in: Option<&'static str>,
+    /// The kill is a property of the device or the OS, not a bug in the app, so
+    /// there is nothing to fix and no version to compare against. Matching
+    /// reports are tagged [`FixStatus::NotADefect`] and reviewed. Set this only
+    /// where the report itself carries the evidence — a rule that merely *looks*
+    /// environmental should stay in the manual queue.
+    pub environmental: bool,
     /// Mach exception type, e.g. 10 for `EXC_CRASH`, 12 for `EXC_GUARD`.
     pub exception_type: Option<i64>,
     pub signal: Option<i64>,
     /// Lowercase hex termination code, e.g. `0x8badf00d`.
     pub termination_code: Option<&'static str>,
+    /// Minimum `Thermal Level:` on the report, inclusive. A report with no
+    /// thermal figure does not match a rule that sets this.
+    pub min_thermal_level: Option<i64>,
+    /// Maximum `Elapsed application CPU time` percentage, inclusive. A report
+    /// with no CPU figure does not match a rule that sets this.
+    pub max_app_cpu_percent: Option<i64>,
     /// Substrings that must all appear somewhere in the report (stack frames).
     pub all_of: &'static [&'static str],
     /// Substrings that must not appear. Used to keep rules from overlapping.
@@ -146,6 +191,16 @@ impl CrashRule {
                 return false;
             }
         }
+        if let Some(minimum) = self.min_thermal_level {
+            if !facts.thermal_level.is_some_and(|level| level >= minimum) {
+                return false;
+            }
+        }
+        if let Some(maximum) = self.max_app_cpu_percent {
+            if !facts.app_cpu_percent.is_some_and(|share| share <= maximum) {
+                return false;
+            }
+        }
         if !self.all_of.iter().all(|needle| report.contains(needle)) {
             return false;
         }
@@ -157,6 +212,9 @@ impl CrashRule {
 
     /// Places the crash's app version against the release that fixed this rule.
     pub fn fix_status(&self, facts: &CrashFacts) -> FixStatus {
+        if self.environmental {
+            return FixStatus::NotADefect;
+        }
         let Some(fixed_in) = self.fixed_in.and_then(parse_version) else {
             return FixStatus::Unknown;
         };
@@ -193,6 +251,7 @@ impl RuleMatch {
                 ":rotating_light: **UNFIXED.** The fix above shipped in {fixed_in}, and this report is from {} — the crash survived it. Left unreviewed for a human.",
                 facts.app_version.as_deref().unwrap_or("that release or later"),
             ),
+            FixStatus::NotADefect => ":thermometer: **Nothing to fix in the app.** The report itself carries the evidence that the system, not Roam, ended the process — see above. Reviewed automatically; reopen the thread if you disagree.".to_string(),
             FixStatus::Unknown => match self.rule.fixed_in {
                 Some(version) => format!(
                     ":grey_question: **Fix status unknown.** The fix shipped in {version}, but this report carries no readable `appVersion`, so whether it predates the fix is unclear."
@@ -216,6 +275,7 @@ impl RuleMatch {
                 "UNFIXED — still crashing on {} after the {fixed_in} fix: {title}",
                 facts.app_version.as_deref().unwrap_or("a later version"),
             ),
+            (FixStatus::NotADefect, _) => format!("{title} (not an app defect)"),
             _ => format!("{title} (fix status unknown)"),
         }
     }
@@ -263,15 +323,29 @@ The attributed thread is the **main thread**, parked in `nw_browser_cancel`, rea
 
 **Known cause, fix:** listener/browser teardown is dispatched onto the queue those objects already run on, so the cancelling thread is never blocked.";
 
+const THERMAL_STARVATION_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — the device was overheating, not the app**
+
+`EXC_CRASH (10)` / `SIGKILL (9)` with a watchdog termination reason, but the numbers in that reason rule the app out as the cause:
+
+- **`Thermal State: critical`** (thermal level 9) — the highest tier iOS reports. At that point the system is aggressively throttling every process on the device.
+- **`Elapsed application CPU time: 0% CPU`** — Roam got a rounding error's worth of CPU across the whole watchdog window, while the device as a whole stayed busy. The process was not doing slow work; it was not being scheduled.
+
+A scene-update deadline is wall-clock, not CPU-time, so a process that never gets scheduled blows through it without ever running. The attributed thread is whatever the app happened to be parked in when the clock ran out, and reading it will mislead you.
+
+**Nothing to fix:** this resolves when the device cools down. Common causes are charging in direct sun, a heavy game or export running in the foreground, or a stuck background process elsewhere on the system.";
+
 /// Ordered: the first match wins, so put narrower rules first.
 pub static RULES: &[CrashRule] = &[
     CrashRule {
         id: "local-network-cancel-watchdog",
         title: "0x8BADF00D watchdog cancelling NWBrowser on the main thread",
         fixed_in: Some("1.51"),
+        environmental: false,
         exception_type: None,
         signal: None,
         termination_code: Some("0x8badf00d"),
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
         all_of: &["nw_browser_cancel"],
         none_of: &[],
         reply: WATCHDOG_REPLY,
@@ -280,9 +354,12 @@ pub static RULES: &[CrashRule] = &[
         id: "ssdp-socket-double-close",
         title: "EXC_GUARD from double-closing the SSDP socket",
         fixed_in: Some("1.51"),
+        environmental: false,
         exception_type: Some(12),
         signal: None,
         termination_code: None,
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
         all_of: &["scanDevicesContinually", "FileDescriptor._close"],
         none_of: &[],
         reply: EXC_GUARD_REPLY,
@@ -291,12 +368,35 @@ pub static RULES: &[CrashRule] = &[
         id: "database-lock-suspension",
         title: "0xdead10cc suspension while holding the database file lock",
         fixed_in: Some("1.51"),
+        environmental: false,
         exception_type: Some(10),
         signal: Some(9),
         termination_code: None,
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
         all_of: &["DatabaseFileLock.withExclusiveLock"],
         none_of: &[],
         reply: DEAD10CC_REPLY,
+    },
+    // Last on purpose. This is the broadest rule in the list -- it names no app
+    // frame at all -- so every rule that recognises a *stack* gets first refusal.
+    // A main thread genuinely deadlocked in Roam's own code also reports 0% app
+    // CPU, and the only thing separating it from this is the thermal figure.
+    CrashRule {
+        id: "thermal-starvation-watchdog",
+        title: "0x8BADF00D watchdog while the device was thermally throttled",
+        fixed_in: None,
+        environmental: true,
+        exception_type: Some(10),
+        signal: Some(9),
+        termination_code: Some("0x8badf00d"),
+        // Level 9 is the top of the scale, reported alongside
+        // `Thermal State: critical`. Nothing below that is evidence of anything.
+        min_thermal_level: Some(9),
+        max_app_cpu_percent: Some(0),
+        all_of: &[],
+        none_of: &[],
+        reply: THERMAL_STARVATION_REPLY,
     },
 ];
 

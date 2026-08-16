@@ -1,9 +1,9 @@
-Ang Roam ay isang libreng app na walang mga ad!
+Ang Roam ay isang libreng app na walang ads!
 
--   Tumatakbo sa Mac, iPhone, iPad, Apple Watch, VisionOS at (malapit na) Apple TV!
--   Matalinong integrasyon ng platform na may mga shortcut sa keyboard sa Mac at kontrol ng keyboard/volume sa iOS
--   Gamitin ang mga shortcut, widget o Siri upang kontrolin ang iyong TV nang hindi kailanman binubuksan ang app
--   Suporta sa pribadong pakikinig sa Mac at iOS (i-play ang audio mula sa iyong TV sa pamamagitan ng iyong mga headphone)
--   Natutuklasan ang mga device sa iyong lokal na network sa oras na buksan mo ang app
--   Intuitive na disenyo gamit ang katutubong sistema ng disenyo ng SwiftUI ng apple
--   Mabilis at magaan (8 MB download) at agarang binubuksan
+-   Gumagana sa Mac, iPhone, iPad, Apple Watch, VisionOS at (malapit na) Apple TV!
+-   Matalinong integrasyon sa platform gamit ang keyboard shortcuts sa Mac at keyboard/volume control sa iOS
+-   Gamitin ang shortcuts, widgets, o Siri para kontrolin ang iyong TV nang hindi na kinakailangang buksan ang app
+-   Suporta sa private listening sa Mac at iOS (pakinggan ang audio mula sa iyong TV gamit ang iyong headphones)
+-   Awtomatikong natutukoy ang mga device sa iyong local network kapag binuksan ang app
+-   Intuwitibong disenyo gamit ang native na SwiftUI design system ng Apple
+-   Mabilis at magaan (8 MB ang download) at agad bumubukas

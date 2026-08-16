@@ -92,19 +92,25 @@ struct SettingsNavigationWrapper<Content>: View where Content: View {
     }
 
 #if os(macOS)
+    /// Runs on the next runloop turn for the same reason as
+    /// `NSApplication.forceFront(_:)`: this is a button action, so a synchronous
+    /// body would order a window front from inside `Update.dispatchActions` and
+    /// re-enter the scene-phase update that is already running.
     private func closeSettings() {
-        let settingsWindow = NSApp.keyWindow ?? NSApp.windows.first {
-            $0.identifier == NSUserInterfaceItemIdentifier(rawValue: "com_apple_SwiftUI_Settings_window")
-        }
-        let replacementWindow = windowToActivateAfterClosingSettings(settingsWindow: settingsWindow)
+        Task { @MainActor in
+            let settingsWindow = NSApp.keyWindow ?? NSApp.windows.first {
+                $0.identifier == NSUserInterfaceItemIdentifier(rawValue: "com_apple_SwiftUI_Settings_window")
+            }
+            let replacementWindow = windowToActivateAfterClosingSettings(settingsWindow: settingsWindow)
 
-        if let replacementWindow {
-            NSApp.activate(ignoringOtherApps: true)
-            replacementWindow.makeKeyAndOrderFront(nil)
-            replacementWindow.orderFrontRegardless()
-        }
+            if let replacementWindow {
+                NSApp.activate(ignoringOtherApps: true)
+                replacementWindow.makeKeyAndOrderFront(nil)
+                replacementWindow.orderFrontRegardless()
+            }
 
-        settingsWindow?.performClose(nil)
+            settingsWindow?.performClose(nil)
+        }
     }
 
     private func windowToActivateAfterClosingSettings(settingsWindow: NSWindow?) -> NSWindow? {
