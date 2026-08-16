@@ -1931,10 +1931,49 @@ fn render_metric_report(
         }
     }
 
+    render_faulting_thread_backtraces(&mut report, diagnostics)?;
     render_debug_errors(&mut report, diagnostics)?;
     render_logs(&mut report, diagnostics, payload)?;
 
     Ok(report)
+}
+
+/// The app's own backtrace of the faulting thread.
+///
+/// Rendered right below the threads because for a stack overflow it *is* the
+/// thread: MetricKit's unwinder gives up on a blown stack and reports the
+/// attributed thread with zero frames, so without this a recursion crash
+/// carries no frames at all.
+fn render_faulting_thread_backtraces(
+    report: &mut String,
+    diagnostics: &RoamDebugInfo,
+) -> Result<()> {
+    let Some(backtraces) = diagnostics.faulting_thread_backtraces.as_ref() else {
+        return Ok(());
+    };
+    let backtraces: Vec<&String> = backtraces.iter().filter(|t| !t.trim().is_empty()).collect();
+    if backtraces.is_empty() {
+        return Ok(());
+    }
+
+    writeln!(
+        report,
+        "In-process backtrace of the faulting thread ({})",
+        backtraces.len()
+    )?;
+    writeln!(
+        report,
+        "Captured by the app's own SIGSEGV/SIGBUS handler, running on an alternate signal \
+         stack, in the run that died. Unlike the MetricKit call stacks above this survives a \
+         stack overflow — a frame repeating down this list is the recursion."
+    )?;
+    for backtrace in backtraces {
+        for line in backtrace.lines() {
+            writeln!(report, "  {line}")?;
+        }
+    }
+    writeln!(report)?;
+    Ok(())
 }
 
 fn render_debug_errors(report: &mut String, diagnostics: &RoamDebugInfo) -> Result<()> {
@@ -1996,15 +2035,42 @@ fn render_logs(
         _ => String::new(),
     };
 
+    // Since the app started keeping its own file log, a crash upload replays
+    // the *dead* run's lines and tags them. Older builds, and uploads whose
+    // file log was empty, still send the reporting process's own log — which
+    // is the launch after the crash and says nothing about what crashed.
+    let from_crashed_run = entries
+        .iter()
+        .filter(|entry| entry.source.as_deref() == Some("previous-run"))
+        .count();
+
     writeln!(report, "Logs ({total} entries,{window})")?;
-    writeln!(
-        report,
-        "Captured when MetricKit delivered the payload (crash window: {} -> {}), from this \
-         process only. A log window that starts after the crash is from a later launch and \
-         says nothing about what crashed.",
-        payload.time_stamp_begin.as_deref().unwrap_or("unknown"),
-        payload.time_stamp_end.as_deref().unwrap_or("unknown")
-    )?;
+    if from_crashed_run == total {
+        writeln!(
+            report,
+            "Replayed from the app's own file log for the run that crashed (crash window: {} -> \
+             {}). These are pre-crash lines.",
+            payload.time_stamp_begin.as_deref().unwrap_or("unknown"),
+            payload.time_stamp_end.as_deref().unwrap_or("unknown")
+        )?;
+    } else if from_crashed_run > 0 {
+        writeln!(
+            report,
+            "{from_crashed_run} of {total} entries were replayed from the crashed run's file log \
+             (crash window: {} -> {}); the rest are from the process that reported the crash.",
+            payload.time_stamp_begin.as_deref().unwrap_or("unknown"),
+            payload.time_stamp_end.as_deref().unwrap_or("unknown")
+        )?;
+    } else {
+        writeln!(
+            report,
+            "Captured when MetricKit delivered the payload (crash window: {} -> {}), from this \
+             process only. A log window that starts after the crash is from a later launch and \
+             says nothing about what crashed.",
+            payload.time_stamp_begin.as_deref().unwrap_or("unknown"),
+            payload.time_stamp_end.as_deref().unwrap_or("unknown")
+        )?;
+    }
 
     // Keep the newest entries: whatever the app was doing last is the part
     // worth reading, and it is the part a byte cap would otherwise cut.
@@ -2846,6 +2912,7 @@ mod tests {
             level: Some(level.to_string()),
             category: Some(category.to_string()),
             subsystem: Some("com.msdrigg.roam".to_string()),
+            source: None,
         }
     }
 
@@ -2939,6 +3006,105 @@ mod tests {
         .expect("report renders");
 
         assert!(report.contains("Logs (none captured)"), "{report}");
+    }
+
+    #[test]
+    fn report_names_logs_replayed_from_the_crashed_run() {
+        // The whole point of the app-side file log: these lines predate the
+        // crash, so the report must not repeat the "later launch" warning that
+        // applies to a live `OSLogStore` read.
+        let diagnostics = diagnostics_with_logs(vec![
+            LogEntry {
+                source: Some("previous-run".to_string()),
+                ..log_entry(20, "notice", "Rendering", "second")
+            },
+            LogEntry {
+                source: Some("previous-run".to_string()),
+                ..log_entry(10, "notice", "Rendering", "first")
+            },
+        ]);
+
+        let report = render_metric_report(
+            &diagnostics,
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(
+            report.contains("Replayed from the app's own file log for the run that crashed"),
+            "{report}"
+        );
+        assert!(!report.contains("says nothing about what crashed"), "{report}");
+    }
+
+    #[test]
+    fn report_still_warns_when_logs_are_from_the_reporting_process() {
+        // An older build, or an upload whose file log was empty, still sends
+        // the relaunch's log. That is exactly the case the warning is for.
+        let diagnostics = diagnostics_with_logs(vec![log_entry(10, "notice", "Backend", "first")]);
+
+        let report = render_metric_report(
+            &diagnostics,
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(report.contains("says nothing about what crashed"), "{report}");
+        assert!(!report.contains("Replayed from the app's own file log"), "{report}");
+    }
+
+    #[test]
+    fn report_renders_the_in_process_faulting_backtrace() {
+        let mut diagnostics = empty_diagnostics();
+        diagnostics.faulting_thread_backtraces = Some(vec![
+            "Fatal access violation, signal 11, at unix time 1786834162\n\
+             Backtrace of the faulting thread (innermost first):\n\
+             0   Roam  0x0000000102a3c1f0 recurse + 40\n\
+             1   Roam  0x0000000102a3c1f0 recurse + 40"
+                .to_string(),
+        ]);
+
+        let report = render_metric_report(
+            &diagnostics,
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(
+            report.contains("In-process backtrace of the faulting thread (1)"),
+            "{report}"
+        );
+        assert!(report.contains("recurse + 40"), "{report}");
+        // It has to say why it exists, or a reader will assume the empty
+        // MetricKit thread above it is the whole story.
+        assert!(report.contains("survives a stack overflow"), "{report}");
+    }
+
+    #[test]
+    fn report_omits_the_faulting_backtrace_section_when_there_is_none() {
+        let mut diagnostics = empty_diagnostics();
+        // An empty capture is not a capture — the section must not appear.
+        diagnostics.faulting_thread_backtraces = Some(vec!["   \n".to_string()]);
+
+        let report = render_metric_report(
+            &diagnostics,
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(!report.contains("In-process backtrace"), "{report}");
     }
 
     #[test]
@@ -3100,6 +3266,7 @@ mod tests {
                 device_language_code: "en".to_string(),
                 translated_language_code: "en".to_string(),
             },
+            faulting_thread_backtraces: None,
         }
     }
 

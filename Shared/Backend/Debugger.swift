@@ -16,8 +16,15 @@ struct LogEntry: Codable {
     let level: String?
     let category: String?
     let subsystem: String?
+    /// Which launch wrote the line. `nil` for entries read live out of
+    /// `OSLogStore`, which by definition come from the running process;
+    /// `"previous-run"` for lines replayed from `FileLog` after a crash. The
+    /// distinction is the whole point of the file log, so it travels with the
+    /// entry rather than being inferred from timestamps at the far end.
+    let source: String?
 
     init(entry: OSLogEntry) {
+        source = nil
         message = entry.composedMessage
         timestamp = entry.date
 
@@ -49,6 +56,16 @@ struct LogEntry: Codable {
             category = nil
             subsystem = nil
         }
+    }
+
+    /// A line replayed from a previous run's file log.
+    init(fileEntry: FileLogEntry) {
+        message = fileEntry.message
+        timestamp = fileEntry.date
+        level = fileEntry.level
+        category = fileEntry.category
+        subsystem = Log.getLogSubsystem()
+        source = "previous-run"
     }
 }
 
@@ -118,6 +135,10 @@ public struct DebugInfo: Codable, Sendable {
     var logs: [LogEntry]
     let debugErrors: [String]
     let language: DebugLanguage
+    /// Backtraces written by `CrashStackTrap` from inside the fatal signal
+    /// handler of a previous run. Optional so diagnostics cached by an older
+    /// build still decode.
+    let faultingThreadBacktraces: [String]?
 }
 
 func trimmedDebugInfoIfNeeded(_ debugInfo: DebugInfo, maxFileSize: Int = 9 * 1024 * 1024) -> Data? {
@@ -196,13 +217,40 @@ private func probeDeviceEndpoint(
     }
 }
 
-func getDebugInfo(userInitiated: Bool = false) async -> DebugInfo {
+/// Assemble the diagnostics bundle.
+///
+/// `crashWindow` is MetricKit's payload window, and changes where the logs come
+/// from. Without it the logs are this process's, read live out of `OSLogStore`.
+/// With it they are the **dead** run's, replayed from `FileLog`: MetricKit only
+/// delivers a payload to the launch after the crash, so the live store holds
+/// the relaunch and says nothing about what crashed.
+func getDebugInfo(userInitiated: Bool = false, crashWindow: DateInterval? = nil) async -> DebugInfo {
     var debugErrors: [String] = []
     var entries: [LogEntry] = []
-    do {
-        entries = try getLogEntries()
-    } catch {
-        debugErrors.append("Error Getting Log Entries: \n\(error)")
+    var faultingThreadBacktraces: [String] = []
+
+    if crashWindow != nil {
+        entries = FileLog.collect(around: crashWindow).map(LogEntry.init(fileEntry:))
+        if entries.isEmpty {
+            // No file log yet — a build from before this existed, or a first
+            // launch that crashed. Say so rather than silently shipping the
+            // relaunch's log as if it were the crash's.
+            debugErrors.append(
+                "No file-log entries for the crash window; falling back to this process's log, which is the launch after the crash."
+            )
+            do {
+                entries = try getLogEntries()
+            } catch {
+                debugErrors.append("Error Getting Log Entries: \n\(error)")
+            }
+        }
+        faultingThreadBacktraces = CrashStackTrap.collectPrevious()
+    } else {
+        do {
+            entries = try getLogEntries()
+        } catch {
+            debugErrors.append("Error Getting Log Entries: \n\(error)")
+        }
     }
     Log.backend.info("Got \(entries.count) log entries")
 
@@ -277,7 +325,8 @@ func getDebugInfo(userInitiated: Bool = false) async -> DebugInfo {
         language: DebugLanguage(
             deviceLanguageCode: Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "none",
             translatedLanguageCode: String(localized: "locale.translated")
-        )
+        ),
+        faultingThreadBacktraces: faultingThreadBacktraces.isEmpty ? nil : faultingThreadBacktraces
     )
 }
 

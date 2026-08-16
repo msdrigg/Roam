@@ -82,21 +82,33 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
 
     func didReceive(_ payload: [MXDiagnosticPayload]) {
         Log.backend.notice("Getting \(payload.count, privacy: .public) payloads in metric manager")
-        if payload.contains(where: { payload in
-            payload.crashDiagnostics?.isEmpty == false
-        }) {
-            let payloadData = payload.filter { $0.crashDiagnostics?.isEmpty == false }.map {
+        let crashPayloads = payload.filter { $0.crashDiagnostics?.isEmpty == false }
+        if !crashPayloads.isEmpty {
+            let payloadData = crashPayloads.map {
                 jsonRepresentationIncludingTerminationFields($0)
             }
+            // The window the crashes happened in — always an earlier launch
+            // than this one, since MetricKit only delivers on the next start.
+            // It selects which run's logs get uploaded (see `getDebugInfo`).
+            let crashWindow = crashPayloads.reduce(nil) { (window: DateInterval?, payload) in
+                let payloadWindow = DateInterval(
+                    start: payload.timeStampBegin,
+                    end: max(payload.timeStampEnd, payload.timeStampBegin))
+                guard let window else { return payloadWindow }
+                return DateInterval(
+                    start: min(window.start, payloadWindow.start),
+                    end: max(window.end, payloadWindow.end))
+            }
             Log.backend.notice(
-                "Sending \(payloadData.count, privacy: .public) crash diagnostics reports...")
+                "Sending \(payloadData.count, privacy: .public) crash diagnostics reports for window \(String(describing: crashWindow), privacy: .public)..."
+            )
             Task {
-                await saveMetricKitDiagnostics(payloadData)
+                await saveMetricKitDiagnostics(payloadData, crashWindow: crashWindow)
             }
         }
     }
 
-    private func saveMetricKitDiagnostics(_ diagnostics: [Data]) async {
+    private func saveMetricKitDiagnostics(_ diagnostics: [Data], crashWindow: DateInterval?) async {
         let metricsPayloads = diagnostics.compactMap { data in
             String(data: data, encoding: .utf8)
         }
@@ -104,7 +116,7 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
         let diagnosticsRequest = DiagnosticsRequest(
             userId: getSystemInstallID(),
             metricsPayloads: metricsPayloads,
-            diagnostics: await getDebugInfo(),
+            diagnostics: await getDebugInfo(crashWindow: crashWindow),
             installationInfo: InstallationInfo()
         )
 

@@ -126,8 +126,23 @@ context. The interesting parts of a symbolicated report are:
   these name the OS policy that killed the process
 - the `Metadata:` block — `exceptionType`, `signal`, `appVersion`, `deviceType`
 - the thread marked `(attributed)` — the only stack that caused the crash
+- `In-process backtrace of the faulting thread` — the app's own capture, from
+  its `SIGSEGV`/`SIGBUS` handler on an alternate signal stack
+- `Logs` — check the header line, which says whether they are pre-crash
 
 Read the attributed thread. Other threads are usually idle and will mislead you.
+
+**When the attributed thread has no frames**, the process blew its stack:
+MetricKit cannot unwind an overflowed stack and reports the thread empty. Go to
+the in-process backtrace instead — a frame repeating down that list is the
+recursion. Confirm from the `Faulting VM region:` line, which will point into
+`Stack Guard`.
+
+The `Logs` header says where the lines came from. "Replayed from the app's own
+file log for the run that crashed" means they predate the crash and are worth
+reading. The older wording — "from this process only" — means the app had no
+file log for that run, so the lines are from the launch *after* the crash and
+say nothing about it.
 
 ## Replying and marking reviewed
 
