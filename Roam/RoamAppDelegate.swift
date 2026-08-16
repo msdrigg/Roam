@@ -140,16 +140,34 @@ final class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotification
 }
 
 extension NSApplication {
+    /// Brings the window with `id` to the front on the next runloop turn.
+    ///
+    /// The hop is not cosmetic. Every caller is a SwiftUI action -- `onAppear`,
+    /// a button, a hotkey handler -- so a synchronous body would run inside
+    /// `Update.dispatchActions`, still nested in the update pass that queued it.
+    /// `makeKeyAndOrderFront` posts `NSWindowDidOrderOnScreen` from there,
+    /// SwiftUI turns that into a scene-phase change, and
+    /// `AppGraph.graphDidChange` re-enters the update it is already inside.
+    /// Under launch-time window restoration that cycle does not settle: each
+    /// level re-evaluates the scene bodies, and the main thread runs off the end
+    /// of its stack (`EXC_BAD_ACCESS` in Stack Guard, roam 1.51 on macOS 26.5).
+    ///
+    /// Deferring lets the in-flight update finish first, so the notification
+    /// lands on a quiet graph. It also resolves the window later, which matters
+    /// for the callers that pair this with `openWindow(id:)` -- the new window is
+    /// not in `self.windows` yet at the moment they call.
     func forceFront(_ id: String) {
-        let mainWindow: NSWindow? = self.windows.first {
-            $0.identifier == NSUserInterfaceItemIdentifier(rawValue: id)
+        DispatchQueue.main.async {
+            let window: NSWindow? = self.windows.first {
+                $0.identifier == NSUserInterfaceItemIdentifier(rawValue: id)
+            }
+
+            Log.lifecycle.notice("Making window front \(id, privacy: .public), \(window?.title ?? "nil", privacy: .public)")
+            NSApplication.shared.activate(ignoringOtherApps: true)
+
+            window?.makeKeyAndOrderFront(nil)
+            window?.orderFrontRegardless()
         }
-
-        Log.lifecycle.notice("Making window front \(id, privacy: .public), \(mainWindow?.title ?? "nil", privacy: .public)")
-        NSApplication.shared.activate(ignoringOtherApps: true)
-
-        mainWindow?.makeKeyAndOrderFront(nil)
-        mainWindow?.orderFrontRegardless()
     }
 }
 #else
