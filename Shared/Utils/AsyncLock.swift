@@ -90,13 +90,29 @@ public struct AsyncLock: Sendable {
     }
 }
 
+/// Runs `operation` over `items`, at most `maxConcurrent` at a time, yielding
+/// each result as it lands.
+///
+/// The producer runs in an unstructured `Task`, because an `AsyncStream` has to
+/// outlive the call that builds it. That detaches it from the caller's
+/// cancellation, so the stream cancels it explicitly on termination: dropping
+/// the last reference to the stream, breaking out of the `for await`, or having
+/// the consuming task cancelled all end iteration, which fires
+/// `onTermination`, which cancels the group.
+///
+/// Without that hop the work leaks. A cancelled iPv4 sweep kept all 37 of its
+/// slots busy for the remaining 14 seconds of the process's life, yielding into
+/// an unbounded buffer nobody was reading, and the scene-create watchdog killed
+/// the app (roam 1.50, `0x8BADF00D`, 19.68s). `AsyncStream` swallows the
+/// symptom: iteration ends promptly and the caller looks finished, so the only
+/// evidence is the work still logging afterwards.
 func processConcurrently<T: Sendable, U: Sendable>(
     items: [T],
     maxConcurrent: Int,
     operation: @Sendable @escaping (T) async -> U
 ) -> AsyncStream<U> {
     AsyncStream(bufferingPolicy: .unbounded) { continuation in
-        Task {
+        let producer = Task {
             await withTaskGroup(of: U.self) { group in
                 var nextIndex = 0
                 let initial = min(maxConcurrent, items.count)
@@ -109,6 +125,13 @@ func processConcurrently<T: Sendable, U: Sendable>(
                 }
                 while let result = await group.next() {
                     continuation.yield(result)
+                    // Cancelling the group stops it handing out new slots, but
+                    // `next()` still drains the ones already in flight, so the
+                    // loop has to stop feeding it as well.
+                    if Task.isCancelled {
+                        group.cancelAll()
+                        continue
+                    }
                     if nextIndex < items.count {
                         let idx = nextIndex
                         group.addTask {
@@ -120,6 +143,7 @@ func processConcurrently<T: Sendable, U: Sendable>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { @Sendable _ in producer.cancel() }
     }
 }
 

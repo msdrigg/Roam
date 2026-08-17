@@ -115,8 +115,9 @@ public struct Device: AppEntity, Equatable, Identifiable, Hashable, Codable {
     public var iconURL: URL? {
         guard let iconHash else { return nil }
 
-        // Get the group container directory
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: mainAppGroup) else {
+        // Read from view bodies, so this must stay allocation-cheap and must not
+        // touch `containermanagerd` -- see `roamAppGroupContainerURL()`.
+        guard let containerURL = roamAppGroupContainerURL() else {
             Log.data.error("Unable to get group container URL")
             return nil
         }
