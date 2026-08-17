@@ -4,8 +4,11 @@ import re
 import subprocess
 from datetime import datetime
 import argparse
+import http.client
 import os
+import random
 import shutil
+import sys
 import tempfile
 import time
 import uuid
@@ -231,25 +234,43 @@ class MultipartBody:
         return b""
 
 
-# Delays before the 2nd, 3rd and 4th attempts — four tries over ~45s. The
-# backend is a single small Fly machine that 502s while it restarts or pages in
-# a large upload, which is exactly what dropped roam 1.50's iOS symbols on an
-# otherwise green run; by 30s it is back.
-RETRY_DELAYS_SECONDS = (5, 10, 30)
+# Delays before the 2nd..7th attempts — seven tries over ~7 minutes. The backend
+# is a single small Fly machine that 502s while it restarts or pages in a large
+# upload. The old ladder gave up after 45s, which is not long enough: a machine
+# that has scaled to zero can take minutes to come back with a multi-hundred-MB
+# upload arriving at the same time, and 45s of patience is how roam 1.49's and
+# 1.51's symbols went missing on otherwise green runs. Seven minutes of waiting
+# is cheap next to a release whose crash reports cannot be symbolicated.
+RETRY_DELAYS_SECONDS = (5, 15, 30, 60, 120, 180)
+
+# Retries are spread +/-20% so that the per-platform uploads in one run, which
+# tend to fail together when the machine restarts, do not then march back in
+# lockstep and hit it with three simultaneous retries.
+RETRY_JITTER = 0.2
 
 
 def is_retryable(error: Exception) -> bool:
     """Whether a later attempt could plausibly succeed.
 
-    A 4xx other than 429 means the request itself is wrong — bad api key, payload
-    too large — and will be just as wrong in 30 seconds, so it fails immediately
-    instead of stretching the build by 45s to reach the same conclusion.
+    A 4xx other than 408/429 means the request itself is wrong — bad api key,
+    payload too large — and will be just as wrong in seven minutes, so it fails
+    immediately instead of stretching the build to reach the same conclusion.
     """
     if isinstance(error, urllib.error.HTTPError):
-        return error.code == 429 or 500 <= error.code < 600
-    # URLError covers DNS and connection-refused; the others are raised straight
-    # from the socket on a dropped or timed-out connection mid-upload.
-    return isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError))
+        return error.code in (408, 429) or 500 <= error.code < 600
+    # URLError covers DNS and connection-refused; HTTPException covers the
+    # half-read responses (RemoteDisconnected, IncompleteRead, BadStatusLine)
+    # that a proxy hands back when it drops a long upload mid-flight; the rest
+    # come straight off the socket on a timeout or reset.
+    return isinstance(
+        error,
+        (
+            urllib.error.URLError,
+            http.client.HTTPException,
+            TimeoutError,
+            ConnectionError,
+        ),
+    )
 
 
 def with_retries(operation, what: str):
@@ -264,6 +285,7 @@ def with_retries(operation, what: str):
                 reason = f"HTTP {error.code}"
             else:
                 reason = f"{type(error).__name__}: {error}"
+            delay = round(delay * random.uniform(1 - RETRY_JITTER, 1 + RETRY_JITTER), 1)
             print(
                 f"  {what} failed ({reason}) — retrying in {delay}s "
                 f"[attempt {index + 2} of {attempts}]",
@@ -367,22 +389,30 @@ def try_upload_dsyms(
     bundle_identifier: str,
     render_github_actions: bool = False,
 ) -> bool:
-    """Upload symbols without letting a failure block distribution.
+    """Upload symbols without letting a failure block the *remaining* platforms.
 
     Publishing and symbol upload are interleaved per platform, so raising here
-    stops every *later* platform from being published at all: one HTTP 502 on
-    the iOS dSYM upload left macOS and visionOS unshipped. Symbols can be
-    re-uploaded at any time with `--upload-dsyms`; a half-published release
-    cannot be undone.
+    stops every later platform from being published at all: one HTTP 502 on the
+    iOS dSYM upload left macOS and visionOS unshipped. Symbols can be re-uploaded
+    at any time with `--upload-dsyms`; a half-published release cannot be undone.
+
+    Swallowing the error is therefore only about *ordering*, not severity — the
+    caller collects the failures and exits non-zero once every platform has had
+    its turn. A build whose symbols never arrived is a broken build: its crash
+    reports come back with every app frame unresolved, which also means they
+    match no auto-review rule and land in the manual queue with nothing to read.
     """
     try:
         upload_dsyms(platform, backend_url, backend_api_key, bundle_identifier)
         return True
     except Exception as error:
-        # ::warning:: surfaces in the Actions summary instead of scrolling past
-        # in the log, so a skipped symbol upload stays visible on a green run.
-        prefix = "::warning::" if render_github_actions else "WARNING: "
-        print(f"{prefix}dSYM upload failed for {platform}, continuing: {error}")
+        # ::error:: surfaces in the Actions summary instead of scrolling past in
+        # the log. The run is going to fail on this; say so where it is visible.
+        prefix = "::error::" if render_github_actions else "ERROR: "
+        print(
+            f"{prefix}dSYM upload failed for {platform}: {error}",
+            flush=True,
+        )
         return False
 
 
@@ -613,11 +643,22 @@ if __name__ == "__main__":
                 dsym_failures.append(platform)
 
     if dsym_failures:
-        # Deliberately not an error: the builds are on App Store Connect, and
-        # failing the run here would misreport a successful distribution.
-        print(
-            f"\nSymbols were NOT uploaded for: {', '.join(dsym_failures)}.\n"
-            f"Re-run once the backend is healthy:\n"
-            f"    ./scripts/export.py --upload-dsyms --no-bump --platform "
-            f"{' '.join(dsym_failures)}"
+        # Deferred to here rather than raised at the failing upload so that every
+        # platform still got published — see try_upload_dsyms. By this point
+        # there is nothing left to protect, and a green run would be a lie: the
+        # release is out with no symbols behind it.
+        summary = (
+            f"Symbols were NOT uploaded for: {', '.join(dsym_failures)}.\n"
+            f"Crash reports from this build cannot be symbolicated until they are."
         )
+        if args.github_actions:
+            print(f"::error title=dSYM upload failed::{summary}", flush=True)
+        print(
+            f"\n{summary}\n"
+            f"Re-run once the backend is healthy (this does not rebuild or "
+            f"republish anything):\n"
+            f"    ./scripts/export.py --upload-dsyms --no-bump --platform "
+            f"{' '.join(dsym_failures)}",
+            flush=True,
+        )
+        sys.exit(1)

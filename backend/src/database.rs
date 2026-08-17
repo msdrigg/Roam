@@ -990,6 +990,8 @@ mod tests {
             exception_type: Some(10),
             signal: Some(9),
             termination_code: Some("0xdead10cc".to_string()),
+            // Only the columns above are persisted; the rest exist for matching.
+            ..Default::default()
         }
     }
 

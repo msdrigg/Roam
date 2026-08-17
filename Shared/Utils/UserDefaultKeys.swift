@@ -21,6 +21,7 @@ enum UserDefaultKeys {
     // Tips
     static let headphonesModeUsed = "headphonesModeUsed"
     static let audioInteractionCount = "audioInteractionCount"
+    static let volumeOverHDMIHintShown = "volumeOverHDMIHintShown"
 
     // Tip jar / cosmetic unlocks
     static let cosmeticsGrandfathered = "cosmeticsGrandfathered"

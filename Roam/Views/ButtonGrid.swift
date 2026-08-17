@@ -7,7 +7,9 @@ struct ButtonGrid: View {
     let enabled: Set<RemoteButton>
     let disabled: Set<RemoteButton>
     var usesNativeGlassButtons = false
-    var noVolumeControls = false
+    /// The device has no speakers of its own, so volume leaves over HDMI-CEC.
+    /// Worth a one-time hint, but never a reason to withhold the keypress.
+    var volumeRoutedOverHDMI = false
     var headphonesModeUnsupported = false
 
     @ScaledMetric var buttonWidth = globalButtonWidth
@@ -20,12 +22,13 @@ struct ButtonGrid: View {
     @State private var pendingVolumeTipButton: RemoteButton?
     @AppStorage(UserDefaultKeys.headphonesModeUsed) private var headphonesModeUsed: Bool = false
     @AppStorage(UserDefaultKeys.audioInteractionCount) private var audioInteractionCount: Int = 0
+    @AppStorage(UserDefaultKeys.volumeOverHDMIHintShown) private var volumeOverHDMIHintShown: Bool = false
 #endif
 
     private static let volumeButtons: Set<RemoteButton> = [.volumeUp, .volumeDown, .mute]
 
-    private func isVolumeButtonNoOp(_ button: RemoteButton) -> Bool {
-        noVolumeControls && Self.volumeButtons.contains(button)
+    private func routesOverHDMI(_ button: RemoteButton) -> Bool {
+        volumeRoutedOverHDMI && Self.volumeButtons.contains(button)
     }
 
 #if !os(watchOS)
@@ -43,9 +46,8 @@ struct ButtonGrid: View {
 
     @ViewBuilder
     func maybeTipButton(_ button: (String, String, RemoteButton, CustomKeyboardShortcut.Key)) -> some View {
-        let isVolumeNoOp = isVolumeButtonNoOp(button.2)
+        let isVolumeOverHDMI = routesOverHDMI(button.2)
         let isHeadphonesNoOp = headphonesModeUnsupported && button.2 == .headphonesMode
-        let appearsDisabled = isVolumeNoOp || isHeadphonesNoOp
         let view = Button(action: {
             #if !os(watchOS)
             if button.2 == .headphonesMode {
@@ -59,25 +61,29 @@ struct ButtonGrid: View {
             }
             if button.2 == .mute || button.2 == .playPause {
                 HeadphonesModeTip.toggledMuteOrPlayPause.sendDonation()
-                if !isVolumeNoOp && !headphonesModeUnsupported {
+                if !headphonesModeUnsupported {
                     audioInteractionCount += 1
                     if !headphonesModeUsed && audioInteractionCount > 2 {
                         showHeadphonesTip = true
                     }
                 }
             }
-            if isVolumeNoOp {
-                NoVolumeControlsTip.attemptedVolume.sendDonation()
-                pendingVolumeTipButton = button.2
-                return
+            // Advisory only, and only the once — CEC either works on this setup
+            // or the user needs to go turn it on. Either way the press is sent.
+            if isVolumeOverHDMI {
+                VolumeOverHDMITip.attemptedVolume.sendDonation()
+                if !volumeOverHDMIHintShown {
+                    volumeOverHDMIHintShown = true
+                    pendingVolumeTipButton = button.2
+                }
             }
             #endif
             action(button.2)
         }, label: {
             Label(button.0, systemImage: button.1)
                 .frame(width: buttonWidth, height: buttonHeight)
-                .foregroundStyle(appearsDisabled ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-                .opacity(appearsDisabled ? 0.55 : 1.0)
+                .foregroundStyle(isHeadphonesNoOp ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                .opacity(isHeadphonesNoOp ? 0.55 : 1.0)
         })
 
 #if !os(watchOS)
@@ -89,9 +95,9 @@ struct ButtonGrid: View {
             view.popover(isPresented: $showHeadphonesTip) {
                 HeadphonesModeTipContent()
             }
-        } else if isVolumeNoOp {
+        } else if isVolumeOverHDMI {
             view.popover(isPresented: volumeTipBinding(for: button.2)) {
-                NoVolumeControlsTipContent()
+                VolumeOverHDMITipContent()
             }
         } else {
             view
@@ -228,22 +234,22 @@ private struct HeadphonesUnsupportedTipContent: View {
     }
 }
 
-private struct NoVolumeControlsTipContent: View {
+private struct VolumeOverHDMITipContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(
                 String(
-                    localized: "Volume controls unavailable",
-                    comment: "Title of the popup shown when a user taps a disabled volume button"
+                    localized: "Volume goes through your TV",
+                    comment: "Title of the popup shown the first time volume is used on an HDMI-connected Roku"
                 ),
-                systemImage: "speaker.slash"
+                systemImage: "speaker.wave.2"
             )
             .font(.headline)
 
             Text(
                 // swiftlint:disable:next line_length
-                "This Roku device can't change its volume from Roam. Roku sticks, Roku Express, and other HDMI-connected players route audio over HDMI, so you'll need to use your TV or receiver remote to adjust volume.",
-                comment: "Body of the popup shown when a user taps a disabled volume button"
+                "This Roku has no speakers of its own, so Roam sends volume to your TV or receiver over HDMI-CEC. If nothing happens, turn CEC on in your TV's settings — it's usually under a brand name like Anynet+, Bravia Sync, SimpLink, or VIERA Link.",
+                comment: "Body of the popup shown the first time volume is used on an HDMI-connected Roku"
             )
             .font(.callout)
             .foregroundStyle(.secondary)

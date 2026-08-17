@@ -245,7 +245,7 @@
 		AFD100332F00000100000001 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* GRDB */; };
 		AFD100342F00000100000001 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = AFD100312F00000100000001 /* GRDB */; };
 		AFD100412F00000100000001 /* RoamDatabaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD100402F00000100000001 /* RoamDatabaseTests.swift */; };
-		AFD200012F11000100000001 /* NoVolumeControlsTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD200002F11000100000001 /* NoVolumeControlsTip.swift */; };
+		AFD200012F11000100000001 /* VolumeOverHDMITip.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD200002F11000100000001 /* VolumeOverHDMITip.swift */; };
 		AFD200052F11000300000001 /* PastedUrlOfferTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD200042F11000300000001 /* PastedUrlOfferTip.swift */; };
 		AFD590D02AEC673C00189620 /* WatchConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590CF2AEC673C00189620 /* WatchConnector.swift */; };
 		AFD590D22AEC692700189620 /* IPhoneConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD590D12AEC692700189620 /* IPhoneConnector.swift */; };
@@ -592,7 +592,7 @@
 		AFD100022F00000100000001 /* RoamDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamDatabase.swift; sourceTree = "<group>"; };
 		AFD100212F00000100000001 /* RemoteViewContainedMacOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteViewContainedMacOS.swift; sourceTree = "<group>"; };
 		AFD100402F00000100000001 /* RoamDatabaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamDatabaseTests.swift; sourceTree = "<group>"; };
-		AFD200002F11000100000001 /* NoVolumeControlsTip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoVolumeControlsTip.swift; sourceTree = "<group>"; };
+		AFD200002F11000100000001 /* VolumeOverHDMITip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeOverHDMITip.swift; sourceTree = "<group>"; };
 		AFD200042F11000300000001 /* PastedUrlOfferTip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastedUrlOfferTip.swift; sourceTree = "<group>"; };
 		AFD590CF2AEC673C00189620 /* WatchConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnector.swift; sourceTree = "<group>"; };
 		AFD590D12AEC692700189620 /* IPhoneConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPhoneConnector.swift; sourceTree = "<group>"; };
@@ -691,7 +691,7 @@
 			children = (
 				AF05327D2D36DB2200D68F8E /* GlobalKeyboardShortcutsTip.swift */,
 				AF05327E2D36DB2200D68F8E /* HeadphonesModeTip.swift */,
-				AFD200002F11000100000001 /* NoVolumeControlsTip.swift */,
+				AFD200002F11000100000001 /* VolumeOverHDMITip.swift */,
 				AFD200042F11000300000001 /* PastedUrlOfferTip.swift */,
 			);
 			path = Tips;
@@ -1565,7 +1565,7 @@
 				AF0532802D36DB2200D68F8E /* GlobalKeyboardShortcutsTip.swift in Sources */,
 				AFBDEA322D7D157500C15B18 /* StandardDislosureGroupStyle.swift in Sources */,
 				AF0532812D36DB2200D68F8E /* HeadphonesModeTip.swift in Sources */,
-				AFD200012F11000100000001 /* NoVolumeControlsTip.swift in Sources */,
+				AFD200012F11000100000001 /* VolumeOverHDMITip.swift in Sources */,
 				AFD200052F11000300000001 /* PastedUrlOfferTip.swift in Sources */,
 				AFBBE16F2C764564002B7F68 /* RemoteViewContained.swift in Sources */,
 				AFD100202F00000100000001 /* RemoteViewContainedMacOS.swift in Sources */,
