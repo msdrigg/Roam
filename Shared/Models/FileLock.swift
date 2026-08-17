@@ -23,17 +23,25 @@ final class FileLock {
     static let shared = FileLock(fileName: ".roamData.lock", appGroupIdentifier: mainAppGroup)
 
     private let fileName: String
-    private let appGroupIdentifier: String
+    /// Resolved once at init rather than on every lock. `withLock` is
+    /// `@MainActor` and runs around each persistent write, so looking the
+    /// container up here would put a `containermanagerd` round-trip on the main
+    /// thread once per write -- see `roamAppGroupContainerURL()`.
+    private let containerURL: URL?
 
     init(fileName: String, appGroupIdentifier: String) {
         self.fileName = fileName
-        self.appGroupIdentifier = appGroupIdentifier
+        self.containerURL =
+            appGroupIdentifier == roamAppGroup
+            ? roamAppGroupContainerURL()
+            : FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: appGroupIdentifier)
     }
 
     @MainActor
     func withLock<T, E>(mode: Mode, _ body: () throws (E) -> T) throws (FileLockError<E>) -> T {
         Log.data.notice("Beginning file lock")
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
+        guard let containerURL else {
             throw FileLockError.groupContainerFailed
         }
 

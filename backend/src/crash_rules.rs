@@ -93,8 +93,7 @@ impl CrashFacts {
             app_version: metadata_value(report, "appVersion"),
             device_type: metadata_value(report, "deviceType"),
             os_version: metadata_value(report, "osVersion"),
-            exception_type: metadata_value(report, "exceptionType")
-                .and_then(|v| v.parse().ok()),
+            exception_type: metadata_value(report, "exceptionType").and_then(|v| v.parse().ok()),
             signal: metadata_value(report, "signal").and_then(|v| v.parse().ok()),
             termination_code: termination_code(report),
             thermal_level: thermal_level(report),
@@ -313,6 +312,18 @@ That function closed its UDP socket in two places: the `onCancel` handler of `wi
 
 **Known cause, fix:** both paths now go through a close-once wrapper, so the descriptor reaches `close(2)` exactly once regardless of which path wins the race.";
 
+const SCENE_PHASE_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow — `forceFront` re-entered the SwiftUI update it was called from**
+
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer — unbounded recursion.
+
+The cycle is visible in the attributed thread, `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down:
+
+`NSApplication.forceFront` called `makeKeyAndOrderFront` synchronously from a SwiftUI action, so it ran inside `Update.dispatchActions` — still nested in the update pass that queued it. `makeKeyAndOrderFront` posts `NSWindowDidOrderOnScreen` from there, SwiftUI turns that into a scene-phase change, and `AppGraph.graphDidChange` re-enters the update it is already inside. Every level re-evaluates the scene bodies, which runs the action again.
+
+Launch-time window restoration is what makes it fatal rather than merely wasteful: `NSPersistentUIRestorer` is ordering windows on screen while the app graph is still settling, so the cycle never reaches a quiet state and the stack runs out first.
+
+**Known cause, fix:** `forceFront` now defers to the next runloop turn, so the in-flight update finishes before `makeKeyAndOrderFront` fires and the notification lands on a quiet graph.";
+
 const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — main thread blocked cancelling the Bonjour browser**
 
 The termination reason pins this down: the process failed to terminate within its 5 second budget.
@@ -336,6 +347,32 @@ A scene-update deadline is wall-clock, not CPU-time, so a process that never get
 
 /// Ordered: the first match wins, so put narrower rules first.
 pub static RULES: &[CrashRule] = &[
+    CrashRule {
+        id: "scene-phase-reentrancy-stack-overflow",
+        title: "Stack overflow from forceFront re-entering the SwiftUI update pass",
+        // The deferral shipped in a re-cut 1.52 build, after the first 1.52
+        // builds were already on App Store Connect. Version comparison is
+        // marketing-version only, so a crash from an early 1.52 build reads as
+        // UNFIXED and lands in the manual queue. That is the safe direction --
+        // check `appBuildVersion` on the report before concluding the fix broke.
+        fixed_in: Some("1.52"),
+        environmental: false,
+        exception_type: Some(1),
+        signal: Some(11),
+        termination_code: None,
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
+        // The app frame alone would be too loose -- `forceFront` appears on any
+        // stack that brings a window forward. It is the recursion above it that
+        // makes this the bug, so require the SwiftUI half of the cycle too.
+        all_of: &[
+            "NSApplication.forceFront",
+            "AppGraph.graphDidChange",
+            "Stack Guard",
+        ],
+        none_of: &[],
+        reply: SCENE_PHASE_REENTRANCY_REPLY,
+    },
     CrashRule {
         id: "local-network-cancel-watchdog",
         title: "0x8BADF00D watchdog cancelling NWBrowser on the main thread",
@@ -428,6 +465,28 @@ Thread 13 (attributed):
     Roam +0x6f5a0 $defer #1  in closure #2 in scanDevicesContinually at /x samples=1
 "#;
 
+    const STACK_OVERFLOW_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) — stack overflow
+Faulting VM region: 0x16ca6fed0 is in 0x16926c000-0x16ca70000;  bytes after start: 58736336  bytes before end: 303
+--->  Stack Guard                 16926c000-16ca70000    [ 56.0M] ---/rwx SM=PRV
+      Stack                       16ca70000-16d26c000    [ 8176K] rw-/rwx SM=SHM
+Metadata:
+  appVersion: 1.51
+  deviceType: iMac21,1
+  exceptionCode: 2
+  exceptionType: 1
+  osVersion: macOS 26.5.1 (25F80)
+  signal: 11
+Thread 0 (attributed — this is the thread that crashed):
+  38  SwiftUI +0x1476c7c AppGraph.graphDidChange samples=1
+  39  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange samples=1
+  40  SwiftUI +0x1476c7c AppGraph.graphDidChange samples=1
+  53  SwiftUI +0x10d76c  PlatformSceneCache.setPhase samples=1
+  66  AppKit  +0x1275e8  -[NSWindow makeKeyAndOrderFront:] samples=1
+  67  Roam    +0x5e2e8   NSApplication.forceFront at /x/RoamAppDelegate.swift:152 samples=1
+"#;
+
     const WATCHDOG_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
 Termination reason: <RBSTerminateContext| domain:10 code:0x8BADF00D explanation:[app<com.msdrigg.roam>:12124] Failed to terminate gracefully after 5.0s
@@ -471,6 +530,41 @@ Thread 0 (attributed):
             assert_eq!(matched.rule.id, expected);
             // Every sample report is from 1.50; all three fixes shipped in 1.51.
             assert_eq!(matched.status, FixStatus::Fixed);
+        }
+    }
+
+    #[test]
+    fn matches_the_scene_phase_stack_overflow() {
+        let facts = CrashFacts::from_report(STACK_OVERFLOW_REPORT);
+        let matched = match_rule(STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "scene-phase-reentrancy-stack-overflow");
+        // The report is from 1.51 and the deferral shipped in 1.52.
+        assert_eq!(matched.status, FixStatus::Fixed);
+    }
+
+    #[test]
+    fn a_plain_forcefront_stack_overflow_is_not_claimed() {
+        // Only the recursion makes this the known bug. Bringing a window forward
+        // while some other code overflows the stack must stay in the queue.
+        let report =
+            STACK_OVERFLOW_REPORT.replace("AppGraph.graphDidChange", "AppGraph.updateGraph");
+        let facts = CrashFacts::from_report(&report);
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn the_stack_overflow_rule_does_not_steal_other_crashes() {
+        for report in [
+            DEAD10CC_REPORT,
+            GUARD_REPORT,
+            WATCHDOG_REPORT,
+            THERMAL_REPORT,
+        ] {
+            let facts = CrashFacts::from_report(report);
+            assert_ne!(
+                match_rule(report, &facts).map(|m| m.rule.id),
+                Some("scene-phase-reentrancy-stack-overflow")
+            );
         }
     }
 
@@ -655,10 +749,7 @@ Thread 0 (attributed):
     fn a_watchdog_report_with_no_thermal_block_stays_in_the_manual_queue() {
         let report = THERMAL_REPORT
             .replace(r#""Thermal Level:   9""#, "")
-            .replace(
-                "Elapsed application CPU time (seconds): 0.127, 0% CPU",
-                "",
-            );
+            .replace("Elapsed application CPU time (seconds): 0.127, 0% CPU", "");
         let facts = CrashFacts::from_report(&report);
         assert_eq!(facts.thermal_level, None);
         assert_eq!(facts.app_cpu_percent, None);

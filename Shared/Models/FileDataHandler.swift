@@ -300,7 +300,7 @@ final class DatabaseStatusMonitor: ObservableObject {
 // MARK: - File Storage Utilities
 @discardableResult
 func storeUserFileToDisk(data: Data, filename: String, path: [String]) throws -> URL {
-    guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: mainAppGroup) else {
+    guard let containerURL = roamAppGroupContainerURL() else {
         throw DataHandlerError.noContainerURL
     }
 
@@ -339,7 +339,7 @@ func storeAttachmentToDisk(attachmentData: Data, hash: String, filename: String)
 }
 
 func loadAttachmentFromDisk(hash: String, filename: String) throws -> Data {
-    guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: mainAppGroup) else {
+    guard let containerURL = roamAppGroupContainerURL() else {
         throw DataHandlerError.noContainerURL
     }
 

@@ -81,8 +81,27 @@ final actor ThumbnailGenerator {
         return FileManager.default.fileExists(atPath: thumbnailPath)
     }
 
+    /// True when a previous run already established that the source cannot be
+    /// decoded, recorded as the zero-byte file `saveEmptyThumbnail` writes.
+    ///
+    /// Without this check the marker is worse than absent: `fileExists` is true
+    /// for an empty file, so `loadThumbnail` hands it to ImageIO (which logs
+    /// `imageRead is NULL` and returns nil), the caller concludes the thumbnail
+    /// is missing, and generation re-reads the undecodable source and rewrites
+    /// the same marker. That ran on every appearance of every broken icon.
+    private func isKnownUndecodable(at thumbnailPath: String) -> Bool {
+        guard
+            let size = try? FileManager.default.attributesOfItem(atPath: thumbnailPath)[.size]
+                as? Int
+        else { return false }
+        return size == 0
+    }
+
     func loadThumbnail(for path: URL, size: ThumbnailSize) -> sending PlatformImage? {
         let thumbnailPath = self.thumbnailPath(for: path, size: size)
+        if isKnownUndecodable(at: thumbnailPath) {
+            return nil
+        }
         if FileManager.default.fileExists(atPath: thumbnailPath) {
             #if os(iOS) || os(visionOS) || os(watchOS)
             let image = PlatformImage(contentsOfFile: thumbnailPath)
@@ -98,9 +117,23 @@ final actor ThumbnailGenerator {
 
     @discardableResult
     func createThumbnails(for url: URL, smallSize: CGSize? = nil, largeSize: CGSize? = nil) throws -> (small: String, large: String) {
-        Log.data.notice("Creating thumbnails for \(url, privacy: .public)")
         let smallThumbnailPath = self.thumbnailPath(for: url, size: .small)
         let largeThumbnailPath = self.thumbnailPath(for: url, size: .large)
+
+        // A source that failed to decode once will fail again -- the bytes on
+        // disk do not change. Answer from the marker instead of re-reading the
+        // source and rewriting the same two empty files on every appearance.
+        if isKnownUndecodable(at: smallThumbnailPath),
+            isKnownUndecodable(at: largeThumbnailPath)
+        {
+            throw NSError(
+                domain: "ThumbnailGeneratorError", code: 1,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Source is already marked undecodable"
+                ])
+        }
+
+        Log.data.notice("Creating thumbnails for \(url, privacy: .public)")
 
         // Check if the file is a PDF
         let isPdf = url.pathExtension.lowercased() == "pdf"
@@ -252,7 +285,11 @@ final actor ThumbnailGenerator {
             throw NSError(domain: "ThumbnailGeneratorError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to create image data"])
         }
 
-        try finalData.write(to: URL(fileURLWithPath: path))
+        // Atomic so a real thumbnail can never be left zero-length by an
+        // interrupted write. `isKnownUndecodable` reads zero length as the
+        // "this source cannot be decoded" marker, so the only thing allowed to
+        // produce it is `saveEmptyThumbnail`.
+        try finalData.write(to: URL(fileURLWithPath: path), options: .atomic)
     }
 }
 

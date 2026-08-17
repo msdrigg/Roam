@@ -265,8 +265,7 @@ class DeviceAppIconLoader: RegistrationListener {
         guard let iconDataHash = iconDataHash else { return nil }
         // Load icon data from disk using hash
         do {
-            let containerURL = FileManager.default.containerURL(
-                forSecurityApplicationGroupIdentifier: mainAppGroup)!
+            let containerURL = roamAppGroupContainerURL()!
             let iconURL = containerURL.appendingPathComponent("roku-icons", isDirectory: true)
                 .appendingPathComponent(iconDataHash)
             return try Data(contentsOf: iconURL)

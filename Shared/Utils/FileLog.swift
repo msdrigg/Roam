@@ -9,6 +9,32 @@ import os
 /// data stack at all. `mainAppGroup` is an alias of this.
 public let roamAppGroup = "group.com.msdrigg.roam"
 
+/// The app group container's URL, resolved once per process.
+///
+/// `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)` is a
+/// synchronous XPC round-trip to `containermanagerd` on the calling thread, and
+/// the path it returns is fixed for the lifetime of the process. Callers treated
+/// it as a cheap accessor and put it behind computed properties like
+/// `Device.iconURL`, which SwiftUI reads from view bodies -- so the round-trip
+/// happened on the main thread, once per body evaluation. One iPad launch logged
+/// 250 of them in 15 seconds and was killed by the scene-create watchdog
+/// (roam 1.50, `0x8BADF00D`).
+///
+/// Resolve through here instead of calling `FileManager` directly. `nil` means
+/// the entitlement is missing or the container could not be created, which is
+/// fatal-ish and worth surfacing at the call site as it always was.
+public func roamAppGroupContainerURL() -> URL? {
+    AppGroupContainer.url
+}
+
+private enum AppGroupContainer {
+    /// `static let` so the lookup runs at most once, under the runtime's
+    /// once-only initialisation -- concurrent first callers block rather than
+    /// racing to issue duplicate lookups.
+    static let url: URL? = FileManager.default.containerURL(
+        forSecurityApplicationGroupIdentifier: roamAppGroup)
+}
+
 /// Durable, per-run diagnostics that outlive the process that wrote them.
 ///
 /// Everything Roam knew about a crash used to come from
@@ -319,8 +345,7 @@ public enum FileLog {
     // MARK: Paths
 
     static func directoryURL() -> URL? {
-        let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: roamAppGroup)
+        let container = roamAppGroupContainerURL()
             ?? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
         return container?.appendingPathComponent(directoryName, isDirectory: true)
     }

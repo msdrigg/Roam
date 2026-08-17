@@ -134,8 +134,7 @@ actor RoamDataHandler {
 
     @MainActor
     private static func getForShared() -> Self {
-        let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: mainAppGroup)
+        let containerURL = roamAppGroupContainerURL()
         guard let containerURL else {
             Log.backend.error("Failed to get app group container URL")
             return makeVolatileShared(

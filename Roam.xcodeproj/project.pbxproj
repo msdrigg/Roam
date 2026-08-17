@@ -154,6 +154,7 @@
 		AF6A8F942D060834004AB1D2 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5FDAD52ADB3C4B006CDEB3 /* NetworkUtils.swift */; };
 		AF6D560D2DCE47EE00B00780 /* AsyncTimerSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6D560C2DCE47E900B00780 /* AsyncTimerSequence.swift */; };
 		AF6D56132DCE50DF00B00780 /* LinkedListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6D56122DCE50DD00B00780 /* LinkedListTests.swift */; };
+		AF6D56A12DCE50DF00B00781 /* ProcessConcurrentlyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6D56A02DCE50DD00B00781 /* ProcessConcurrentlyTests.swift */; };
 		AF6E294A2C1A2ACE0062DFB3 /* ViewHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6E29492C1A2ACB0062DFB3 /* ViewHelpers.swift */; };
 		AF6E294B2C1A2ACE0062DFB3 /* ViewHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6E29492C1A2ACB0062DFB3 /* ViewHelpers.swift */; };
 		AF6E294C2C1A2ACE0062DFB3 /* ViewHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6E29492C1A2ACB0062DFB3 /* ViewHelpers.swift */; };
@@ -522,6 +523,7 @@
 		AF65A88B2BB5AD02005ECF7F /* ExternalAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalAboutView.swift; sourceTree = "<group>"; };
 		AF6D560C2DCE47E900B00780 /* AsyncTimerSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncTimerSequence.swift; sourceTree = "<group>"; };
 		AF6D56122DCE50DD00B00780 /* LinkedListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedListTests.swift; sourceTree = "<group>"; };
+		AF6D56A02DCE50DD00B00781 /* ProcessConcurrentlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessConcurrentlyTests.swift; sourceTree = "<group>"; };
 		AF6E29492C1A2ACB0062DFB3 /* ViewHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewHelpers.swift; sourceTree = "<group>"; };
 		AF6EE1C32DCD1D160005EE78 /* PaddedRoundedTextFieldStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddedRoundedTextFieldStyle.swift; sourceTree = "<group>"; };
 		AF70BB062BA7C4D2009A06EC /* HoveredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoveredView.swift; sourceTree = "<group>"; };
@@ -701,6 +703,7 @@
 			isa = PBXGroup;
 			children = (
 				AF6D56122DCE50DD00B00780 /* LinkedListTests.swift */,
+				AF6D56A02DCE50DD00B00781 /* ProcessConcurrentlyTests.swift */,
 				AFD100402F00000100000001 /* RoamDatabaseTests.swift */,
 				AF0532832D36DB2B00D68F8E /* RoamSwiftTests.swift */,
 			);
@@ -1697,6 +1700,7 @@
 				AF0D09F42CDE64750098122E /* Helpers.swift in Sources */,
 				AF68F2842D41EC2700F39530 /* DataHelpers.swift in Sources */,
 				AF6D56132DCE50DF00B00780 /* LinkedListTests.swift in Sources */,
+				AF6D56A12DCE50DF00B00781 /* ProcessConcurrentlyTests.swift in Sources */,
 				AFD100412F00000100000001 /* RoamDatabaseTests.swift in Sources */,
 				AF0532852D36DB2B00D68F8E /* RoamSwiftTests.swift in Sources */,
 				AFDB50002D53C7B7004E27A4 /* Loggers.swift in Sources */,
