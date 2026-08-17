@@ -192,12 +192,12 @@ impl CrashRule {
             }
         }
         if let Some(minimum) = self.min_thermal_level {
-            if !facts.thermal_level.is_some_and(|level| level >= minimum) {
+            if facts.thermal_level.is_none_or(|level| level < minimum) {
                 return false;
             }
         }
         if let Some(maximum) = self.max_app_cpu_percent {
-            if !facts.app_cpu_percent.is_some_and(|share| share <= maximum) {
+            if facts.app_cpu_percent.is_none_or(|share| share > maximum) {
                 return false;
             }
         }
@@ -549,6 +549,131 @@ Thread 0 (attributed):
 "#;
         let facts = CrashFacts::from_report(report);
         assert!(match_rule(report, &facts).is_none());
+    }
+
+    /// Trimmed from the real report on thread 1538417638026252298 (roam 1.50,
+    /// iPhone15,5): background scene-update watchdog on a device at the top of
+    /// the thermal scale, with the app scheduled for 0.127s of the 40s window.
+    const THERMAL_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Termination reason: <RBSTerminateContext| domain:10 code:0x8BADF00D explanation:scene-update watchdog transgression: app<com.msdrigg.roam>:15540 exhausted real (wall clock) time allowance of 10.00 seconds
+ProcessVisibility: Background
+WatchdogEvent: scene-update
+WatchdogCPUStatistics: (
+"Elapsed total CPU time (seconds): 40.160 (user 28.900, system 11.260), 67% CPU",
+"Elapsed application CPU time (seconds): 0.127, 0% CPU"
+)
+ThermalInfo: (
+"Thermal Level:   9",
+"Thermal State:   critical"
+) reportType:CrashLog maxTerminationResistance:Interactive>
+Metadata:
+  appVersion: 1.50
+  deviceType: iPhone15,5
+  exceptionType: 10
+  signal: 9
+  terminationReason: <RBSTerminateContext| domain:10 code:0x8BADF00D explanation:scene-update watchdog transgression
+Thread 0 (attributed):
+  AttributeGraph +0xc800 AG::Graph::UpdateStack::update() samples=1
+"#;
+
+    #[test]
+    fn extracts_thermal_and_cpu_figures() {
+        let facts = CrashFacts::from_report(THERMAL_REPORT);
+        assert_eq!(facts.thermal_level, Some(9));
+        assert_eq!(facts.app_cpu_percent, Some(0));
+        // The 67% on the "Elapsed total" line is the whole device, not the app;
+        // reading that one would invert the diagnosis.
+        assert_ne!(facts.app_cpu_percent, Some(67));
+    }
+
+    #[test]
+    fn reports_without_a_watchdog_block_carry_no_thermal_facts() {
+        let facts = CrashFacts::from_report(DEAD10CC_REPORT);
+        assert_eq!(facts.thermal_level, None);
+        assert_eq!(facts.app_cpu_percent, None);
+    }
+
+    #[test]
+    fn thermal_starvation_is_reviewed_as_not_a_defect() {
+        let facts = CrashFacts::from_report(THERMAL_REPORT);
+        let matched = match_rule(THERMAL_REPORT, &facts).expect("thermal rule matches");
+        assert_eq!(matched.rule.id, "thermal-starvation-watchdog");
+        // Not Unfixed, so the auto-review path marks the thread reviewed rather
+        // than replying and leaving it in the queue.
+        assert_eq!(matched.status, FixStatus::NotADefect);
+        assert_ne!(matched.status, FixStatus::Unfixed);
+
+        let reply = matched.reply(&facts);
+        assert!(reply.contains("Nothing to fix in the app"));
+        // A rule with no `fixed_in` must not claim an unknown fix version.
+        assert!(!reply.contains("Fix status unknown"));
+        assert!(matched.review_note(&facts).contains("not an app defect"));
+    }
+
+    #[test]
+    fn thermal_rule_does_not_steal_a_recognised_stack() {
+        // A hot device does not stop the app from having a real bug. Any rule
+        // that names an app frame has to win, which is why this one is last.
+        let report = THERMAL_REPORT.replace(
+            "  AttributeGraph +0xc800 AG::Graph::UpdateStack::update() samples=1",
+            "  Network +0x1158200 nw_browser_cancel samples=1",
+        );
+        let facts = CrashFacts::from_report(&report);
+        assert_eq!(facts.thermal_level, Some(9));
+        assert_eq!(
+            match_rule(&report, &facts).map(|m| m.rule.id),
+            Some("local-network-cancel-watchdog")
+        );
+    }
+
+    #[test]
+    fn a_busy_app_on_a_hot_device_stays_in_the_manual_queue() {
+        // Same thermal reading, but the app was actually running. That is a
+        // watchdog kill we have not diagnosed, so it must not auto-close.
+        let report = THERMAL_REPORT.replace(
+            "Elapsed application CPU time (seconds): 0.127, 0% CPU",
+            "Elapsed application CPU time (seconds): 31.800, 79% CPU",
+        );
+        let facts = CrashFacts::from_report(&report);
+        assert_eq!(facts.app_cpu_percent, Some(79));
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn a_starved_app_on_a_cool_device_stays_in_the_manual_queue() {
+        // 0% app CPU on its own describes any blocked main thread, including
+        // ones that are our fault. The thermal reading is the discriminator.
+        let report = THERMAL_REPORT.replace(r#""Thermal Level:   9""#, r#""Thermal Level:   2""#);
+        let facts = CrashFacts::from_report(&report);
+        assert_eq!(facts.thermal_level, Some(2));
+        assert_eq!(facts.app_cpu_percent, Some(0));
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn a_watchdog_report_with_no_thermal_block_stays_in_the_manual_queue() {
+        let report = THERMAL_REPORT
+            .replace(r#""Thermal Level:   9""#, "")
+            .replace(
+                "Elapsed application CPU time (seconds): 0.127, 0% CPU",
+                "",
+            );
+        let facts = CrashFacts::from_report(&report);
+        assert_eq!(facts.thermal_level, None);
+        assert_eq!(facts.app_cpu_percent, None);
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn environmental_rules_declare_no_fix_version() {
+        for rule in RULES.iter().filter(|rule| rule.environmental) {
+            assert!(
+                rule.fixed_in.is_none(),
+                "{} is environmental but names a fix version",
+                rule.id
+            );
+        }
     }
 
     #[test]
