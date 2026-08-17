@@ -3,6 +3,16 @@ name: Export Roam
 # Manual only. Archives Roam for iOS / macOS / visionOS and (optionally) uploads
 # the builds to App Store Connect and the dSYMs to the Roam backend.
 #
+# A failed dSYM upload fails this workflow. It does not stop the release: the
+# upload is retried for ~7 minutes per platform, and export.py holds the failure
+# until every platform has published before exiting non-zero, so the builds are
+# on App Store Connect either way. The run goes red because a build whose
+# symbols never landed produces crash reports with every app frame unresolved --
+# they then match no auto-review rule and reach the manual queue unreadable,
+# which is how roam 1.49 and 1.51 ended up with no symbols on file. Re-run with
+# `upload_dsyms` on and `publish` off to fill in the missing symbols; the error
+# annotation prints the exact command.
+#
 # Signing is fully automatic: every target in Roam.xcodeproj uses
 # CODE_SIGN_STYLE = Automatic with no pinned provisioning profiles, so
 # scripts/export.py passes -allowProvisioningUpdates together with the App Store
@@ -132,6 +142,11 @@ jobs:
                       --github-actions
 
             - name: Publish
+              # Also uploads dSYMs per platform, interleaved with publishing. If
+              # a symbol upload fails this step exits non-zero *after* the last
+              # platform is published -- do not "fix" that by moving the upload
+              # ahead of the publish, which would trade missing symbols for a
+              # half-shipped release.
               if: inputs.publish
               env:
                   XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}

@@ -1,9 +1,9 @@
-Roam es una aplicación gratuita sin anuncios!
+¡Roam es una aplicación gratuita y sin anuncios!
 
--   Funciona en Mac, iPhone, iPad, Apple Watch, VisionOS y (pronto) Apple TV
--   Integración inteligente de plataforma con atajos de teclado en Mac y control de teclado/volumen en iOS
--   Usa atajos, widgets o Siri para controlar tu TV sin abrir nunca la aplicación
--   Soporte para el modo de auriculares (reproduce el audio de tu TV a través de tus auriculares)
--   Descubre dispositivos en tu red local tan pronto como abras la aplicación
+-   Funciona en Mac, iPhone, iPad, Apple Watch, VisionOS y (próximamente) Apple TV
+-   Integración inteligente con la plataforma: atajos de teclado en Mac y control por teclado/volumen en iOS
+-   Usa atajos, widgets o Siri para controlar tu TV sin tener que abrir la app
+-   Soporte para modo audífonos (reproduce el audio de tu TV en tus audífonos)
+-   Detecta dispositivos en tu red local en cuanto abres la app
 -   Diseño intuitivo con el sistema de diseño nativo SwiftUI de Apple
--   Rápida y ligera (descarga de 11 MB) y se abre al instante
+-   Rápida y liviana (descarga de 11 MB) y se abre al instante

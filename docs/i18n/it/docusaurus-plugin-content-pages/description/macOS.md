@@ -1,9 +1,9 @@
-Roam è un'app gratuita senza pubblicità!
+Roam è un'app gratuita e senza pubblicità!
 
--   Funziona su Mac, iPhone, iPad, Apple Watch, VisionOS e (presto) Apple TV
--   Integrazione intelligente con la piattaforma con le scorciatoie da tastiera su Mac e il controllo tastiera/volume su iOS
--   Utilizza scorciatoie, widget o Siri per controllare il tuo TV senza mai aprire l'app
--   Supporto per la modalità cuffie (riproduci l'audio della tua TV attraverso le tue cuffie)
--   Scopre i dispositivi sulla tua rete locale non appena apri l'app
--   Design intuitivo con il sistema di design nativo SwiftUI di Apple
--   Veloce e leggero (download di 11 MB) e si apre immediatamente
+-   Funziona su Mac, iPhone, iPad, Apple Watch, VisionOS e presto anche su Apple TV
+-   Integrazione intelligente con scorciatoie da tastiera su Mac e controlli da tastiera/volume su iOS
+-   Usa scorciatoie, widget o Siri per controllare la tua TV senza dover mai aprire l'app
+-   Supporto alla modalità cuffie (ascolta l'audio della tua TV direttamente nelle cuffie)
+-   Rileva i dispositivi sulla tua rete locale non appena apri l'app
+-   Design intuitivo, realizzato con il sistema nativo SwiftUI di Apple
+-   Veloce e leggerissima (download da 11 MB) e si apre all'istante

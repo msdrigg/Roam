@@ -1,8 +1,8 @@
-Roam est une application gratuite sans publicités !
+Roam est une application gratuite sans publicité!
 
 -   Fonctionne sur Mac, iPhone, iPad, Apple Watch, Apple TV et maintenant Vision Pro
--   Intégration native dans la plateforme visionOS pour une facilité d'utilisation
--   Support du mode écouteurs (joue l'audio de votre télévision à travers vos écouteurs)
--   Découvre les appareils sur votre réseau local dès que vous ouvrez l'application
--   Design intuitif avec le système de design natif SwiftUI d'Apple
--   Rapide et léger (téléchargement de 9 Mo) et s'ouvre instantanément
+-   Intégration native à la plateforme visionOS pour une utilisation facile
+-   Prise en charge du mode écouteurs (écoutez le son de votre téléviseur dans vos écouteurs)
+-   Détecte les appareils sur votre réseau local dès l’ouverture de l’application
+-   Design intuitif avec le système de conception natif SwiftUI d’Apple
+-   Rapide et léger (téléchargement de 9 Mo) et s’ouvre instantanément

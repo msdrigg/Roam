@@ -33,7 +33,7 @@ def translate_text(text, language, context=None):
                 "content": get_text_message(text, language, context),
             },
         ],
-        model="gpt-5.5",
+        model="gpt-5.6",
     )
 
     return response.choices[0].message.content
@@ -118,7 +118,7 @@ def translate_docusaurus_string_obj(string_obj: dict, language: str):
                 ),
             },
         ],
-        model="gpt-4.1",
+        model="gpt-5.6",
     )
 
     return {"message": response.choices[0].message.content}
@@ -140,7 +140,7 @@ def translate_docusaurus_page(page: str, language: str):
                 "content": get_doc_page_message(page, language),
             },
         ],
-        model="gpt-4.1",
+        model="gpt-5.6",
     )
 
     result = response.choices[0].message.content
