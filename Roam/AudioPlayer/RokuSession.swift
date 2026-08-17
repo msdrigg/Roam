@@ -265,7 +265,7 @@ actor RTPSession {
             }
             Log.headphones.notice("Got new rtcp connection \(String(describing: rtcpConnection), privacy: .public)")
             @Sendable func closure(_ data: Data?, _: NWConnection.ContentContext?, _: Bool, _ error: NWError?) {
-                Log.headphones.notice("Got new rtcp packet \(String(describing: data), privacy: .public), error: \(error, privacy: .public)")
+                Log.headphones.notice("Got new rtcp packet \(String(describing: data), privacy: .public), error: \(String(describing: error), privacy: .public)")
                 guard let data else {
                     return
                 }
@@ -288,7 +288,7 @@ actor RTPSession {
                     rtcpConnection.send(
                         content: RtcpPacket.bye(.init(ssrc: 0)).packet(),
                         completion: .contentProcessed { error in
-                            Log.headphones.notice("Sent RTCP Bye with error \(error, privacy: .public)")
+                            Log.headphones.notice("Sent RTCP Bye with error \(String(describing: error), privacy: .public)")
                         }
                     )
                 case .ready:
