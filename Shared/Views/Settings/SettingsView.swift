@@ -312,7 +312,30 @@ struct SettingsView: View {
 #endif
 
                 #if os(macOS)
-                Toggle(String(localized: "Show menu bar icon", comment: "Label on a settings toggle"), isOn: $showMenuBar)
+                // Deferred for the same reason as `NSApplication.forceFront(_:)`:
+                // this is a SwiftUI action, so assigning straight to
+                // `$showMenuBar` mutates the `MenuBarExtra(isInserted:)` binding
+                // in `RoamApp` from inside the update pass the tap is already
+                // running in. SwiftUI turns that into a scene change and
+                // re-enters the update it has not finished
+                // (`graphDidChange` -> `scenesDidChange` -> ...) -- the same
+                // recursion that overflowed the stack in 1.49/1.51, and the one
+                // `Roam/ScreenshotCapture.swift` warns must never be triggered
+                // at runtime.
+                //
+                // The hop lets the in-flight update finish, so the scene graph
+                // sees the new value on a quiet turn.
+                Toggle(
+                    String(localized: "Show menu bar icon", comment: "Label on a settings toggle"),
+                    isOn: Binding<Bool>(
+                        get: { showMenuBar },
+                        set: { newValue in
+                            DispatchQueue.main.async {
+                                showMenuBar = newValue
+                            }
+                        }
+                    )
+                )
                 #endif
 
                 Toggle(
