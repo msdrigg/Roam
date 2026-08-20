@@ -163,7 +163,9 @@ pub struct CrashRule {
     /// thermal figure does not match a rule that sets this.
     pub min_thermal_level: Option<i64>,
     /// Maximum `Elapsed application CPU time` percentage, inclusive. A report
-    /// with no CPU figure does not match a rule that sets this.
+    /// with no CPU figure does not match a rule that sets this. This is the
+    /// app's own share, not the `Elapsed total` figure on the line above it,
+    /// which covers the whole device.
     pub max_app_cpu_percent: Option<i64>,
     /// Substrings that must all appear somewhere in the report (stack frames).
     pub all_of: &'static [&'static str],
@@ -430,7 +432,13 @@ pub static RULES: &[CrashRule] = &[
         // Level 9 is the top of the scale, reported alongside
         // `Thermal State: critical`. Nothing below that is evidence of anything.
         min_thermal_level: Some(9),
-        max_app_cpu_percent: Some(0),
+        // Not `0`. A starved app still gets scheduled occasionally, and rounding
+        // puts that at a few percent: the iPhone14,5 report that forced this
+        // open showed thermal level 11 and 3% -- 2.122s of app CPU against
+        // 41.210s of device CPU -- and fell outside a `0` bound, reaching the
+        // manual queue as an unrecognised watchdog. What matters is the ratio,
+        // and a single digit against a pegged device is the same story as zero.
+        max_app_cpu_percent: Some(5),
         all_of: &[],
         none_of: &[],
         reply: THERMAL_STARVATION_REPLY,
@@ -670,6 +678,44 @@ Metadata:
 Thread 0 (attributed):
   AttributeGraph +0xc800 AG::Graph::UpdateStack::update() samples=1
 "#;
+
+    /// The iPhone14,5 report from 2026-08-20: same starvation as
+    /// `THERMAL_REPORT`, but the app got a sliver of CPU rather than none, and
+    /// a `max_app_cpu_percent: Some(0)` bound sent it to the manual queue.
+    const THERMAL_REPORT_NONZERO_CPU: &str = r#"
+Crash 1 (version 1.0.0)
+Termination reason: <RBSTerminateContext| domain:10 code:0x8BADF00D explanation:scene-update watchdog transgression: app<com.msdrigg.roam>:6475 exhausted real (wall clock) time allowance of 10.00 seconds
+ProcessVisibility: Background
+WatchdogEvent: scene-update
+WatchdogCPUStatistics: (
+"Elapsed total CPU time (seconds): 41.210 (user 21.740, system 19.470), 67% CPU",
+"Elapsed application CPU time (seconds): 2.122, 3% CPU"
+)
+ThermalInfo: (
+"Thermal Level:   11",
+"Thermal State:   critical"
+) reportType:CrashLog maxTerminationResistance:Interactive>
+Metadata:
+  appVersion: 1.50
+  deviceType: iPhone14,5
+  exceptionType: 10
+  signal: 9
+  terminationReason: <RBSTerminateContext| domain:10 code:0x8BADF00D explanation:scene-update watchdog transgression
+Thread 0 (attributed):
+  SwiftUICore +0x29b8c BodyAccessor.setBody samples=1
+"#;
+
+    #[test]
+    fn thermal_starvation_matches_when_the_app_got_a_sliver_of_cpu() {
+        let facts = CrashFacts::from_report(THERMAL_REPORT_NONZERO_CPU);
+        assert_eq!(facts.thermal_level, Some(11));
+        assert_eq!(facts.app_cpu_percent, Some(3));
+
+        let matched =
+            match_rule(THERMAL_REPORT_NONZERO_CPU, &facts).expect("thermal rule matches at 3%");
+        assert_eq!(matched.rule.id, "thermal-starvation-watchdog");
+        assert_eq!(matched.status, FixStatus::NotADefect);
+    }
 
     #[test]
     fn extracts_thermal_and_cpu_figures() {
