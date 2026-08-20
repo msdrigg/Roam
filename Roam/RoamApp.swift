@@ -71,8 +71,14 @@ struct RoamApp: App {
         }
     }
 
-    var body: some Scene {
-        #if os(macOS)
+    #if os(macOS)
+        // `body` used to build both scenes, all five command groups and every
+        // modifier in a single getter. Each application allocas a new, larger
+        // value sized from runtime type metadata, and nothing is released until
+        // the getter returns -- the cost accumulated across the whole scene
+        // tree, on the same main-thread stack the 1.50/1.51 overflows ran out
+        // of. Split into stages so each one's temporaries pop when it returns.
+        private var mainWindowScene: some Scene {
             Window("Roam", id: "main") {
                 RemoteView()
                     .translucentBackground()
@@ -143,163 +149,191 @@ struct RoamApp: App {
             .windowResizability(windowResizability)
             .trailingPosition()
             .windowToolbarStyle(.unifiedCompact(showsTitle: false))
-            .commands {
-                CommandGroup(replacing: CommandGroupPlacement.appInfo) {
-                    Button(
-                        action: {
-                            openWindow(id: "about")
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                NSApp.forceFront("about")
-                            }
-                        },
-                        label: {
-                            Text(
-                                "About Roam",
-                                comment: "Button to open the about page of the Roam app")
-                        })
-                }
+            .commands { roamCommands }
+        }
 
-                if appDelegate.navigationPath.focusedWindow == .remote {
-                    CommandGroup(replacing: CommandGroupPlacement.pasteboard) {
-                        PasteButton(
-                            payloadType: String.self,
-                            onPaste: { item in
-                                Task {
-                                    guard let first = item.first else {
-                                        Log.lifecycle.notice(
-                                            "Failed to paste because no item in pasteboard")
-                                        return
-                                    }
-                                    guard
-                                        let texteditId = appDelegate.ecpMonitor.textEditStatus
-                                            .texteditId
-                                    else {
-                                        Log.lifecycle.notice(
-                                            "Failed to paste because no textedit id")
+        @CommandsBuilder
+        private var roamCommands: some Commands {
+            appInfoCommand
+            pasteboardCommand
+            addDeviceCommand
+            refreshMessagesCommand
+            helpCommand
+        }
 
-                                        if let (app, params) = parsePastedUrl(first) {
-                                            do {
-                                                try await appDelegate.ecpMonitor.ecpClient?
-                                                    .launchApp(app, params: params)
-                                            } catch {
-                                                Log.lifecycle.error(
-                                                    "Error opening app from url app=\(app, privacy: .public) params=\(params, privacy: .public): \(error, privacy: .public)"
-                                                )
-                                            }
-                                        }
-
-                                        return
-                                    }
-
-                                    do {
-                                        try await appDelegate.ecpMonitor.ecpClient?.setTextEdit(
-                                            first, texteditId: texteditId)
-                                    } catch {
-                                        Log.lifecycle.error(
-                                            "Failed to paste: \(error, privacy: .public)")
-                                    }
-                                }
-                            }
-                        )
-                        .customKeyboardShortcut(.paste)
-
-                        Button(
-                            "Cut", systemImage: "clipboard",
-                            action: {
-                                Task {
-                                    guard
-                                        let texteditId = appDelegate.ecpMonitor.textEditStatus
-                                            .texteditId
-                                    else {
-                                        Log.lifecycle.notice(
-                                            "Failed to paste because no textedit id")
-                                        return
-                                    }
-
-                                    if let texteditText = appDelegate.ecpMonitor.textEditStatus.text
-                                    {
-                                        Log.lifecycle.notice(
-                                            "Cutting text \(texteditText, privacy: .public)")
-                                        NSPasteboard.general.clearContents()
-                                        NSPasteboard.general.setString(
-                                            texteditText, forType: .string)
-                                    }
-
-                                    do {
-                                        try await appDelegate.ecpMonitor.ecpClient?.setTextEdit(
-                                            "", texteditId: texteditId)
-                                    } catch {
-                                        Log.lifecycle.error(
-                                            "Failed to paste: \(error, privacy: .public)")
-                                    }
-                                }
-                            }
-                        )
-                        .customKeyboardShortcut(.cut)
-                        .disabled(appDelegate.ecpMonitor.textEditStatus.texteditId == nil)
-
-                        Button(
-                            "Copy", systemImage: "clipboard",
-                            action: {
-                                Task {
-                                    if let texteditText = appDelegate.ecpMonitor.textEditStatus.text
-                                    {
-                                        Log.lifecycle.notice(
-                                            "Copying text \(texteditText, privacy: .public)")
-                                        NSPasteboard.general.clearContents()
-                                        NSPasteboard.general.setString(
-                                            texteditText, forType: .string)
-                                    }
-                                }
-                            }
-                        )
-                        .customKeyboardShortcut(.copy)
-                        .disabled(appDelegate.ecpMonitor.textEditStatus.texteditId == nil)
-                    }
-                }
-
-                if appDelegate.navigationPath.focusedWindow == .settings
-                    || appDelegate.navigationPath.focusedWindow == .remote
-                {
-                    CommandGroup(after: .appSettings) {
-                        Divider()
-                        Button("Add Device", systemImage: "plus") {
-                            appDelegate.navigationPath.showAddDevice = true
-                        }
-                        .customKeyboardShortcut(.addDevice)
-                    }
-                }
-
-                if appDelegate.navigationPath.focusedWindow == .messages {
-                    CommandGroup(after: .appSettings) {
-                        Divider()
-                        Button("Refresh Chat Messages", systemImage: "arrow.clockwise.circle") {
-                            appDelegate.refreshMessages()
-                        }
-                    }
-                }
-
-                CommandGroup(replacing: .help) {
-                    Button("Roam Help", systemImage: "info.circle") {
-                        openURL(URL(string: "https://roam.msd3.io/")!)
-                    }
-
-                    Button("Chat with the Developer", systemImage: "message") {
-                        openWindow(id: "messages")
+        private var appInfoCommand: some Commands {
+            CommandGroup(replacing: CommandGroupPlacement.appInfo) {
+                Button(
+                    action: {
+                        openWindow(id: "about")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            NSApp.forceFront("messages")
+                            NSApp.forceFront("about")
                         }
-                    }
-                    .customKeyboardShortcut(.chatWithDeveloper)
+                    },
+                    label: {
+                        Text(
+                            "About Roam",
+                            comment: "Button to open the about page of the Roam app")
+                    })
+            }
+        }
+
+        @CommandsBuilder
+        private var pasteboardCommand: some Commands {
+            if appDelegate.navigationPath.focusedWindow == .remote {
+                CommandGroup(replacing: CommandGroupPlacement.pasteboard) {
+                    PasteButton(
+                        payloadType: String.self,
+                        onPaste: { item in
+                            Task {
+                                guard let first = item.first else {
+                                    Log.lifecycle.notice(
+                                        "Failed to paste because no item in pasteboard")
+                                    return
+                                }
+                                guard
+                                    let texteditId = appDelegate.ecpMonitor.textEditStatus
+                                        .texteditId
+                                else {
+                                    Log.lifecycle.notice(
+                                        "Failed to paste because no textedit id")
+
+                                    if let (app, params) = parsePastedUrl(first) {
+                                        do {
+                                            try await appDelegate.ecpMonitor.ecpClient?
+                                                .launchApp(app, params: params)
+                                        } catch {
+                                            Log.lifecycle.error(
+                                                "Error opening app from url app=\(app, privacy: .public) params=\(params, privacy: .public): \(error, privacy: .public)"
+                                            )
+                                        }
+                                    }
+
+                                    return
+                                }
+
+                                do {
+                                    try await appDelegate.ecpMonitor.ecpClient?.setTextEdit(
+                                        first, texteditId: texteditId)
+                                } catch {
+                                    Log.lifecycle.error(
+                                        "Failed to paste: \(error, privacy: .public)")
+                                }
+                            }
+                        }
+                    )
+                    .customKeyboardShortcut(.paste)
+
+                    Button(
+                        "Cut", systemImage: "clipboard",
+                        action: {
+                            Task {
+                                guard
+                                    let texteditId = appDelegate.ecpMonitor.textEditStatus
+                                        .texteditId
+                                else {
+                                    Log.lifecycle.notice(
+                                        "Failed to paste because no textedit id")
+                                    return
+                                }
+
+                                if let texteditText = appDelegate.ecpMonitor.textEditStatus.text
+                                {
+                                    Log.lifecycle.notice(
+                                        "Cutting text \(texteditText, privacy: .public)")
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(
+                                        texteditText, forType: .string)
+                                }
+
+                                do {
+                                    try await appDelegate.ecpMonitor.ecpClient?.setTextEdit(
+                                        "", texteditId: texteditId)
+                                } catch {
+                                    Log.lifecycle.error(
+                                        "Failed to paste: \(error, privacy: .public)")
+                                }
+                            }
+                        }
+                    )
+                    .customKeyboardShortcut(.cut)
+                    .disabled(appDelegate.ecpMonitor.textEditStatus.texteditId == nil)
+
+                    Button(
+                        "Copy", systemImage: "clipboard",
+                        action: {
+                            Task {
+                                if let texteditText = appDelegate.ecpMonitor.textEditStatus.text
+                                {
+                                    Log.lifecycle.notice(
+                                        "Copying text \(texteditText, privacy: .public)")
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(
+                                        texteditText, forType: .string)
+                                }
+                            }
+                        }
+                    )
+                    .customKeyboardShortcut(.copy)
+                    .disabled(appDelegate.ecpMonitor.textEditStatus.texteditId == nil)
                 }
             }
+        }
 
+        @CommandsBuilder
+        private var addDeviceCommand: some Commands {
+            if appDelegate.navigationPath.focusedWindow == .settings
+                || appDelegate.navigationPath.focusedWindow == .remote
+            {
+                CommandGroup(after: .appSettings) {
+                    Divider()
+                    Button("Add Device", systemImage: "plus") {
+                        appDelegate.navigationPath.showAddDevice = true
+                    }
+                    .customKeyboardShortcut(.addDevice)
+                }
+            }
+        }
+
+        @CommandsBuilder
+        private var refreshMessagesCommand: some Commands {
+            if appDelegate.navigationPath.focusedWindow == .messages {
+                CommandGroup(after: .appSettings) {
+                    Divider()
+                    Button("Refresh Chat Messages", systemImage: "arrow.clockwise.circle") {
+                        appDelegate.refreshMessages()
+                    }
+                }
+            }
+        }
+
+        private var helpCommand: some Commands {
+            CommandGroup(replacing: .help) {
+                Button("Roam Help", systemImage: "info.circle") {
+                    openURL(URL(string: "https://roam.msd3.io/")!)
+                }
+
+                Button("Chat with the Developer", systemImage: "message") {
+                    openWindow(id: "messages")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        NSApp.forceFront("messages")
+                    }
+                }
+                .customKeyboardShortcut(.chatWithDeveloper)
+            }
+        }
+
+        private var menuBarScene: some Scene {
             MenuBarExtra(
                 "Roam Menu Bar", systemImage: "appletvremote.gen3", isInserted: self.$showMenuBar
             ) {
+                // The 1.50/1.51 stack overflows died in this closure, building
+                // the content value -- before `RemoteViewContained.body` ever
+                // ran, so the probe there never got to fire. Measure here too.
+                // swiftlint:disable:next redundant_discardable_let
+                let _ = RenderTrace.body("macOS.MenuBarExtraContent")
                 RemoteViewContained(isInMenuBar: true)
                     .menuBarPanelBackground()
-                    .environmentObject(appDelegate)
                     .environmentObject(appDelegate)
                     .onReceive(
                         NotificationCenter.default.publisher(
@@ -310,7 +344,13 @@ struct RoamApp: App {
                     .preferredColorScheme(.dark)
             }
             .menuBarExtraStyle(.window)
+        }
+    #endif
 
+    var body: some Scene {
+        #if os(macOS)
+            mainWindowScene
+            menuBarScene
         #else
             WindowGroup {
                 RemoteView()
