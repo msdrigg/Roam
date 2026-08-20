@@ -169,6 +169,50 @@ extension NSApplication {
             window?.orderFrontRegardless()
         }
     }
+
+    /// Applies `policy` on the next runloop turn, and only if it differs from
+    /// the policy already in force.
+    ///
+    /// Same hazard as `forceFront`, by a longer route. Switching between
+    /// `.regular` and `.accessory` adds or removes the app from the Dock and
+    /// rebuilds the menu bar, and AppKit orders windows on and off screen as it
+    /// does so. Those orderings post `NSWindowDidOrderOnScreen` synchronously,
+    /// which SwiftUI turns into a scene-phase change -- so a synchronous call
+    /// from a scene's `onAppear` / `onDisappear` runs inside
+    /// `Update.dispatchActions` and re-enters the update pass that queued it.
+    ///
+    /// Coalescing matters as much as deferring. All five macOS window scenes
+    /// ask on appear and again on disappear, so one launch-time restore issues
+    /// a burst of contradictory requests; only the last one describes the state
+    /// the app actually settled into. Collapsing them to a single call at the
+    /// end of the turn also means the common case -- the policy is already what
+    /// the caller wants -- costs nothing and touches no window.
+    @MainActor
+    func setActivationPolicyDeferred(_ policy: ActivationPolicy) {
+        ActivationPolicyCoalescer.pending = policy
+        guard !ActivationPolicyCoalescer.scheduled else { return }
+        ActivationPolicyCoalescer.scheduled = true
+
+        DispatchQueue.main.async {
+            ActivationPolicyCoalescer.scheduled = false
+            guard let wanted = ActivationPolicyCoalescer.pending else { return }
+            ActivationPolicyCoalescer.pending = nil
+
+            guard self.activationPolicy() != wanted else { return }
+
+            Log.lifecycle.notice(
+                "Setting activation policy to \(String(describing: wanted), privacy: .public)")
+            self.setActivationPolicy(wanted)
+        }
+    }
+}
+
+/// Coalescing state for `NSApplication.setActivationPolicyDeferred`. Lives
+/// outside the extension because extensions cannot add stored properties.
+@MainActor
+private enum ActivationPolicyCoalescer {
+    static var pending: NSApplication.ActivationPolicy?
+    static var scheduled = false
 }
 #else
     import UIKit

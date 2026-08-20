@@ -179,7 +179,7 @@ func handlePressedKeyboardEvent(_ event: EventRef) -> OSStatus {
                     button.performClick(nil)
                 } else {
                     Log.userInteraction.warning("No status button found for window. Global hot key not working. Switching to main")
-                    NSApp.setActivationPolicy(.regular)
+                    NSApp.setActivationPolicyDeferred(.regular)
                     NSApp.forceFront("main")
                 }
             }

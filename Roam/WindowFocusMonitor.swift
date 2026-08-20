@@ -11,8 +11,17 @@ struct WindowFocusedModifier: ViewModifier {
         content
             .background(WindowFinder(window: $window))
             .onChange(of: window, initial: true) {
-                if let window = window, window.isKeyWindow {
-                    onFocus()
+                // Hop off the update pass before reporting focus. `onChange`
+                // actions run inside `Update.dispatchActions`, and every
+                // `onFocus` handler writes `navigationPath.focusedWindow` --
+                // which `RoamApp`'s command groups read, so a synchronous write
+                // dirties the app body from inside its own update. The
+                // `didBecomeKey` observer below already takes this hop; this
+                // path was the one that did not.
+                DispatchQueue.main.async {
+                    if let window = window, window.isKeyWindow {
+                        onFocus()
+                    }
                 }
             }
             .onAppear {

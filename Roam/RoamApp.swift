@@ -85,7 +85,7 @@ struct RoamApp: App {
                     .removeToolbarTitle()
                     .removeToolbarBackground()
                     .onAppear {
-                        NSApp.setActivationPolicy(.regular)
+                        NSApp.setActivationPolicyDeferred(.regular)
                         NSApp.forceFront("main")
                     }
                     .onDisappear {
@@ -93,7 +93,7 @@ struct RoamApp: App {
                         if NSApp.windows.filter({ $0.level != .statusBar && $0.isVisible }).count
                             <= 1 && showMenuBar
                         {
-                            NSApp.setActivationPolicy(.accessory)
+                            NSApp.setActivationPolicyDeferred(.accessory)
                         }
                     }
                     .onReceive(
@@ -323,9 +323,38 @@ struct RoamApp: App {
             }
         }
 
+        /// `showMenuBar`, but a write that merely echoes the current value is
+        /// dropped instead of being forwarded to `UserDefaults`.
+        ///
+        /// `MenuBarExtra` treats `isInserted` as two-way and writes back through
+        /// it while it reconciles the status item. `@AppStorage` forwards every
+        /// write to `UserDefaults` -- including same-value ones, which still
+        /// post `didChangeNotification` -- and that invalidates `body`, the
+        /// getter that produced the scene being reconciled. Rebuilding it hands
+        /// `MenuBarExtra` the binding again, it writes back again, and
+        /// `graphDidChange` / `scenesDidChange` alternate until the main thread
+        /// runs off the end of its stack. `ScreenshotCapture` documents the same
+        /// loop from the other side: flipping this binding at runtime, once the
+        /// scene graph exists, is what sets it off.
+        ///
+        /// Dropping the echo is what makes the graph settle: a reconcile that
+        /// changes nothing no longer dirties the scene that caused it. Genuine
+        /// toggles -- the user unchecking the preference -- still write through.
+        private var menuBarInserted: Binding<Bool> {
+            let storage = self.$showMenuBar
+            return Binding(
+                get: { storage.wrappedValue },
+                set: { newValue in
+                    guard newValue != storage.wrappedValue else { return }
+                    storage.wrappedValue = newValue
+                }
+            )
+        }
+
         private var menuBarScene: some Scene {
             MenuBarExtra(
-                "Roam Menu Bar", systemImage: "appletvremote.gen3", isInserted: self.$showMenuBar
+                "Roam Menu Bar", systemImage: "appletvremote.gen3",
+                isInserted: self.menuBarInserted
             ) {
                 // The 1.50/1.51 stack overflows died in this closure, building
                 // the content value -- before `RemoteViewContained.body` ever
@@ -399,7 +428,7 @@ struct RoamApp: App {
                     .translucentBackground()
                     .removeToolbarTitle()
                     .onAppear {
-                        NSApp.setActivationPolicy(.regular)
+                        NSApp.setActivationPolicyDeferred(.regular)
                         NSApp.forceFront("messages")
                     }
                     .onDisappear {
@@ -407,7 +436,7 @@ struct RoamApp: App {
                         if NSApp.windows.filter({ $0.level != .statusBar && $0.isVisible }).count
                             <= 1 && showMenuBar
                         {
-                            NSApp.setActivationPolicy(.accessory)
+                            NSApp.setActivationPolicyDeferred(.accessory)
                         }
                     }
                     .preferredColorScheme(.dark)
@@ -420,14 +449,14 @@ struct RoamApp: App {
                     .translucentBackground()
                     .removeToolbarTitle()
                     .onAppear {
-                        NSApp.setActivationPolicy(.regular)
+                        NSApp.setActivationPolicyDeferred(.regular)
                         NSApp.forceFront("keyboard-shortcuts")
                     }
                     .onDisappear {
                         if NSApp.windows.filter({
                             !$0.isExcludedFromWindowsMenu && $0.canBecomeKey && $0.isVisible
                         }).count <= 1 && showMenuBar {
-                            NSApp.setActivationPolicy(.accessory)
+                            NSApp.setActivationPolicyDeferred(.accessory)
                         }
                     }
                     .preferredColorScheme(.dark)
@@ -443,13 +472,13 @@ struct RoamApp: App {
                     .removeToolbarTitle()
                     .enableResize()
                     .onAppear {
-                        NSApp.setActivationPolicy(.regular)
+                        NSApp.setActivationPolicyDeferred(.regular)
                     }
                     .onDisappear {
                         if NSApp.windows.filter({ $0.level != .statusBar && $0.isVisible }).count
                             <= 1 && showMenuBar
                         {
-                            NSApp.setActivationPolicy(.accessory)
+                            NSApp.setActivationPolicyDeferred(.accessory)
                         }
                     }
                     .preferredColorScheme(.dark)
@@ -465,14 +494,14 @@ struct RoamApp: App {
                     .translucentBackground()
                     .disableWindowMinimize()
                     .onAppear {
-                        NSApp.setActivationPolicy(.regular)
+                        NSApp.setActivationPolicyDeferred(.regular)
                         NSApp.forceFront("about")
                     }
                     .onDisappear {
                         if NSApp.windows.filter({ $0.level != .statusBar && $0.isVisible }).count
                             <= 1 && showMenuBar
                         {
-                            NSApp.setActivationPolicy(.accessory)
+                            NSApp.setActivationPolicyDeferred(.accessory)
                         }
                     }
                     .preferredColorScheme(.dark)
