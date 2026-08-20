@@ -170,7 +170,16 @@
             .buttonStyle(.accessoryBar)
         }
 
-        private var configuredContent: some View {
+        // This chain used to live in one `configuredContent` getter. Every
+        // modifier application allocas a new, larger `ModifiedContent` value
+        // sized from runtime type metadata, and nothing is released until the
+        // getter returns -- the single property accumulated 127 live allocas,
+        // a large slice of the 8 MB main stack on every rebuild of the tree.
+        // Split into stages, each stage's temporaries pop when it returns.
+        //
+        // Keep these separate, and keep the modifier order exactly as it is:
+        // the order is part of the view's identity.
+        private var focusedContent: some View {
             content
                 .buttonStyle(.glassIfSupported)
                 .task {
@@ -193,6 +202,10 @@
                         }
                     }
                 }
+        }
+
+        private var dataLoadingContent: some View {
+            focusedContent
                 .task {
                     await RoamDataHandler.shared.initialize()
                 }
@@ -220,6 +233,10 @@
                         )
                     }
                 }
+        }
+
+        private var discoveryContent: some View {
+            dataLoadingContent
                 .onAppear {
                     Log.lifecycle.notice("Showing \(#fileID, privacy: .public) view")
                     Log.scanning.notice(
@@ -280,6 +297,10 @@
                     await scanningActor.scanIPV4Once()
                     Log.scanning.notice("RemoteViewContained IPV4 scan returned")
                 }
+        }
+
+        private var sessionContent: some View {
+            discoveryContent
                 .task(id: selectedDevice?.id, priority: .medium) {
                     for await _ in exponentialBackoff(min: 30, max: 3600) {
                         if let selectedDevice, let ecpSession {
@@ -342,6 +363,10 @@
                         }
                     }
                 }
+        }
+
+        private var configuredContent: some View {
+            sessionContent
                 .onKeyDown({ key in pressKey(key.key, modifiers: key.modifiers) }, enabled: true)
                 .onWindowFocused {
                     Log.lifecycle.notice("\(#fileID, privacy: .public) becoming key window")
