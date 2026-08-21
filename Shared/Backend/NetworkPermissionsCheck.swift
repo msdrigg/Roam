@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import os
 import OSLog
 
 #if os(macOS)
@@ -86,6 +87,53 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
 #else
 private let type = "_preflight_check._tcp"
 
+/// Cancels an `NWListener`/`NWBrowser` pair exactly once, off the caller's thread.
+///
+/// Teardown is reachable from three threads: Network.framework's callbacks on
+/// `queue`, the `Task.isCancelled` checks on the task's own thread, and
+/// `onCancel` on whichever thread cancelled the task. `NWBrowser.cancel()` is
+/// not safe to call concurrently with itself -- 1.52 died with a `SIGSEGV` on a
+/// near-null address inside `nw_browser_cancel` when the task-thread teardown
+/// raced the `onCancel` one that ee13c8f2 added. Claiming the cancel under a
+/// lock means exactly one caller reaches `cancel()`.
+///
+/// The cancels stay on `queue` because they block on an internal
+/// Network.framework lock, and `onCancel` runs on the main thread while SwiftUI
+/// applies a scene-phase change; blocking it there is the 0x8BADF00D watchdog
+/// kill ee13c8f2 fixed. `CloseOnceFileDescriptor` in `SSDPDiscovery` guards the
+/// same shape of bug for raw sockets.
+private final class CancelOnceEndpoints: @unchecked Sendable {
+    private let cancelled = OSAllocatedUnfairLock(initialState: false)
+    private let listener: NWListener
+    private let browser: NWBrowser
+    private let queue: DispatchQueue
+
+    init(listener: NWListener, browser: NWBrowser, queue: DispatchQueue) {
+        self.listener = listener
+        self.browser = browser
+        self.queue = queue
+    }
+
+    func cancel() {
+        let shouldCancel = cancelled.withLock { alreadyCancelled -> Bool in
+            if alreadyCancelled { return false }
+            alreadyCancelled = true
+            return true
+        }
+        guard shouldCancel else {
+            Log.network.notice("Skipping redundant local network check cancel")
+            return
+        }
+
+        let listener = self.listener
+        let browser = self.browser
+        queue.async {
+            listener.cancel()
+            browser.cancel()
+        }
+    }
+}
+
 func requestLocalNetworkAuthorization() async throws -> Bool {
     let queue = DispatchQueue.networkQueue
 
@@ -98,19 +146,31 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
     let parameters = NWParameters()
     parameters.includePeerToPeer = true
     let browser = NWBrowser(for: .bonjour(type: type, domain: nil), using: parameters)
+    let endpoints = CancelOnceEndpoints(listener: listener, browser: browser, queue: queue)
 
     return try await withTaskCancellationHandler {
         let stream = AsyncThrowingStream(Bool.self, bufferingPolicy: .bufferingNewest(1)) { continuation in
-            final class LocalState {
-                var didResume = false
-            }
+            // `resume` is reachable from the listener and browser callbacks on
+            // `queue` and from the `Task.isCancelled` checks on the task's own
+            // thread, so two threads can enter it at once. Claim it so only one
+            // rewrites the handler properties and yields.
+            let resumed = OSAllocatedUnfairLock(initialState: false)
             @Sendable func resume(with result: Result<Bool, any Error>) {
-                // Teardown listener and browser
+                let shouldResume = resumed.withLock { alreadyResumed -> Bool in
+                    if alreadyResumed { return false }
+                    alreadyResumed = true
+                    return true
+                }
+                guard shouldResume else { return }
+
+                // Teardown listener and browser. The handlers are cleared here
+                // rather than in `onCancel` so that a cancel raised from there
+                // still reaches this function through the `.cancelled` state and
+                // finishes the stream.
                 listener.stateUpdateHandler = { _ in }
                 browser.stateUpdateHandler = { _ in }
                 browser.browseResultsChangedHandler = { _, _ in }
-                listener.cancel()
-                browser.cancel()
+                endpoints.cancel()
 
                 continuation.yield(with: result)
             }
@@ -206,10 +266,7 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
         // the watchdog with 0x8BADF00D ("Failed to terminate gracefully after
         // 5.0s"). Tear down on the queue these objects already run on so the
         // cancelling thread is never blocked.
-        queue.async {
-            listener.cancel()
-            browser.cancel()
-        }
+        endpoints.cancel()
     }
 }
 #endif
