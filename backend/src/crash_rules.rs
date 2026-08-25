@@ -326,6 +326,16 @@ Launch-time window restoration is what makes it fatal rather than merely wastefu
 
 **Known cause, fix:** `forceFront` now defers to the next runloop turn, so the in-flight update finishes before `makeKeyAndOrderFront` fires and the notification lands on a quiet graph.";
 
+const MENU_BAR_EXTRA_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow — `MenuBarExtra(isInserted:)` re-entered the SwiftUI update pass**
+
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer — unbounded recursion.
+
+MetricKit cannot unwind an overflowed stack, so the attributed thread shows only whatever the Swift runtime was demangling when the last frame would not fit. Read the in-process backtrace instead: it holds `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down, with `MenuBarExtra(isInserted:)` inside the cycle.
+
+Same recursion as `scene-phase-reentrancy-stack-overflow`, driven from a different place. `MenuBarExtra` writes back through its `isInserted` binding while SwiftUI reconciles the scene, and `@AppStorage` forwards even a same-value write to `UserDefaults`. That write posts `didChangeNotification`, which invalidates the body that produced the scene, so `graphDidChange` re-enters the update it is already inside — and every level reconciles `MenuBarExtra` again.
+
+**Known cause, fix:** the `isInserted` binding now drops echoes — a write matching the value already stored is not forwarded to `UserDefaults`, so reconciliation no longer dirties the graph it is running inside. Real toggles still write through.";
+
 const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — main thread blocked cancelling the Bonjour browser**
 
 The termination reason pins this down: the process failed to terminate within its 5 second budget.
@@ -335,6 +345,26 @@ The attributed thread is the **main thread**, parked in `nw_browser_cancel`, rea
 `onCancel` runs synchronously on whichever thread cancels the task, and SwiftUI cancels `.task` work on the main thread while it applies a scene-phase change. `NWBrowser.cancel()` and `NWListener.cancel()` block on an internal Network.framework lock, so when the network queue is busy the main thread stalls past the termination budget and the watchdog kills the app.
 
 **Known cause, fix:** listener/browser teardown is dispatched onto the queue those objects already run on, so the cancelling thread is never blocked.";
+
+const AUDIO_PLAYER_NODE_EXCEPTION_REPLY: &str = ":ninja: **Auto-review: `SIGABRT` — AVFAudio raised on `play()` against a stale output format**
+
+`EXC_CRASH (10)` / `SIGABRT (6)`, and the attributed thread shows why: `objc_exception_throw` out of `-[AVAudioPlayerNode play]`, through `objc_terminate`, into `abort`. An Objective-C exception, not a signal in Roam's own code.
+
+Swift cannot catch those. AVFoundation reports misuse by raising rather than returning an error, and an unhandled raise ends the process immediately — `try` around the call does nothing.
+
+`AudioPlayer` built its engine connections and its `AVAudioConverter` once, in `init`, against the output device's format at that moment. On iOS a route change tears the session down and `handleRouteChange` rebuilds it, but macOS had no equivalent observer: the user switches default output device, the next `start()` succeeds against the new one, and the player node is still connected with the *old* device's format. `play()` raises on the mismatch.
+
+The `guard engine.isRunning` ahead of it did not help — the engine really was running. It was the graph below it that was stale.
+
+**Known cause, fix:** the graph and converter are now re-derived from the current output format on every `start()`, and a device reporting no usable format is rejected with a thrown error rather than left for AVFAudio to raise on. The `play()` and `scheduleBuffer` calls additionally run under an Objective-C exception trap, so a raise that still slips through surfaces as a Swift error instead of killing the process.";
+
+const LOCAL_NETWORK_CANCEL_RACE_REPLY: &str = ":ninja: **Auto-review: `SIGSEGV` — two threads cancelled the Bonjour browser at once**
+
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` on a near-null address inside `nw_browser_cancel`, attributed to `requestLocalNetworkAuthorization`.
+
+Not the `0x8BADF00D` watchdog kill that `local-network-cancel-watchdog` describes — that one is a *stall* on the main thread and carries a termination reason. This is a **use-after-free**: `NWBrowser.cancel()` is not safe to call concurrently with itself, and the fix for the watchdog left two paths that could both reach it — the task thread tearing the endpoints down as `requestLocalNetworkAuthorization` returned, and the `onCancel` handler firing when SwiftUI cancelled the `.task`. The `didResume` guard that was supposed to make the second call a no-op was checked outside the lock, so both callers passed it and Network.framework freed the browser twice.
+
+**Known cause, fix:** teardown now goes through a claim-once `CancelOnceEndpoints` wrapper that takes the cancel under an `OSAllocatedUnfairLock`, so exactly one caller reaches `cancel()` no matter which path wins. The resume is claimed the same way. Both still run on the browser's own queue, so the watchdog fix is preserved.";
 
 const THERMAL_STARVATION_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — the device was overheating, not the app**
 
@@ -375,6 +405,32 @@ pub static RULES: &[CrashRule] = &[
         none_of: &[],
         reply: SCENE_PHASE_REENTRANCY_REPLY,
     },
+    // After the forceFront rule, and explicitly excluding it: both are the same
+    // graphDidChange/scenesDidChange recursion, and a report carrying both
+    // triggers belongs to the narrower one above.
+    CrashRule {
+        id: "menu-bar-extra-reentrancy-stack-overflow",
+        title: "Stack overflow from MenuBarExtra(isInserted:) re-entering the SwiftUI update pass",
+        fixed_in: Some("1.54"),
+        environmental: false,
+        exception_type: Some(1),
+        signal: Some(11),
+        termination_code: None,
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
+        // `MenuBarExtra` and `isInserted` both appear inside the mangled
+        // SwiftUI initialiser symbols, so plain substrings reach them without
+        // depending on demangling. As with the forceFront rule, the scene frame
+        // alone is too loose -- require the recursion and the Stack Guard hit.
+        all_of: &[
+            "MenuBarExtra",
+            "isInserted",
+            "AppGraph.graphDidChange",
+            "Stack Guard",
+        ],
+        none_of: &["NSApplication.forceFront"],
+        reply: MENU_BAR_EXTRA_REENTRANCY_REPLY,
+    },
     CrashRule {
         id: "local-network-cancel-watchdog",
         title: "0x8BADF00D watchdog cancelling NWBrowser on the main thread",
@@ -388,6 +444,49 @@ pub static RULES: &[CrashRule] = &[
         all_of: &["nw_browser_cancel"],
         none_of: &[],
         reply: WATCHDOG_REPLY,
+    },
+    // Directly after the watchdog rule it is most likely to be confused with.
+    // The two cannot collide -- that one needs a 0x8BADF00D termination code and
+    // this one a SIGSEGV -- but they share `nw_browser_cancel`, so keep them
+    // adjacent for whoever reads this list next.
+    CrashRule {
+        id: "local-network-cancel-race",
+        title: "SIGSEGV from concurrent NWBrowser.cancel() in the local network check",
+        fixed_in: Some("1.54"),
+        environmental: false,
+        exception_type: Some(1),
+        signal: Some(11),
+        termination_code: None,
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
+        // The app frame matters here: `nw_browser_cancel` on its own would also
+        // claim a crash in any other browser Roam cancels.
+        all_of: &["nw_browser_cancel", "requestLocalNetworkAuthorization"],
+        none_of: &[],
+        reply: LOCAL_NETWORK_CANCEL_RACE_REPLY,
+    },
+    // EXC_CRASH/SIGABRT, so it cannot collide with the two EXC_CRASH/SIGKILL
+    // rules below; the exception pair alone separates them.
+    CrashRule {
+        id: "audio-player-node-play-exception",
+        title: "SIGABRT from AVAudioPlayerNode.play() raising on a stale output format",
+        fixed_in: Some("1.54"),
+        environmental: false,
+        exception_type: Some(10),
+        signal: Some(6),
+        termination_code: None,
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
+        // The ObjC throw plus both ends of the call: AVFAudio raising, and Roam
+        // being the one that called it. `AVAudioPlayerNode` on its own would
+        // also claim an unrelated abort that merely had audio on some thread.
+        all_of: &[
+            "objc_exception_throw",
+            "AVAudioPlayerNode",
+            "AudioPlayer.start",
+        ],
+        none_of: &[],
+        reply: AUDIO_PLAYER_NODE_EXCEPTION_REPLY,
     },
     CrashRule {
         id: "ssdp-socket-double-close",
@@ -507,6 +606,233 @@ Metadata:
 Thread 0 (attributed):
   Network +0x1158200 nw_browser_cancel samples=1
 "#;
+
+
+    /// Trimmed from the real report on thread 1540815884619227250 (roam 1.52,
+    /// Mac16,12): the same graphDidChange/scenesDidChange recursion as
+    /// `STACK_OVERFLOW_REPORT`, but driven by `MenuBarExtra` rather than
+    /// `forceFront`. MetricKit reports the attributed thread mid-demangle
+    /// because it cannot unwind an overflowed stack; the cycle is only visible
+    /// in the in-process backtrace.
+    const MENU_BAR_STACK_OVERFLOW_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) — stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
+Faulting VM region: 0x16d197ea0 is in 0x169994000-0x16d198000;  bytes after start: 58736288  bytes before end: 351
+--->  Stack Guard                 169994000-16d198000    [ 56.0M] ---/rwx SM=PRV
+Metadata:
+  appVersion: 1.52
+  deviceType: Mac16,12
+  exceptionCode: 2
+  exceptionType: 1
+  osVersion: macOS 26.6.2 (25G83)
+  signal: 11
+Thread 0 (attributed — this is the thread that crashed):
+  0   libswiftCore.dylib +0xae994 DecodedMetadataBuilder::createGenericTypeParameterType samples=1
+
+In-process backtrace of the faulting thread (1)
+  20  SwiftUI +0x1476c7c AppGraph.graphDidChange
+  21  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange
+  22  SwiftUI +0x8dc94a8 $s7SwiftUI12MenuBarExtraVA2A4TextVRszrlE_10isInserted7contentACyAEq_G
+  23  SwiftUI +0x1476c7c AppGraph.graphDidChange
+  24  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange
+"#;
+
+    /// Trimmed from the real report on thread 1436017918377984024 (roam 1.52,
+    /// iPhone12,1): `nw_browser_cancel` again, but a SIGSEGV rather than the
+    /// watchdog kill `WATCHDOG_REPORT` carries.
+    const LOCAL_NETWORK_RACE_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_INVALID_ADDRESS (1) / SIGSEGV (11)
+Faulting VM region: 0x54 is not in any region.  Bytes before following region: 4376493996
+Metadata:
+  appVersion: 1.52
+  deviceType: iPhone12,1
+  exceptionCode: 1
+  exceptionType: 1
+  osVersion: iPhone OS 18.6.2 (22G100)
+  signal: 11
+Thread 9 (attributed — this is the thread that crashed):
+  2   Network +0xadb8ec nw_browser_cancel samples=1
+  3   Roam    +0x173e68 closure #1 in closure #2 in requestLocalNetworkAuthorization at /x/NetworkPermissionsCheck.swift:115 samples=1
+  5   Roam    +0x1739e8 closure #2 in requestLocalNetworkAuthorization at /x/NetworkPermissionsCheck.swift:194 samples=1
+"#;
+
+    #[test]
+    fn matches_the_menu_bar_extra_stack_overflow() {
+        let facts = CrashFacts::from_report(MENU_BAR_STACK_OVERFLOW_REPORT);
+        let matched =
+            match_rule(MENU_BAR_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
+        // The report is from 1.52 and the echo-drop shipped in 1.54.
+        assert_eq!(matched.status, FixStatus::Fixed);
+    }
+
+    #[test]
+    fn the_forcefront_rule_still_wins_when_both_triggers_are_present() {
+        // A report carrying both belongs to the narrower forceFront rule, by
+        // ordering and by this rule's `none_of`.
+        let report = MENU_BAR_STACK_OVERFLOW_REPORT.replace(
+            "  20  SwiftUI +0x1476c7c AppGraph.graphDidChange",
+            "  20  Roam +0x5e2e8 NSApplication.forceFront at /x/RoamAppDelegate.swift:152\n  21  SwiftUI +0x1476c7c AppGraph.graphDidChange",
+        );
+        let facts = CrashFacts::from_report(&report);
+        assert_eq!(
+            match_rule(&report, &facts).map(|m| m.rule.id),
+            Some("scene-phase-reentrancy-stack-overflow")
+        );
+    }
+
+    #[test]
+    fn a_menu_bar_extra_crash_without_the_recursion_is_not_claimed() {
+        // MenuBarExtra appears on plenty of macOS stacks. Only the cycle makes
+        // this the known bug.
+        let report = MENU_BAR_STACK_OVERFLOW_REPORT
+            .replace("AppGraph.graphDidChange", "AppGraph.updateGraph");
+        let facts = CrashFacts::from_report(&report);
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn matches_the_local_network_cancel_race() {
+        let facts = CrashFacts::from_report(LOCAL_NETWORK_RACE_REPORT);
+        let matched = match_rule(LOCAL_NETWORK_RACE_REPORT, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "local-network-cancel-race");
+        // The report is from 1.52 and the claim-once wrapper shipped in 1.54.
+        assert_eq!(matched.status, FixStatus::Fixed);
+    }
+
+    #[test]
+    fn the_two_local_network_rules_do_not_steal_from_each_other() {
+        // Both name `nw_browser_cancel`. The watchdog kill is EXC_CRASH with a
+        // 0x8BADF00D termination code; the race is a SIGSEGV with neither.
+        for (report, expected) in [
+            (WATCHDOG_REPORT, "local-network-cancel-watchdog"),
+            (LOCAL_NETWORK_RACE_REPORT, "local-network-cancel-race"),
+        ] {
+            let facts = CrashFacts::from_report(report);
+            assert_eq!(
+                match_rule(report, &facts).map(|m| m.rule.id),
+                Some(expected)
+            );
+        }
+    }
+
+    #[test]
+    fn a_browser_cancel_crash_outside_the_permission_check_is_not_claimed() {
+        // `nw_browser_cancel` alone is any NWBrowser teardown. Without the
+        // permission-check frame it stays in the manual queue.
+        let report = LOCAL_NETWORK_RACE_REPORT
+            .replace("requestLocalNetworkAuthorization", "scanDevicesContinually");
+        let facts = CrashFacts::from_report(&report);
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn the_new_rules_do_not_steal_the_existing_crashes() {
+        for report in [
+            DEAD10CC_REPORT,
+            GUARD_REPORT,
+            WATCHDOG_REPORT,
+            THERMAL_REPORT,
+            STACK_OVERFLOW_REPORT,
+        ] {
+            let facts = CrashFacts::from_report(report);
+            let matched = match_rule(report, &facts).map(|m| m.rule.id);
+            assert_ne!(matched, Some("menu-bar-extra-reentrancy-stack-overflow"));
+            assert_ne!(matched, Some("local-network-cancel-race"));
+            assert_ne!(matched, Some("audio-player-node-play-exception"));
+        }
+    }
+
+    #[test]
+    fn crash_from_1_54_onwards_is_tagged_unfixed_for_both_new_rules() {
+        for (report, expected) in [
+            (
+                MENU_BAR_STACK_OVERFLOW_REPORT,
+                "menu-bar-extra-reentrancy-stack-overflow",
+            ),
+            (LOCAL_NETWORK_RACE_REPORT, "local-network-cancel-race"),
+        ] {
+            let report = report.replace("appVersion: 1.52", "appVersion: 1.54");
+            let facts = CrashFacts::from_report(&report);
+            let matched = match_rule(&report, &facts).expect("still matches");
+            assert_eq!(matched.rule.id, expected);
+            assert_eq!(matched.status, FixStatus::Unfixed);
+        }
+    }
+
+    #[test]
+    fn the_1_53_reports_that_forced_these_rules_open_read_as_fixed() {
+        // Both clusters had a 1.53 report in the queue; both fixes landed after
+        // the v1.53 tag. If either of these flips to UNFIXED the fix regressed.
+        for report in [MENU_BAR_STACK_OVERFLOW_REPORT, LOCAL_NETWORK_RACE_REPORT] {
+            let report = report.replace("appVersion: 1.52", "appVersion: 1.53");
+            let facts = CrashFacts::from_report(&report);
+            assert_eq!(
+                match_rule(&report, &facts).map(|m| m.status),
+                Some(FixStatus::Fixed)
+            );
+        }
+    }
+
+
+    /// Trimmed from the real report on thread 1540766480533291048 (roam 1.51,
+    /// Mac16,13): an Objective-C exception out of AVFAudio, which Swift cannot
+    /// catch, so the process aborts.
+    const AUDIO_PLAYER_EXCEPTION_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_CRASH (10) / code 0 / SIGABRT (6)
+Metadata:
+  appVersion: 1.51
+  deviceType: Mac16,13
+  exceptionCode: 0
+  exceptionType: 10
+  osVersion: macOS 26.5.2 (25F84)
+  signal: 6
+Thread 6 (attributed — this is the thread that crashed):
+  2   libsystem_c.dylib +0x78644 abort samples=1
+  5   libobjc.A.dylib   +0x24894 _objc_terminate() samples=1
+  9   libobjc.A.dylib   +0x1aa84 objc_exception_throw samples=1
+  10  CoreFoundation    +0xec0b0 +[NSException exceptionWithName:reason:userInfo:] samples=1
+  11  AVFAudio          +0xdffa0 AVAudioPlayerNodeImpl::StartImpl(AVAudioTime*) samples=1
+  13  AVFAudio          +0xdc1b4 -[AVAudioPlayerNode play] samples=1
+  14  Roam              +0x2b4d94 AudioPlayer.start at /x/Loggers.swift:19 samples=1
+  15  Roam              +0x1e5b00 closure #2 in closure #1 in RTPSession.streamAudio at /x/RokuSession.swift:561 samples=1
+"#;
+
+    #[test]
+    fn matches_the_audio_player_node_exception() {
+        let facts = CrashFacts::from_report(AUDIO_PLAYER_EXCEPTION_REPORT);
+        assert_eq!(facts.exception_type, Some(10));
+        assert_eq!(facts.signal, Some(6));
+        let matched =
+            match_rule(AUDIO_PLAYER_EXCEPTION_REPORT, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "audio-player-node-play-exception");
+        // The report is from 1.51 and the graph rebuild shipped in 1.54.
+        assert_eq!(matched.status, FixStatus::Fixed);
+    }
+
+    #[test]
+    fn an_abort_without_the_audio_frames_is_not_claimed() {
+        // A bare SIGABRT is not this bug. Both ends of the call must be present.
+        let report =
+            AUDIO_PLAYER_EXCEPTION_REPORT.replace("AudioPlayer.start", "SomeOtherThing.start");
+        let facts = CrashFacts::from_report(&report);
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn the_audio_rule_does_not_steal_the_sigkill_crashes() {
+        // DEAD10CC_REPORT and THERMAL_REPORT are also EXC_CRASH. They are
+        // SIGKILL, and this rule is SIGABRT -- that pair is the whole separation.
+        for report in [DEAD10CC_REPORT, THERMAL_REPORT, WATCHDOG_REPORT] {
+            let facts = CrashFacts::from_report(report);
+            assert_ne!(
+                match_rule(report, &facts).map(|m| m.rule.id),
+                Some("audio-player-node-play-exception")
+            );
+        }
+    }
 
     #[test]
     fn extracts_facts_from_report() {
