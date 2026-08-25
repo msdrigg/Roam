@@ -227,26 +227,110 @@ actor OpusDecoderWithJitterBuffer {
 
 enum AudioPlayerError: Error, LocalizedError {
     case engineNotRunningOnPlay
+    /// The output device reports a format nothing can be rendered into -- zero
+    /// channels or a zero sample rate. Seen on macOS between the old default
+    /// output device going away and a new one being picked.
+    case noUsableOutputFormat(AVAudioFormat)
+    /// No converter could be built from Opus's 48 kHz stereo float into the
+    /// device's current format.
+    case cannotConvertToOutputFormat(AVAudioFormat)
+    /// AVFAudio raised an Objective-C exception. Carries its reason.
+    case avfAudioRaised(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .engineNotRunningOnPlay:
+            "The audio engine would not start."
+        case .noUsableOutputFormat(let format):
+            "The audio output device reported an unusable format: \(format)."
+        case .cannotConvertToOutputFormat(let format):
+            "Audio cannot be converted into the output device's format: \(format)."
+        case .avfAudioRaised(let reason):
+            "The audio engine rejected playback: \(reason)."
+        }
+    }
+}
+
+/// Runs `body`, turning an Objective-C exception raised inside AVFAudio into a
+/// thrown `AudioPlayerError` instead of a `SIGABRT`. See `ObjCExceptionTrap.h`.
+private func catchingAVFAudioExceptions(_ body: () -> Void) throws {
+    var error: NSError?
+    if !roamRunCatchingNSException(body, &error) {
+        let reason = error?.localizedDescription ?? "unknown reason"
+        Log.headphones.error("AVFAudio raised: \(reason, privacy: .public)")
+        throw AudioPlayerError.avfAudioRaised(reason)
+    }
 }
 
 actor AudioPlayer {
     private let engine: AVAudioEngine
     private let streamAudioNode: AVAudioPlayerNode
-    private let converter: AVAudioConverter
+    /// Built against `graphFormat`, and rebuilt with it. Not `let`: on macOS the
+    /// default output device can change under a live engine, and a converter
+    /// producing the old device's format makes `scheduleBuffer` raise.
+    private var converter: AVAudioConverter?
+    /// The output format the current graph and `converter` were negotiated
+    /// against, or nil before the first successful `start()`.
+    private var graphFormat: AVAudioFormat?
+
+    /// Opus decodes to this, and it is the converter's input format throughout.
+    private static let opusFormat = AVAudioFormat(
+        opusPCMFormat: .float32, sampleRate: 48000, channels: 2)!
 
     public init() {
         engine = AVAudioEngine()
         streamAudioNode = AVAudioPlayerNode()
         engine.attach(streamAudioNode)
+    }
 
-        let audioFormat = AVAudioFormat(opusPCMFormat: .float32, sampleRate: 48000, channels: 2)!
-        engine.connect(streamAudioNode, to: engine.mainMixerNode, format: nil)
-        engine.connect(engine.mainMixerNode, to: engine.outputNode, format: nil)
+    /// Points the graph at whatever the output device is now.
+    ///
+    /// The connections and the converter used to be made once in `init` and kept
+    /// for the life of the player. That holds on iOS, where a route change tears
+    /// the session down and `handleRouteChange` rebuilds it, but not on macOS,
+    /// which has no equivalent observer here: the user switches default output
+    /// device, `engine.start()` succeeds against the new one, and the player node
+    /// is still connected with the *old* device's format. `play()` then raises,
+    /// which is `SIGABRT`, which is the 1.51 crash on thread 1540766480533291048.
+    ///
+    /// Re-reading the format on every `start()` costs nothing and removes the
+    /// stale-format window entirely.
+    private func prepareGraph() throws {
+        let outputFormat = engine.outputNode.outputFormat(forBus: 0)
+        guard outputFormat.channelCount > 0, outputFormat.sampleRate > 0 else {
+            throw AudioPlayerError.noUsableOutputFormat(outputFormat)
+        }
 
-        converter = AVAudioConverter(
-            from: audioFormat,
-            to: engine.mainMixerNode.outputFormat(forBus: 0)
-        )!
+        if let graphFormat, graphFormat.isEqual(outputFormat), converter != nil {
+            return
+        }
+
+        Log.headphones
+            .notice(
+                "Rebuilding audio graph for output format \(outputFormat, privacy: .public) (was \(String(describing: self.graphFormat), privacy: .public))"
+            )
+
+        // Invalidate before touching the graph, not after building it: every
+        // path out of here from this point either completes the rebuild or
+        // throws, and a throw must not leave a format cached that would make the
+        // next call take the early return above against a half-rebuilt graph.
+        graphFormat = nil
+        converter = nil
+
+        // Connecting with `format: nil` lets each node adopt the format of what
+        // it is being connected to, so this re-derives the whole chain from the
+        // device rather than from whatever it was built against last time.
+        try catchingAVFAudioExceptions {
+            engine.connect(streamAudioNode, to: engine.mainMixerNode, format: nil)
+            engine.connect(engine.mainMixerNode, to: engine.outputNode, format: nil)
+        }
+
+        let mixerFormat = engine.mainMixerNode.outputFormat(forBus: 0)
+        guard let converter = AVAudioConverter(from: Self.opusFormat, to: mixerFormat) else {
+            throw AudioPlayerError.cannotConvertToOutputFormat(mixerFormat)
+        }
+        self.converter = converter
+        graphFormat = outputFormat
     }
 
     #if !os(macOS)
@@ -340,18 +424,30 @@ actor AudioPlayer {
             stop()
             engine.reset()
             engine.attach(streamAudioNode)
-            engine.connect(streamAudioNode, to: engine.mainMixerNode, format: nil)
-            engine.connect(engine.mainMixerNode, to: engine.outputNode, format: nil)
+            // `reset()` drops the connections, so the cached format no longer
+            // describes a graph that exists. Clearing it is what makes
+            // `prepareGraph` rebuild rather than take its early return.
+            graphFormat = nil
+            converter = nil
             restartAudio()
         }
     #endif
 
     public func start() throws {
+        // Before starting: `engine.start()` needs a graph that already reaches
+        // the output node. `init` no longer builds one, so this is what makes
+        // the first start valid.
+        try prepareGraph()
         try engine.start()
         guard engine.isRunning else {
             throw AudioPlayerError.engineNotRunningOnPlay
         }
-        streamAudioNode.play()
+        // And again now that the engine has bound to a device, which is the
+        // point the format becomes authoritative. Rebuilds only if it moved
+        // between the two calls; otherwise it takes the early return and costs a
+        // format comparison.
+        try prepareGraph()
+        try catchingAVFAudioExceptions { streamAudioNode.play() }
         Log.headphones
             .notice(
                 "AudioPlayer started — engine running=\(self.engine.isRunning, privacy: .public), player playing=\(self.streamAudioNode.isPlaying, privacy: .public), output format=\(String(describing: self.engine.mainMixerNode.outputFormat(forBus: 0)), privacy: .public)"
@@ -378,12 +474,28 @@ actor AudioPlayer {
         buffer: sending AVAudioPCMBuffer,
         atTime: sending AVAudioTime
     ) async {
-        let outputBuffer = AVAudioPCMBuffer(
-            pcmFormat: converter.outputFormat,
-            frameCapacity: AVAudioFrameCount(converter.outputFormat.sampleRate)
-                * buffer.frameLength
-                / AVAudioFrameCount(buffer.format.sampleRate)
-        )!
+        // nil between construction and the first successful `start()`, and again
+        // if a graph rebuild failed. Dropping the buffer is right either way:
+        // there is no format to render it into.
+        guard let converter else {
+            Log.headphones.error("Dropping audio buffer: no converter, graph is not prepared")
+            return
+        }
+
+        guard
+            let outputBuffer = AVAudioPCMBuffer(
+                pcmFormat: converter.outputFormat,
+                frameCapacity: AVAudioFrameCount(converter.outputFormat.sampleRate)
+                    * buffer.frameLength
+                    / AVAudioFrameCount(buffer.format.sampleRate)
+            )
+        else {
+            Log.headphones
+                .error(
+                    "Dropping audio buffer: could not allocate output buffer in \(converter.outputFormat, privacy: .public)"
+                )
+            return
+        }
 
         var error: NSError?
         converter.convert(to: outputBuffer, error: &error) { [buffer] _, outStatus in
@@ -403,7 +515,15 @@ actor AudioPlayer {
                     "Scheduling buffer #\(self.scheduledCount, privacy: .public) at sampleTime=\(atTime.sampleTime, privacy: .public) (engine running=\(self.engine.isRunning, privacy: .public), player playing=\(self.streamAudioNode.isPlaying, privacy: .public))"
                 )
         }
-        await streamAudioNode.scheduleBuffer(outputBuffer, at: atTime)
+        // `scheduleBuffer` raises if the buffer's format does not match what the
+        // node is connected with. `prepareGraph` keeps those in step, but a
+        // device change landing between the convert above and this call would
+        // still abort the process, so take the same backstop as `play()`.
+        do {
+            try catchingAVFAudioExceptions { streamAudioNode.scheduleBuffer(outputBuffer, at: atTime) }
+        } catch {
+            Log.headphones.error("Dropping audio buffer: \(error, privacy: .public)")
+        }
     }
 
     public func lastRender() throws -> AVAudioTime? {
@@ -419,9 +539,15 @@ actor AudioPlayer {
         streamAudioNode.stop()
     }
 
+    /// Same contract as `start()`, but for the notification handlers, which have
+    /// nowhere to throw to. Previously this called `play()` with no `isRunning`
+    /// check at all -- strictly weaker than `start()` against the same raise.
     private func restartAudio() {
-        try? engine.start()
-        streamAudioNode.play()
+        do {
+            try start()
+        } catch {
+            Log.headphones.error("Failed to restart audio: \(error, privacy: .public)")
+        }
     }
 }
 
