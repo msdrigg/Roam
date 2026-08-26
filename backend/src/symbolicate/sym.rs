@@ -14,10 +14,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{Display, Write as _};
 use std::fs::{self, File};
-use std::io::{BufReader, Cursor, Read, Seek};
+use std::io::{BufRead, BufReader, Cursor, Read, Seek};
 use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use symbolic_common::Name;
 use symbolic_demangle::{Demangle, DemangleOptions};
 use uuid::Uuid;
@@ -236,12 +236,18 @@ impl FileAndPathHelper for RoamFileAndPathHelper {
         }
 
         let dylib_paths = likely_dylib_paths(&library_info);
+        let leaf_name = library_info
+            .name
+            .as_deref()
+            .or(library_info.debug_name.as_deref());
         if !dylib_paths.is_empty() {
             for dyld_cache_path in self.get_dyld_shared_cache_paths(library_info.arch.as_deref())? {
-                for dylib_path in &dylib_paths {
+                for dylib_path in
+                    resolve_dylib_paths_in_cache(&dyld_cache_path.path, leaf_name, &dylib_paths)
+                {
                     options.push(CandidatePathInfo::InDyldCache {
                         dyld_cache_path: dyld_cache_path.clone(),
-                        dylib_path: dylib_path.clone(),
+                        dylib_path,
                     });
                 }
             }
@@ -2175,13 +2181,18 @@ fn summarize_lookup_error(error: &str) -> String {
         }
     } else if absent_paths > 0 {
         // No cache anywhere held anything at these paths, and no dSYM was on
-        // file either or it would have been tried first. That is the signature
-        // of one of our own binaries with no dSYM uploaded — a system library
-        // would have turned up at some build.
+        // file either or it would have been tried first. Usually one of our own
+        // binaries with no dSYM uploaded — but not always, so do not assert it.
+        // This message used to, and sent a reader hunting for a missing app
+        // dSYM when the real cause was two Apple frameworks the candidate
+        // paths could not name. The paths are looked up in each cache's `.map`
+        // now, so a system library reaching this branch means the cache for
+        // this OS build is genuinely absent.
         parts.push(format!(
             "no dSYM on file, and none of the {absent_paths} candidate path(s) exists in any \
-             cached dyld shared cache — the signature of an app binary whose dSYM was never \
-             uploaded. Upload the dSYM for this build to symbolicate these frames"
+             cached dyld shared cache. If this is one of our binaries, upload the dSYM for this \
+             build; if it is a system library, the shared cache for this OS build was never \
+             downloaded"
         ));
     }
     // Anything we don't recognise is likely the interesting part (a missing
@@ -2403,6 +2414,117 @@ fn parse_os_family(os_version: &str) -> Option<String> {
                 .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
         })
         .map(|(_, canonical)| (*canonical).to_string())
+}
+
+/// Install paths inside one dyld shared cache, keyed by final path component.
+type DyldMapIndex = HashMap<String, Vec<String>>;
+
+/// Parsed `.map` sidecars, keyed by the cache they belong to. `None` records a
+/// cache whose map is missing or unreadable, so a bad sidecar is parsed once
+/// rather than on every lookup.
+static DYLD_MAP_INDEXES: OnceLock<Mutex<HashMap<PathBuf, Option<Arc<DyldMapIndex>>>>> =
+    OnceLock::new();
+
+/// The paths to try inside one shared cache for one library.
+///
+/// Guessing install paths from the library name cannot reach a framework nested
+/// inside another framework -- `AE` lives at
+/// `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE`,
+/// and `HIToolbox` under `Carbon.framework` the same way -- so those frames came
+/// back unsymbolicated even with the right cache on disk. Every cache ships a
+/// `.map` sidecar listing the real install path of all ~3600 dylibs it holds, so
+/// look the name up there first and fall back to the guesses, which still cover
+/// caches whose sidecar is missing.
+fn resolve_dylib_paths_in_cache(
+    cache_path: &Path,
+    leaf_name: Option<&str>,
+    guessed: &[String],
+) -> Vec<String> {
+    let mut paths: Vec<String> = Vec::new();
+
+    if let Some(name) = leaf_name {
+        if let Some(index) = dyld_map_index(cache_path) {
+            if let Some(found) = index.get(name) {
+                paths.extend(found.iter().cloned());
+            }
+        }
+    }
+
+    for path in guessed {
+        if !paths.contains(path) {
+            paths.push(path.clone());
+        }
+    }
+
+    paths
+}
+
+/// The parsed `.map` sidecar for one shared cache, read at most once.
+fn dyld_map_index(cache_path: &Path) -> Option<Arc<DyldMapIndex>> {
+    let indexes = DYLD_MAP_INDEXES.get_or_init(|| Mutex::new(HashMap::new()));
+    // A poisoned lock means another thread panicked mid-parse. The map is a
+    // pure cache, so recovering the guard is safe and better than poisoning
+    // symbolication for the rest of the process.
+    let mut indexes = indexes
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if let Some(cached) = indexes.get(cache_path) {
+        return cached.clone();
+    }
+
+    let map_path = dyld_map_path(cache_path);
+    let parsed = match parse_dyld_map(&map_path) {
+        Ok(index) => Some(Arc::new(index)),
+        Err(error) => {
+            // Not every cache ships one -- the local Cryptexes path has no
+            // sidecar -- so this is expected, not a failure.
+            tracing::debug!(?map_path, %error, "No dyld shared cache .map sidecar");
+            None
+        }
+    };
+    indexes.insert(cache_path.to_path_buf(), parsed.clone());
+    parsed
+}
+
+/// `dyld_shared_cache_arm64e` -> `dyld_shared_cache_arm64e.map`.
+///
+/// Appended rather than set with `with_extension`, which would truncate at a dot
+/// in the arch suffix.
+fn dyld_map_path(cache_path: &Path) -> PathBuf {
+    match cache_path.file_name() {
+        Some(name) => {
+            let mut name = name.to_os_string();
+            name.push(".map");
+            cache_path.with_file_name(name)
+        }
+        None => cache_path.to_path_buf(),
+    }
+}
+
+/// Install paths in a `.map` sidecar, keyed by final path component.
+///
+/// The format is a mapping table, then one flush-left absolute install path per
+/// dylib, each followed by indented segment lines. Only the flush-left lines are
+/// paths.
+fn parse_dyld_map(map_path: &Path) -> std::io::Result<DyldMapIndex> {
+    let reader = BufReader::new(File::open(map_path)?);
+    let mut index: DyldMapIndex = HashMap::new();
+
+    for line in reader.lines() {
+        let line = line?;
+        if !line.starts_with('/') {
+            continue;
+        }
+        let Some(leaf) = line.rsplit('/').next().filter(|leaf| !leaf.is_empty()) else {
+            continue;
+        };
+        index
+            .entry(leaf.to_string())
+            .or_default()
+            .push(line.clone());
+    }
+
+    Ok(index)
 }
 
 fn likely_dylib_paths(library_info: &LibraryInfo) -> Vec<String> {
@@ -3603,6 +3725,164 @@ mod tests {
         assert!(description.contains("not a memory fault"), "{description}");
     }
 
+    /// A trimmed `.map` sidecar in the real format: a mapping table, then one
+    /// flush-left install path per dylib followed by indented segment lines.
+    /// `AE` and `HIToolbox` are the two that sent thread 1541908323593363529's
+    /// frames back unsymbolicated; `AppKit` stands for the top-level case that
+    /// always worked.
+    const SAMPLE_DYLD_MAP: &str = "\
+mapping  EX  544KB 0x180000000 -> 0x180088000
+mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
+/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit
+\t          __TEXT 0x180088000 -> 0x181000000
+\t    __DATA_CONST 0x1E5908000 -> 0x1E5910000
+/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE
+\t          __TEXT 0x1887D5000 -> 0x188848C38
+/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/HIToolbox
+\t          __TEXT 0x1900A0000 -> 0x190400000
+/usr/lib/swift/libswiftCore.dylib
+\t          __TEXT 0x1A0000000 -> 0x1A0800000
+";
+
+    fn write_cache_with_map(dir: &Path, arch: &str, map: &str) -> PathBuf {
+        let cache = dir.join(format!("dyld_shared_cache_{arch}"));
+        fs::write(&cache, b"not a real cache").expect("write cache");
+        fs::write(dyld_map_path(&cache), map).expect("write map");
+        cache
+    }
+
+    #[test]
+    fn dyld_map_path_appends_rather_than_replacing() {
+        // `with_extension` would truncate `x86_64` at the dot-free arch suffix
+        // on some names; the sidecar is always the cache name plus `.map`.
+        for arch in ["arm64e", "x86_64h", "x86_64"] {
+            let cache = PathBuf::from(format!("/data/dyld/dyld_shared_cache_{arch}"));
+            assert_eq!(
+                dyld_map_path(&cache),
+                PathBuf::from(format!("/data/dyld/dyld_shared_cache_{arch}.map"))
+            );
+        }
+    }
+
+    #[test]
+    fn parse_dyld_map_indexes_install_paths_by_leaf_name() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let map = temp.path().join("cache.map");
+        fs::write(&map, SAMPLE_DYLD_MAP).expect("write map");
+
+        let index = parse_dyld_map(&map).expect("parse");
+
+        assert_eq!(
+            index.get("AE").map(Vec::as_slice),
+            Some(
+                ["/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE".to_string()]
+                    .as_slice()
+            )
+        );
+        assert_eq!(
+            index.get("HIToolbox").map(Vec::as_slice),
+            Some(
+                ["/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/HIToolbox".to_string()]
+                    .as_slice()
+            )
+        );
+        assert!(index.contains_key("libswiftCore.dylib"));
+        // Indented segment lines are not paths.
+        assert!(!index.contains_key("__TEXT"));
+        assert!(!index.keys().any(|key| key.contains("mapping")));
+    }
+
+    #[test]
+    fn nested_subframeworks_resolve_through_the_map() {
+        // The bug: `likely_dylib_paths` only ever guesses top-level framework
+        // paths, so a framework nested inside another framework was
+        // unreachable even with the right cache on disk.
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cache = write_cache_with_map(temp.path(), "arm64e", SAMPLE_DYLD_MAP);
+
+        let guessed = likely_dylib_paths(&LibraryInfo {
+            name: Some("AE".to_string()),
+            ..Default::default()
+        });
+        // Guessing produces a *top-level* `AE.framework`, which does not exist.
+        // What it cannot produce is the path nested under CoreServices, which
+        // is the one that does.
+        assert!(
+            !guessed
+                .iter()
+                .any(|path| path.contains("CoreServices.framework")),
+            "guessing must not reach the nested path, or this test proves nothing: {guessed:?}"
+        );
+        // Exactly the ten guesses whose product with 46 cached shared caches
+        // made up the "460 candidate path(s)" in the report.
+        assert_eq!(guessed.len(), 10, "{guessed:?}");
+
+        let resolved = resolve_dylib_paths_in_cache(&cache, Some("AE"), &guessed);
+
+        assert_eq!(
+            resolved.first().map(String::as_str),
+            Some("/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE"),
+            "the looked-up path must be tried before the guesses: {resolved:?}"
+        );
+        // The guesses stay as fallback.
+        for guess in &guessed {
+            assert!(resolved.contains(guess), "{guess} dropped: {resolved:?}");
+        }
+    }
+
+    #[test]
+    fn a_cache_without_a_map_still_gets_the_guessed_paths() {
+        // The local Cryptexes cache ships no sidecar. Losing the guesses there
+        // would trade the nested-framework bug for a worse one.
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cache = temp.path().join("dyld_shared_cache_arm64e");
+        fs::write(&cache, b"not a real cache").expect("write cache");
+
+        let guessed = likely_dylib_paths(&LibraryInfo {
+            name: Some("AppKit".to_string()),
+            ..Default::default()
+        });
+        let resolved = resolve_dylib_paths_in_cache(&cache, Some("AppKit"), &guessed);
+
+        assert_eq!(resolved, guessed);
+    }
+
+    #[test]
+    fn a_name_absent_from_the_map_falls_back_to_the_guesses() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cache = write_cache_with_map(temp.path(), "arm64e", SAMPLE_DYLD_MAP);
+
+        let guessed = likely_dylib_paths(&LibraryInfo {
+            name: Some("Roam".to_string()),
+            ..Default::default()
+        });
+        let resolved = resolve_dylib_paths_in_cache(&cache, Some("Roam"), &guessed);
+
+        assert_eq!(resolved, guessed);
+    }
+
+    #[test]
+    fn a_top_level_framework_is_not_duplicated_by_the_map() {
+        // AppKit is reachable both ways. It must be offered once, not twice, or
+        // every lookup pays for a redundant candidate against 46 caches.
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cache = write_cache_with_map(temp.path(), "arm64e", SAMPLE_DYLD_MAP);
+
+        let guessed = likely_dylib_paths(&LibraryInfo {
+            name: Some("AppKit".to_string()),
+            ..Default::default()
+        });
+        let resolved = resolve_dylib_paths_in_cache(&cache, Some("AppKit"), &guessed);
+
+        let appkit = "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit";
+        assert!(guessed.iter().any(|path| path == appkit));
+        assert_eq!(
+            resolved.iter().filter(|path| *path == appkit).count(),
+            1,
+            "{resolved:?}"
+        );
+    }
+
     #[test]
     fn summarize_lookup_error_names_a_missing_app_dsym() {
         // Roam.debug.dylib will never live in a dyld shared cache, so every
@@ -3615,11 +3895,13 @@ mod tests {
 
         let summary = summarize_lookup_error(error);
         assert!(summary.contains("no dSYM on file"), "{summary}");
-        assert!(
-            summary.contains("Upload the dSYM for this build"),
-            "{summary}"
-        );
+        assert!(summary.contains("upload the dSYM for this"), "{summary}");
         assert!(summary.contains("3 candidate path(s)"), "{summary}");
+        // It must not assert that this *is* one of our binaries. It reads that
+        // way, but the same branch fires for a system library the candidate
+        // paths could not name, and asserting sent a reader hunting for a
+        // missing app dSYM that had uploaded fine.
+        assert!(summary.contains("if it is a system library"), "{summary}");
     }
 
     #[test]
