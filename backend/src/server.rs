@@ -517,9 +517,7 @@ async fn upload_metric_diagnostics(
             .into_iter()
             .collect();
         let binary_uuids_json = serde_json::to_string(&binary_uuids).map_err(|e| {
-            ApiError::SymbolicationError(anyhow::anyhow!(
-                "Error serializing binary UUIDs: {e}"
-            ))
+            ApiError::SymbolicationError(anyhow::anyhow!("Error serializing binary UUIDs: {e}"))
         })?;
 
         let id = Uuid::new_v4().to_string();
@@ -637,7 +635,7 @@ async fn upload_roam_dsym(
                 file.write_all(&chunk)
                     .await
                     .with_context(|| format!("writing temp dSYM upload {}", temp_path.display()))
-                .map_err(ApiError::SymbolicationError)?;
+                    .map_err(ApiError::SymbolicationError)?;
             }
 
             file.flush()
@@ -690,7 +688,9 @@ async fn upload_roam_dsym(
         build_version = %metadata.build_version,
         "Received dSYM upload; extracting"
     );
-    let stored = app_context.store_dsym_zip(metadata, upload.0.clone()).await?;
+    let stored = app_context
+        .store_dsym_zip(metadata, upload.0.clone())
+        .await?;
     drop(upload);
     tracing::info!(
         path = %stored.extracted_root.display(),
@@ -760,7 +760,10 @@ async fn lease_pending_symbolications(
             ":warning: MK Diagnostics {} symbolication failed (after {} attempts): {}",
             failed.payload_index,
             failed.attempts,
-            failed.last_error.as_deref().unwrap_or("(no error recorded)"),
+            failed
+                .last_error
+                .as_deref()
+                .unwrap_or("(no error recorded)"),
         );
         if let Err(err) = app_context
             .discord_client()
@@ -801,9 +804,7 @@ async fn lease_pending_symbolications(
             })?;
         let installation_info: serde_json::Value =
             serde_json::from_str(&row.installation_info_json).map_err(|e| {
-                ApiError::SymbolicationError(anyhow::anyhow!(
-                    "invalid installation_info_json: {e}"
-                ))
+                ApiError::SymbolicationError(anyhow::anyhow!("invalid installation_info_json: {e}"))
             })?;
         let binary_uuids: Vec<String> =
             serde_json::from_str(&row.binary_uuids_json).map_err(|e| {
@@ -866,11 +867,10 @@ async fn get_dsym_by_uuid(
     Path(uuid): Path<String>,
     State(app_context): State<AppContext>,
 ) -> Result<Response, ApiError> {
-    let Some(path) = app_context
-        .symbolicate_client()
-        .dsym_path_for_uuid(&uuid)
-    else {
-        return Err(ApiError::NotFound(format!("No cached dSYM for UUID {uuid}")));
+    let Some(path) = app_context.symbolicate_client().dsym_path_for_uuid(&uuid) else {
+        return Err(ApiError::NotFound(format!(
+            "No cached dSYM for UUID {uuid}"
+        )));
     };
 
     let file = tokio::fs::File::open(&path)
@@ -890,10 +890,7 @@ async fn get_dsym_by_uuid(
     Ok((
         StatusCode::OK,
         [
-            (
-                header::CONTENT_TYPE,
-                "application/octet-stream".to_string(),
-            ),
+            (header::CONTENT_TYPE, "application/octet-stream".to_string()),
             (header::CONTENT_LENGTH, metadata.len().to_string()),
             (
                 header::CONTENT_DISPOSITION,
@@ -930,10 +927,14 @@ const FAILED_PAYLOAD_RETENTION: Duration = Duration::from_secs(30 * 24 * 60 * 60
 ///
 /// Best-effort — a payload that fails to delete is simply retried next sweep.
 async fn reap_expired_failed_payloads(app_context: &AppContext) {
-    let cutoff_ms = chrono::Utc::now().timestamp_millis()
-        - (FAILED_PAYLOAD_RETENTION.as_millis() as i64);
+    let cutoff_ms =
+        chrono::Utc::now().timestamp_millis() - (FAILED_PAYLOAD_RETENTION.as_millis() as i64);
 
-    let expired = match app_context.db_client().expired_failed_payloads(cutoff_ms).await {
+    let expired = match app_context
+        .db_client()
+        .expired_failed_payloads(cutoff_ms)
+        .await
+    {
         Ok(rows) => rows,
         Err(err) => {
             tracing::warn!(?err, "Could not list expired failed symbolication payloads");
@@ -1400,10 +1401,7 @@ async fn submit_symbolication_result(
                 )));
             };
 
-            let message = format!(
-                ":ninja: MK Diagnostics {} Symbolicated",
-                row.payload_index
-            );
+            let message = format!(":ninja: MK Diagnostics {} Symbolicated", row.payload_index);
             let posted = app_context
                 .discord_client()
                 .send_message(
@@ -1423,8 +1421,7 @@ async fn submit_symbolication_result(
             // close it out. A failure here must not fail the symbolication
             // result the worker just delivered, so everything is logged rather
             // than propagated.
-            if let Err(err) =
-                auto_review_crash(&app_context, row.thread_id, posted.id, &text).await
+            if let Err(err) = auto_review_crash(&app_context, row.thread_id, posted.id, &text).await
             {
                 tracing::error!(
                     ?err,

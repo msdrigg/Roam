@@ -644,7 +644,6 @@ Thread 0 (attributed):
   Network +0x1158200 nw_browser_cancel samples=1
 "#;
 
-
     /// Trimmed from the real report on thread 1540815884619227250 (roam 1.52,
     /// Mac16,12): the same graphDidChange/scenesDidChange recursion as
     /// `STACK_OVERFLOW_REPORT`, but driven by `MenuBarExtra` rather than
@@ -697,8 +696,7 @@ Thread 9 (attributed — this is the thread that crashed):
     #[test]
     fn matches_the_menu_bar_extra_stack_overflow() {
         let facts = CrashFacts::from_report(MENU_BAR_STACK_OVERFLOW_REPORT);
-        let matched =
-            match_rule(MENU_BAR_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
+        let matched = match_rule(MENU_BAR_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
         assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
         // The report is from 1.52 and the echo-drop shipped in 1.54.
         assert_eq!(matched.status, FixStatus::Fixed);
@@ -812,7 +810,6 @@ Thread 9 (attributed — this is the thread that crashed):
         }
     }
 
-
     /// Trimmed from the real report on thread 1540766480533291048 (roam 1.51,
     /// Mac16,13): an Objective-C exception out of AVFAudio, which Swift cannot
     /// catch, so the process aborts.
@@ -842,8 +839,7 @@ Thread 6 (attributed — this is the thread that crashed):
         let facts = CrashFacts::from_report(AUDIO_PLAYER_EXCEPTION_REPORT);
         assert_eq!(facts.exception_type, Some(10));
         assert_eq!(facts.signal, Some(6));
-        let matched =
-            match_rule(AUDIO_PLAYER_EXCEPTION_REPORT, &facts).expect("a rule matches");
+        let matched = match_rule(AUDIO_PLAYER_EXCEPTION_REPORT, &facts).expect("a rule matches");
         assert_eq!(matched.rule.id, "audio-player-node-play-exception");
         // The report is from 1.51 and the graph rebuild shipped in 1.54.
         assert_eq!(matched.status, FixStatus::Fixed);
