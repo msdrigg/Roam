@@ -1015,7 +1015,13 @@ mod tests {
         assert_eq!(unreviewed.len(), 1);
 
         let reviewed = db
-            .mark_thread_reviewed(42, Some("auto:test-rule"), Some(2002), Some("test-rule"), None)
+            .mark_thread_reviewed(
+                42,
+                Some("auto:test-rule"),
+                Some(2002),
+                Some("test-rule"),
+                None,
+            )
             .await
             .expect("review")
             .expect("row exists");
@@ -1079,7 +1085,9 @@ mod tests {
             .await
             .expect("list");
         assert_eq!(only_150.len(), 2);
-        assert!(only_150.iter().all(|c| c.app_version.as_deref() == Some("1.50")));
+        assert!(only_150
+            .iter()
+            .all(|c| c.app_version.as_deref() == Some("1.50")));
 
         // Newest first, and `before_ms` excludes everything at or after it.
         let all = db
@@ -1105,7 +1113,11 @@ mod tests {
             .await
             .expect("review");
 
-        let cleared = db.mark_thread_unreviewed(9).await.expect("unreview").expect("row");
+        let cleared = db
+            .mark_thread_unreviewed(9)
+            .await
+            .expect("unreview")
+            .expect("row");
         assert!(cleared.is_unreviewed());
         assert_eq!(cleared.reviewed_by, None);
         assert_eq!(cleared.matched_rule_id, None);
@@ -1140,7 +1152,11 @@ mod tests {
 
     /// Drive a payload through `attempts` worth of lease-then-fail, the way the
     /// worker does. Returns the rows the lease marked newly failed each round.
-    async fn fail_n_times(db: &DatabaseClient, id: &str, times: usize) -> Vec<PendingSymbolication> {
+    async fn fail_n_times(
+        db: &DatabaseClient,
+        id: &str,
+        times: usize,
+    ) -> Vec<PendingSymbolication> {
         let mut newly_failed = Vec::new();
         for _ in 0..times {
             let (failed, leased) = db
@@ -1248,7 +1264,10 @@ mod tests {
 
         let expired = db.expired_failed_payloads(5000).await.expect("expired");
         assert_eq!(
-            expired.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(),
+            expired
+                .iter()
+                .map(|(id, _)| id.as_str())
+                .collect::<Vec<_>>(),
             vec!["old"],
             "a payload inside the retention window must be kept"
         );
@@ -1256,7 +1275,11 @@ mod tests {
         // Once reaped it is not offered again, and it can no longer be
         // requeued — there is nothing left on disk to symbolicate.
         db.mark_payload_reaped("old").await.expect("mark");
-        assert!(db.expired_failed_payloads(5000).await.expect("expired").is_empty());
+        assert!(db
+            .expired_failed_payloads(5000)
+            .await
+            .expect("expired")
+            .is_empty());
         assert!(db
             .failed_symbolication_ids(None)
             .await

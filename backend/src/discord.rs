@@ -588,7 +588,9 @@ impl DiscordClient {
         let host = reqwest::Url::parse(url)
             .ok()
             .and_then(|parsed| parsed.host_str().map(str::to_string))
-            .ok_or_else(|| DiscordError::InvalidInput(format!("Unparseable attachment url {url}")))?;
+            .ok_or_else(|| {
+                DiscordError::InvalidInput(format!("Unparseable attachment url {url}"))
+            })?;
 
         const ALLOWED_SUFFIXES: [&str; 4] = [
             "discordapp.net",
@@ -1096,7 +1098,9 @@ mod types {
         }
 
         pub fn is_translated_support_message(&self) -> bool {
-            self.content.trim_start().starts_with(TRANSLATED_SUPPORT_PREFIX)
+            self.content
+                .trim_start()
+                .starts_with(TRANSLATED_SUPPORT_PREFIX)
         }
 
         fn is_translate_command(&self) -> bool {

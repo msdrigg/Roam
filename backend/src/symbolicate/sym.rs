@@ -1354,7 +1354,9 @@ fn download_gate(cache_key: &str) -> Arc<tokio::sync::Mutex<()>> {
         OnceLock::new();
 
     let gates = GATES.get_or_init(|| std::sync::Mutex::new(HashMap::new()));
-    let mut gates = gates.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut gates = gates
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     Arc::clone(
         gates
             .entry(cache_key.to_string())
@@ -1403,14 +1405,13 @@ async fn extract_dyld_shared_cache(
                 // and one build lookup can spend all of them, so the 403 is the
                 // expected steady state rather than bad luck. Say which knob
                 // fixes it, in the message that reaches the crash report.
-                let hint = if appledb_api_token().is_none()
-                    && format!("{e:#}").contains("rate limit")
-                {
-                    " (no IPSW_GITHUB_TOKEN set; unauthenticated appledb gets 60 GitHub \
+                let hint =
+                    if appledb_api_token().is_none() && format!("{e:#}").contains("rate limit") {
+                        " (no IPSW_GITHUB_TOKEN set; unauthenticated appledb gets 60 GitHub \
                        requests/hour, which one build lookup can exhaust)"
-                } else {
-                    ""
-                };
+                    } else {
+                        ""
+                    };
                 failures.push(format!("appledb: {e:#}{hint}"));
             }
         }
@@ -3770,7 +3771,10 @@ mod tests {
             report.contains("Replayed from the app's own file log for the run that crashed"),
             "{report}"
         );
-        assert!(!report.contains("says nothing about what crashed"), "{report}");
+        assert!(
+            !report.contains("says nothing about what crashed"),
+            "{report}"
+        );
     }
 
     #[test]
@@ -3788,8 +3792,14 @@ mod tests {
         )
         .expect("report renders");
 
-        assert!(report.contains("says nothing about what crashed"), "{report}");
-        assert!(!report.contains("Replayed from the app's own file log"), "{report}");
+        assert!(
+            report.contains("says nothing about what crashed"),
+            "{report}"
+        );
+        assert!(
+            !report.contains("Replayed from the app's own file log"),
+            "{report}"
+        );
     }
 
     #[test]
@@ -3905,19 +3915,29 @@ mod tests {
         // "Incorrect number of SubCaches".
         fs::write(dyld.join("dyld_shared_cache_arm64e"), b"base").expect("base");
         for n in 1..=35 {
-            fs::write(dyld.join(format!("dyld_shared_cache_arm64e.{n:02}")), b"sub").expect("sub");
+            fs::write(
+                dyld.join(format!("dyld_shared_cache_arm64e.{n:02}")),
+                b"sub",
+            )
+            .expect("sub");
         }
         assert!(
-            !dyld_cache_exists(&dyld, Some("arm64e")).await.expect("check"),
+            !dyld_cache_exists(&dyld, Some("arm64e"))
+                .await
+                .expect("check"),
             "a cache missing its trailer files is not usable"
         );
 
         // The trailer `ipsw` writes last is what makes it complete.
         fs::write(dyld.join("dyld_shared_cache_arm64e.atlas"), b"atlas").expect("atlas");
-        assert!(dyld_cache_exists(&dyld, Some("arm64e")).await.expect("check"));
+        assert!(dyld_cache_exists(&dyld, Some("arm64e"))
+            .await
+            .expect("check"));
 
         // And a complete cache for another arch does not vouch for this one.
-        assert!(!dyld_cache_exists(&dyld, Some("x86_64")).await.expect("check"));
+        assert!(!dyld_cache_exists(&dyld, Some("x86_64"))
+            .await
+            .expect("check"));
     }
 
     #[test]
@@ -4014,12 +4034,20 @@ mod tests {
         let spaced = b"{\"binaryUUID\"\n  :\t \"4068B2EE-A54F-397E-882D-C5E3A40B789A\"}";
         for payload in [compact.as_slice(), spaced.as_slice()] {
             let found = scan_binary_uuids(payload);
-            assert_eq!(found.len(), 1, "failed on {:?}", String::from_utf8_lossy(payload));
+            assert_eq!(
+                found.len(),
+                1,
+                "failed on {:?}",
+                String::from_utf8_lossy(payload)
+            );
             assert!(found.contains("4068B2EE-A54F-397E-882D-C5E3A40B789A"));
         }
 
         assert!(scan_binary_uuids(br#"{"binaryUUID": "not-a-uuid"}"#).is_empty());
-        assert!(scan_binary_uuids(br#"{"binaryUUIDs": ["4068B2EE-A54F-397E-882D-C5E3A40B789A"]}"#).is_empty());
+        assert!(
+            scan_binary_uuids(br#"{"binaryUUIDs": ["4068B2EE-A54F-397E-882D-C5E3A40B789A"]}"#)
+                .is_empty()
+        );
     }
 
     #[test]
@@ -4098,7 +4126,12 @@ mod tests {
         // sibling, so left_child (2) precedes right (3).
         let order: Vec<String> = frames
             .iter()
-            .map(|line| line.split_whitespace().take(2).collect::<Vec<_>>().join(" "))
+            .map(|line| {
+                line.split_whitespace()
+                    .take(2)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
             .collect();
         assert_eq!(
             order,
@@ -4129,8 +4162,11 @@ mod tests {
         let make = |device: &str, build: &str| {
             let dir = system.join(device).join(build);
             fs::create_dir_all(dir.join("dyld")).expect("mkdir");
-            fs::write(dir.join("dyld").join("dyld_shared_cache_arm64e"), vec![0u8; 4096])
-                .expect("write cache");
+            fs::write(
+                dir.join("dyld").join("dyld_shared_cache_arm64e"),
+                vec![0u8; 4096],
+            )
+            .expect("write cache");
             dir
         };
 
@@ -4153,9 +4189,15 @@ mod tests {
             .expect("runtime");
         rt.block_on(enforce_system_cache_budget(&system, &newest, budget));
 
-        assert!(!oldest.exists(), "least-recently-used cache should be evicted");
+        assert!(
+            !oldest.exists(),
+            "least-recently-used cache should be evicted"
+        );
         assert!(middle.exists(), "in-budget cache should survive");
-        assert!(newest.exists(), "the cache just downloaded must never be evicted");
+        assert!(
+            newest.exists(),
+            "the cache just downloaded must never be evicted"
+        );
     }
 
     #[test]
@@ -4164,8 +4206,11 @@ mod tests {
         let system = root.path().join("system");
         let only = system.join("iPhone17,1").join("23G71");
         fs::create_dir_all(only.join("dyld")).expect("mkdir");
-        fs::write(only.join("dyld").join("dyld_shared_cache_arm64e"), vec![0u8; 8192])
-            .expect("write cache");
+        fs::write(
+            only.join("dyld").join("dyld_shared_cache_arm64e"),
+            vec![0u8; 8192],
+        )
+        .expect("write cache");
 
         // A budget of one byte cannot be met without dropping the kept entry.
         let rt = tokio::runtime::Builder::new_current_thread()
@@ -4181,7 +4226,13 @@ mod tests {
 
     #[test]
     fn appledb_args_carry_a_token_only_when_one_is_configured() {
-        let args = appledb_args("macOS", "MacBookAir10,1", "24G419", Path::new("/tmp/out"), None);
+        let args = appledb_args(
+            "macOS",
+            "MacBookAir10,1",
+            "24G419",
+            Path::new("/tmp/out"),
+            None,
+        );
         let rendered: Vec<String> = args
             .iter()
             .map(|a| a.to_string_lossy().to_string())
