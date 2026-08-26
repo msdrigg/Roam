@@ -428,16 +428,17 @@ pub static RULES: &[CrashRule] = &[
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // `MenuBarExtra` and `isInserted` both appear inside the mangled
-        // SwiftUI initialiser symbols, so plain substrings reach them without
-        // depending on demangling. As with the forceFront rule, the scene frame
-        // alone is too loose -- require the recursion and the Stack Guard hit.
-        all_of: &[
-            "MenuBarExtra",
-            "isInserted",
-            "AppGraph.graphDidChange",
-            "Stack Guard",
-        ],
+        // Deliberately *not* keyed on `isInserted`, though the title names it.
+        // That is a parameter label, and it survives only in the raw symbol:
+        // `DemangleOptions::name_only()` renders the initialiser as
+        // `MenuBarExtra<>.init`, label and all arguments gone. Pairing it with
+        // `AppGraph.graphDidChange`, which exists only *after* demangling, asked
+        // for one report to be mangled and demangled at once -- so this rule
+        // matched nothing in production while seven of its crashes went to the
+        // manual queue. `MenuBarExtra` plus the recursion and the Stack Guard
+        // hit is specific enough, and the rule below excludes MenuBarExtra so
+        // the two cannot collide.
+        all_of: &["MenuBarExtra", "AppGraph.graphDidChange", "Stack Guard"],
         none_of: &["NSApplication.forceFront"],
         reply: MENU_BAR_EXTRA_REENTRANCY_REPLY,
     },
@@ -650,6 +651,13 @@ Thread 0 (attributed):
     /// `forceFront`. MetricKit reports the attributed thread mid-demangle
     /// because it cannot unwind an overflowed stack; the cycle is only visible
     /// in the in-process backtrace.
+    ///
+    /// The in-process frames are written the way the renderer emits them, which
+    /// means demangled -- see `demangle_backtrace_line`. An earlier version of
+    /// this fixture spliced a raw `$s7SwiftUI12MenuBarExtraV...isInserted...`
+    /// symbol in beside the already-demangled `AppGraph.graphDidChange`, a
+    /// mixture no real report ever carried, and that is what let the rule's
+    /// `isInserted` needle look load-bearing while it matched nothing.
     const MENU_BAR_STACK_OVERFLOW_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
 Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) — stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
@@ -668,7 +676,7 @@ Thread 0 (attributed — this is the thread that crashed):
 In-process backtrace of the faulting thread (1)
   20  SwiftUI +0x1476c7c AppGraph.graphDidChange
   21  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange
-  22  SwiftUI +0x8dc94a8 $s7SwiftUI12MenuBarExtraVA2A4TextVRszrlE_10isInserted7contentACyAEq_G
+  22  SwiftUI +0x8dc94a8 closure #1 in MenuBarExtra<>.init
   23  SwiftUI +0x1476c7c AppGraph.graphDidChange
   24  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange
 "#;
@@ -715,6 +723,44 @@ Thread 9 (attributed — this is the thread that crashed):
             match_rule(&report, &facts).map(|m| m.rule.id),
             Some("scene-phase-reentrancy-stack-overflow")
         );
+    }
+
+    /// Trimmed from the real report on thread 1539671345036664922 (roam 1.51,
+    /// Mac17,5). This one MetricKit *could* unwind, so every frame arrived
+    /// demangled and the word `isInserted` appears nowhere in the report --
+    /// the rule that is supposed to own this crash used to require it, and the
+    /// rule below excludes `MenuBarExtra`, so it fell between the two and went
+    /// to the manual queue.
+    const MENU_BAR_DEMANGLED_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) — stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
+--->  Stack Guard                 16b3a8000-16ebac000    [ 56.0M] ---/rwx SM=PRV
+Metadata:
+  appVersion: 1.51
+  deviceType: Mac17,5
+  exceptionCode: 2
+  exceptionType: 1
+  osVersion: macOS 26.5.2 (25F84)
+  signal: 11
+Thread 0 (attributed — this is the thread that crashed):
+  19  SwiftUICore +0x3e3ae8 static ObservableObject.environmentStore.getter samples=1
+  20  Roam        +0x24e874 closure #4 in RoamApp.body.getter at /<compiler-generated> samples=1
+  21  SwiftUI     +0x229e44 closure #1 in MenuBarExtra<>.init samples=1
+  23  SwiftUI     +0x22891c MenuBarExtra.init samples=1
+  26  Roam        +0x247174 RoamApp.body.getter at /x/RoamApp.swift:292 samples=1
+  36  SwiftUI     +0x1476a9c AppGraph.graphDidChange samples=1
+  37  SwiftUI     +0x10f9b80 specialized AppDelegate.scenesDidChange samples=1
+  38  SwiftUI     +0x1476c7c AppGraph.graphDidChange samples=1
+"#;
+
+    #[test]
+    fn matches_the_menu_bar_extra_stack_overflow_with_no_parameter_labels() {
+        let facts = CrashFacts::from_report(MENU_BAR_DEMANGLED_REPORT);
+        let matched = match_rule(MENU_BAR_DEMANGLED_REPORT, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
+        // `name_only()` demangling drops every argument label, so no rule may
+        // depend on one surviving into the report text.
+        assert!(!MENU_BAR_DEMANGLED_REPORT.contains("isInserted"));
     }
 
     #[test]
