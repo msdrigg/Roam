@@ -336,6 +336,16 @@ Same recursion as `scene-phase-reentrancy-stack-overflow`, driven from a differe
 
 **Known cause, fix:** the `isInserted` binding now drops echoes — a write matching the value already stored is not forwarded to `UserDefaults`, so reconciliation no longer dirties the graph it is running inside. Real toggles still write through.";
 
+const SCREEN_PARAMETERS_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow — a screen-parameters change re-entered the SwiftUI update pass during launch restoration**
+
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer — unbounded recursion.
+
+Third face of the cycle behind `scene-phase-reentrancy-stack-overflow` and `menu-bar-extra-reentrancy-stack-overflow`: `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down. Neither of their triggers is on this stack — no `forceFront`, no `MenuBarExtra`. Underneath the recursion sits `applicationDidChangeScreenParameters`, posted while `NSPersistentUIRestorer` was still restoring windows from inside `applicationWillFinishLaunching`.
+
+`setActivationPolicy` is what closes the loop. Roam called it synchronously from scene `onAppear`/`onDisappear`, and adding or removing the app from the Dock orders windows on and off screen and changes the visible screen frame. AppKit posts `NSApplicationDidChangeScreenParameters` from inside that call, SwiftUI turns it into a scene-phase change, and `graphDidChange` re-enters the update pass it is already inside — every level of which re-evaluates the scene bodies and runs `onAppear` again. Launch restoration is what makes it fatal rather than merely wasteful: the graph never reaches a quiet state, so the stack runs out first.
+
+**Known cause, fix:** all ten `setActivationPolicy` callers now go through a deferred, coalesced wrapper that skips the call outright when the policy already matches, so the in-flight update finishes before AppKit reorders any windows.";
+
 const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — main thread blocked cancelling the Bonjour browser**
 
 The termination reason pins this down: the process failed to terminate within its 5 second budget.
@@ -430,6 +440,33 @@ pub static RULES: &[CrashRule] = &[
         ],
         none_of: &["NSApplication.forceFront"],
         reply: MENU_BAR_EXTRA_REENTRANCY_REPLY,
+    },
+    // Third entry point into the same recursion, after both narrower rules and
+    // excluding both of their triggers. Keyed on the screen-parameters
+    // notification underneath the cycle: the `setActivationPolicy` caller that
+    // posts it is already off the stack by the time the recursion runs away, so
+    // the notification is the only frame naming why this one started.
+    CrashRule {
+        id: "screen-parameters-reentrancy-stack-overflow",
+        title: "Stack overflow from a screen-parameters change re-entering the SwiftUI update pass",
+        fixed_in: Some("1.54"),
+        environmental: false,
+        exception_type: Some(1),
+        signal: Some(11),
+        termination_code: None,
+        min_thermal_level: None,
+        max_app_cpu_percent: None,
+        // Both halves of the cycle, not just `graphDidChange`: this rule names
+        // no app frame at all, and the notification alone fires on any display
+        // or Dock change.
+        all_of: &[
+            "AppGraph.graphDidChange",
+            "AppDelegate.scenesDidChange",
+            "applicationDidChangeScreenParameters",
+            "Stack Guard",
+        ],
+        none_of: &["NSApplication.forceFront", "MenuBarExtra"],
+        reply: SCREEN_PARAMETERS_REENTRANCY_REPLY,
     },
     CrashRule {
         id: "local-network-cancel-watchdog",
@@ -832,6 +869,119 @@ Thread 6 (attributed — this is the thread that crashed):
                 Some("audio-player-node-play-exception")
             );
         }
+    }
+
+    /// Trimmed from the real report on thread 1541908323593363529 (roam 1.53,
+    /// Macmini9,1): the same graphDidChange/scenesDidChange recursion again,
+    /// with neither `forceFront` nor `MenuBarExtra` anywhere on the stack. The
+    /// notification underneath it is `applicationDidChangeScreenParameters`,
+    /// arriving while launch restoration was still ordering windows on screen.
+    const SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) â stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
+Faulting VM region: 0x16ebabff0 is in 0x16b3a8000-0x16ebac000;  bytes after start: 58736624  bytes before end: 15
+--->  STACK GUARD                 16b3a8000-16ebac000    [ 56.0M] ---/rwx SM=PRV  stack guard for thread 0
+      Stack                       16ebac000-16f3a8000    [ 8176K] rw-/rwx SM=SHM  thread 0
+Metadata:
+  appVersion: 1.53
+  deviceType: Macmini9,1
+  exceptionCode: 2
+  exceptionType: 1
+  osVersion: macOS 26.5.2 (25F84)
+  signal: 11
+Thread 0 (attributed â this is the thread that crashed):
+  0   libswiftCore.dylib +0xce568 swift::Demangle::__runtime::Node::addChild samples=1
+  19  SwiftUI +0xfdc28  Settings.body.getter samples=1
+  30  SwiftUI +0x1476b04 AppGraph.graphDidChange samples=1
+  31  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange samples=1
+  32  SwiftUI +0x1476c7c AppGraph.graphDidChange samples=1
+  33  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange samples=1
+  43  SwiftUI +0x10f76d0 closure #1 in AppDelegate.applicationDidChangeScreenParameters samples=1
+  47  SwiftUI +0x10f709c AppDelegate.applicationDidChangeScreenParameters samples=1
+  48  SwiftUI +0x10f780c @objc AppDelegate.applicationWillFinishLaunching samples=1
+  83  AppKit  +0x109cdec -[NSPersistentUIRestorer _finishedRestoringWindowsWithZOrder:options:completionHandler:] samples=1
+"#;
+
+    #[test]
+    fn matches_the_screen_parameters_stack_overflow() {
+        let facts = CrashFacts::from_report(SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT);
+        let matched =
+            match_rule(SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
+        assert_eq!(
+            matched.rule.id,
+            "screen-parameters-reentrancy-stack-overflow"
+        );
+        // The report is from 1.53 and the deferred wrapper shipped in 1.54.
+        assert_eq!(matched.status, FixStatus::Fixed);
+    }
+
+    #[test]
+    fn the_narrower_scene_rules_win_over_the_screen_parameters_rule() {
+        // A report carrying one of the named triggers as well belongs to that
+        // rule, by ordering and by this rule's `none_of`.
+        for (trigger, expected) in [
+            (
+                "  44  Roam +0x5e2e8 NSApplication.forceFront at /x/RoamAppDelegate.swift:152",
+                "scene-phase-reentrancy-stack-overflow",
+            ),
+            (
+                "  44  SwiftUI +0x8dc94a8 $s7SwiftUI12MenuBarExtraVA2A4TextVRszrlE_10isInserted7contentACyAEq_G",
+                "menu-bar-extra-reentrancy-stack-overflow",
+            ),
+        ] {
+            let report = SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT.replace(
+                "  43  SwiftUI +0x10f76d0 closure #1 in AppDelegate.applicationDidChangeScreenParameters samples=1",
+                &format!("{trigger}\n  43  SwiftUI +0x10f76d0 closure #1 in AppDelegate.applicationDidChangeScreenParameters samples=1"),
+            );
+            let facts = CrashFacts::from_report(&report);
+            assert_eq!(
+                match_rule(&report, &facts).map(|m| m.rule.id),
+                Some(expected)
+            );
+        }
+    }
+
+    #[test]
+    fn a_screen_parameters_crash_without_the_recursion_is_not_claimed() {
+        // The notification fires on any display or Dock change. Only the cycle
+        // makes this the known bug.
+        let report = SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT
+            .replace("AppGraph.graphDidChange", "AppGraph.updateGraph");
+        let facts = CrashFacts::from_report(&report);
+        assert!(match_rule(&report, &facts).is_none());
+    }
+
+    #[test]
+    fn the_screen_parameters_rule_does_not_steal_the_other_crashes() {
+        for report in [
+            DEAD10CC_REPORT,
+            GUARD_REPORT,
+            WATCHDOG_REPORT,
+            THERMAL_REPORT,
+            STACK_OVERFLOW_REPORT,
+            MENU_BAR_STACK_OVERFLOW_REPORT,
+            LOCAL_NETWORK_RACE_REPORT,
+            AUDIO_PLAYER_EXCEPTION_REPORT,
+        ] {
+            let facts = CrashFacts::from_report(report);
+            assert_ne!(
+                match_rule(report, &facts).map(|m| m.rule.id),
+                Some("screen-parameters-reentrancy-stack-overflow")
+            );
+        }
+    }
+
+    #[test]
+    fn a_screen_parameters_crash_from_1_54_onwards_is_tagged_unfixed() {
+        let report =
+            SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT.replace("appVersion: 1.53", "appVersion: 1.54");
+        let facts = CrashFacts::from_report(&report);
+        let matched = match_rule(&report, &facts).expect("still matches");
+        assert_eq!(
+            matched.rule.id,
+            "screen-parameters-reentrancy-stack-overflow"
+        );
+        assert_eq!(matched.status, FixStatus::Unfixed);
     }
 
     #[test]
