@@ -2765,11 +2765,60 @@ fn render_faulting_thread_backtraces(
     )?;
     for backtrace in backtraces {
         for line in backtrace.lines() {
-            writeln!(report, "  {line}")?;
+            writeln!(report, "  {}", demangle_backtrace_line(line))?;
         }
     }
     writeln!(report)?;
     Ok(())
+}
+
+/// Demangle the symbol in one `backtrace_symbols` line.
+///
+/// The app captures this stack inside its `SIGSEGV` handler, where demangling
+/// is not an option: it allocates, and allocating on an alternate signal stack
+/// after the real stack is gone is how a crash report becomes a second crash.
+/// So the app emits raw linker names — `$s7SwiftUI8AppGraphC14graphDidChangeyyF`
+/// — and the demangling has to happen here instead.
+///
+/// It matters more than readability. For a stack overflow MetricKit reports the
+/// attributed thread with no frames at all, so this section is the *only* stack
+/// in the report, and [`crate::crash_rules`] matches on demangled names. Left
+/// raw, every recursion crash misses its rule and lands in the manual queue.
+///
+/// `backtrace_symbols` renders `index image address symbol + offset`. Anything
+/// that does not parse is passed through untouched — a mangled frame is worth
+/// more than a dropped one.
+fn demangle_backtrace_line(line: &str) -> String {
+    // Split after the hex address so the image name, which needs no demangling
+    // and may repeat as the fallback symbol, cannot be mistaken for the symbol.
+    let Some(address_start) = line.find("0x") else {
+        return line.to_string();
+    };
+    let after_address = &line[address_start..];
+    let Some(gap) = after_address.find(char::is_whitespace) else {
+        return line.to_string();
+    };
+    let (prefix, rest) = line.split_at(address_start + gap);
+    let symbol = rest.trim_start();
+    if symbol.is_empty() {
+        return line.to_string();
+    }
+    let padding = &rest[..rest.len() - symbol.len()];
+
+    // The trailing ` + 1033388` is the offset into the symbol, not part of it.
+    let (symbol, offset) = match symbol.rsplit_once(" + ") {
+        Some((symbol, offset)) if offset.bytes().all(|b| b.is_ascii_digit()) => {
+            (symbol, Some(offset))
+        }
+        _ => (symbol, None),
+    };
+
+    let mut out = format!("{prefix}{padding}{}", demangle_symbol(symbol));
+    if let Some(offset) = offset {
+        out.push_str(" + ");
+        out.push_str(offset);
+    }
+    out
 }
 
 fn render_debug_errors(report: &mut String, diagnostics: &RoamDebugInfo) -> Result<()> {
@@ -4112,6 +4161,72 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         // It has to say why it exists, or a reader will assume the empty
         // MetricKit thread above it is the whole story.
         assert!(report.contains("survives a stack overflow"), "{report}");
+    }
+
+    /// Frames lifted verbatim from the 1.52 stack overflow on Mac14,10 that the
+    /// menu-bar rule missed: the app captured them raw, so the report carried
+    /// `$s7SwiftUI8AppGraphC14graphDidChangeyyF` where the rule looks for
+    /// `AppGraph.graphDidChange`.
+    #[test]
+    fn report_demangles_the_in_process_backtrace() {
+        let mut diagnostics = empty_diagnostics();
+        diagnostics.faulting_thread_backtraces = Some(vec![
+            "Backtrace of the faulting thread (innermost first):\n\
+             0   Roam            0x00000001029c44ac Roam + 1033388\n\
+             22  SwiftUI         0x00000001cc72e938 $s7SwiftUI12MenuBarExtraVA2A4TextVRszrlE_10isInserted7contentACyAEq_GAA18LocalizedStringKeyV_AA7BindingVySbGq_yXEtcfcq_yXEfU_Tm + 196\n\
+             38  SwiftUI         0x00000001cd9c97a4 $s7SwiftUI8AppGraphC14graphDidChangeyyF + 244\n\
+             39  libswiftCore.dylib 0x00000001ae283808 swift_getTypeByMangledNode + 352"
+                .to_string(),
+        ]);
+
+        let report = render_metric_report(
+            &diagnostics,
+            &empty_device_info(),
+            &payload_with_window(),
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        // The name the crash rules actually match on.
+        assert!(report.contains("AppGraph.graphDidChange + 244"), "{report}");
+        assert!(
+            report.contains("closure #1 in MenuBarExtra<>.init + 196"),
+            "{report}"
+        );
+        // An unmangled C symbol and the image-name fallback both survive intact.
+        assert!(
+            report.contains("swift_getTypeByMangledNode + 352"),
+            "{report}"
+        );
+        assert!(report.contains("Roam + 1033388"), "{report}");
+        // The raw form must be gone, or a rule's `none_of` could still see it.
+        assert!(!report.contains("$s7SwiftUI"), "{report}");
+    }
+
+    #[test]
+    fn demangle_backtrace_line_passes_through_what_it_cannot_parse() {
+        // No address column: a header line, not a frame.
+        let header = "Backtrace of the faulting thread (innermost first):";
+        assert_eq!(demangle_backtrace_line(header), header);
+        // A hex address with nothing after it.
+        assert_eq!(
+            demangle_backtrace_line("  5  Roam  0x102a3c"),
+            "  5  Roam  0x102a3c"
+        );
+        // A non-numeric trailer is not an offset, so the whole tail is taken as
+        // the symbol; that does not demangle, and the line survives unchanged.
+        assert_eq!(
+            demangle_backtrace_line(
+                "0 Roam 0x1 $s7SwiftUI8AppGraphC14graphDidChangeyyF + notanumber"
+            ),
+            "0 Roam 0x1 $s7SwiftUI8AppGraphC14graphDidChangeyyF + notanumber"
+        );
+        // Column padding is preserved so the section stays aligned.
+        assert_eq!(
+            demangle_backtrace_line("  0   Roam     0x1     Roam + 8"),
+            "  0   Roam     0x1     Roam + 8"
+        );
     }
 
     #[test]
