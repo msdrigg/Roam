@@ -1425,10 +1425,63 @@ async fn extract_dyld_shared_cache(
         failures.push("appledb: skipped (no osVersion family in payload)".to_string());
     }
 
+    // Apple's OTA catalog last. It is the source that can serve a build the
+    // other two cannot — hardware-specific Mac builds and seeds — but it is
+    // also the slowest to search, so it runs only once the indexed sources have
+    // both missed.
+    match os_family.and_then(ota_platform) {
+        Some(platform) => {
+            match run_ipsw_dyld_download(
+                "ota",
+                ota_args(platform, device_type, build_id, output_dir, arch),
+            )
+            .await
+            {
+                Ok(()) => return Ok(()),
+                Err(e) => failures.push(format!("ota: {e:#}")),
+            }
+        }
+        None => failures.push(format!(
+            "ota: skipped (no OTA platform for {})",
+            os_family.unwrap_or("no osVersion family in payload")
+        )),
+    }
+
     anyhow::bail!(
         "no dyld_shared_cache source had build {build_id} for {device_type} ({})",
         failures.join("; ")
     );
+}
+
+/// Whether a build ID names a pre-release seed.
+///
+/// Apple suffixes seed builds with a lowercase letter — `26A5406e` — where a
+/// shipped build ends in a digit (`25G82`). Both appledb and the OTA catalog
+/// keep seeds out of their default listings, so without the `--beta` flag a
+/// seed build looks simply absent.
+fn is_beta_build(build_id: &str) -> bool {
+    build_id
+        .chars()
+        .next_back()
+        .is_some_and(|c| c.is_ascii_lowercase())
+}
+
+/// Map a MetricKit OS family onto the vocabulary `ipsw download ota
+/// --platform` accepts.
+///
+/// The OTA catalog is keyed by the platform that ships the update rather than
+/// by marketing name, so iPadOS and iPodOS both live under `ios`. bridgeOS has
+/// no OTA platform of its own; returning None makes the caller skip the source
+/// rather than shell out to a command that cannot succeed.
+fn ota_platform(os_family: &str) -> Option<&'static str> {
+    match os_family {
+        "iOS" | "iPadOS" | "iPodOS" => Some("ios"),
+        "macOS" => Some("macos"),
+        "watchOS" => Some("watchos"),
+        "tvOS" => Some("tvos"),
+        "audioOS" => Some("audioos"),
+        _ => None,
+    }
 }
 
 fn ipsw_me_args(
@@ -1470,10 +1523,19 @@ fn appledb_args(
     // --api forces use of the GitHub API instead of a full local clone of
     // appledb (~250 MB). The clone often hangs the first run on stateless
     // containers; the API path is a few HTTP calls.
+    //
+    // --type ota is not optional: `--dyld` extracts a shared cache out of an
+    // OTA zip and nothing else, while --type defaults to `ipsw`. Without it
+    // every appledb attempt died on "dyld_shared_cache(s) can only be extracted
+    // from OTA files (for now)" — so this fallback had never once produced a
+    // cache, for any build. The earlier rate-limit failures hid it: the quota
+    // 403 fired before ipsw got far enough to refuse the extraction.
     let mut args: Vec<std::ffi::OsString> = vec![
         "download".into(),
         "appledb".into(),
         "--api".into(),
+        "--type".into(),
+        "ota".into(),
         "--os".into(),
         os_family.into(),
         "--device".into(),
@@ -1487,6 +1549,11 @@ fn appledb_args(
         "--no-color".into(),
     ];
 
+    // Seed builds are filtered out of the default catalog listing.
+    if is_beta_build(build_id) {
+        args.push("--beta".into());
+    }
+
     // Unauthenticated GitHub API calls get 60 requests/hour per IP, and
     // resolving one build walks a directory of per-build JSON files — enough to
     // blow the whole budget on a single crash and then 429 on every retry.
@@ -1497,6 +1564,44 @@ fn appledb_args(
         args.push(token.into());
     }
 
+    args
+}
+
+/// Args for Apple's own OTA catalog.
+///
+/// The third source, and the only one that needs no third-party index: it
+/// carries hardware-specific builds (`25G82` for Mac17,5) and seeds that never
+/// reach ipsw.me's restore-image catalog, and it costs no GitHub quota. Unlike
+/// appledb this subcommand does expose `--dyld-arch`.
+fn ota_args(
+    platform: &str,
+    device_type: &str,
+    build_id: &str,
+    output_dir: &Path,
+    arch: Option<&str>,
+) -> Vec<std::ffi::OsString> {
+    let mut args: Vec<std::ffi::OsString> = vec![
+        "download".into(),
+        "ota".into(),
+        "--platform".into(),
+        platform.into(),
+        "--device".into(),
+        device_type.into(),
+        "--build".into(),
+        build_id.into(),
+        "--dyld".into(),
+        "--confirm".into(),
+        "--output".into(),
+        output_dir.as_os_str().to_owned(),
+        "--no-color".into(),
+    ];
+    if let Some(arch) = arch {
+        args.push("--dyld-arch".into());
+        args.push(arch.into());
+    }
+    if is_beta_build(build_id) {
+        args.push("--beta".into());
+    }
     args
 }
 
@@ -4643,6 +4748,115 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
             appledb_api_token().is_some(),
             "token flag must track whether a token is actually configured"
         );
+    }
+
+    #[test]
+    fn appledb_asks_for_an_ota_because_dyld_extraction_needs_one() {
+        let args = appledb_args(
+            "macOS",
+            "Mac17,5",
+            "25G82",
+            Path::new("/tmp/out"),
+            Some("arm64e"),
+        );
+        let rendered: Vec<String> = args
+            .iter()
+            .map(|a| a.to_string_lossy().to_string())
+            .collect();
+
+        // `--dyld` extracts out of an OTA zip only, and --type defaults to
+        // `ipsw`. Dropping this pair is what made every appledb attempt fail
+        // with "can only be extracted from OTA files".
+        let type_at = rendered
+            .iter()
+            .position(|a| a == "--type")
+            .expect("appledb must pin the firmware type");
+        assert_eq!(rendered.get(type_at + 1).map(String::as_str), Some("ota"));
+
+        // A shipped build must not ask for the beta catalog.
+        assert!(!rendered.contains(&"--beta".to_string()));
+    }
+
+    #[test]
+    fn seed_builds_reach_the_beta_catalog() {
+        assert!(is_beta_build("26A5406e"));
+        assert!(!is_beta_build("25G82"));
+        assert!(!is_beta_build("22H352"));
+        assert!(!is_beta_build(""));
+
+        for rendered in [
+            appledb_args("macOS", "Mac15,9", "26A5406e", Path::new("/tmp/out"), None),
+            ota_args("macos", "Mac15,9", "26A5406e", Path::new("/tmp/out"), None),
+        ]
+        .map(|args| {
+            args.iter()
+                .map(|a| a.to_string_lossy().to_string())
+                .collect::<Vec<_>>()
+        }) {
+            assert!(
+                rendered.contains(&"--beta".to_string()),
+                "a seed build is invisible without --beta: {rendered:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn ota_args_carry_platform_build_and_arch() {
+        let args = ota_args(
+            "macos",
+            "Mac17,5",
+            "25G82",
+            Path::new("/tmp/out"),
+            Some("arm64e"),
+        );
+        let rendered: Vec<String> = args
+            .iter()
+            .map(|a| a.to_string_lossy().to_string())
+            .collect();
+
+        assert_eq!(rendered[0], "download");
+        assert_eq!(rendered[1], "ota");
+        for (flag, value) in [
+            ("--platform", "macos"),
+            ("--device", "Mac17,5"),
+            ("--build", "25G82"),
+            // appledb has no --dyld-arch; this subcommand does.
+            ("--dyld-arch", "arm64e"),
+        ] {
+            let at = rendered
+                .iter()
+                .position(|a| a == flag)
+                .unwrap_or_else(|| panic!("{flag} missing from {rendered:?}"));
+            assert_eq!(rendered.get(at + 1).map(String::as_str), Some(value));
+        }
+        assert!(rendered.contains(&"--dyld".to_string()));
+    }
+
+    #[test]
+    fn ota_platforms_follow_the_catalog_not_the_marketing_name() {
+        // iPadOS and iPodOS ship as part of the ios OTA platform.
+        assert_eq!(ota_platform("iOS"), Some("ios"));
+        assert_eq!(ota_platform("iPadOS"), Some("ios"));
+        assert_eq!(ota_platform("iPodOS"), Some("ios"));
+        assert_eq!(ota_platform("macOS"), Some("macos"));
+        assert_eq!(ota_platform("watchOS"), Some("watchos"));
+        assert_eq!(ota_platform("tvOS"), Some("tvos"));
+        assert_eq!(ota_platform("audioOS"), Some("audioos"));
+
+        // bridgeOS has no OTA platform, so the source is skipped rather than
+        // invoked with a flag value ipsw rejects.
+        assert_eq!(ota_platform("bridgeOS"), None);
+
+        // Every family parse_os_family can emit must be handled here or
+        // deliberately skipped — a new family must not silently mean "skip".
+        for family in [
+            "iOS", "iPadOS", "iPodOS", "macOS", "watchOS", "tvOS", "audioOS",
+        ] {
+            assert!(
+                ota_platform(family).is_some(),
+                "{family} resolves an OS family but no OTA platform"
+            );
+        }
     }
 
     #[test]

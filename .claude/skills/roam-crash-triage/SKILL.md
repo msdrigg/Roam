@@ -63,6 +63,12 @@ So a row reading `app_version: 1.53, installed_version: 1.54` is not a parsing
 bug: that user crashed on 1.53 and has since updated. Quote `app_version` when
 you describe what crashed.
 
+Both are filters on `/v2/crashes` and they AND together, which is what makes
+the pair useful: `app_version=1.53&installed_version=1.53` is everyone still
+sitting on the build that crashed them, while
+`app_version=1.53&installed_version=1.54` is everyone the update already
+carried past it.
+
 Every message the backend posts into a crash thread starts with `:ninja:`,
 which hides it from the reporter's in-app chat and from the AI responder. Keep
 that prefix on any reply you post through the API below.
@@ -88,7 +94,8 @@ Filter and page:
 | Query param | Meaning |
 |---|---|
 | `unreviewed=true` | only threads needing attention |
-| `app_version=1.50` | exact match on the crash's `appVersion` (the build that died, not `installed_version`) |
+| `app_version=1.50` | exact match on the crash's `appVersion` — the build that died |
+| `installed_version=1.50` | exact match on the release the device is *running* now |
 | `before_ms=<ms>` | page backwards; pass the previous page's `next_before_ms` |
 | `limit=<n>` | 1–200, default 50 |
 

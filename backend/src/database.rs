@@ -591,10 +591,17 @@ impl DatabaseClient {
     /// `only_unreviewed` applies the same predicate as
     /// [`CrashReview::is_unreviewed`]. `before_ms` pages backwards through
     /// `latest_crash_at_ms`; pass the last row's value to get the next page.
+    ///
+    /// The two version filters answer different questions and both are needed:
+    /// `app_version` finds the crashes a build *produced*, `installed_version`
+    /// finds the reporters a build is *installed on* — which is how you tell
+    /// whether a release still has users sitting on an old crash. They combine
+    /// with AND, so passing both narrows to one update step.
     pub async fn list_crash_reviews(
         &self,
         only_unreviewed: bool,
         app_version: Option<&str>,
+        installed_version: Option<&str>,
         before_ms: Option<i64>,
         limit: i64,
     ) -> Result<Vec<CrashReview>, anyhow::Error> {
@@ -619,12 +626,14 @@ impl DatabaseClient {
             FROM crash_reviews
             WHERE (?1 = 0 OR reviewed_at_ms IS NULL OR reviewed_at_ms < latest_crash_at_ms)
               AND (?2 IS NULL OR app_version = ?2)
-              AND (?3 IS NULL OR latest_crash_at_ms < ?3)
+              AND (?3 IS NULL OR installed_version = ?3)
+              AND (?4 IS NULL OR latest_crash_at_ms < ?4)
             ORDER BY latest_crash_at_ms DESC
-            LIMIT ?4
+            LIMIT ?5
             "#,
             only_unreviewed,
             app_version,
+            installed_version,
             before_ms,
             limit,
         )
@@ -994,9 +1003,17 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(2)).await;
     }
 
+    /// A crash from a device that has not updated since: both versions agree,
+    /// which is the common case.
     fn facts(version: &str) -> CrashFacts {
+        facts_on(version, version)
+    }
+
+    /// A crash from `crashed_on`, reported by a device now running `installed`.
+    fn facts_on(crashed_on: &str, installed: &str) -> CrashFacts {
         CrashFacts {
-            app_version: Some(version.to_string()),
+            app_version: Some(crashed_on.to_string()),
+            installed_version: Some(installed.to_string()),
             device_type: Some("iPhone14,7".to_string()),
             os_version: Some("iPhone OS 26.6 (23G71)".to_string()),
             exception_type: Some(10),
@@ -1021,7 +1038,7 @@ mod tests {
         assert!(recorded.is_unreviewed());
 
         let unreviewed = db
-            .list_crash_reviews(true, None, None, 50)
+            .list_crash_reviews(true, None, None, None, 50)
             .await
             .expect("list");
         assert_eq!(unreviewed.len(), 1);
@@ -1042,12 +1059,12 @@ mod tests {
         assert_eq!(reviewed.reviewed_message_id, Some(2002));
 
         assert!(db
-            .list_crash_reviews(true, None, None, 50)
+            .list_crash_reviews(true, None, None, None, 50)
             .await
             .expect("list")
             .is_empty());
         assert_eq!(
-            db.list_crash_reviews(false, None, None, 50)
+            db.list_crash_reviews(false, None, None, None, 50)
                 .await
                 .expect("list all")
                 .len(),
@@ -1077,7 +1094,7 @@ mod tests {
         assert_eq!(reopened.latest_crash_message_id, Some(2));
 
         let unreviewed = db
-            .list_crash_reviews(true, None, None, 50)
+            .list_crash_reviews(true, None, None, None, 50)
             .await
             .expect("list");
         assert_eq!(unreviewed.len(), 1);
@@ -1086,14 +1103,20 @@ mod tests {
     #[tokio::test]
     async fn filters_by_version_and_pages_backwards() {
         let (db, _dir) = test_client().await;
-        for (thread_id, version) in [(1, "1.49"), (2, "1.50"), (3, "1.50")] {
-            db.record_crash_for_review(thread_id, None, &facts(version))
+        // Thread 3 crashed on 1.50 and has since updated to 1.51, so it answers
+        // one version filter and not the other.
+        for (thread_id, crashed_on, installed) in [
+            (1, "1.49", "1.49"),
+            (2, "1.50", "1.50"),
+            (3, "1.50", "1.51"),
+        ] {
+            db.record_crash_for_review(thread_id, None, &facts_on(crashed_on, installed))
                 .await
                 .expect("record");
         }
 
         let only_150 = db
-            .list_crash_reviews(false, Some("1.50"), None, 50)
+            .list_crash_reviews(false, Some("1.50"), None, None, 50)
             .await
             .expect("list");
         assert_eq!(only_150.len(), 2);
@@ -1101,15 +1124,39 @@ mod tests {
             .iter()
             .all(|c| c.app_version.as_deref() == Some("1.50")));
 
+        // The installed filter asks the other question: who is *running* 1.50,
+        // regardless of which build produced their crash.
+        let running_150 = db
+            .list_crash_reviews(false, None, Some("1.50"), None, 50)
+            .await
+            .expect("list");
+        assert_eq!(running_150.len(), 1);
+        assert_eq!(running_150[0].thread_id, 2);
+
+        // Thread 3 is the one the two filters disagree about.
+        let updated_away = db
+            .list_crash_reviews(false, Some("1.50"), Some("1.51"), None, 50)
+            .await
+            .expect("list");
+        assert_eq!(updated_away.len(), 1);
+        assert_eq!(updated_away[0].thread_id, 3);
+
+        // Both filters AND together, so a mismatched pair matches nothing.
+        assert!(db
+            .list_crash_reviews(false, Some("1.49"), Some("1.51"), None, 50)
+            .await
+            .expect("list")
+            .is_empty());
+
         // Newest first, and `before_ms` excludes everything at or after it.
         let all = db
-            .list_crash_reviews(false, None, None, 50)
+            .list_crash_reviews(false, None, None, None, 50)
             .await
             .expect("list");
         assert_eq!(all.len(), 3);
         let cursor = all[0].latest_crash_at_ms;
         let next_page = db
-            .list_crash_reviews(false, None, Some(cursor), 50)
+            .list_crash_reviews(false, None, None, Some(cursor), 50)
             .await
             .expect("page");
         assert!(next_page.iter().all(|c| c.latest_crash_at_ms < cursor));
