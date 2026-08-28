@@ -3,25 +3,25 @@ use std::{path::PathBuf, time::Duration};
 use crate::{
     database::{DeviceInfo, PendingSymbolication, User, UserUpdate},
     discord::{
-        support_only, DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessageOptions,
-        SUPPORT_ONLY_PREFIX,
+        DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessageOptions, SUPPORT_ONLY_PREFIX,
+        support_only,
     },
     presence::UserPresenceInfo,
-    symbolicate::{scan_binary_uuids, DsymUploadMetadata, RoamDebugInfo},
+    symbolicate::{DsymUploadMetadata, RoamDebugInfo, scan_binary_uuids},
     utils::{i64_to_string, string_to_i64_optional},
 };
 use anyhow::Context;
 use axum::{
-    body::{to_bytes, Body},
+    Json,
+    body::{Body, to_bytes},
     extract::{DefaultBodyLimit, Multipart, Path, Query, State},
-    http::{header, HeaderName, Request, StatusCode},
+    http::{HeaderName, Request, StatusCode, header},
     response::{IntoResponse, Response},
     routing::post,
-    Json,
 };
-use axum::{routing::get, serve::ListenerExt, Router};
+use axum::{Router, routing::get, serve::ListenerExt};
 pub use error::ApiError;
-use futures::{stream, StreamExt};
+use futures::{StreamExt, stream};
 use opentelemetry::trace::{SpanKind, TraceContextExt};
 use serde::{Deserialize, Serialize};
 use tokio::{io::AsyncWriteExt, net::TcpListener, task::JoinHandle};
@@ -40,7 +40,7 @@ use uuid::Uuid;
 /// How long a leased payload stays out before another worker can re-claim it.
 const LEASE_TTL: Duration = Duration::from_secs(15 * 60);
 
-use crate::{discord::DiscordMessage, AppContext};
+use crate::{AppContext, discord::DiscordMessage};
 
 const UPLOAD_LIMIT: usize = 10 * 1024 * 1024;
 
@@ -269,7 +269,7 @@ impl DiscordMessageDownload {
         let ai_message = !translated_support && Some(message.author.id) == ai_bot_id;
         let human_support_message =
             translated_support || Some(message.author.id) == human_support_user_id;
-        let attachments = stream::iter(message.attachments.into_iter())
+        let attachments = stream::iter(message.attachments)
             .map(|attachment| async move {
                 let url = attachment.url;
                 let id = attachment.id;
@@ -279,13 +279,13 @@ impl DiscordMessageDownload {
                         Err(e) => {
                             return Err(ApiError::BadRequest(format!(
                                 "Error reading attachment: {e}"
-                            )))
+                            )));
                         }
                     },
                     Err(e) => {
                         return Err(ApiError::BadRequest(format!(
                             "Error downloading attachment: {e}"
-                        )))
+                        )));
                     }
                 };
 
@@ -575,10 +575,10 @@ struct TempUpload(PathBuf);
 
 impl Drop for TempUpload {
     fn drop(&mut self) {
-        if let Err(err) = std::fs::remove_file(&self.0) {
-            if err.kind() != std::io::ErrorKind::NotFound {
-                tracing::warn!(path = %self.0.display(), %err, "Failed to remove temp dSYM upload");
-            }
+        if let Err(err) = std::fs::remove_file(&self.0)
+            && err.kind() != std::io::ErrorKind::NotFound
+        {
+            tracing::warn!(path = %self.0.display(), %err, "Failed to remove temp dSYM upload");
         }
     }
 }
@@ -1447,14 +1447,14 @@ async fn submit_symbolication_result(
                 );
             }
 
-            if let Err(err) = tokio::fs::remove_file(&row.payload_path).await {
-                if err.kind() != std::io::ErrorKind::NotFound {
-                    tracing::warn!(
-                        ?err,
-                        path = %row.payload_path,
-                        "Failed to remove cached payload after symbolication"
-                    );
-                }
+            if let Err(err) = tokio::fs::remove_file(&row.payload_path).await
+                && err.kind() != std::io::ErrorKind::NotFound
+            {
+                tracing::warn!(
+                    ?err,
+                    path = %row.payload_path,
+                    "Failed to remove cached payload after symbolication"
+                );
             }
             Ok(())
         }
@@ -1543,17 +1543,16 @@ async fn new_message(
     let user = app_context
         .refresh_user(user, None, &installation_info)
         .await?;
-    if app_context.ai_responder_enabled() {
-        if let Some(ai_client) = app_context.ai_responder_discord_client() {
-            if let Err(err) = ai_client.join_thread(user.thread_id).await {
-                tracing::warn!(
-                    user_id = %device_id,
-                    thread_id = user.thread_id,
-                    error = ?err,
-                    "AI responder bot could not access or join support thread before user message"
-                );
-            }
-        }
+    if app_context.ai_responder_enabled()
+        && let Some(ai_client) = app_context.ai_responder_discord_client()
+        && let Err(err) = ai_client.join_thread(user.thread_id).await
+    {
+        tracing::warn!(
+            user_id = %device_id,
+            thread_id = user.thread_id,
+            error = ?err,
+            "AI responder bot could not access or join support thread before user message"
+        );
     }
     tracing::info!(
         user_id = %device_id,
@@ -1759,10 +1758,10 @@ async fn get_thread_info(
 mod error {
     use crate::utils::serialize_anyhow;
     use axum::{
-        body::Body,
-        http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, StatusCode},
-        response::{IntoResponse, Response},
         Json,
+        body::Body,
+        http::{HeaderMap, HeaderValue, StatusCode, header::WWW_AUTHENTICATE},
+        response::{IntoResponse, Response},
     };
     use serde::Serialize;
 

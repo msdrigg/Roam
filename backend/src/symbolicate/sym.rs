@@ -1,6 +1,6 @@
 use crate::database::DeviceInfo;
-use crate::symbolicate::diagnostics::LogEntry;
 use crate::symbolicate::RoamDebugInfo;
+use crate::symbolicate::diagnostics::LogEntry;
 use anyhow::{Context, Result};
 use futures::FutureExt as _;
 use object::read::macho::{FatArch, MachOFatFile32, MachOFatFile64};
@@ -680,14 +680,14 @@ impl SymbolicationClient {
         // — a complete one would have satisfied `dyld_cache_exists` above. Clear
         // it so `ipsw` writes into an empty directory and cannot mistake a
         // truncated file for one it already fetched.
-        if let Err(err) = tokio::fs::remove_dir_all(&dyld_dir).await {
-            if err.kind() != std::io::ErrorKind::NotFound {
-                tracing::warn!(
-                    ?err,
-                    dir = %dyld_dir.display(),
-                    "Could not clear an incomplete dyld cache before re-downloading"
-                );
-            }
+        if let Err(err) = tokio::fs::remove_dir_all(&dyld_dir).await
+            && err.kind() != std::io::ErrorKind::NotFound
+        {
+            tracing::warn!(
+                ?err,
+                dir = %dyld_dir.display(),
+                "Could not clear an incomplete dyld cache before re-downloading"
+            );
         }
 
         tokio::fs::create_dir_all(&dyld_dir)
@@ -703,6 +703,23 @@ impl SymbolicationClient {
             requirement.os_family.as_deref(),
         )
         .await;
+
+        // A download that exits 0 having written nothing is still a failure.
+        // `ipsw` does exactly that when a source has no match for the build,
+        // and trusting the exit status alone published three no-symbol reports
+        // and reaped their payloads -- turning a miss that would have been
+        // retried into permanent loss. Success has to mean a cache is on disk.
+        let outcome = match outcome {
+            Ok(()) => match dyld_cache_exists(&dyld_dir, requirement.arch.as_deref()).await {
+                Ok(true) => Ok(()),
+                Ok(false) => Err(anyhow::anyhow!(
+                    "ipsw exited successfully but left no dyld_shared_cache in {}",
+                    dyld_dir.display()
+                )),
+                Err(err) => Err(err.context("checking for the downloaded dyld_shared_cache")),
+            },
+            Err(err) => Err(err),
+        };
 
         // A failed download leaves whatever it managed to copy. That debris is
         // worse than nothing: `dyld_cache_exists` only looks for a file named
@@ -753,15 +770,13 @@ impl SymbolicationClient {
             if let (Some(binary_uuid), Some(offset)) = (
                 frame.binary_uuid.as_deref(),
                 frame.offset_into_binary_text_segment,
-            ) {
-                if let Some(breakpad_id) = binary_uuid_to_breakpad_id(binary_uuid) {
-                    if let Ok(offset) = u32::try_from(offset) {
-                        requests
-                            .entry(breakpad_id)
-                            .or_default()
-                            .add(offset, frame.binary_name.as_deref());
-                    }
-                }
+            ) && let Some(breakpad_id) = binary_uuid_to_breakpad_id(binary_uuid)
+                && let Ok(offset) = u32::try_from(offset)
+            {
+                requests
+                    .entry(breakpad_id)
+                    .or_default()
+                    .add(offset, frame.binary_name.as_deref());
             }
         });
     }
@@ -1162,10 +1177,9 @@ fn collect_binary_names(frame: &MetricKitCallStackFrame, out: &mut BTreeMap<Stri
     for_each_frame(std::slice::from_ref(frame), |frame| {
         if let (Some(uuid), Some(name)) =
             (frame.binary_uuid.as_deref(), frame.binary_name.as_deref())
+            && let Some(breakpad_id) = binary_uuid_to_breakpad_id(uuid)
         {
-            if let Some(breakpad_id) = binary_uuid_to_breakpad_id(uuid) {
-                out.entry(breakpad_id).or_insert_with(|| name.to_string());
-            }
+            out.entry(breakpad_id).or_insert_with(|| name.to_string());
         }
     });
 }
@@ -1186,12 +1200,11 @@ fn describe_panic(payload: &(dyn std::any::Any + Send)) -> String {
 #[cfg(test)]
 fn collect_binary_uuids(frame: &MetricKitCallStackFrame, out: &mut BTreeSet<String>) {
     for_each_frame(std::slice::from_ref(frame), |frame| {
-        if let Some(uuid) = frame.binary_uuid.as_deref() {
-            if let Ok(parsed) = Uuid::parse_str(uuid) {
-                if !parsed.is_nil() {
-                    out.insert(parsed.to_string().to_ascii_uppercase());
-                }
-            }
+        if let Some(uuid) = frame.binary_uuid.as_deref()
+            && let Ok(parsed) = Uuid::parse_str(uuid)
+            && !parsed.is_nil()
+        {
+            out.insert(parsed.to_string().to_ascii_uppercase());
         }
     });
 }
@@ -1395,6 +1408,21 @@ async fn extract_dyld_shared_cache(
         Err(e) => failures.push(format!("ipsw.me: {e:#}")),
     }
 
+    // Everything past this point serves shared caches out of OTA zips, and
+    // `ipsw` can only perform that extraction on a Mac: "extracting
+    // dyld_shared_cache from remote OTA is only supported on macOS". The
+    // symbolicator worker runs on Linux, where ipsw.me is therefore the only
+    // source that can ever produce a cache -- it extracts from an IPSW, via
+    // apfs-fuse. Shelling out to the other two would spend two minutes per
+    // crash collecting the same refusal, so say why and stop.
+    if !cfg!(target_os = "macos") {
+        anyhow::bail!(
+            "no dyld_shared_cache source had build {build_id} for {device_type} ({}); \
+             appledb and the OTA catalog both need a macOS host to extract from an OTA",
+            failures.join("; ")
+        );
+    }
+
     // appledb has a broader catalog and often carries a build before ipsw.me
     // indexes it. Requires the OS family, since `--os` is mandatory and it
     // rejects anything outside its own vocabulary.
@@ -1453,18 +1481,11 @@ async fn extract_dyld_shared_cache(
     );
 }
 
-/// Whether a build ID names a pre-release seed.
-///
-/// Apple suffixes seed builds with a lowercase letter — `26A5406e` — where a
-/// shipped build ends in a digit (`25G82`). Both appledb and the OTA catalog
-/// keep seeds out of their default listings, so without the `--beta` flag a
-/// seed build looks simply absent.
-fn is_beta_build(build_id: &str) -> bool {
-    build_id
-        .chars()
-        .next_back()
-        .is_some_and(|c| c.is_ascii_lowercase())
-}
+// There is deliberately no `--beta` flag anywhere below. A seed build like
+// `26A5406e` does need it to appear in a catalog listing, but `ipsw` rejects
+// the combination outright -- "cannot use --beta, --rc or --latest with
+// --build" -- and every lookup here is by exact build. Adding it does not widen
+// the search, it fails the call.
 
 /// Map a MetricKit OS family onto the vocabulary `ipsw download ota
 /// --platform` accepts.
@@ -1524,12 +1545,12 @@ fn appledb_args(
     // appledb (~250 MB). The clone often hangs the first run on stateless
     // containers; the API path is a few HTTP calls.
     //
-    // --type ota is not optional: `--dyld` extracts a shared cache out of an
-    // OTA zip and nothing else, while --type defaults to `ipsw`. Without it
-    // every appledb attempt died on "dyld_shared_cache(s) can only be extracted
-    // from OTA files (for now)" — so this fallback had never once produced a
-    // cache, for any build. The earlier rate-limit failures hid it: the quota
-    // 403 fired before ipsw got far enough to refuse the extraction.
+    // --type ota is necessary but not sufficient: `--dyld` extracts a shared
+    // cache out of an OTA zip and nothing else, while --type defaults to
+    // `ipsw`, so without it every attempt died on "dyld_shared_cache(s) can
+    // only be extracted from OTA files (for now)". Fixing that only exposes the
+    // real ceiling, which is the host -- see the macOS gate in
+    // `extract_dyld_shared_cache`.
     let mut args: Vec<std::ffi::OsString> = vec![
         "download".into(),
         "appledb".into(),
@@ -1548,11 +1569,6 @@ fn appledb_args(
         output_dir.as_os_str().to_owned(),
         "--no-color".into(),
     ];
-
-    // Seed builds are filtered out of the default catalog listing.
-    if is_beta_build(build_id) {
-        args.push("--beta".into());
-    }
 
     // Unauthenticated GitHub API calls get 60 requests/hour per IP, and
     // resolving one build walks a directory of per-build JSON files — enough to
@@ -1599,9 +1615,6 @@ fn ota_args(
         args.push("--dyld-arch".into());
         args.push(arch.into());
     }
-    if is_beta_build(build_id) {
-        args.push("--beta".into());
-    }
     args
 }
 
@@ -1625,7 +1638,7 @@ fn appledb_api_token() -> Option<String> {
 const IPSW_DOWNLOAD_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(8 * 60 * 60);
 
 async fn run_ipsw_dyld_download(label: &str, args: Vec<std::ffi::OsString>) -> Result<()> {
-    use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+    use portable_pty::{CommandBuilder, PtySize, native_pty_system};
     use std::io::Read;
 
     // Cap how many caches download at once. A batch of five crashes from five
@@ -2547,12 +2560,11 @@ fn resolve_dylib_paths_in_cache(
 ) -> Vec<String> {
     let mut paths: Vec<String> = Vec::new();
 
-    if let Some(name) = leaf_name {
-        if let Some(index) = dyld_map_index(cache_path) {
-            if let Some(found) = index.get(name) {
-                paths.extend(found.iter().cloned());
-            }
-        }
+    if let Some(name) = leaf_name
+        && let Some(index) = dyld_map_index(cache_path)
+        && let Some(found) = index.get(name)
+    {
+        paths.extend(found.iter().cloned());
     }
 
     for path in guessed {
@@ -3189,13 +3201,12 @@ fn frame_symbol(
     if let Some(results) = symbolicated_addresses.get(&breakpad_id) {
         if let Some(Some(result)) = results.address_results.get(&offset) {
             let mut symbol = demangle_symbol(&result.symbol_name);
-            if let Some(frames) = &result.inline_frames {
-                if let Some(frame) = frames.first() {
-                    if let Some(location) = render_debug_frame_location(frame) {
-                        symbol.push_str(" at ");
-                        symbol.push_str(&location);
-                    }
-                }
+            if let Some(frames) = &result.inline_frames
+                && let Some(frame) = frames.first()
+                && let Some(location) = render_debug_frame_location(frame)
+            {
+                symbol.push_str(" at ");
+                symbol.push_str(&location);
             }
             return symbol;
         }
@@ -3975,7 +3986,9 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
 
         assert_eq!(
             resolved.first().map(String::as_str),
-            Some("/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE"),
+            Some(
+                "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE"
+            ),
             "the looked-up path must be tried before the guesses: {resolved:?}"
         );
         // The guesses stay as fallback.
@@ -4432,14 +4445,18 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
 
         // The trailer `ipsw` writes last is what makes it complete.
         fs::write(dyld.join("dyld_shared_cache_arm64e.atlas"), b"atlas").expect("atlas");
-        assert!(dyld_cache_exists(&dyld, Some("arm64e"))
-            .await
-            .expect("check"));
+        assert!(
+            dyld_cache_exists(&dyld, Some("arm64e"))
+                .await
+                .expect("check")
+        );
 
         // And a complete cache for another arch does not vouch for this one.
-        assert!(!dyld_cache_exists(&dyld, Some("x86_64"))
-            .await
-            .expect("check"));
+        assert!(
+            !dyld_cache_exists(&dyld, Some("x86_64"))
+                .await
+                .expect("check")
+        );
     }
 
     #[test]
@@ -4778,15 +4795,15 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
     }
 
     #[test]
-    fn seed_builds_reach_the_beta_catalog() {
-        assert!(is_beta_build("26A5406e"));
-        assert!(!is_beta_build("25G82"));
-        assert!(!is_beta_build("22H352"));
-        assert!(!is_beta_build(""));
-
+    fn seed_builds_never_ask_for_the_beta_catalog() {
+        // `--beta` would be the natural way to surface a seed like 26A5406e,
+        // but ipsw rejects it alongside --build ("cannot use --beta, --rc or
+        // --latest with --build"), so emitting it fails the lookup outright
+        // rather than widening it. Every lookup here is by exact build.
         for rendered in [
             appledb_args("macOS", "Mac15,9", "26A5406e", Path::new("/tmp/out"), None),
             ota_args("macos", "Mac15,9", "26A5406e", Path::new("/tmp/out"), None),
+            ipsw_me_args("Mac15,9", "26A5406e", Path::new("/tmp/out"), None),
         ]
         .map(|args| {
             args.iter()
@@ -4794,9 +4811,10 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
                 .collect::<Vec<_>>()
         }) {
             assert!(
-                rendered.contains(&"--beta".to_string()),
-                "a seed build is invisible without --beta: {rendered:?}"
+                !rendered.contains(&"--beta".to_string()),
+                "--beta is incompatible with --build: {rendered:?}"
             );
+            assert!(rendered.contains(&"--build".to_string()));
         }
     }
 
@@ -4859,6 +4877,20 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         }
     }
 
+    #[tokio::test]
+    async fn an_empty_download_directory_does_not_count_as_a_cache() {
+        // The regression that cost three payloads: `ipsw` exits 0 having
+        // written nothing, and treating that as success published no-symbol
+        // reports and reaped the payloads that would otherwise have retried.
+        let dir = tempfile::tempdir().expect("tempdir");
+        assert!(
+            !dyld_cache_exists(dir.path(), Some("arm64e"))
+                .await
+                .expect("empty dir is readable"),
+            "an empty directory must not read as a downloaded cache"
+        );
+    }
+
     #[test]
     fn converts_macho_uuid_to_breakpad_id() {
         assert_eq!(
@@ -4881,10 +4913,12 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         assert!(paths.contains(
             &"/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation".to_string()
         ));
-        assert!(paths.contains(
-            &"/System/Library/PrivateFrameworks/CoreFoundation.framework/CoreFoundation"
-                .to_string()
-        ));
+        assert!(
+            paths.contains(
+                &"/System/Library/PrivateFrameworks/CoreFoundation.framework/CoreFoundation"
+                    .to_string()
+            )
+        );
         assert!(paths.contains(&"/usr/lib/CoreFoundation.dylib".to_string()));
     }
 

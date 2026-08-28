@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use tokio::task::JoinHandle;
 
-use crate::{ai_responder, AppContext};
+use crate::{AppContext, ai_responder};
 
 pub async fn start_tasks(app_context: AppContext) -> Result<JoinHandle<()>, Box<anyhow::Error>> {
     let task_handle = tokio::spawn(async move {

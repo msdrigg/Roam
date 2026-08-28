@@ -1,6 +1,6 @@
 use std::{path::PathBuf, str::FromStr, time::Duration};
 
-use crate::{utils::i64_to_string, UserId};
+use crate::{UserId, utils::i64_to_string};
 use anyhow::Context;
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
@@ -1058,11 +1058,12 @@ mod tests {
         assert_eq!(reviewed.reviewed_by.as_deref(), Some("auto:test-rule"));
         assert_eq!(reviewed.reviewed_message_id, Some(2002));
 
-        assert!(db
-            .list_crash_reviews(true, None, None, None, 50)
-            .await
-            .expect("list")
-            .is_empty());
+        assert!(
+            db.list_crash_reviews(true, None, None, None, 50)
+                .await
+                .expect("list")
+                .is_empty()
+        );
         assert_eq!(
             db.list_crash_reviews(false, None, None, None, 50)
                 .await
@@ -1120,9 +1121,11 @@ mod tests {
             .await
             .expect("list");
         assert_eq!(only_150.len(), 2);
-        assert!(only_150
-            .iter()
-            .all(|c| c.app_version.as_deref() == Some("1.50")));
+        assert!(
+            only_150
+                .iter()
+                .all(|c| c.app_version.as_deref() == Some("1.50"))
+        );
 
         // The installed filter asks the other question: who is *running* 1.50,
         // regardless of which build produced their crash.
@@ -1142,11 +1145,12 @@ mod tests {
         assert_eq!(updated_away[0].thread_id, 3);
 
         // Both filters AND together, so a mismatched pair matches nothing.
-        assert!(db
-            .list_crash_reviews(false, Some("1.49"), Some("1.51"), None, 50)
-            .await
-            .expect("list")
-            .is_empty());
+        assert!(
+            db.list_crash_reviews(false, Some("1.49"), Some("1.51"), None, 50)
+                .await
+                .expect("list")
+                .is_empty()
+        );
 
         // Newest first, and `before_ms` excludes everything at or after it.
         let all = db
@@ -1183,11 +1187,12 @@ mod tests {
 
         assert!(db.get_crash_review(9).await.expect("get").is_some());
         assert!(db.get_crash_review(12345).await.expect("get").is_none());
-        assert!(db
-            .mark_thread_reviewed(12345, None, None, None, None)
-            .await
-            .expect("review missing")
-            .is_none());
+        assert!(
+            db.mark_thread_reviewed(12345, None, None, None, None)
+                .await
+                .expect("review missing")
+                .is_none()
+        );
     }
 
     fn pending(id: &str) -> PendingSymbolication {
@@ -1334,17 +1339,19 @@ mod tests {
         // Once reaped it is not offered again, and it can no longer be
         // requeued — there is nothing left on disk to symbolicate.
         db.mark_payload_reaped("old").await.expect("mark");
-        assert!(db
-            .expired_failed_payloads(5000)
-            .await
-            .expect("expired")
-            .is_empty());
-        assert!(db
-            .failed_symbolication_ids(None)
-            .await
-            .expect("ids")
-            .iter()
-            .all(|id| id != "old"));
+        assert!(
+            db.expired_failed_payloads(5000)
+                .await
+                .expect("expired")
+                .is_empty()
+        );
+        assert!(
+            db.failed_symbolication_ids(None)
+                .await
+                .expect("ids")
+                .iter()
+                .all(|id| id != "old")
+        );
     }
 
     #[tokio::test]

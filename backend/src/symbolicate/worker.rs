@@ -314,15 +314,15 @@ async fn symbolicate_and_upload(
 
     api.report_success(&payload.id, &report).await?;
 
-    if let Err(err) = tokio::fs::remove_file(&payload_path).await {
-        if err.kind() != std::io::ErrorKind::NotFound {
-            tracing::warn!(?err, path = %payload_path.display(), "Failed to remove worker payload file");
-        }
+    if let Err(err) = tokio::fs::remove_file(&payload_path).await
+        && err.kind() != std::io::ErrorKind::NotFound
+    {
+        tracing::warn!(?err, path = %payload_path.display(), "Failed to remove worker payload file");
     }
-    if let Err(err) = tokio::fs::remove_file(&symbolicated_path).await {
-        if err.kind() != std::io::ErrorKind::NotFound {
-            tracing::warn!(?err, path = %symbolicated_path.display(), "Failed to remove symbolicated report file");
-        }
+    if let Err(err) = tokio::fs::remove_file(&symbolicated_path).await
+        && err.kind() != std::io::ErrorKind::NotFound
+    {
+        tracing::warn!(?err, path = %symbolicated_path.display(), "Failed to remove symbolicated report file");
     }
 
     tracing::info!(

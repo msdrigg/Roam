@@ -1,14 +1,15 @@
 use serenity::{
+    Client,
     all::{
         Context, EventHandler, GatewayIntents, Message, Nonce, Ready, ResumedEvent,
         TypingStartEvent,
     },
-    async_trait, Client,
+    async_trait,
 };
 
 use crate::{
-    discord::{DiscordMessage, MessageAttachment},
     AppContext,
+    discord::{DiscordMessage, MessageAttachment},
 };
 
 pub async fn setup_client(ctx: AppContext) -> Result<Client, serenity::Error> {
