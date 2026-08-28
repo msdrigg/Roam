@@ -17,6 +17,16 @@
 //! release or later is [`FixStatus::Unfixed`] — the same stack surviving the
 //! fix, which is news — and a report with no readable version is
 //! [`FixStatus::Unknown`].
+//!
+//! A report names *two* versions and they are routinely different. The crash's
+//! own `appVersion` is what MetricKit recorded when the process died; the
+//! `Install:` line is what the device was running when it uploaded the payload,
+//! up to a day later and possibly across an App Store update. Matching keys on
+//! the first — that is the build that crashed — but a crash that predates the
+//! fix on a device that has *already* updated past it is
+//! [`FixStatus::AlreadyUpdated`], not [`FixStatus::Fixed`]: there is nothing
+//! for that reporter to do, and telling them to update to a release they are
+//! running is how this system loses their trust.
 
 use std::sync::LazyLock;
 
@@ -27,7 +37,13 @@ use regex::Regex;
 /// re-downloading attachments.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
 pub struct CrashFacts {
+    /// `appVersion` out of the crash's own metadata: the marketing version of
+    /// the build that died. Absent on reports predating that metadata key.
     pub app_version: Option<String>,
+    /// `release=` off the report's `Install:` line — the version the device was
+    /// running when it *sent* the payload, which is not necessarily the one
+    /// that crashed. See the module docs.
+    pub installed_version: Option<String>,
     pub device_type: Option<String>,
     pub os_version: Option<String>,
     pub exception_type: Option<i64>,
@@ -78,6 +94,20 @@ fn thermal_level(report: &str) -> Option<i64> {
     RE.captures(report)?[1].parse().ok()
 }
 
+/// Reads `release=<version>` off the report's `Install:` line.
+///
+/// That line is rendered from the device's stored installation info, not from
+/// the MetricKit payload, so it says what the device runs *now*. It is the only
+/// place the report records it, and it is deliberately not the matching key.
+fn installed_version(report: &str) -> Option<String> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?m)^Install:.*?\brelease=(\S+)").expect("valid install-line regex")
+    });
+    RE.captures(report)
+        .map(|caps| caps[1].to_string())
+        .filter(|value| value != "unknown")
+}
+
 /// Reads the percentage off the `Elapsed application CPU time` line.
 fn app_cpu_percent(report: &str) -> Option<i64> {
     static RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -91,6 +121,7 @@ impl CrashFacts {
     pub fn from_report(report: &str) -> Self {
         Self {
             app_version: metadata_value(report, "appVersion"),
+            installed_version: installed_version(report),
             device_type: metadata_value(report, "deviceType"),
             os_version: metadata_value(report, "osVersion"),
             exception_type: metadata_value(report, "exceptionType").and_then(|v| v.parse().ok()),
@@ -98,6 +129,30 @@ impl CrashFacts {
             termination_code: termination_code(report),
             thermal_level: thermal_level(report),
             app_cpu_percent: app_cpu_percent(report),
+        }
+    }
+
+    /// The version to place against a rule's `fixed_in`.
+    ///
+    /// The crash's own `appVersion` when the report carries one — that is the
+    /// build that actually died. Reports from before MetricKit recorded it fall
+    /// back to the installed release, which at least bounds the answer; see
+    /// [`CrashFacts::version_phrase`], which says so in the reply rather than
+    /// passing the guess off as a fact.
+    pub fn crash_version(&self) -> Option<&str> {
+        self.app_version
+            .as_deref()
+            .or(self.installed_version.as_deref())
+    }
+
+    /// Names [`CrashFacts::crash_version`] for a reply, flagging the fallback.
+    fn version_phrase(&self) -> String {
+        match (self.app_version.as_deref(), self.installed_version.as_deref()) {
+            (Some(version), _) => format!("from {version}"),
+            (None, Some(version)) => format!(
+                "from {version} (the release the device reports installed — this report carries no `appVersion`)"
+            ),
+            (None, None) => "from an unrecorded version".to_string(),
         }
     }
 }
@@ -128,15 +183,20 @@ fn parse_version(version: &str) -> Option<Vec<u64>> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FixStatus {
-    /// The crash predates the release that fixed it: updating resolves it.
+    /// The crash predates the release that fixed it, and the device is still on
+    /// a build that predates it too: updating resolves it.
     Fixed,
+    /// The crash predates the release that fixed it and the device has since
+    /// updated past it. Same diagnosis as [`FixStatus::Fixed`], but there is no
+    /// action for the reporter — the build that crashed is no longer installed.
+    AlreadyUpdated,
     /// The crash is from the release that fixed it, or later. The fix did not
     /// hold, so this needs a human even though the stack is recognised.
     Unfixed,
     /// The rule describes something that is not a defect in the app, so there is
     /// no version to compare against. See [`CrashRule::environmental`].
     NotADefect,
-    /// No usable `appVersion` on the report, or no fix version on the rule.
+    /// No usable version on the report at all, or no fix version on the rule.
     Unknown,
 }
 
@@ -212,6 +272,12 @@ impl CrashRule {
     }
 
     /// Places the crash's app version against the release that fixed this rule.
+    ///
+    /// Keyed on [`CrashFacts::crash_version`] and not on the installed release:
+    /// a payload delivered after an update still describes the build that died,
+    /// and scoring it against the newer build would report every historical
+    /// crash from an updated device as a fix that did not hold. The installed
+    /// release only decides whether the reporter still has anything to do.
     pub fn fix_status(&self, facts: &CrashFacts) -> FixStatus {
         if self.environmental {
             return FixStatus::NotADefect;
@@ -219,13 +285,15 @@ impl CrashRule {
         let Some(fixed_in) = self.fixed_in.and_then(parse_version) else {
             return FixStatus::Unknown;
         };
-        let Some(crashed_on) = facts.app_version.as_deref().and_then(parse_version) else {
+        let Some(crashed_on) = facts.crash_version().and_then(parse_version) else {
             return FixStatus::Unknown;
         };
-        if crashed_on < fixed_in {
-            FixStatus::Fixed
-        } else {
-            FixStatus::Unfixed
+        if crashed_on >= fixed_in {
+            return FixStatus::Unfixed;
+        }
+        match facts.installed_version.as_deref().and_then(parse_version) {
+            Some(installed) if installed >= fixed_in => FixStatus::AlreadyUpdated,
+            _ => FixStatus::Fixed,
         }
     }
 }
@@ -243,19 +311,22 @@ impl RuleMatch {
     /// placing this particular crash against the fix.
     pub fn reply(&self, facts: &CrashFacts) -> String {
         let fixed_in = self.rule.fixed_in.unwrap_or("a later release");
+        let version = facts.version_phrase();
         let verdict = match self.status {
             FixStatus::Fixed => format!(
-                ":white_check_mark: **Fixed in {fixed_in}.** This report is from {}, which predates the fix — updating to {fixed_in} or later resolves it.",
-                facts.app_version.as_deref().unwrap_or("an earlier version"),
+                ":white_check_mark: **Fixed in {fixed_in}.** This report is {version}, which predates the fix — updating to {fixed_in} or later resolves it."
+            ),
+            FixStatus::AlreadyUpdated => format!(
+                ":white_check_mark: **Fixed in {fixed_in}, and already updated.** This report is {version}, which predates the fix, but the device is now on {} — the build that crashed is no longer installed, so there is nothing to do.",
+                facts.installed_version.as_deref().unwrap_or(fixed_in),
             ),
             FixStatus::Unfixed => format!(
-                ":rotating_light: **UNFIXED.** The fix above shipped in {fixed_in}, and this report is from {} — the crash survived it. Left unreviewed for a human.",
-                facts.app_version.as_deref().unwrap_or("that release or later"),
+                ":rotating_light: **UNFIXED.** The fix above shipped in {fixed_in}, and this report is {version} — the crash survived it. Left unreviewed for a human."
             ),
             FixStatus::NotADefect => ":thermometer: **Nothing to fix in the app.** The report itself carries the evidence that the system, not Roam, ended the process — see above. Reviewed automatically; reopen the thread if you disagree.".to_string(),
             FixStatus::Unknown => match self.rule.fixed_in {
                 Some(version) => format!(
-                    ":grey_question: **Fix status unknown.** The fix shipped in {version}, but this report carries no readable `appVersion`, so whether it predates the fix is unclear."
+                    ":grey_question: **Fix status unknown.** The fix shipped in {version}, but this report carries neither an `appVersion` nor an installed release, so whether it predates the fix is unclear."
                 ),
                 None => ":grey_question: **Fix status unknown.** No fix version is recorded for this rule.".to_string(),
             },
@@ -272,9 +343,13 @@ impl RuleMatch {
         let title = self.rule.title;
         match (self.status, self.rule.fixed_in) {
             (FixStatus::Fixed, Some(fixed_in)) => format!("{title} (fixed in {fixed_in})"),
+            (FixStatus::AlreadyUpdated, Some(fixed_in)) => format!(
+                "{title} (fixed in {fixed_in}; device already on {})",
+                facts.installed_version.as_deref().unwrap_or(fixed_in),
+            ),
             (FixStatus::Unfixed, Some(fixed_in)) => format!(
                 "UNFIXED — still crashing on {} after the {fixed_in} fix: {title}",
-                facts.app_version.as_deref().unwrap_or("a later version"),
+                facts.crash_version().unwrap_or("a later version"),
             ),
             (FixStatus::NotADefect, _) => format!("{title} (not an app defect)"),
             _ => format!("{title} (fix status unknown)"),
@@ -1328,6 +1403,168 @@ Thread 0 (attributed):
                 "{} is environmental but names a fix version",
                 rule.id
             );
+        }
+    }
+
+    /// The production shape that forced this apart: a macOS `MenuBarExtra`
+    /// stack overflow recorded on 1.53 and delivered after the device had
+    /// already updated to 1.54.
+    const UPDATED_DEVICE_REPORT: &str = r#"
+Roam MetricKit Crash Diagnostics
+================================
+
+Payload window: 2026-08-24 11:42:00 -> 2026-08-24 11:42:00
+Install: user_id=lrm-uxk-vwf build=20260825.0750154.0 release=1.54 platform=macOS os=Version 26.5.2 (Build 25F84) locale=en
+
+Crash 1 (version 1.0.0)
+Faulting VM region: 0x16d26b000 is in 0x16ca70000-0x16d26c000
+--->  Stack Guard                 16926c000-16ca70000    [ 56.0M] ---/rwx SM=PRV
+Metadata:
+  appBuildVersion: 20260820.0544073.0
+  appVersion: 1.53
+  deviceType: Mac14,2
+  exceptionType: 1
+  signal: 11
+In-process backtrace of the faulting thread (1)
+  0   Roam    0x1 SwiftUI.AppGraph.graphDidChange() -> ()
+  1   Roam    0x2 Roam.AppDelegate.scenesDidChange() -> ()
+  2   Roam    0x3 SwiftUI.MenuBarExtra<>.init
+"#;
+
+    #[test]
+    fn extracts_the_installed_release_from_the_install_line() {
+        let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
+        // Two versions, and they disagree. The crash is the older one.
+        assert_eq!(facts.app_version.as_deref(), Some("1.53"));
+        assert_eq!(facts.installed_version.as_deref(), Some("1.54"));
+        assert_eq!(facts.crash_version(), Some("1.53"));
+
+        // Reports with no Install line at all still parse.
+        assert_eq!(
+            CrashFacts::from_report(DEAD10CC_REPORT).installed_version,
+            None
+        );
+        // As do devices that never reported a release.
+        let unknown = UPDATED_DEVICE_REPORT.replace("release=1.54", "release=unknown");
+        assert_eq!(CrashFacts::from_report(&unknown).installed_version, None);
+    }
+
+    /// The bug this rewrite exists for: the reporter was on 1.54 and the reply
+    /// told them to update to 1.54.
+    #[test]
+    fn a_crash_predating_the_fix_on_a_device_that_already_updated_is_not_an_update_prompt() {
+        let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
+        let matched = match_rule(UPDATED_DEVICE_REPORT, &facts).expect("the stack is recognised");
+        assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
+        assert_eq!(matched.status, FixStatus::AlreadyUpdated);
+
+        let reply = matched.reply(&facts);
+        assert!(reply.contains("already updated"));
+        assert!(reply.contains("device is now on 1.54"));
+        assert!(!reply.contains("updating to 1.54 or later resolves it"));
+
+        // The row says both versions, so the queue shows it without the thread.
+        assert_eq!(
+            matched.review_note(&facts),
+            "Stack overflow from MenuBarExtra(isInserted:) re-entering the SwiftUI update pass \
+             (fixed in 1.54; device already on 1.54)"
+        );
+    }
+
+    /// Fix status keys on the crash, not on the install. Scoring against the
+    /// installed release would report every historical crash from an updated
+    /// device as a fix that did not hold.
+    #[test]
+    fn an_updated_device_does_not_make_an_old_crash_read_as_unfixed() {
+        let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
+        let matched = match_rule(UPDATED_DEVICE_REPORT, &facts).unwrap();
+        assert_ne!(matched.status, FixStatus::Unfixed);
+
+        // Still on the old build: the update prompt is the right answer there.
+        let behind = UPDATED_DEVICE_REPORT.replace("release=1.54", "release=1.53");
+        let facts = CrashFacts::from_report(&behind);
+        let matched = match_rule(&behind, &facts).unwrap();
+        assert_eq!(matched.status, FixStatus::Fixed);
+        assert!(matched
+            .reply(&facts)
+            .contains("updating to 1.54 or later resolves it"));
+    }
+
+    #[test]
+    fn a_crash_on_the_fixing_release_is_unfixed_however_the_device_is_installed() {
+        for install in ["release=1.54", "release=1.55"] {
+            let report = UPDATED_DEVICE_REPORT
+                .replace("appVersion: 1.53", "appVersion: 1.54")
+                .replace("release=1.54", install);
+            let facts = CrashFacts::from_report(&report);
+            let matched = match_rule(&report, &facts).unwrap();
+            assert_eq!(matched.status, FixStatus::Unfixed, "{install}");
+        }
+    }
+
+    /// Reports predating the `appVersion` metadata used to be `Unknown` and got
+    /// auto-reviewed on a shrug. The installed release bounds the answer, and
+    /// the reply says where the number came from.
+    #[test]
+    fn a_report_without_an_appversion_falls_back_to_the_installed_release() {
+        let report = UPDATED_DEVICE_REPORT.replace("  appVersion: 1.53\n", "");
+        let facts = CrashFacts::from_report(&report);
+        assert_eq!(facts.app_version, None);
+        assert_eq!(facts.crash_version(), Some("1.54"));
+
+        let matched = match_rule(&report, &facts).unwrap();
+        // 1.54 is the fixing release, so the safe direction is the manual queue.
+        assert_eq!(matched.status, FixStatus::Unfixed);
+        assert!(matched.reply(&facts).contains("carries no `appVersion`"));
+
+        // A device still behind the fix reads as fixed, not as unknown.
+        let behind = report.replace("release=1.54", "release=1.52");
+        let facts = CrashFacts::from_report(&behind);
+        assert_eq!(
+            match_rule(&behind, &facts).unwrap().status,
+            FixStatus::Fixed
+        );
+
+        // Neither version present is still unknown.
+        let neither = behind.replace("Install:", "Installation:");
+        let facts = CrashFacts::from_report(&neither);
+        assert_eq!(
+            match_rule(&neither, &facts).unwrap().status,
+            FixStatus::Unknown
+        );
+    }
+
+    /// Every reply this module can post is support-only. Without the marker a
+    /// verdict lands in the reporter's in-app chat and is read back to the AI
+    /// responder as if the user had written it.
+    #[test]
+    fn every_reply_is_support_only() {
+        for rule in RULES {
+            assert!(
+                rule.reply.starts_with(crate::discord::SUPPORT_ONLY_PREFIX),
+                "rule `{}` reply is not support-only",
+                rule.id
+            );
+        }
+
+        // And composition keeps it: the verdict and footer are appended, never
+        // prepended, for exactly this reason.
+        let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
+        let no_version = CrashFacts::default();
+        for rule in RULES {
+            for facts in [&facts, &no_version] {
+                let matched = RuleMatch {
+                    rule,
+                    status: rule.fix_status(facts),
+                };
+                assert!(
+                    matched
+                        .reply(facts)
+                        .starts_with(crate::discord::SUPPORT_ONLY_PREFIX),
+                    "rule `{}` composed reply is not support-only",
+                    rule.id
+                );
+            }
         }
     }
 

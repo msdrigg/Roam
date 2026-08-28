@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            INSERT INTO crash_reviews (\n                thread_id, latest_crash_message_id, latest_crash_at_ms,\n                app_version, device_type, os_version,\n                exception_type, signal, termination_code\n            )\n            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n            ON CONFLICT(thread_id) DO UPDATE SET\n                latest_crash_message_id = excluded.latest_crash_message_id,\n                latest_crash_at_ms = excluded.latest_crash_at_ms,\n                app_version = excluded.app_version,\n                device_type = excluded.device_type,\n                os_version = excluded.os_version,\n                exception_type = excluded.exception_type,\n                signal = excluded.signal,\n                termination_code = excluded.termination_code\n            RETURNING thread_id,\n                latest_crash_message_id,\n                latest_crash_at_ms,\n                app_version,\n                device_type,\n                os_version,\n                exception_type,\n                signal,\n                termination_code,\n                reviewed_at_ms,\n                reviewed_by,\n                reviewed_message_id,\n                matched_rule_id,\n                review_note\n            ",
+  "query": "\n            SELECT thread_id,\n                latest_crash_message_id,\n                latest_crash_at_ms,\n                app_version,\n                installed_version,\n                device_type,\n                os_version,\n                exception_type,\n                signal,\n                termination_code,\n                reviewed_at_ms,\n                reviewed_by,\n                reviewed_message_id,\n                matched_rule_id,\n                review_note\n            FROM crash_reviews\n            WHERE (?1 = 0 OR reviewed_at_ms IS NULL OR reviewed_at_ms < latest_crash_at_ms)\n              AND (?2 IS NULL OR app_version = ?2)\n              AND (?3 IS NULL OR latest_crash_at_ms < ?3)\n            ORDER BY latest_crash_at_ms DESC\n            LIMIT ?4\n            ",
   "describe": {
     "columns": [
       {
@@ -48,8 +48,19 @@
         }
       },
       {
-        "name": "device_type",
+        "name": "installed_version",
         "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "crash_reviews",
+            "name": "installed_version"
+          }
+        }
+      },
+      {
+        "name": "device_type",
+        "ordinal": 5,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -60,7 +71,7 @@
       },
       {
         "name": "os_version",
-        "ordinal": 5,
+        "ordinal": 6,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -71,7 +82,7 @@
       },
       {
         "name": "exception_type",
-        "ordinal": 6,
+        "ordinal": 7,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -82,7 +93,7 @@
       },
       {
         "name": "signal",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -93,7 +104,7 @@
       },
       {
         "name": "termination_code",
-        "ordinal": 8,
+        "ordinal": 9,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -104,7 +115,7 @@
       },
       {
         "name": "reviewed_at_ms",
-        "ordinal": 9,
+        "ordinal": 10,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -115,7 +126,7 @@
       },
       {
         "name": "reviewed_by",
-        "ordinal": 10,
+        "ordinal": 11,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -126,7 +137,7 @@
       },
       {
         "name": "reviewed_message_id",
-        "ordinal": 11,
+        "ordinal": 12,
         "type_info": "Integer",
         "origin": {
           "Table": {
@@ -137,7 +148,7 @@
       },
       {
         "name": "matched_rule_id",
-        "ordinal": 12,
+        "ordinal": 13,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -148,7 +159,7 @@
       },
       {
         "name": "review_note",
-        "ordinal": 13,
+        "ordinal": 14,
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -159,7 +170,7 @@
       }
     ],
     "parameters": {
-      "Right": 9
+      "Right": 4
     },
     "nullable": [
       false,
@@ -175,8 +186,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "b225fd953548286aaea0daae60c0247216a8e1aec6b707776727406aaff7a2eb"
+  "hash": "5de5922be9c1e239b46c02f296e92bf76bbc2ab541bb4531e112834202ba9369"
 }

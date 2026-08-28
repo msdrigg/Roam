@@ -28,7 +28,7 @@ use crate::{
 };
 
 const NO_RESPONSE: &str = "NO_RESPONSE";
-const HIDDEN_MESSAGE_PREFIX: &str = ":ninja:";
+const HIDDEN_MESSAGE_PREFIX: &str = crate::discord::SUPPORT_ONLY_PREFIX;
 const LEGACY_HIDDEN_MESSAGE_PREFIX: &str = "!HiddenMessage";
 const TRANSLATE_COMMAND_PREFIX: &str = ":translate:";
 const TRANSLATE_SLASH_COMMAND: &str = "/translate";

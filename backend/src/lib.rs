@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 use apns::ApnsClient;
 use database::{DatabaseClient, DeviceInfo, User, UserUpdate};
-use discord::{DiscordClient, DiscordMessage, DiscordMessageOptions};
+use discord::{DiscordClient, DiscordMessage, DiscordMessageOptions, SUPPORT_ONLY_PREFIX};
 use presence::{PresenceClient, UserPresenceInfo};
 use server::ApiError;
 
@@ -423,7 +423,7 @@ impl AppContext {
             release_version,
         } = &device_info.0;
         let message = format!(
-            ":ninja:\n\n### Device info\n\n- **User ID**: {}\n- **Build version**: {}\n- **Release version**: {}\n- **OS platform**: {}\n- **OS version**: {}\n- **User Locale**: {}\n- **APNS Token**: {}",
+            "{SUPPORT_ONLY_PREFIX}\n\n### Device info\n\n- **User ID**: {}\n- **Build version**: {}\n- **Release version**: {}\n- **OS platform**: {}\n- **OS version**: {}\n- **User Locale**: {}\n- **APNS Token**: {}",
             user_id.as_deref().unwrap_or("--"),
             build_version.as_deref().unwrap_or("--"),
             release_version.as_deref().unwrap_or("--"),
@@ -465,7 +465,11 @@ impl AppContext {
 
         let thread_id = self
             .discord_client()
-            .create_thread(&format!("New message from {device_id}"), ":ninja:", None)
+            .create_thread(
+                &format!("New message from {device_id}"),
+                SUPPORT_ONLY_PREFIX,
+                None,
+            )
             .await
             .map_err(ApiError::DiscordError)?;
 

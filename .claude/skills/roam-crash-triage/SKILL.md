@@ -37,13 +37,35 @@ runs the report against the auto-review rules:
 - **A rule matches a build older than the rule's `fixed_in` version** → the
   backend replies in-thread with the known diagnosis, tagged `Fixed in <version>`,
   and marks the thread reviewed as `auto:<rule id>`. Nothing left to do.
+- **…and the device has already updated past `fixed_in`** → same diagnosis,
+  tagged `Fixed in <version>, and already updated`, reviewed the same way, but
+  with no prompt to update. The crash is real and historical; the build that
+  produced it is no longer installed.
 - **A rule matches a build at or past its `fixed_in` version** → the reply goes
   out tagged **UNFIXED**, the rule id and note land on the row, but the thread
   is deliberately left **unreviewed**. The stack outlived its fix, so it needs
   you: expect these in the queue with a `matched_rule_id` already set.
-- **A rule matches a report with no readable `appVersion`** → replied to as
+- **A rule matches a report with no version at all** → replied to as
   `Fix status unknown` and reviewed, same as the fixed case.
 - **No rule matches** → the thread stays unreviewed. That is the queue you work.
+
+### The two versions on a report
+
+They routinely disagree, and reading the wrong one is the classic mistake here:
+
+- `app_version` is the crash's own MetricKit `appVersion` — **the build that
+  died**, and what fix status is scored against.
+- `installed_version` is `release=` off the report's `Install:` line — what the
+  device was running when it *uploaded* the payload, which is up to a day later
+  and may be across an App Store update.
+
+So a row reading `app_version: 1.53, installed_version: 1.54` is not a parsing
+bug: that user crashed on 1.53 and has since updated. Quote `app_version` when
+you describe what crashed.
+
+Every message the backend posts into a crash thread starts with `:ninja:`,
+which hides it from the reporter's in-app chat and from the AI responder. Keep
+that prefix on any reply you post through the API below.
 
 A thread is unreviewed when it was never reviewed *or* when a newer crash
 arrived after the last review, so marking a thread reviewed silences it only
@@ -58,15 +80,15 @@ curl -s -H "x-api-key: $BACKEND_API_KEY" \
 
 Each entry carries enough to triage without downloading anything:
 `thread_id`, `latest_crash_message_id`, `latest_crash_at_ms`, `app_version`,
-`device_type`, `os_version`, `exception_type`, `signal`, `termination_code`,
-and the review fields.
+`installed_version`, `device_type`, `os_version`, `exception_type`, `signal`,
+`termination_code`, and the review fields.
 
 Filter and page:
 
 | Query param | Meaning |
 |---|---|
 | `unreviewed=true` | only threads needing attention |
-| `app_version=1.50` | exact match on the crash's `appVersion` |
+| `app_version=1.50` | exact match on the crash's `appVersion` (the build that died, not `installed_version`) |
 | `before_ms=<ms>` | page backwards; pass the previous page's `next_before_ms` |
 | `limit=<n>` | 1–200, default 50 |
 

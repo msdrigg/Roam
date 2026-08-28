@@ -415,6 +415,7 @@ impl DatabaseClient {
     ) -> Result<CrashReview, anyhow::Error> {
         let now_ms = chrono::Utc::now().timestamp_millis();
         let app_version = facts.app_version.as_deref();
+        let installed_version = facts.installed_version.as_deref();
         let device_type = facts.device_type.as_deref();
         let os_version = facts.os_version.as_deref();
         let termination_code = facts.termination_code.as_deref();
@@ -423,14 +424,15 @@ impl DatabaseClient {
             r#"
             INSERT INTO crash_reviews (
                 thread_id, latest_crash_message_id, latest_crash_at_ms,
-                app_version, device_type, os_version,
+                app_version, installed_version, device_type, os_version,
                 exception_type, signal, termination_code
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(thread_id) DO UPDATE SET
                 latest_crash_message_id = excluded.latest_crash_message_id,
                 latest_crash_at_ms = excluded.latest_crash_at_ms,
                 app_version = excluded.app_version,
+                installed_version = excluded.installed_version,
                 device_type = excluded.device_type,
                 os_version = excluded.os_version,
                 exception_type = excluded.exception_type,
@@ -440,6 +442,7 @@ impl DatabaseClient {
                 latest_crash_message_id,
                 latest_crash_at_ms,
                 app_version,
+                installed_version,
                 device_type,
                 os_version,
                 exception_type,
@@ -455,6 +458,7 @@ impl DatabaseClient {
             latest_crash_message_id,
             now_ms,
             app_version,
+            installed_version,
             device_type,
             os_version,
             facts.exception_type,
@@ -520,6 +524,7 @@ impl DatabaseClient {
                 latest_crash_message_id,
                 latest_crash_at_ms,
                 app_version,
+                installed_version,
                 device_type,
                 os_version,
                 exception_type,
@@ -562,6 +567,7 @@ impl DatabaseClient {
                 latest_crash_message_id,
                 latest_crash_at_ms,
                 app_version,
+                installed_version,
                 device_type,
                 os_version,
                 exception_type,
@@ -599,6 +605,7 @@ impl DatabaseClient {
                 latest_crash_message_id,
                 latest_crash_at_ms,
                 app_version,
+                installed_version,
                 device_type,
                 os_version,
                 exception_type,
@@ -637,6 +644,7 @@ impl DatabaseClient {
                 latest_crash_message_id,
                 latest_crash_at_ms,
                 app_version,
+                installed_version,
                 device_type,
                 os_version,
                 exception_type,
@@ -892,7 +900,11 @@ pub struct CrashReview {
     #[serde(serialize_with = "crate::utils::i64_to_string_optional")]
     pub latest_crash_message_id: Option<i64>,
     pub latest_crash_at_ms: i64,
+    /// The crash's own MetricKit `appVersion`: the build that died.
     pub app_version: Option<String>,
+    /// The release the device was running when it uploaded the payload, which
+    /// after an App Store update is newer than `app_version`.
+    pub installed_version: Option<String>,
     pub device_type: Option<String>,
     pub os_version: Option<String>,
     pub exception_type: Option<i64>,
