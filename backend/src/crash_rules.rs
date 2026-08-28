@@ -147,7 +147,10 @@ impl CrashFacts {
 
     /// Names [`CrashFacts::crash_version`] for a reply, flagging the fallback.
     fn version_phrase(&self) -> String {
-        match (self.app_version.as_deref(), self.installed_version.as_deref()) {
+        match (
+            self.app_version.as_deref(),
+            self.installed_version.as_deref(),
+        ) {
             (Some(version), _) => format!("from {version}"),
             (None, Some(version)) => format!(
                 "from {version} (the release the device reports installed — this report carries no `appVersion`)"
@@ -237,30 +240,30 @@ pub struct CrashRule {
 
 impl CrashRule {
     pub fn matches(&self, report: &str, facts: &CrashFacts) -> bool {
-        if let Some(expected) = self.exception_type {
-            if facts.exception_type != Some(expected) {
-                return false;
-            }
+        if let Some(expected) = self.exception_type
+            && facts.exception_type != Some(expected)
+        {
+            return false;
         }
-        if let Some(expected) = self.signal {
-            if facts.signal != Some(expected) {
-                return false;
-            }
+        if let Some(expected) = self.signal
+            && facts.signal != Some(expected)
+        {
+            return false;
         }
-        if let Some(expected) = self.termination_code {
-            if facts.termination_code.as_deref() != Some(expected) {
-                return false;
-            }
+        if let Some(expected) = self.termination_code
+            && facts.termination_code.as_deref() != Some(expected)
+        {
+            return false;
         }
-        if let Some(minimum) = self.min_thermal_level {
-            if facts.thermal_level.is_none_or(|level| level < minimum) {
-                return false;
-            }
+        if let Some(minimum) = self.min_thermal_level
+            && facts.thermal_level.is_none_or(|level| level < minimum)
+        {
+            return false;
         }
-        if let Some(maximum) = self.max_app_cpu_percent {
-            if facts.app_cpu_percent.is_none_or(|share| share > maximum) {
-                return false;
-            }
+        if let Some(maximum) = self.max_app_cpu_percent
+            && facts.app_cpu_percent.is_none_or(|share| share > maximum)
+        {
+            return false;
         }
         if !self.all_of.iter().all(|needle| report.contains(needle)) {
             return false;
@@ -1485,9 +1488,11 @@ In-process backtrace of the faulting thread (1)
         let facts = CrashFacts::from_report(&behind);
         let matched = match_rule(&behind, &facts).unwrap();
         assert_eq!(matched.status, FixStatus::Fixed);
-        assert!(matched
-            .reply(&facts)
-            .contains("updating to 1.54 or later resolves it"));
+        assert!(
+            matched
+                .reply(&facts)
+                .contains("updating to 1.54 or later resolves it")
+        );
     }
 
     #[test]

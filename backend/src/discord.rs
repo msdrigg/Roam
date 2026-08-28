@@ -8,8 +8,8 @@ use tokio::sync::AcquireError;
 use types::{IdResponse, ThreadResponse};
 
 pub use types::{
-    support_only, DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessage, MessageAttachment,
-    Thread, SUPPORT_ONLY_PREFIX, TRANSLATED_SUPPORT_PREFIX,
+    DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessage, MessageAttachment,
+    SUPPORT_ONLY_PREFIX, TRANSLATED_SUPPORT_PREFIX, Thread, support_only,
 };
 
 #[derive(Debug, Deserialize)]
@@ -856,12 +856,12 @@ impl DiscordClient {
         let normalized_options = Self::normalize_options(options);
         let options = normalized_options.as_ref();
 
-        if let Some(nonce) = options.and_then(|o| o.nonce.as_deref()) {
-            if nonce.len() > 25 {
-                return Err(DiscordError::InvalidInput(
-                    "Nonce must be at most 25 characters".to_string(),
-                ));
-            }
+        if let Some(nonce) = options.and_then(|o| o.nonce.as_deref())
+            && nonce.len() > 25
+        {
+            return Err(DiscordError::InvalidInput(
+                "Nonce must be at most 25 characters".to_string(),
+            ));
         }
 
         let handle_response = |response: Response| async {
@@ -916,12 +916,12 @@ impl DiscordClient {
         let normalized_options = Self::normalize_options(options);
         let options = normalized_options.as_ref();
         let nonce = options.and_then(|o| o.nonce.as_deref());
-        if let Some(nonce) = nonce {
-            if nonce.len() > 25 {
-                return Err(DiscordError::InvalidInput(
-                    "Nonce must be at most 25 characters".to_string(),
-                ));
-            }
+        if let Some(nonce) = nonce
+            && nonce.len() > 25
+        {
+            return Err(DiscordError::InvalidInput(
+                "Nonce must be at most 25 characters".to_string(),
+            ));
         }
 
         let handle_response = |response: Response| async {

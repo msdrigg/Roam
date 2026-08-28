@@ -5,26 +5,27 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use anyhow::{bail, Context as AnyhowContext};
+use anyhow::{Context as AnyhowContext, bail};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use reqwest::StatusCode;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use serenity::{
+    Client,
     all::{
         CommandDataOptionValue, CommandInteraction, Context, CreateInteractionResponse,
         CreateInteractionResponseMessage, EditInteractionResponse, EventHandler, GatewayIntents,
         Interaction, Message, Nonce, Ready, ResumedEvent,
     },
-    async_trait, Client,
+    async_trait,
 };
 use tokio::{task::JoinHandle, time::sleep};
 
 use crate::{
-    discord::{
-        DiscordFileUpload, DiscordMessage, DiscordMessageOptions, MessageAttachment, Thread,
-        TRANSLATED_SUPPORT_PREFIX,
-    },
     AppContext,
+    discord::{
+        DiscordFileUpload, DiscordMessage, DiscordMessageOptions, MessageAttachment,
+        TRANSLATED_SUPPORT_PREFIX, Thread,
+    },
 };
 
 const NO_RESPONSE: &str = "NO_RESPONSE";
@@ -697,10 +698,10 @@ async fn respond_to_user_message(
         return Ok(());
     }
 
-    if let Some(ai_client) = ctx.ai_responder_discord_client() {
-        if let Err(err) = ai_client.send_typing(thread_id).await {
-            tracing::debug!(thread_id, error = ?err, "AI responder could not send typing indicator");
-        }
+    if let Some(ai_client) = ctx.ai_responder_discord_client()
+        && let Err(err) = ai_client.send_typing(thread_id).await
+    {
+        tracing::debug!(thread_id, error = ?err, "AI responder could not send typing indicator");
     }
 
     let Some(ai_client) = ctx.ai_responder_discord_client() else {
@@ -712,22 +713,20 @@ async fn respond_to_user_message(
         .iter()
         .rev()
         .find(|message| message.id == message_id)
-    {
-        if let Err(err) = responder
+        && let Err(err) = responder
             .send_hidden_english_translation_if_needed(
                 thread_id,
                 "User message",
                 &latest_user_message.clone().normalize().content,
             )
             .await
-        {
-            tracing::warn!(
-                thread_id,
-                message_id,
-                error = ?err,
-                "AI responder failed to send hidden user translation"
-            );
-        }
+    {
+        tracing::warn!(
+            thread_id,
+            message_id,
+            error = ?err,
+            "AI responder failed to send hidden user translation"
+        );
     }
 
     let decision = responder
@@ -1347,7 +1346,9 @@ fn format_internal_context(context: ResponderContext) -> String {
     }
     if let Some(platform) = context.device_platform {
         let instruction = match platform.as_str() {
-            "macOS" | "iOS" | "watchOS" => "Do not ask what device or platform the user is on before giving platform-specific Roam guidance; behavior is unified across devices on the same platform.",
+            "macOS" | "iOS" | "watchOS" => {
+                "Do not ask what device or platform the user is on before giving platform-specific Roam guidance; behavior is unified across devices on the same platform."
+            }
             _ => "Use it for platform-specific Roam guidance.",
         };
         notes.push(format!(
@@ -1838,7 +1839,9 @@ async fn handle_translate_interaction(
 
     let status = match translate_and_send_human_support_message(app_ctx, thread_id, &text).await {
         Ok(true) => "Sent translated message.",
-        Ok(false) => "No translated message was sent. Make sure this command is used in a Roam support thread with a recent user message.",
+        Ok(false) => {
+            "No translated message was sent. Make sure this command is used in a Roam support thread with a recent user message."
+        }
         Err(err) => {
             let _ = command
                 .edit_response(
@@ -2205,9 +2208,11 @@ mod tests {
         let index = DocsIndex::fallback();
         let results = index.search("manual add ip address", 2);
         assert!(!results.is_empty());
-        assert!(results
-            .iter()
-            .any(|result| result.excerpt.contains("Add a device manually")));
+        assert!(
+            results
+                .iter()
+                .any(|result| result.excerpt.contains("Add a device manually"))
+        );
     }
 
     #[test]

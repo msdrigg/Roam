@@ -4,7 +4,7 @@ use a2::{
     ClientConfig, Endpoint, ErrorBody, ErrorReason, NotificationBuilder, NotificationOptions,
 };
 use anyhow::Context;
-use base64::{prelude::BASE64_STANDARD_NO_PAD, Engine};
+use base64::{Engine, prelude::BASE64_STANDARD_NO_PAD};
 
 #[derive(Debug, Clone)]
 pub struct ApnsClient {
