@@ -1122,9 +1122,14 @@ pub struct ListCrashesQuery {
     /// Only threads whose newest crash has not been reviewed yet.
     #[serde(default)]
     unreviewed: bool,
-    /// Exact match on the crash's `appVersion`, e.g. `1.50`.
+    /// Exact match on the crash's `appVersion` — the build that died.
     #[serde(default)]
     app_version: Option<String>,
+    /// Exact match on the release the reporting device had installed when it
+    /// uploaded the payload, which after an update is newer than
+    /// `app_version`. See `CrashFacts::installed_version`.
+    #[serde(default)]
+    installed_version: Option<String>,
     /// Page backwards: pass the previous page's last `latest_crash_at_ms`.
     #[serde(default)]
     before_ms: Option<i64>,
@@ -1149,6 +1154,7 @@ async fn list_crashes(
         .list_crash_reviews(
             query.unreviewed,
             query.app_version.as_deref(),
+            query.installed_version.as_deref(),
             query.before_ms,
             limit,
         )

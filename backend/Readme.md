@@ -257,9 +257,13 @@ prompt, because telling a reporter on 1.54 to update to 1.54 is how this system
 loses their trust. A crash from the fixing release or later is `unfixed` and is
 deliberately left in the queue. A report with neither version is `unknown`.
 
+Both are filterable on `/v2/crashes`, and they answer different questions:
+`app_version=1.53` finds the crashes that build *produced*,
+`installed_version=1.53` finds the reporters still *running* it.
+
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/v2/crashes` | List tracked crashes. `unreviewed=true`, `app_version=`, `before_ms=`, `limit=` (1–200). Response carries `next_before_ms` as the page cursor. |
+| GET | `/v2/crashes` | List tracked crashes. `unreviewed=true`, `app_version=`, `installed_version=`, `before_ms=`, `limit=` (1–200). The two version filters AND together. Response carries `next_before_ms` as the page cursor. |
 | GET | `/v2/crashes/{thread_id}` | One thread's review state. |
 | POST | `/v2/crashes/{thread_id}/review` | Mark reviewed. Optional `reviewed_by`, `reviewed_message_id`, `matched_rule_id`, `note`. |
 | DELETE | `/v2/crashes/{thread_id}/review` | Reopen for review. |

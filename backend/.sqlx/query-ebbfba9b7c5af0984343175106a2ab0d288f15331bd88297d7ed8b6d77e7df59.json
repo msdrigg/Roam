@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT thread_id,\n                latest_crash_message_id,\n                latest_crash_at_ms,\n                app_version,\n                installed_version,\n                device_type,\n                os_version,\n                exception_type,\n                signal,\n                termination_code,\n                reviewed_at_ms,\n                reviewed_by,\n                reviewed_message_id,\n                matched_rule_id,\n                review_note\n            FROM crash_reviews\n            WHERE (?1 = 0 OR reviewed_at_ms IS NULL OR reviewed_at_ms < latest_crash_at_ms)\n              AND (?2 IS NULL OR app_version = ?2)\n              AND (?3 IS NULL OR latest_crash_at_ms < ?3)\n            ORDER BY latest_crash_at_ms DESC\n            LIMIT ?4\n            ",
+  "query": "\n            SELECT thread_id,\n                latest_crash_message_id,\n                latest_crash_at_ms,\n                app_version,\n                installed_version,\n                device_type,\n                os_version,\n                exception_type,\n                signal,\n                termination_code,\n                reviewed_at_ms,\n                reviewed_by,\n                reviewed_message_id,\n                matched_rule_id,\n                review_note\n            FROM crash_reviews\n            WHERE (?1 = 0 OR reviewed_at_ms IS NULL OR reviewed_at_ms < latest_crash_at_ms)\n              AND (?2 IS NULL OR app_version = ?2)\n              AND (?3 IS NULL OR installed_version = ?3)\n              AND (?4 IS NULL OR latest_crash_at_ms < ?4)\n            ORDER BY latest_crash_at_ms DESC\n            LIMIT ?5\n            ",
   "describe": {
     "columns": [
       {
@@ -170,7 +170,7 @@
       }
     ],
     "parameters": {
-      "Right": 4
+      "Right": 5
     },
     "nullable": [
       false,
@@ -190,5 +190,5 @@
       true
     ]
   },
-  "hash": "5de5922be9c1e239b46c02f296e92bf76bbc2ab541bb4531e112834202ba9369"
+  "hash": "ebbfba9b7c5af0984343175106a2ab0d288f15331bd88297d7ed8b6d77e7df59"
 }
