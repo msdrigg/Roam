@@ -2,7 +2,10 @@ use std::{path::PathBuf, time::Duration};
 
 use crate::{
     database::{DeviceInfo, PendingSymbolication, User, UserUpdate},
-    discord::{DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessageOptions},
+    discord::{
+        support_only, DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessageOptions,
+        SUPPORT_ONLY_PREFIX,
+    },
     presence::UserPresenceInfo,
     symbolicate::{scan_binary_uuids, DsymUploadMetadata, RoamDebugInfo},
     utils::{i64_to_string, string_to_i64_optional},
@@ -463,7 +466,7 @@ async fn upload_metric_diagnostics(
         .discord_client()
         .send_message(
             user.thread_id,
-            ":ninja: MK Diagnostics Payload Received",
+            &support_only("MK Diagnostics Payload Received"),
             Some(DiscordFileUpload {
                 content_type: "application/json".to_string(),
                 filename: "diagnostics.json".to_string(),
@@ -480,7 +483,7 @@ async fn upload_metric_diagnostics(
         .discord_client()
         .send_message(
             user.thread_id,
-            ":ninja: MK Diagnostics Supporting Data",
+            &support_only("MK Diagnostics Supporting Data"),
             Some(DiscordFileUpload {
                 content_type: "application/json".to_string(),
                 filename: "diagnostics.json".to_string(),
@@ -756,7 +759,10 @@ async fn lease_pending_symbolications(
         .map_err(ApiError::DatabaseError)?;
 
     for failed in newly_failed {
-        let message = format!(
+        // Support-only like every other post in this flow. Without the prefix
+        // this one reached the reporter's in-app chat, which is how a backend
+        // retry budget became a user-facing message.
+        let message = support_only(&format!(
             ":warning: MK Diagnostics {} symbolication failed (after {} attempts): {}",
             failed.payload_index,
             failed.attempts,
@@ -764,7 +770,8 @@ async fn lease_pending_symbolications(
                 .last_error
                 .as_deref()
                 .unwrap_or("(no error recorded)"),
-        );
+        ))
+        .into_owned();
         if let Err(err) = app_context
             .discord_client()
             .send_message(failed.thread_id, &message, None, None)
@@ -1063,7 +1070,7 @@ async fn auto_review_crash(
         .discord_client()
         .send_reply(
             thread_id,
-            &matched.reply(&facts),
+            &support_only(&matched.reply(&facts)),
             Some(crash_message_id),
             false,
         )
@@ -1401,7 +1408,11 @@ async fn submit_symbolication_result(
                 )));
             };
 
-            let message = format!(":ninja: MK Diagnostics {} Symbolicated", row.payload_index);
+            let message = support_only(&format!(
+                "MK Diagnostics {} Symbolicated",
+                row.payload_index
+            ))
+            .into_owned();
             let posted = app_context
                 .discord_client()
                 .send_message(
@@ -1645,7 +1656,7 @@ async fn upload_diagnostics(
         .discord_client()
         .send_message_multiple_attachments(
             user.thread_id,
-            ":ninja:",
+            SUPPORT_ONLY_PREFIX,
             vec![DiscordFileUpload {
                 content_type: "application/json".to_string(),
                 filename: "diagnostics.json".to_string(),

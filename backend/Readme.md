@@ -234,6 +234,29 @@ reviewed as `auto:<rule id>`; no match leaves the thread in the unreviewed
 queue for a human. A thread counts as unreviewed when it was never reviewed or
 when a newer crash landed after the last review.
 
+Every message this flow writes is prefixed `:ninja:` via
+`discord::support_only`, which is what `DiscordMessage::is_hidden` keys on.
+Skipping it puts backtraces, rule ids and fix verdicts into the reporter's
+in-app support chat and feeds them to the AI responder as if the user had
+written them.
+
+#### The two versions on a report
+
+A report names both, and after an App Store update they differ:
+
+- **`app_version`** — the crash's own MetricKit `appVersion`, the build that
+  died. This is the matching key: scoring against anything else would report
+  every historical crash from an updated device as a fix that did not hold.
+- **`installed_version`** — `release=` off the report's `Install:` line, what
+  the device was running when it *uploaded* the payload, up to a day later.
+
+Fix status combines them. A crash predating the rule's `fixed_in` on a device
+still behind it is `fixed` (update prompt); the same crash on a device that has
+already updated past it is `already_updated` — reviewed, but with no update
+prompt, because telling a reporter on 1.54 to update to 1.54 is how this system
+loses their trust. A crash from the fixing release or later is `unfixed` and is
+deliberately left in the queue. A report with neither version is `unknown`.
+
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/v2/crashes` | List tracked crashes. `unreviewed=true`, `app_version=`, `before_ms=`, `limit=` (1–200). Response carries `next_before_ms` as the page cursor. |
@@ -257,24 +280,25 @@ first-match-wins, so narrower rules go first — several distinct bugs share
 `EXC_CRASH (10)` / `SIGKILL (9)`. Add a test alongside the rule that covers the
 new report shape and asserts it does not steal matches from existing rules.
 
-### Note: `crash_reviews` queries are runtime-checked
+### Regenerating the `.sqlx` offline cache
 
-They use `sqlx::query_as::<_, T>` rather than `query_as!`. `sqlx_sqlite`'s
-`column_nullable` calls `CStr::from_ptr` on the declared type from
-`sqlite3_table_column_metadata` without a null check, and SQLite returns NULL
-there for a column declared with no type — this schema has one, `users.device_id
-PRIMARY KEY` in the initial migration. Any `query_as!` that can reach a live
-database therefore segfaults rustc, which is exactly what `cargo sqlx prepare`
-does. Offline builds are fine; the cache just cannot be regenerated locally.
-
-Retry after any sqlx upgrade:
+Adding or changing a `query_as!` needs the cache regenerated against a probe
+database built from *every* migration, not just the initial one:
 
 ```bash
-sqlite3 /tmp/probe.db < migrations/20250121024817_initial.up.sql
-DATABASE_URL="sqlite:///tmp/probe.db" cargo sqlx prepare -- --lib
+rm -f /tmp/probe.db
+for f in migrations/*.up.sql; do sqlite3 /tmp/probe.db < "$f"; done
+DATABASE_URL="sqlite:///tmp/probe.db" cargo sqlx prepare -- --lib --tests
 ```
 
-If that completes without SIGSEGV, convert those queries back to `query_as!`
-and commit the regenerated `.sqlx` entries. Giving `users.device_id` an explicit
-`TEXT` type also fixes it (verified locally), but needs a table-rebuild
-migration against production data.
+`--tests` is not optional: several fixtures in `#[cfg(test)]` use `query_as!`,
+and preparing with `-- --lib` alone silently drops their cache entries, so
+`SQLX_OFFLINE=true cargo test` then fails to compile.
+
+These queries used to be runtime-checked (`query_as::<_, T>`) because
+`sqlx_sqlite`'s `column_nullable` calls `CStr::from_ptr` on the declared type
+from `sqlite3_table_column_metadata` with no null check, and SQLite returns NULL
+there for a column declared with no type — `users.device_id PRIMARY KEY` in the
+initial migration was one, so `cargo sqlx prepare` segfaulted rustc.
+`20260811120000_users_device_id_text` gave it an explicit `TEXT` type and the
+macros went back to `query_as!`; preparing locally has worked since.

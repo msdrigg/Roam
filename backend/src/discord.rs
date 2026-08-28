@@ -8,8 +8,8 @@ use tokio::sync::AcquireError;
 use types::{IdResponse, ThreadResponse};
 
 pub use types::{
-    DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessage, MessageAttachment, Thread,
-    TRANSLATED_SUPPORT_PREFIX,
+    support_only, DiscordAuthor, DiscordFile, DiscordFileUpload, DiscordMessage, MessageAttachment,
+    Thread, SUPPORT_ONLY_PREFIX, TRANSLATED_SUPPORT_PREFIX,
 };
 
 #[derive(Debug, Deserialize)]
@@ -1034,6 +1034,29 @@ mod types {
 
     pub const TRANSLATED_SUPPORT_PREFIX: &str = ":translated:";
 
+    /// Marks a message as support-only.
+    ///
+    /// [`DiscordMessage::is_hidden`] keys on it, and every path that shows a
+    /// thread to the reporter or feeds one to the AI responder filters hidden
+    /// messages out. So the prefix is not decoration: without it, symbolicated
+    /// backtraces, rule ids and fix-status verdicts land in the user's in-app
+    /// support chat and get read back to the model as if the user had written
+    /// them. Anything the backend writes on its own behalf goes through
+    /// [`support_only`].
+    pub const SUPPORT_ONLY_PREFIX: &str = ":ninja:";
+
+    /// Guarantees `content` carries [`SUPPORT_ONLY_PREFIX`].
+    ///
+    /// Idempotent, so composing an already-prefixed body (a rule's reply, say)
+    /// with a wrapper that also calls this does not double the marker.
+    pub fn support_only(content: &str) -> std::borrow::Cow<'_, str> {
+        if content.starts_with(SUPPORT_ONLY_PREFIX) {
+            std::borrow::Cow::Borrowed(content)
+        } else {
+            std::borrow::Cow::Owned(format!("{SUPPORT_ONLY_PREFIX} {content}"))
+        }
+    }
+
     #[derive(Debug, Clone, Deserialize, Serialize)]
     pub struct DiscordMessage {
         #[serde(deserialize_with = "string_to_i64", serialize_with = "i64_to_string")]
@@ -1089,7 +1112,7 @@ mod types {
             !Self::ALLOWED_MESSAGE_TYPES.contains(&self.message_type)
                 || (self.content.is_empty() && self.attachments.is_empty())
                 || self.content.starts_with("!HiddenMessage")
-                || self.content.starts_with(":ninja:")
+                || self.content.starts_with(SUPPORT_ONLY_PREFIX)
                 || self.is_translate_command()
         }
 
@@ -1322,5 +1345,40 @@ mod tests {
         ];
 
         assert!(messages.iter().all(DiscordMessage::is_hidden));
+    }
+
+    /// The prefix is the only thing keeping backend chatter out of the user's
+    /// in-app chat, so assert the helper actually produces a hidden message
+    /// rather than merely a string that looks right.
+    #[test]
+    fn support_only_marks_a_message_hidden_and_does_not_double_the_prefix() {
+        fn hidden(content: &str) -> bool {
+            DiscordMessage {
+                id: 1,
+                content: content.to_string(),
+                nonce: None,
+                author: DiscordAuthor { id: 2 },
+                message_type: 0,
+                attachments: vec![],
+                timestamp: None,
+            }
+            .is_hidden()
+        }
+
+        let warned = support_only(":warning: symbolication failed (after 5 attempts)");
+        assert_eq!(
+            warned,
+            ":ninja: :warning: symbolication failed (after 5 attempts)"
+        );
+        assert!(hidden(&warned));
+
+        // Already-prefixed bodies pass through untouched: the auto-review
+        // replies carry their own marker, and a second one would render.
+        let already = ":ninja: **Auto-review: something**";
+        assert_eq!(support_only(already), already);
+        assert!(hidden(&support_only(already)));
+
+        // A bare `:warning:` is exactly what leaked before.
+        assert!(!hidden(":warning: symbolication failed (after 5 attempts)"));
     }
 }
