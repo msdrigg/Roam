@@ -446,13 +446,19 @@ The `guard engine.isRunning` ahead of it did not help — the engine really was 
 
 **Known cause, fix:** the graph and converter are now re-derived from the current output format on every `start()`, and a device reporting no usable format is rejected with a thrown error rather than left for AVFAudio to raise on. The `play()` and `scheduleBuffer` calls additionally run under an Objective-C exception trap, so a raise that still slips through surfaces as a Swift error instead of killing the process.";
 
-const LOCAL_NETWORK_CANCEL_RACE_REPLY: &str = ":ninja: **Auto-review: `SIGSEGV` — two threads cancelled the Bonjour browser at once**
+const LOCAL_NETWORK_CANCEL_RACE_REPLY: &str = ":ninja: **Auto-review: `SIGSEGV` — the Bonjour browser was cancelled before it was started**
 
-`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` on a near-null address inside `nw_browser_cancel`, attributed to `requestLocalNetworkAuthorization`.
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` on the near-null address `0x54` inside `nw_browser_cancel`, attributed to the local network permission check.
 
-Not the `0x8BADF00D` watchdog kill that `local-network-cancel-watchdog` describes — that one is a *stall* on the main thread and carries a termination reason. This is a **use-after-free**: `NWBrowser.cancel()` is not safe to call concurrently with itself, and the fix for the watchdog left two paths that could both reach it — the task thread tearing the endpoints down as `requestLocalNetworkAuthorization` returned, and the `onCancel` handler firing when SwiftUI cancelled the `.task`. The `didResume` guard that was supposed to make the second call a no-op was checked outside the lock, so both callers passed it and Network.framework freed the browser twice.
+Not the `0x8BADF00D` watchdog kill that `local-network-cancel-watchdog` describes — that one is a *stall* on the main thread and carries a termination reason.
 
-**Known cause, fix:** teardown now goes through a claim-once `CancelOnceEndpoints` wrapper that takes the cancel under an `OSAllocatedUnfairLock`, so exactly one caller reaches `cancel()` no matter which path wins. The resume is claimed the same way. Both still run on the browser's own queue, so the watchdog fix is preserved.";
+The faulting address is the tell. `NWBrowser.start(queue:)` is what hands Network.framework the queue it delivers state changes on. Cancel a browser that has a state update handler but no queue and `nw_browser_set_state_locked` calls `dispatch_async` with a NULL queue, faulting at a fixed small offset. Apple has this as a framework bug (r.139710124, https://developer.apple.com/forums/thread/768413); the only defence is to never make the call.
+
+Roam had two paths that could: the `Task.isCancelled` guard that runs before the endpoints are started, and `withTaskCancellationHandler`'s `onCancel`, which fires the instant the task is cancelled — including before the setup closure has reached `start(queue:)`. SwiftUI cancels `.task` work on a scene-phase change, so backgrounding the app during the check was enough.
+
+1.52's fix and 1.54's fix both addressed a *different* rule — that `NWBrowser.cancel()` is not safe against itself — and neither stopped this, because the offending call was never a second concurrent cancel. It was the first one, made too early.
+
+**Known cause, fix:** start and cancel now go through an `EndpointLifecycle` wrapper that tracks whether the endpoints were ever started. A cancel arriving before the start is recorded and the teardown skipped entirely — there is nothing bound to tear down — and a cancel arriving *during* the start is deferred until the queue is set. Cancelling twice is still claimed once, and the teardown still runs on the endpoints' own queue, so both earlier fixes are preserved.";
 
 const THERMAL_STARVATION_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — the device was overheating, not the app**
 
@@ -566,18 +572,29 @@ pub static RULES: &[CrashRule] = &[
     // this one a SIGSEGV -- but they share `nw_browser_cancel`, so keep them
     // adjacent for whoever reads this list next.
     CrashRule {
+        // The id is historical. The bug was originally read as two threads
+        // racing on `cancel()`; it is really a cancel that lands before
+        // `start(queue:)`. Renaming it would orphan the `auto:` review rows
+        // already in `crash_reviews`, so the id stays and the title carries the
+        // correct diagnosis.
         id: "local-network-cancel-race",
-        title: "SIGSEGV from concurrent NWBrowser.cancel() in the local network check",
-        fixed_in: Some("1.54"),
+        title: "SIGSEGV from cancelling NWBrowser before start(queue:) in the local network check",
+        fixed_in: Some("1.55"),
         environmental: false,
         exception_type: Some(1),
         signal: Some(11),
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // The app frame matters here: `nw_browser_cancel` on its own would also
-        // claim a crash in any other browser Roam cancels.
-        all_of: &["nw_browser_cancel", "requestLocalNetworkAuthorization"],
+        // Keyed on the framework frame alone, like the watchdog rule above.
+        // Pairing it with an app frame is what broke this rule in production:
+        // it required `requestLocalNetworkAuthorization`, then 9d8735db moved
+        // the cancel into a `CancelOnceEndpoints` closure and the attributed
+        // stack stopped naming the function. Both 1.54 crashes matched nothing
+        // and reached the manual queue. `NWBrowser` is used in exactly one file,
+        // so the framework frame cannot over-claim, and the SIGSEGV pair keeps
+        // this off the watchdog rule.
+        all_of: &["nw_browser_cancel"],
         none_of: &[],
         reply: LOCAL_NETWORK_CANCEL_RACE_REPLY,
     },
@@ -851,12 +868,36 @@ Thread 0 (attributed — this is the thread that crashed):
         assert!(match_rule(&report, &facts).is_none());
     }
 
+    /// Trimmed from the real report on thread 1536532380976812132 (roam 1.54,
+    /// iPhone15,3). The same crash as `LOCAL_NETWORK_RACE_REPORT`, but from
+    /// after 9d8735db moved the cancel into a wrapper: the attributed stack
+    /// names no app function at all, which is why the rule's old
+    /// `requestLocalNetworkAuthorization` key stopped matching.
+    const LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_INVALID_ADDRESS (1) / SIGSEGV (11)
+Faulting VM region: 0x54 is not in any region.  Bytes before following region: 4305485740
+Metadata:
+  appBuildVersion: 20260825.0750154.0
+  appVersion: 1.54
+  deviceType: iPhone15,3
+  exceptionCode: 1
+  exceptionType: 1
+  osVersion: iPhone OS 18.6.2 (22G100)
+  signal: 11
+Thread 4 (attributed — this is the thread that crashed):
+  0   libdispatch.dylib +0x79b4 dispatch_async samples=1
+  2   Network +0xadb8ec nw_browser_cancel samples=1
+  3   Roam    +0x176828 partial apply for closure #2 in CancelOnceEndpoints.cancel at /<compiler-generated> samples=1
+  4   Roam    +0xf8c14 thunk for @escaping @callee_guaranteed @Sendable () -> () at /<compiler-generated> samples=1
+"#;
+
     #[test]
     fn matches_the_local_network_cancel_race() {
         let facts = CrashFacts::from_report(LOCAL_NETWORK_RACE_REPORT);
         let matched = match_rule(LOCAL_NETWORK_RACE_REPORT, &facts).expect("a rule matches");
         assert_eq!(matched.rule.id, "local-network-cancel-race");
-        // The report is from 1.52 and the claim-once wrapper shipped in 1.54.
+        // The report is from 1.52 and the real fix shipped in 1.55.
         assert_eq!(matched.status, FixStatus::Fixed);
     }
 
@@ -877,13 +918,38 @@ Thread 0 (attributed — this is the thread that crashed):
     }
 
     #[test]
-    fn a_browser_cancel_crash_outside_the_permission_check_is_not_claimed() {
-        // `nw_browser_cancel` alone is any NWBrowser teardown. Without the
-        // permission-check frame it stays in the manual queue.
-        let report = LOCAL_NETWORK_RACE_REPORT
-            .replace("requestLocalNetworkAuthorization", "scanDevicesContinually");
+    fn matches_the_cancel_before_start_report_that_names_no_app_frame() {
+        // The regression that sent both 1.54 crashes to the manual queue: the
+        // rule required `requestLocalNetworkAuthorization` and the refactor
+        // stopped the attributed stack from naming it. Keyed on the framework
+        // frame, it matches.
+        let facts = CrashFacts::from_report(LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT);
+        let matched =
+            match_rule(LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "local-network-cancel-race");
+        // The crash is from 1.54 and the real fix ships in 1.55.
+        assert_eq!(matched.status, FixStatus::Fixed);
+    }
+
+    #[test]
+    fn a_cancel_before_start_crash_on_1_55_is_unfixed() {
+        let report = LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT.replace("1.54", "1.55");
         let facts = CrashFacts::from_report(&report);
-        assert!(match_rule(&report, &facts).is_none());
+        let matched = match_rule(&report, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "local-network-cancel-race");
+        // A crash from 1.55 itself means this fix did not hold either, and the
+        // thread deliberately stays in the manual queue. Two prior fixes for
+        // this stack have already missed.
+        assert_eq!(matched.status, FixStatus::Unfixed);
+    }
+
+    #[test]
+    fn a_cancel_before_start_crash_on_1_53_is_fixed() {
+        let report = LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT.replace("1.54", "1.53");
+        let facts = CrashFacts::from_report(&report);
+        let matched = match_rule(&report, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "local-network-cancel-race");
+        assert_eq!(matched.status, FixStatus::Fixed);
     }
 
     #[test]
@@ -904,20 +970,40 @@ Thread 0 (attributed — this is the thread that crashed):
     }
 
     #[test]
-    fn crash_from_1_54_onwards_is_tagged_unfixed_for_both_new_rules() {
-        for (report, expected) in [
+    fn a_crash_from_a_rules_own_fix_version_is_tagged_unfixed() {
+        // Each rule is checked at its *own* `fixed_in`, not at a shared version:
+        // the local-network rule moved to 1.55 when the 1.54 fix turned out to
+        // address the wrong mechanism, and pinning both to 1.54 would quietly
+        // stop testing it.
+        for (report, expected, fix_version) in [
             (
                 MENU_BAR_STACK_OVERFLOW_REPORT,
                 "menu-bar-extra-reentrancy-stack-overflow",
+                "1.54",
             ),
-            (LOCAL_NETWORK_RACE_REPORT, "local-network-cancel-race"),
+            (
+                LOCAL_NETWORK_RACE_REPORT,
+                "local-network-cancel-race",
+                "1.55",
+            ),
         ] {
-            let report = report.replace("appVersion: 1.52", "appVersion: 1.54");
+            let report = report.replace("appVersion: 1.52", &format!("appVersion: {fix_version}"));
             let facts = CrashFacts::from_report(&report);
             let matched = match_rule(&report, &facts).expect("still matches");
             assert_eq!(matched.rule.id, expected);
             assert_eq!(matched.status, FixStatus::Unfixed);
         }
+    }
+
+    #[test]
+    fn a_local_network_crash_from_1_54_now_reads_as_fixed_in_1_55() {
+        // The two 1.54 crashes that reopened this rule. Once 1.55 ships they are
+        // an update prompt, not a manual-queue item.
+        let report = LOCAL_NETWORK_RACE_REPORT.replace("appVersion: 1.52", "appVersion: 1.54");
+        let facts = CrashFacts::from_report(&report);
+        let matched = match_rule(&report, &facts).expect("still matches");
+        assert_eq!(matched.rule.id, "local-network-cancel-race");
+        assert_eq!(matched.status, FixStatus::Fixed);
     }
 
     #[test]

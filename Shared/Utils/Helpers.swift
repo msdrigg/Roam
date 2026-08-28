@@ -752,11 +752,29 @@ extension DispatchQueue {
         )
     }
 
-    static var networkQueue: DispatchQueue {
+    /// A fresh **serial** queue for one Network.framework object graph.
+    ///
+    /// A function rather than a computed property because every access builds a
+    /// new queue. `DispatchQueue.networkQueue` read like a shared singleton and
+    /// was not one: two call sites that looked like they shared a queue never
+    /// did. Nothing depended on the sharing, but the name promised it.
+    ///
+    /// Serial, not concurrent. Network.framework delivers every state update,
+    /// path update and browse result for an endpoint on the queue handed to
+    /// `start(queue:)`, and it runs its own internal work there too. A
+    /// concurrent queue lets those overlap: Apple's guidance for these APIs is a
+    /// serial queue, and concurrent ones have produced duplicate `.ready`
+    /// callbacks (https://developer.apple.com/forums/thread/115661) and crashes
+    /// (https://developer.apple.com/forums/thread/738286) in the wild.
+    ///
+    /// Give each endpoint graph its own queue rather than sharing one app-wide.
+    /// `NWConnection.cancel()` and friends block on an internal Network.framework
+    /// lock, so a single shared serial queue would let one stalled endpoint hold
+    /// up every other subsystem's callbacks.
+    static func makeNetworkQueue() -> DispatchQueue {
         return DispatchQueue(
             label: "com.msdrigg.roam.network",
-            qos: .userInitiated,
-            attributes: .concurrent
+            qos: .userInitiated
         )
     }
 }

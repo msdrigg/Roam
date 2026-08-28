@@ -83,7 +83,7 @@ actor ECPWebsocketClient {
     static let baseRequestId = 2
     var requestId = 2
 
-    let connectionQueue: DispatchQueue = DispatchQueue.networkQueue
+    let connectionQueue: DispatchQueue = DispatchQueue.makeNetworkQueue()
 
     init (location: URL, macs: [String] = [], websocketStateUpdated: @escaping ECPStateCallback = {_ in }, notificationHandler: @escaping ECPNotificationCallback = {_ in }) {
         self.websocketStateUpdated = websocketStateUpdated
