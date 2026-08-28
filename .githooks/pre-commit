@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+#
+# pre-commit: never commit unformatted Rust.
+#
+# Install (per clone, since core.hooksPath is local config):
+#
+#     git config core.hooksPath .githooks
+#
+# What it does: for every staged .rs file, formats it and re-stages it, so the
+# commit contains formatted code. Silent when everything is already clean.
+#
+# Two details that make this safe rather than merely convenient:
+#
+#   * It judges the STAGED content (`git show :file`), not the working tree.
+#     Those differ whenever a file is partially staged, and the staged blob is
+#     what the commit will actually contain.
+#
+#   * It refuses to touch a file that has BOTH staged and unstaged changes.
+#     Formatting the working tree and `git add`-ing it would sweep the unstaged
+#     edits into the commit -- the classic pre-commit hook bug. Those files
+#     block the commit instead, with an explanation.
+#
+# It formats only the files being committed, never the whole crate, so unrelated
+# in-progress work in the tree is left alone.
+#
+# Written for bash 3.2 (the /bin/bash macOS ships), so no mapfile and no bare
+# "${array[@]}" under `set -u`.
+
+set -uo pipefail
+
+# No rustfmt (a machine that only ever touches the non-Rust parts of the repo)
+# is not a reason to block a commit.
+command -v rustfmt >/dev/null 2>&1 || exit 0
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$root" || exit 0
+
+# third_party/ holds patched forks whose upstream formatting is deliberate;
+# vendor/ and target/ are not ours to reformat either.
+staged=$(git diff --cached --name-only --diff-filter=ACMR |
+	grep -E '\.rs$' |
+	grep -Ev '^(third_party|vendor|target)/' || true)
+[ -n "$staged" ] || exit 0
+
+if [ -f "$root/rustfmt.toml" ] || [ -f "$root/.rustfmt.toml" ]; then
+	config_arg="--config-path=$root"
+else
+	config_arg=""
+fi
+
+# rustfmt parses according to an edition, and getting it wrong is not cosmetic:
+# 2015 rejects `async`, and 2021 rejects the 2024 syntax this workspace uses.
+# Walk up to the crate's own Cargo.toml, then fall back to the workspace root.
+edition_for() {
+	local dir edition
+	dir=$(dirname "$1")
+	while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
+		if [ -f "$root/$dir/Cargo.toml" ]; then
+			edition=$(grep -m1 -E '^[[:space:]]*edition[[:space:]]*=[[:space:]]*"[0-9]+"' \
+				"$root/$dir/Cargo.toml" 2>/dev/null | grep -oE '[0-9]{4}')
+			if [ -n "$edition" ]; then
+				printf '%s' "$edition"
+				return
+			fi
+		fi
+		dir=$(dirname "$dir")
+	done
+	edition=$(grep -m1 -E '^[[:space:]]*edition[[:space:]]*=[[:space:]]*"[0-9]+"' \
+		"$root/Cargo.toml" 2>/dev/null | grep -oE '[0-9]{4}')
+	printf '%s' "${edition:-2021}"
+}
+
+tmp=$(mktemp -d) || exit 0
+trap 'rm -rf "$tmp"' EXIT
+
+check_staged() {
+	git show ":$1" >"$tmp/staged.rs" 2>/dev/null || return 0
+	rustfmt --edition "$(edition_for "$1")" ${config_arg:+"$config_arg"} \
+		--check "$tmp/staged.rs" >/dev/null 2>&1
+}
+
+fixable=""
+blocked=""
+while IFS= read -r file; do
+	[ -n "$file" ] || continue
+	check_staged "$file" && continue
+	if git diff --quiet -- "$file" 2>/dev/null; then
+		fixable="${fixable}${file}"$'\n'
+	else
+		blocked="${blocked}${file}"$'\n'
+	fi
+done <<EOF
+$staged
+EOF
+
+if [ -n "$fixable" ]; then
+	while IFS= read -r file; do
+		[ -n "$file" ] || continue
+		rustfmt --edition "$(edition_for "$file")" ${config_arg:+"$config_arg"} \
+			"$file" >/dev/null 2>&1 || continue
+		git add -- "$file"
+	done <<EOF
+$fixable
+EOF
+	echo "pre-commit: formatted and re-staged:"
+	printf '%s' "$fixable" | sed 's/^/  /'
+fi
+
+if [ -n "$blocked" ]; then
+	echo "pre-commit: unformatted Rust in files that are only partially staged:" >&2
+	printf '%s' "$blocked" | sed 's/^/  /' >&2
+	echo >&2
+	echo "These have both staged and unstaged changes, so the hook will not format" >&2
+	echo "them -- re-staging the fix would pull your unstaged edits into the commit." >&2
+	echo "Run \`cargo fmt\`, stage what you meant to commit, and try again." >&2
+	exit 1
+fi
+
+exit 0

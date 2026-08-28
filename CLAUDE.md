@@ -1,0 +1,66 @@
+# Roam
+
+## Formatting is enforced by a pre-commit hook
+
+`.githooks/pre-commit` formats every staged `.rs` file and re-stages it, so a
+commit always contains formatted code. It is committed to the repo, but
+`core.hooksPath` is per-clone local config, so **each clone needs one command**:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Without it the hook silently does nothing. `git config --get core.hooksPath`
+tells you whether this clone is wired up.
+
+The hook is deliberately narrow:
+
+- It formats only the files being committed, never the whole crate, so
+  unrelated in-progress work in the tree is left alone.
+- It judges the **staged** content (`git show :file`), not the working tree.
+  Those differ whenever a file is partially staged, and the staged blob is what
+  the commit will contain.
+- It refuses to touch a file with **both** staged and unstaged changes, and
+  blocks the commit instead. Formatting the working tree and `git add`-ing it
+  would sweep the unstaged edits into the commit.
+- It resolves the edition per file from the nearest `Cargo.toml`, because
+  rustfmt parses according to an edition and getting it wrong is not cosmetic.
+- `third_party/`, `vendor/` and `target/` are excluded.
+
+To format by hand, `cargo fmt` in `backend/` — but note it rewrites the whole
+crate, so when someone else has uncommitted work, format just your own files:
+
+```sh
+rustfmt --edition 2024 src/database.rs src/server.rs
+cargo fmt --check          # reports diffs without writing
+```
+
+## Deploying the backend
+
+Deploys are manual and run from the **repository root**, not from `backend/` —
+the Docker build context needs both `backend/` and `docs/src/pages`:
+
+```sh
+fly deploy . --config backend/fly.toml --dockerfile backend/Dockerfile
+```
+
+`--dockerfile` is required because the `dockerfile` path inside `fly.toml`
+resolves relative to that file rather than to the build context.
+
+A push to `main` does **not** deploy. The `Deploy` workflow (`deploy-fly.yml`)
+is written to trigger on that push but is disabled at the repository level on
+purpose; check with `gh workflow list --all` before assuming a push shipped
+anything.
+
+## Backend specifics
+
+`backend/Readme.md` is the reference for the crash-review API, the auto-review
+rules, and regenerating the `.sqlx` offline query cache. Two things from it
+that are easy to get wrong:
+
+- Regenerate the query cache with `cargo sqlx prepare -- --lib --tests`.
+  Dropping `--tests` silently discards the cache entries for `query_as!` calls
+  in `#[cfg(test)]` code, and `SQLX_OFFLINE=true cargo test` then fails to
+  compile.
+- `cargo sqlx prepare` rewrites the entire `.sqlx` directory. Diff the result
+  before committing and confirm the delta is only the queries you changed.
