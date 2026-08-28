@@ -3,18 +3,155 @@ import Network
 import os
 import OSLog
 
+/// Serialises `start` and `cancel` for a group of Network.framework endpoints.
+///
+/// Two rules, both of which this file has broken in production:
+///
+/// 1. **Cancel exactly once.** `nw_browser_cancel` is not safe against itself.
+///    1.52 died with a `SIGSEGV` when the task-thread teardown raced the
+///    `onCancel` one that ee13c8f2 added.
+///
+/// 2. **Never cancel an endpoint that was never started.** `start(queue:)` is
+///    what hands Network.framework the queue it delivers state changes on. Cancel
+///    an endpoint that has a state update handler but no queue and
+///    `nw_browser_set_state_locked` calls `dispatch_async` with a NULL queue --
+///    a `SIGSEGV` on the near-null address `0x54`. That is a framework bug
+///    (Apple r.139710124, https://developer.apple.com/forums/thread/768413) and
+///    the only defence is to not make the call.
+///
+/// 1.54 still died on rule 2, because the claim-once wrapper added in 9d8735db
+/// only implemented rule 1: `onCancel` runs the instant the task is cancelled,
+/// which can land before the stream closure has reached `start(queue:)` at all.
+///
+/// The cancel is dispatched onto the endpoints' own queue rather than run
+/// inline, because `cancel()` blocks on an internal Network.framework lock and
+/// `onCancel` runs on whichever thread cancelled the task -- the main thread,
+/// when SwiftUI tears down `.task` work during a scene-phase change. Blocking it
+/// there is the 0x8BADF00D watchdog kill ee13c8f2 fixed.
+///
+/// `CloseOnceFileDescriptor` in `SSDPDiscovery` guards the same shape of bug for
+/// raw sockets.
+private final class EndpointLifecycle: @unchecked Sendable {
+    private enum Phase {
+        /// Created, no queue set. Cancelling now is the crash described above.
+        case idle
+        /// Inside `startEndpoints`; the queue is not yet guaranteed to be set.
+        case starting
+        /// The queue is set, so cancelling is safe.
+        case started
+    }
+
+    private struct State {
+        var phase: Phase = .idle
+        var cancelRequested = false
+    }
+
+    private let state = OSAllocatedUnfairLock(initialState: State())
+    private let queue: DispatchQueue
+    private let startEndpoints: @Sendable (DispatchQueue) -> Void
+    private let cancelEndpoints: @Sendable () -> Void
+
+    init(
+        queue: DispatchQueue,
+        start: @escaping @Sendable (DispatchQueue) -> Void,
+        cancel: @escaping @Sendable () -> Void
+    ) {
+        self.queue = queue
+        self.startEndpoints = start
+        self.cancelEndpoints = cancel
+    }
+
+    /// Starts the endpoints unless a cancel got there first.
+    ///
+    /// Returns `false` when the caller must abandon setup: either the task was
+    /// already cancelled, or it was cancelled while the endpoints were starting,
+    /// in which case the teardown has already been dispatched here.
+    func start() -> Bool {
+        let claimed = state.withLock { state -> Bool in
+            guard state.phase == .idle, !state.cancelRequested else { return false }
+            state.phase = .starting
+            return true
+        }
+        guard claimed else { return false }
+
+        // Deliberately outside the lock: `start(queue:)` reaches into
+        // Network.framework's own locks, and a state handler that re-entered
+        // this class from there would deadlock on a non-reentrant unfair lock. A
+        // cancel arriving meanwhile is handled by the check below instead.
+        startEndpoints(queue)
+
+        let cancelDeferred = state.withLock { state -> Bool in
+            state.phase = .started
+            return state.cancelRequested
+        }
+        guard !cancelDeferred else {
+            // A cancel landed mid-start and left the teardown to us; it could not
+            // run it itself without racing the `start(queue:)` above.
+            Log.network.notice("Local network check cancelled while starting, tearing down.")
+            dispatchCancel()
+            return false
+        }
+        return true
+    }
+
+    func cancel() {
+        enum Outcome {
+            case tearDown
+            case neverStarted
+            case deferredToStart
+            case redundant
+        }
+
+        let outcome = state.withLock { state -> Outcome in
+            if state.cancelRequested { return .redundant }
+            state.cancelRequested = true
+            switch state.phase {
+            case .idle: return .neverStarted
+            case .starting: return .deferredToStart
+            case .started: return .tearDown
+            }
+        }
+
+        switch outcome {
+        case .tearDown:
+            dispatchCancel()
+        case .neverStarted:
+            // No queue was ever set, so there is nothing bound to tear down --
+            // and cancelling here is exactly the crash in rule 2 above.
+            Log.network.notice("Local network check cancelled before start, nothing to tear down.")
+        case .deferredToStart:
+            Log.network.notice("Local network check cancelled during start, teardown deferred.")
+        case .redundant:
+            Log.network.notice("Skipping redundant local network check cancel")
+        }
+    }
+
+    private func dispatchCancel() {
+        let cancelEndpoints = self.cancelEndpoints
+        queue.async { cancelEndpoints() }
+    }
+}
+
 #if os(macOS)
 func requestLocalNetworkAuthorization() async throws -> Bool {
-    let queue = DispatchQueue.networkQueue
+    let queue = DispatchQueue.makeNetworkQueue()
 
     let connection = NWConnection(host: NWEndpoint.Host("255.255.255.255"), port: 4567, using: .udp)
+    let endpoint = EndpointLifecycle(
+        queue: queue,
+        start: { queue in connection.start(queue: queue) },
+        cancel: { connection.cancel() }
+    )
 
     return try await withTaskCancellationHandler {
         let stream = AsyncThrowingStream(Bool.self, bufferingPolicy: .bufferingNewest(1)) { continuation in
             @Sendable func resume(with result: Result<Bool, any Error>) {
-                // Teardown listener and browser
+                // Teardown the connection. Both handlers are cleared, not just
+                // the state one: a later path update would otherwise re-enter
+                // here after the stream has already been finished.
                 connection.stateUpdateHandler = { _ in }
-                connection.cancel()
+                connection.pathUpdateHandler = { _ in }
+                endpoint.cancel()
 
                 continuation.yield(with: result)
             }
@@ -63,11 +200,11 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
                 }
             }
 
-            connection.start(queue: queue)
-
-            // Task cancelled while setting up listener & Connection, tear down immediatly
-            if Task.isCancelled {
-                Log.network.notice("Task cancelled during listener & Connection start. (Some warnings might be logged by the listener or Connection.)")
+            // Started only once every handler is wired, and only through
+            // `endpoint`: `start(queue:)` is what gives Network.framework the
+            // queue it needs before any cancel can reach this connection.
+            guard endpoint.start() else {
+                Log.network.notice("Task cancelled while starting connection.")
                 resume(with: .failure(CancellationError()))
                 return
             }
@@ -80,62 +217,14 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
 
         return first
     } onCancel: {
-        connection.stateUpdateHandler = { _ in }
-        connection.cancel()
+        endpoint.cancel()
     }
 }
 #else
 private let type = "_preflight_check._tcp"
 
-/// Cancels an `NWListener`/`NWBrowser` pair exactly once, off the caller's thread.
-///
-/// Teardown is reachable from three threads: Network.framework's callbacks on
-/// `queue`, the `Task.isCancelled` checks on the task's own thread, and
-/// `onCancel` on whichever thread cancelled the task. `NWBrowser.cancel()` is
-/// not safe to call concurrently with itself -- 1.52 died with a `SIGSEGV` on a
-/// near-null address inside `nw_browser_cancel` when the task-thread teardown
-/// raced the `onCancel` one that ee13c8f2 added. Claiming the cancel under a
-/// lock means exactly one caller reaches `cancel()`.
-///
-/// The cancels stay on `queue` because they block on an internal
-/// Network.framework lock, and `onCancel` runs on the main thread while SwiftUI
-/// applies a scene-phase change; blocking it there is the 0x8BADF00D watchdog
-/// kill ee13c8f2 fixed. `CloseOnceFileDescriptor` in `SSDPDiscovery` guards the
-/// same shape of bug for raw sockets.
-private final class CancelOnceEndpoints: @unchecked Sendable {
-    private let cancelled = OSAllocatedUnfairLock(initialState: false)
-    private let listener: NWListener
-    private let browser: NWBrowser
-    private let queue: DispatchQueue
-
-    init(listener: NWListener, browser: NWBrowser, queue: DispatchQueue) {
-        self.listener = listener
-        self.browser = browser
-        self.queue = queue
-    }
-
-    func cancel() {
-        let shouldCancel = cancelled.withLock { alreadyCancelled -> Bool in
-            if alreadyCancelled { return false }
-            alreadyCancelled = true
-            return true
-        }
-        guard shouldCancel else {
-            Log.network.notice("Skipping redundant local network check cancel")
-            return
-        }
-
-        let listener = self.listener
-        let browser = self.browser
-        queue.async {
-            listener.cancel()
-            browser.cancel()
-        }
-    }
-}
-
 func requestLocalNetworkAuthorization() async throws -> Bool {
-    let queue = DispatchQueue.networkQueue
+    let queue = DispatchQueue.makeNetworkQueue()
 
     Log.network.notice("Setup listener.")
     let listener = try NWListener(using: NWParameters(tls: .none, tcp: NWProtocolTCP.Options()))
@@ -146,7 +235,17 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
     let parameters = NWParameters()
     parameters.includePeerToPeer = true
     let browser = NWBrowser(for: .bonjour(type: type, domain: nil), using: parameters)
-    let endpoints = CancelOnceEndpoints(listener: listener, browser: browser, queue: queue)
+    let endpoints = EndpointLifecycle(
+        queue: queue,
+        start: { queue in
+            listener.start(queue: queue)
+            browser.start(queue: queue)
+        },
+        cancel: {
+            listener.cancel()
+            browser.cancel()
+        }
+    )
 
     return try await withTaskCancellationHandler {
         let stream = AsyncThrowingStream(Bool.self, bufferingPolicy: .bufferingNewest(1)) { continuation in
@@ -201,7 +300,6 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
                     Log.network.warning("Ignoring unknown listener state: \(String(describing: newState), privacy: .public)")
                 }
             }
-            listener.start(queue: queue)
 
             browser.stateUpdateHandler = { newState in
                 switch newState {
@@ -241,11 +339,13 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
                 Log.network.notice("Discovered \(results.count, privacy: .public) listeners, reporting success.")
                 resume(with: .success(true))
             }
-            browser.start(queue: queue)
 
-            // Task cancelled while setting up listener & browser, tear down immediatly
-            if Task.isCancelled {
-                Log.network.notice("Task cancelled during listener & browser start. (Some warnings might be logged by the listener or browser.)")
+            // Both are started here, together, only once every handler is
+            // wired, and only through `endpoints`: `start(queue:)` is what gives
+            // Network.framework the queue it needs before any cancel can reach
+            // these objects.
+            guard endpoints.start() else {
+                Log.network.notice("Task cancelled while starting listener & browser.")
                 resume(with: .failure(CancellationError()))
                 return
             }

@@ -6,7 +6,7 @@ import SwiftUI
 final class NetworkMonitor {
     var networkConnection: NetworkType = .local
     private let monitor: NWPathMonitor
-    private let queue = DispatchQueue.networkQueue
+    private let queue = DispatchQueue.makeNetworkQueue()
 #if !os(watchOS)
     weak var appDelegate: RoamAppDelegate?
 #endif
