@@ -506,7 +506,7 @@ pub static RULES: &[CrashRule] = &[
         min_thermal_level: None,
         max_app_cpu_percent: None,
         // Framework frame alone. Keying on an app frame broke this rule when
-        // 9d8735db moved the cancel into a closure. `NWBrowser` is used in one
+        // 0a68d67c moved the cancel into a closure. `NWBrowser` is used in one
         // file, so the framework frame cannot over-claim.
         all_of: &["nw_browser_cancel"],
         none_of: &[],
@@ -756,7 +756,7 @@ Thread 0 (attributed - this is the thread that crashed):
     }
 
     /// Thread 1536532380976812132 (roam 1.54, iPhone15,3): the same crash as
-    /// `LOCAL_NETWORK_RACE_REPORT` after 9d8735db moved the cancel into a
+    /// `LOCAL_NETWORK_RACE_REPORT` after 0a68d67c moved the cancel into a
     /// wrapper, leaving no app function on the attributed stack.
     const LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
