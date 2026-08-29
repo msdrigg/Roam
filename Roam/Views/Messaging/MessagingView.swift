@@ -334,7 +334,7 @@ struct MessageView: View {
     //
     // A liquid-glass capsule "input group" (paperclip Attach + text field) sits
     // beside a separate liquid-glass prominent Send circle. The bar itself has no
-    // background — only the capsule and the circle carry glass — so it reads as
+    // background - only the capsule and the circle carry glass - so it reads as
     // two floating controls hovering above the keyboard.
 
     @ViewBuilder

@@ -2,94 +2,56 @@ import Darwin
 import Foundation
 import os
 
-/// The shared container every Roam process reads and writes.
-///
-/// Declared here rather than beside the data stack because the logger reaches
-/// for it from every target, including the test bundles that do not compile the
-/// data stack at all. `mainAppGroup` is an alias of this.
 public let roamAppGroup = "group.com.msdrigg.roam"
 
 /// The app group container's URL, resolved once per process.
 ///
 /// `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)` is a
-/// synchronous XPC round-trip to `containermanagerd` on the calling thread, and
-/// the path it returns is fixed for the lifetime of the process. Callers treated
-/// it as a cheap accessor and put it behind computed properties like
-/// `Device.iconURL`, which SwiftUI reads from view bodies -- so the round-trip
-/// happened on the main thread, once per body evaluation. One iPad launch logged
-/// 250 of them in 15 seconds and was killed by the scene-create watchdog
-/// (roam 1.50, `0x8BADF00D`).
-///
-/// Resolve through here instead of calling `FileManager` directly. `nil` means
-/// the entitlement is missing or the container could not be created, which is
-/// fatal-ish and worth surfacing at the call site as it always was.
+/// synchronous XPC round-trip whose result is fixed per process, so calling it
+/// from a computed property put it on the main thread once per body evaluation.
+/// Resolve through here instead. `nil` means the entitlement is missing or the
+/// container could not be created.
 public func roamAppGroupContainerURL() -> URL? {
     AppGroupContainer.url
 }
 
 private enum AppGroupContainer {
-    /// `static let` so the lookup runs at most once, under the runtime's
-    /// once-only initialisation -- concurrent first callers block rather than
-    /// racing to issue duplicate lookups.
     static let url: URL? = FileManager.default.containerURL(
         forSecurityApplicationGroupIdentifier: roamAppGroup)
 }
 
 /// Durable, per-run diagnostics that outlive the process that wrote them.
 ///
-/// Everything Roam knew about a crash used to come from
-/// `OSLogStore(scope: .currentProcessIdentifier)`, read while assembling the
-/// MetricKit upload. That scope is the *reading* process, and MetricKit only
-/// hands a payload to the launch **after** the one that died — so every crash
-/// report shipped the relaunch's log, which by construction says nothing about
-/// what crashed. The three macOS stack overflows reviewed on 2026-08-16 all
-/// arrived with a log window that began after the crash.
+/// `OSLogStore(scope: .currentProcessIdentifier)` covers the reading process,
+/// and MetricKit delivers a payload to the launch after the one that died, so
+/// crash reports shipped the relaunch's log.
 ///
-/// So the app keeps its own copy: every `DualLogger` line is mirrored into a
-/// file named for the run that wrote it, and the next launch reads the dead
-/// run's file back (see `FileLog.collect(around:)`).
-///
-/// `CrashStackTrap`, below, covers the other half of the same gap — MetricKit
-/// could not unwind the blown stack on any of those three reports, so the
-/// attributed thread arrived with zero frames.
+/// Every `DualLogger` line is mirrored into a file named for the run that wrote
+/// it, and the next launch reads the dead run's file back (see
+/// `FileLog.collect(around:)`). `CrashStackTrap` below covers the other half of
+/// the gap, where MetricKit cannot unwind a blown stack.
 public enum FileLog {
     private static let directoryName = "process-logs"
-    /// Per-run cap. A rolling tail for diagnosis, not an archive.
     private static let maxBytesPerRun = 1_500_000
-    /// How many previous runs to keep. A crash is uploaded on the very next
-    /// launch, so this only needs to cover launches that failed to upload.
     private static let maxRunFiles = 8
-    /// Lines are batched: a remote app logs a few hundred lines a second while
-    /// scanning, and one `write(2)` per line would be pure overhead.
     private static let flushThresholdBytes = 16 * 1024
     private static let flushInterval: TimeInterval = 1
 
-    /// Serialises every touch of the buffer, the handle and the counters.
     private static let queue = DispatchQueue(
         label: "com.msdrigg.roam.file-log", qos: .utility)
 
-    /// Raw logger for our own failures — must never recurse through `DualLogger`.
     private static let selfLog = Logger(subsystem: Log.getLogSubsystem(), category: "FileLog")
 
     public static let pid = Int(ProcessInfo.processInfo.processIdentifier)
     private static let processName = ProcessInfo.processInfo.processName
-    /// Identifies this run's file. Wall-clock at launch, so run files sort by
-    /// age even after the OS recycles a pid.
     static let launchedAt = Date()
 
-    // Queue-confined state (every touch happens on `queue`, hence the opt-out).
     nonisolated(unsafe) private static var buffer = Data()
     nonisolated(unsafe) private static var handle: FileHandle?
     nonisolated(unsafe) private static var bytesWritten = 0
     nonisolated(unsafe) private static var flushScheduled = false
     nonisolated(unsafe) private static var started = false
 
-    /// Opens this run's file and prunes older ones. Safe to call more than once;
-    /// only the first call does anything.
-    ///
-    /// Call it early — anything logged before this lands in the buffer and is
-    /// written on the first flush, but a run that never starts the log leaves
-    /// nothing behind if it dies.
     public static func start() {
         queue.async {
             guard !started else { return }
@@ -99,12 +61,8 @@ public enum FileLog {
         observeLifecycle()
     }
 
-    /// Flush when the process is about to stop running our code. A suspended
-    /// app does not service the flush timer, so without this the last second of
-    /// a session is lost every time it goes to the background.
-    ///
-    /// Named rather than typed so this file stays free of UIKit/AppKit and
-    /// compiles unchanged into the widget and watch targets.
+    /// Flush before the process suspends; the flush timer stops running then.
+    /// Named rather than typed to keep UIKit/AppKit out of this file.
     private static func observeLifecycle() {
         let names = [
             "NSApplicationWillTerminateNotification",
@@ -121,32 +79,19 @@ public enum FileLog {
         }
     }
 
-    /// Mirror one line into this run's file.
     public static func append(level: String, category: String, message: String) {
-        // Snapshot the timestamp on the calling thread: the flush is
-        // asynchronous, and a line's time is when it happened, not when it
-        // reached the disk.
         let timestamp = Date().timeIntervalSince1970
         queue.async {
             appendEncoded(timestamp: timestamp, level: level, category: category, message: message)
         }
     }
 
-    /// Push everything buffered to disk and wait for it.
-    ///
-    /// Used where the next thing to happen may be the process dying: the
-    /// stack-depth warnings in `RenderTrace`, and backgrounding.
     public static func flushNow() {
         queue.sync { flush() }
     }
 
     // MARK: Writing
 
-    /// One JSONL line, hand-rolled rather than run through `JSONEncoder`: this
-    /// happens on every log line in the app, and the shape is four fixed keys.
-    ///
-    /// It has to decode as `FileLogEntry`; the two are written independently,
-    /// so a test pins them together.
     public static func encodedLine(
         timestamp: TimeInterval, level: String, category: String, message: String
     ) -> String {
@@ -218,7 +163,6 @@ public enum FileLog {
         return opened
     }
 
-    /// Drop whole lines off the front until the run file is back under its cap.
     private static func trim() {
         guard
             let url = runFileURL(),
@@ -240,12 +184,8 @@ public enum FileLog {
         bytesWritten = out.count
     }
 
-    /// Keep the newest `maxRunFiles` runs **per process**, never our own.
-    ///
-    /// Per process, because the widget extension shares this directory and is
-    /// launched far more often than the app. A flat cap would let a morning of
-    /// widget refreshes evict the app run that crashed overnight, which is the
-    /// one run that had to survive.
+    /// Keep the newest `maxRunFiles` runs per process, never our own. The
+    /// widget shares this directory and launches far more often.
     private static func pruneOldRuns() {
         guard let directory = directoryURL() else { return }
         let manager = FileManager.default
@@ -258,8 +198,6 @@ public enum FileLog {
         for file in files
             where file.pathExtension == "jsonl" && file.lastPathComponent != ours
         {
-            // "<stamp>-<pid>-<process>.jsonl" — the process is everything past
-            // the second separator, and may itself contain dashes.
             let stem = file.deletingPathExtension().lastPathComponent
             let process = stem.split(separator: "-", maxSplits: 2).last.map(String.init) ?? stem
             byProcess[process, default: []].append(file)
@@ -271,7 +209,6 @@ public enum FileLog {
                 .dropFirst(maxRunFiles)
             for file in stale {
                 try? manager.removeItem(at: file)
-                // The backtrace beside it is only meaningful with its log.
                 try? manager.removeItem(at: file.deletingPathExtension().appendingPathExtension("stack"))
             }
         }
@@ -281,11 +218,8 @@ public enum FileLog {
 
     /// Entries from **previous** runs, newest last, centred on a crash.
     ///
-    /// `window` is MetricKit's payload window. Anything logged after it is from
-    /// a launch that came later than the crash, and is dropped: that is exactly
-    /// the noise this whole file exists to remove. This run's own file is
-    /// excluded for the same reason — when we are uploading a crash, we are by
-    /// definition the launch that came after it.
+    /// `window` is MetricKit's payload window. Anything logged after it belongs
+    /// to a later launch and is dropped, including this run's own file.
     public static func collect(around window: DateInterval?, limit: Int = 5000) -> [FileLogEntry] {
         guard let directory = directoryURL() else { return [] }
         let manager = FileManager.default
@@ -294,17 +228,11 @@ public enum FileLog {
             (try? manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil))
             ?? []
 
-        // A crash is reported on the next launch, so the run we want is the
-        // newest one that is not us. Read newest-first and stop once we have
-        // enough.
         let candidates =
             files
             .filter { $0.pathExtension == "jsonl" && $0.lastPathComponent != ours }
             .sorted { $0.lastPathComponent > $1.lastPathComponent }
 
-        // A little slack past the payload window: MetricKit stamps the window
-        // to the minute, so the last lines before the crash can land just
-        // outside it.
         let cutoff = window.map { $0.end.addingTimeInterval(120) }
 
         var collected: [FileLogEntry] = []
@@ -323,14 +251,11 @@ public enum FileLog {
         }
 
         if collected.count > limit {
-            // Keep the newest: whatever the app was doing last is the part that
-            // explains the crash.
             collected.removeFirst(collected.count - limit)
         }
         return collected
     }
 
-    /// Wipe every run's file, including our own.
     public static func deleteAll() {
         queue.async {
             try? handle?.close()
@@ -399,33 +324,25 @@ public struct FileLogEntry: Codable, Sendable {
 /// Writes the crashing thread's backtrace to disk from inside a `SIGSEGV`
 /// handler running on its own signal stack.
 ///
-/// This exists because MetricKit cannot unwind a **stack overflow**. All three
-/// macOS crashes reviewed on 2026-08-16 came back with the attributed thread
-/// holding zero frames — in the raw payload, not just the rendered report — so
-/// the one thing needed to name the recursion was the one thing missing.
+/// MetricKit cannot unwind a stack overflow: the attributed thread arrives with
+/// zero frames in the raw payload. An ordinary handler cannot help either,
+/// since the overflowed thread has no stack left to run it on, so `sigaltstack`
+/// gives the handler its own.
 ///
-/// A handler installed the ordinary way cannot help either: the thread that
-/// overflowed has no stack left to run it on. `sigaltstack` gives the handler
-/// its own, which is the whole point.
-///
-/// The handler is deliberately minimal and touches only async-signal-safe
-/// calls (`open`, `write`, `backtrace`, `backtrace_symbols_fd`), then restores
-/// the previous disposition and re-raises so the OS still produces the crash
-/// report MetricKit delivers. We add a trace; we do not swallow the crash.
+/// The handler touches only async-signal-safe calls (`open`, `write`,
+/// `backtrace`, `backtrace_symbols_fd`), then restores the previous disposition
+/// so the OS still produces the crash report MetricKit delivers.
 public enum CrashStackTrap {
     private static let maxFrames = 192
 
     nonisolated(unsafe) private static var installed = false
-    /// Preallocated at install time — a signal handler must not allocate.
+    /// Preallocated at install time - a signal handler must not allocate.
     nonisolated(unsafe) private static var frames: UnsafeMutablePointer<UnsafeMutableRawPointer?>?
     nonisolated(unsafe) private static var alternateStack: UnsafeMutableRawPointer?
     nonisolated(unsafe) static var pathBuffer: UnsafeMutablePointer<CChar>?
 
-    /// Install the handler. Idempotent.
-    ///
-    /// A no-op on watchOS, where `sigaltstack` is unavailable — without an
-    /// alternate stack a handler cannot run on an overflowed stack anyway, so
-    /// there is nothing to fall back to.
+    /// Install the handler. Idempotent, and a no-op on watchOS, where
+    /// `sigaltstack` is unavailable.
     public static func install() {
         #if os(watchOS)
             return
@@ -526,7 +443,7 @@ public enum CrashStackTrap {
         }
     }
 
-    /// Decimal, without `malloc`. A signal handler must not allocate — the
+    /// Decimal, without `malloc`. A signal handler must not allocate - the
     /// process may well have crashed inside the allocator, and taking its lock
     /// again would hang instead of crashing.
     private static func writeInt(_ fd: Int32, _ value: Int) {
@@ -553,13 +470,10 @@ public enum CrashStackTrap {
 /// The `SA_SIGINFO` handler. A file-scope C function so no Swift closure
 /// context is needed at signal time.
 ///
-/// It writes the trace and **returns**. `SA_RESETHAND` has already restored the
-/// default disposition, so the faulting instruction re-executes, faults again,
-/// and the process dies exactly as it would have — same address, same thread,
-/// same faulting frame. Calling `raise` instead would kill the process from
-/// inside the handler and hand the OS crash reporter `raise`'s stack rather
-/// than the recursion's, degrading the very MetricKit report this is meant to
-/// supplement. We add a trace; we do not alter the crash.
+/// It writes the trace and returns. `SA_RESETHAND` has restored the default
+/// disposition, so the faulting instruction re-executes and the process dies
+/// with the same address, thread and frame. `raise` would instead hand the OS
+/// crash reporter its own stack rather than the recursion's.
 #if !os(watchOS)
 private let crashStackTrapHandler:
     @convention(c) (Int32, UnsafeMutablePointer<siginfo_t>?, UnsafeMutableRawPointer?) -> Void = {

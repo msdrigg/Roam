@@ -5,32 +5,22 @@ import OSLog
 
 /// Serialises `start` and `cancel` for a group of Network.framework endpoints.
 ///
-/// Two rules, both of which this file has broken in production:
+/// Two rules:
 ///
-/// 1. **Cancel exactly once.** `nw_browser_cancel` is not safe against itself.
-///    1.52 died with a `SIGSEGV` when the task-thread teardown raced the
-///    `onCancel` one that ee13c8f2 added.
+/// 1. Cancel exactly once. `nw_browser_cancel` is not safe against itself.
 ///
-/// 2. **Never cancel an endpoint that was never started.** `start(queue:)` is
-///    what hands Network.framework the queue it delivers state changes on. Cancel
-///    an endpoint that has a state update handler but no queue and
-///    `nw_browser_set_state_locked` calls `dispatch_async` with a NULL queue --
-///    a `SIGSEGV` on the near-null address `0x54`. That is a framework bug
-///    (Apple r.139710124, https://developer.apple.com/forums/thread/768413) and
-///    the only defence is to not make the call.
-///
-/// 1.54 still died on rule 2, because the claim-once wrapper added in 9d8735db
-/// only implemented rule 1: `onCancel` runs the instant the task is cancelled,
-/// which can land before the stream closure has reached `start(queue:)` at all.
+/// 2. Never cancel an endpoint that was never started. `start(queue:)` hands
+///    Network.framework the queue it delivers state changes on; cancelling an
+///    endpoint with a state handler but no queue faults at `0x54` (Apple
+///    r.139710124, https://developer.apple.com/forums/thread/768413).
 ///
 /// The cancel is dispatched onto the endpoints' own queue rather than run
-/// inline, because `cancel()` blocks on an internal Network.framework lock and
-/// `onCancel` runs on whichever thread cancelled the task -- the main thread,
-/// when SwiftUI tears down `.task` work during a scene-phase change. Blocking it
-/// there is the 0x8BADF00D watchdog kill ee13c8f2 fixed.
+/// inline: `cancel()` blocks on an internal Network.framework lock, and
+/// `onCancel` runs on whichever thread cancelled the task, which is the main
+/// thread when SwiftUI tears down `.task` work on a scene-phase change.
 ///
-/// `CloseOnceFileDescriptor` in `SSDPDiscovery` guards the same shape of bug for
-/// raw sockets.
+/// `CloseOnceFileDescriptor` in `SSDPDiscovery` guards the same shape for raw
+/// sockets.
 private final class EndpointLifecycle: @unchecked Sendable {
     private enum Phase {
         /// Created, no queue set. Cancelling now is the crash described above.
@@ -63,9 +53,8 @@ private final class EndpointLifecycle: @unchecked Sendable {
 
     /// Starts the endpoints unless a cancel got there first.
     ///
-    /// Returns `false` when the caller must abandon setup: either the task was
-    /// already cancelled, or it was cancelled while the endpoints were starting,
-    /// in which case the teardown has already been dispatched here.
+    /// Returns `false` when the caller must abandon setup, in which case any
+    /// needed teardown has already been dispatched here.
     func start() -> Bool {
         let claimed = state.withLock { state -> Bool in
             guard state.phase == .idle, !state.cancelRequested else { return false }
@@ -74,10 +63,9 @@ private final class EndpointLifecycle: @unchecked Sendable {
         }
         guard claimed else { return false }
 
-        // Deliberately outside the lock: `start(queue:)` reaches into
-        // Network.framework's own locks, and a state handler that re-entered
-        // this class from there would deadlock on a non-reentrant unfair lock. A
-        // cancel arriving meanwhile is handled by the check below instead.
+        // Outside the lock: `start(queue:)` reaches into Network.framework's
+        // own locks, and a re-entering state handler would deadlock. A cancel
+        // arriving meanwhile is caught by the check below.
         startEndpoints(queue)
 
         let cancelDeferred = state.withLock { state -> Bool in
@@ -249,10 +237,8 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
 
     return try await withTaskCancellationHandler {
         let stream = AsyncThrowingStream(Bool.self, bufferingPolicy: .bufferingNewest(1)) { continuation in
-            // `resume` is reachable from the listener and browser callbacks on
-            // `queue` and from the `Task.isCancelled` checks on the task's own
-            // thread, so two threads can enter it at once. Claim it so only one
-            // rewrites the handler properties and yields.
+            // `resume` is reachable from the endpoint callbacks and from the
+            // task's own thread, so claim it and let only one caller through.
             let resumed = OSAllocatedUnfairLock(initialState: false)
             @Sendable func resume(with result: Result<Bool, any Error>) {
                 let shouldResume = resumed.withLock { alreadyResumed -> Bool in
@@ -262,10 +248,9 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
                 }
                 guard shouldResume else { return }
 
-                // Teardown listener and browser. The handlers are cleared here
-                // rather than in `onCancel` so that a cancel raised from there
-                // still reaches this function through the `.cancelled` state and
-                // finishes the stream.
+                // Handlers are cleared here rather than in `onCancel`, so a
+                // cancel raised there still finishes the stream via
+                // `.cancelled`.
                 listener.stateUpdateHandler = { _ in }
                 browser.stateUpdateHandler = { _ in }
                 browser.browseResultsChangedHandler = { _, _ in }
@@ -340,10 +325,8 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
                 resume(with: .success(true))
             }
 
-            // Both are started here, together, only once every handler is
-            // wired, and only through `endpoints`: `start(queue:)` is what gives
-            // Network.framework the queue it needs before any cancel can reach
-            // these objects.
+            // Started together through `endpoints` once every handler is
+            // wired, so the queue is set before any cancel can arrive.
             guard endpoints.start() else {
                 Log.network.notice("Task cancelled while starting listener & browser.")
                 resume(with: .failure(CancellationError()))
@@ -358,14 +341,10 @@ func requestLocalNetworkAuthorization() async throws -> Bool {
 
         return first
     } onCancel: {
-        // `onCancel` runs synchronously on whichever thread cancels the task, and
-        // SwiftUI cancels `.task` work on the main thread while it applies a
-        // scene-phase change. `NWBrowser.cancel()` / `NWListener.cancel()` block
-        // on an internal Network.framework lock, so when `queue` is busy this
-        // stalls the main thread — long enough on app termination to be killed by
-        // the watchdog with 0x8BADF00D ("Failed to terminate gracefully after
-        // 5.0s"). Tear down on the queue these objects already run on so the
-        // cancelling thread is never blocked.
+        // `onCancel` runs on whichever thread cancels the task, which SwiftUI
+        // does on the main thread during a scene-phase change. The endpoint
+        // `cancel()` calls block on a Network.framework lock, so tear down on
+        // the queue these objects already run on rather than stalling it.
         endpoints.cancel()
     }
 }

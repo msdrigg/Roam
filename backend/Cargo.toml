@@ -49,7 +49,7 @@ reqwest = { version = "^0.12", default-features = false, features = [
 ] }
 # serenity 0.12 still pins tungstenite 0.21 (rustls 0.22) and reqwest 0.11 (rustls 0.21),
 # which transitively pull the vulnerable rustls-webpki 0.101/0.102. There is no fix until
-# serenity bumps tungstenite upstream — tracked at:
+# serenity bumps tungstenite upstream - tracked at:
 # https://github.com/serenity-rs/serenity/issues/3557
 serenity = { version = "^0.12", default-features = false, features = [
     "client",

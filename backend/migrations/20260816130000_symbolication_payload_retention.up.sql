@@ -1,7 +1,7 @@
 -- Retain crash payloads after a symbolication permanently fails.
 --
 -- Dead-lettering used to delete the payload immediately, which made "fix the
--- symbolicator, then reprocess what it lost" impossible by construction — the
+-- symbolicator, then reprocess what it lost" impossible - the
 -- deep-stack crashes rejected by the old parser being exactly that case.
 -- Payloads now survive their failure and are reaped on age instead, so a fix
 -- has a window in which it can be applied retroactively.

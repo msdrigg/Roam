@@ -63,7 +63,7 @@ def _failing_locales_from_log(log_path: str) -> list[str]:
         loc for loc in attempted
         if loc not in successful and loc not in timed_out
     ]
-    # XCTest timeouts also need a retry — for those we'll just rebuild the
+    # XCTest timeouts also need a retry - for those we'll just rebuild the
     # iPad set from scratch.
     failed.extend(loc for loc in timed_out)
     seen = set()
@@ -78,7 +78,7 @@ def _failing_locales_from_log(log_path: str) -> list[str]:
 async def _patch_ipad_landscape(asc, app_versions, locale_id: str, png_path: str):
     """Upload `png_path` as the LandscapePrimary into the iOS app version's
     iPad screenshot set for `locale_id`. Leaves all other iPad screenshots
-    in place — we only delete + re-upload the existing LandscapePrimary
+    in place - we only delete + re-upload the existing LandscapePrimary
     entries (matched by filename containing 'LandscapePrimary')."""
     for app_version in app_versions:
         if app_version.platform != sync_metadata.Platform.iOS:
@@ -157,7 +157,7 @@ async def _amain(locales: list[str]):
             export_dir=export_dir,
         )
         if not ok:
-            print(f"  {locale_id}: capture still failed — skipping upload")
+            print(f"  {locale_id}: capture still failed - skipping upload")
             continue
 
         # Find the captured PNG and run the sips rotation that the main

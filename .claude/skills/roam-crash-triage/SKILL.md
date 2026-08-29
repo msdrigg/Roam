@@ -14,7 +14,7 @@ export BACKEND_URL=https://backend.roam.msd3.io
 export BACKEND_API_KEY=...            # sent as the x-api-key header
 ```
 
-Both already live in `./backend/.env` in this repo — source it rather than
+Both already live in `./backend/.env` in this repo - source it rather than
 hunting for the values in 1Password, and source it rather than reading the file,
 so the key never lands in the transcript:
 
@@ -22,7 +22,7 @@ so the key never lands in the transcript:
 set -a && . ./backend/.env && set +a
 ```
 
-A helper script wraps the endpoints below:
+A helper script at `scripts/roam_crashes.py` (repo root) wraps the endpoints below:
 
 ```bash
 python3 scripts/roam_crashes.py --help
@@ -43,7 +43,7 @@ runs the report against the auto-review rules:
   produced it is no longer installed.
 - **A rule matches a build at or past its `fixed_in` version** → the reply goes
   out tagged **UNFIXED**, the rule id and note land on the row, but the thread
-  is deliberately left **unreviewed**. The stack outlived its fix, so it needs
+  is left **unreviewed**. The stack outlived its fix, so it needs
   you: expect these in the queue with a `matched_rule_id` already set.
 - **A rule matches a report with no version at all** → replied to as
   `Fix status unknown` and reviewed, same as the fixed case.
@@ -53,9 +53,9 @@ runs the report against the auto-review rules:
 
 They routinely disagree, and reading the wrong one is the classic mistake here:
 
-- `app_version` is the crash's own MetricKit `appVersion` — **the build that
+- `app_version` is the crash's own MetricKit `appVersion` - **the build that
   died**, and what fix status is scored against.
-- `installed_version` is `release=` off the report's `Install:` line — what the
+- `installed_version` is `release=` off the report's `Install:` line - what the
   device was running when it *uploaded* the payload, which is up to a day later
   and may be across an App Store update.
 
@@ -94,7 +94,7 @@ Filter and page:
 | Query param | Meaning |
 |---|---|
 | `unreviewed=true` | only threads needing attention |
-| `app_version=1.50` | exact match on the crash's `appVersion` — the build that died |
+| `app_version=1.50` | exact match on the crash's `appVersion` - the build that died |
 | `installed_version=1.50` | exact match on the release the device is *running* now |
 | `before_ms=<ms>` | page backwards; pass the previous page's `next_before_ms` |
 | `limit=<n>` | 1–200, default 50 |
@@ -118,7 +118,7 @@ curl -s -H "x-api-key: $BACKEND_API_KEY" \
 ```
 
 Page further back with `before=<message_id>`, or forward with
-`after=<message_id>`. IDs are strings — snowflakes exceed JavaScript's safe
+`after=<message_id>`. IDs are strings - snowflakes exceed JavaScript's safe
 integer range, so every id in these APIs is a string on the wire.
 
 One message:
@@ -138,7 +138,7 @@ curl -s -H "x-api-key: $BACKEND_API_KEY" \
 
 ## Downloading documents
 
-Attachments stream straight through the backend from Discord's CDN — nothing is
+Attachments stream straight through the backend from Discord's CDN - nothing is
 buffered server-side, so large diagnostics dumps are fine. Take the
 `attachments[].id` from a message and:
 
@@ -151,25 +151,25 @@ curl -s -H "x-api-key: $BACKEND_API_KEY" \
 Write it to a file and read that, rather than piping a whole report into
 context. The interesting parts of a symbolicated report are:
 
-- `Termination reason:` and `Diagnosis:` — present when the payload carried one;
+- `Termination reason:` and `Diagnosis:` - present when the payload carried one;
   these name the OS policy that killed the process
-- the `Metadata:` block — `exceptionType`, `signal`, `appVersion`, `deviceType`
-- the thread marked `(attributed)` — the only stack that caused the crash
-- `In-process backtrace of the faulting thread` — the app's own capture, from
+- the `Metadata:` block - `exceptionType`, `signal`, `appVersion`, `deviceType`
+- the thread marked `(attributed)` - the only stack that caused the crash
+- `In-process backtrace of the faulting thread` - the app's own capture, from
   its `SIGSEGV`/`SIGBUS` handler on an alternate signal stack
-- `Logs` — check the header line, which says whether they are pre-crash
+- `Logs` - check the header line, which says whether they are pre-crash
 
 Read the attributed thread. Other threads are usually idle and will mislead you.
 
 **When the attributed thread has no frames**, the process blew its stack:
 MetricKit cannot unwind an overflowed stack and reports the thread empty. Go to
-the in-process backtrace instead — a frame repeating down that list is the
+the in-process backtrace instead - a frame repeating down that list is the
 recursion. Confirm from the `Faulting VM region:` line, which will point into
 `Stack Guard`.
 
 The `Logs` header says where the lines came from. "Replayed from the app's own
 file log for the run that crashed" means they predate the crash and are worth
-reading. The older wording — "from this process only" — means the app had no
+reading. The older wording - "from this process only" - means the app had no
 file log for that run, so the lines are from the launch *after* the crash and
 say nothing about it.
 
@@ -210,14 +210,14 @@ order with first-match-wins. Each has an `id`, optional `exception_type` /
 the report text, and the `reply` markdown that gets posted.
 
 **When you diagnose a crash that recurs, add a rule** rather than replying by
-hand a second time. Put narrower rules first — several distinct bugs share
+hand a second time. Put narrower rules first - several distinct bugs share
 `EXC_CRASH (10)` / `SIGKILL (9)`, so a rule keyed only on that pair will
 swallow others. Add a test in the same file covering the new report shape and
 asserting it does not steal matches from existing rules.
 
 ## Working the queue
 
-1. `GET /v2/crashes?unreviewed=true` — see what is outstanding.
+1. `GET /v2/crashes?unreviewed=true` - see what is outstanding.
 2. For each, download the `symbolicated.txt` attachment and read the attributed
    thread.
 3. Recognisable and already fixed → reply, mark reviewed, and consider adding a

@@ -5,7 +5,7 @@ import SwiftUI
 ///
 /// The sidebar shows a card-styled list of devices with swipe / context-menu
 /// actions to edit and delete, a pull-down rescan, an "+ Add device" footer,
-/// and a Settings toolbar button. Selection drives the primary device — the
+/// and a Settings toolbar button. Selection drives the primary device - the
 /// detail pane is provided by the caller so each platform can pass its native
 /// `RemoteViewContained` variant.
 struct DeviceSplitRoot<Detail: View>: View {
@@ -90,7 +90,7 @@ struct DeviceSplitRoot<Detail: View>: View {
             if scanSSDPActor == nil { scanSSDPActor = DeviceDiscoveryActor() }
         }
         // The sidebar shows every device at once, but only the selected one
-        // refreshes its own record — probe the rest so their dots mean something.
+        // refreshes its own record - probe the rest so their dots mean something.
         .probingDeviceLiveness(deviceIds, isActive: scenePhase != .background)
         // Restore the last-viewed device rather than falling to the top of the
         // list, and re-pick only when the remembered one is actually gone.

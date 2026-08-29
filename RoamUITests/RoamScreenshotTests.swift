@@ -23,7 +23,7 @@ final class RoamUITestsScreenshotTests: XCTestCase {
     /// serves all of them.
     ///
     /// Kept separate from `testCaptureScreenshots` because this one is not
-    /// locale-fanned — review screenshots are English-only — and because the
+    /// locale-fanned - review screenshots are English-only - and because the
     /// marketing set is uploaded to a different endpoint.
     ///
     /// Requires the scheme's StoreKit configuration (Roam/TipJar.storekit) so
@@ -44,7 +44,7 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         // placeholder prices.
         try await Task.sleep(nanoseconds: 6_000_000_000)
 
-        // Fail loudly rather than uploading a screenshot of the wrong screen —
+        // Fail loudly rather than uploading a screenshot of the wrong screen -
         // a silently-wrong review asset costs a rejection cycle.
         let restoreButton = app.buttons["Restore Purchases"]
         XCTAssertTrue(
@@ -133,17 +133,17 @@ final class RoamUITestsScreenshotTests: XCTestCase {
                 primaryApp.screenshot(), name: "\(locale.identifier)/2/Home"
             )
         } else {
-            print("AllDevicesButton not hittable — skipping Home capture")
+            print("AllDevicesButton not hittable - skipping Home capture")
         }
 
         primaryApp.terminate()
 
-        // 4. Settings — relaunch with -OpenSettings so RemoteRoot's
+        // 4. Settings - relaunch with -OpenSettings so RemoteRoot's
         //    `applyLaunchSettingsIfRequested` pushes the Settings sheet on
         //    first appear. Driving the bottom-bar SettingsButton via XCUI
         //    was unreliable on the 6.5" iPhone 11 sim (the chain of
         //    Primary → AllDevicesButton → SettingsButton occasionally lost
-        //    the sheet behind animations) — the launch arg always works.
+        //    the sheet behind animations) - the launch arg always works.
         let settingsApp = XCUIApplication()
         appendLocaleArgs(settingsApp, locale: locale)
         settingsApp.launchArguments += [
@@ -157,12 +157,12 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         )
         settingsApp.terminate()
 
-        // 5. Keyboard open — relaunch with -OpenKeyboard so the
+        // 5. Keyboard open - relaunch with -OpenKeyboard so the
         //    PhoneDeviceDetailPager auto-shows the keyboard entry text
         //    field from first appear (and the system software keyboard
         //    follows because the TextField becomes first responder).
         //    Driving the toolbar/floating keyboard button via XCUI is
-        //    brittle under non-en locales — the launch arg is reliable.
+        //    brittle under non-en locales - the launch arg is reliable.
         let keyboardApp = XCUIApplication()
         appendLocaleArgs(keyboardApp, locale: locale)
         keyboardApp.launchArguments += [
@@ -176,7 +176,7 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         )
         keyboardApp.terminate()
 
-        // 6. Landscape primary — relaunch with -ForceLandscapeLeft so the
+        // 6. Landscape primary - relaunch with -ForceLandscapeLeft so the
         //    app drives the rotation via UIWindowScene.requestGeometryUpdate
         //    (XCUIDevice.shared.orientation is a no-op on Xcode 26 sims).
         //    Capture via XCUIScreen.main.screenshot() which writes the
@@ -186,7 +186,7 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         //
         //    `simctl io booted screenshot` was tried as a "real landscape"
         //    capture, but the device framebuffer stays portrait regardless
-        //    of how the Simulator window is rotated — the rotation only
+        //    of how the Simulator window is rotated - the rotation only
         //    affects the host window's visual presentation, not the
         //    captured pixels.
         let landscapeApp = XCUIApplication()
@@ -208,7 +208,7 @@ final class RoamUITestsScreenshotTests: XCTestCase {
 
     @MainActor
     private func captureIPadScreenshots(locale: Locale) async throws {
-        // 1. ScreenScanning — empty sidebar + scanning state.
+        // 1. ScreenScanning - empty sidebar + scanning state.
         let scanningApp = XCUIApplication()
         appendLocaleArgs(scanningApp, locale: locale)
         scanningApp.launchArguments += ["-DataTesting"]
@@ -228,7 +228,7 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         addScreenshot(primaryApp.screenshot(), name: "\(locale.identifier)/1/Primary")
         primaryApp.terminate()
 
-        // 3. Keyboard open — relaunch with -OpenKeyboard so the keyboard
+        // 3. Keyboard open - relaunch with -OpenKeyboard so the keyboard
         //    overlay is up from first appear. Driving via the toolbar
         //    button is flaky on the iPad sim under non-en locales.
         let keyboardApp = XCUIApplication()
@@ -242,7 +242,7 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         addScreenshot(keyboardApp.screenshot(), name: "\(locale.identifier)/5/KeyboardOpen")
         keyboardApp.terminate()
 
-        // 4. Settings — relaunch with -OpenSettings to surface the
+        // 4. Settings - relaunch with -OpenSettings to surface the
         //    Settings sheet on appear.
         let settingsApp = XCUIApplication()
         appendLocaleArgs(settingsApp, locale: locale)
@@ -255,14 +255,14 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         addScreenshot(settingsApp.screenshot(), name: "\(locale.identifier)/7/Settings")
         settingsApp.terminate()
 
-        // 5. Landscape primary — captured by the Python orchestrator via
+        // 5. Landscape primary - captured by the Python orchestrator via
         //    `simctl io booted screenshot` after rotating the booted sim
         //    through Simulator.app's Device → Orientation → Landscape Left
         //    menu (sent via osascript). On Xcode 26 iPad sims:
         //      - XCUIDevice.shared.orientation is a no-op.
         //      - requestGeometryUpdate(.landscapeLeft) returns success but
         //        the iPad scene stays portrait because the iPad app isn't
-        //        UIRequiresFullScreen — orientation is system-controlled.
+        //        UIRequiresFullScreen - orientation is system-controlled.
         //      - A system-side menu rotation DOES change the scene, and
         //        Roam's Info.plist supports all 4 orientations so it
         //        responds with a real landscape layout.
@@ -276,23 +276,23 @@ final class RoamUITestsScreenshotTests: XCTestCase {
         // Python orchestrator (XCTest's screenshot APIs return 1x1
         // placeholders on the visionOS sim). This test is a no-op kept so
         // the test bundle still has a target on visionOS.
-        print("Skipping XCTest captures for visionOS \(locale.identifier) — handled by simctl")
+        print("Skipping XCTest captures for visionOS \(locale.identifier) - handled by simctl")
     }
 
 #elseif os(macOS)
     @MainActor
     func captureScreenshots(locale: Locale) async throws {
-        // macOS captures are driven from a Tart-managed macOS guest VM —
+        // macOS captures are driven from a Tart-managed macOS guest VM -
         // see scripts/sync-metadata.py and scripts/tart_screenshots.py.
         // The Python orchestrator boots a VM with a 2880x1800 display,
         // mounts a host-built Roam.app via a shared folder, launches it
         // inside the guest, and uses `screencapture` over SSH to grab
         // the guest framebuffer (full display for most states, or just
-        // the menu-bar region for the MenuBarExtra state — coordinates
+        // the menu-bar region for the MenuBarExtra state - coordinates
         // come from the app's `-MenuBarExtraReportPath` JSON report
         // emitted by Roam/ScreenshotCapture.swift). XCTest is bypassed
         // because xcodebuild reliably hangs after macOS UI tests.
-        print("Skipping XCTest captures for macOS \(locale.identifier) — handled by Tart orchestrator")
+        print("Skipping XCTest captures for macOS \(locale.identifier) - handled by Tart orchestrator")
     }
 #endif
 

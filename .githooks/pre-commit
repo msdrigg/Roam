@@ -48,7 +48,7 @@ else
 	config_arg=""
 fi
 
-# rustfmt parses according to an edition, and getting it wrong is not cosmetic:
+# rustfmt parses according to an edition, so the wrong one reformats badly:
 # 2015 rejects `async`, and 2021 rejects the 2024 syntax this workspace uses.
 # Walk up to the crate's own Cargo.toml, then fall back to the workspace root.
 edition_for() {

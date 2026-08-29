@@ -1,7 +1,7 @@
 import TipKit
 import SwiftUI
 
-/// Shown the first time volume is used on a Roku that reports `is-tv=false` —
+/// Shown the first time volume is used on a Roku that reports `is-tv=false` -
 /// a stick, an Express, or any other player without speakers of its own.
 ///
 /// Those devices forward `VolumeUp`/`VolumeDown`/`Mute` to the TV or receiver
@@ -25,7 +25,7 @@ struct VolumeOverHDMITip: Tip {
     var message: Text? {
         Text(
             // swiftlint:disable:next line_length
-            "This Roku has no speakers of its own, so Roam sends volume to your TV or receiver over HDMI-CEC. If nothing happens, turn CEC on in your TV's settings — it's usually under a brand name like Anynet+, Bravia Sync, SimpLink, or VIERA Link."
+            "This Roku has no speakers of its own, so Roam sends volume to your TV or receiver over HDMI-CEC. If nothing happens, turn CEC on in your TV's settings - it's usually under a brand name like Anynet+, Bravia Sync, SimpLink, or VIERA Link."
         )
     }
 

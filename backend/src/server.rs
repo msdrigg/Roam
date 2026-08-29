@@ -510,7 +510,7 @@ async fn upload_metric_diagnostics(
     for (idx, payload_json) in metrics_payloads.into_iter().enumerate() {
         // Scan for binary UUIDs rather than parsing the payload. Ingest only
         // needs the UUID list as a dSYM pre-fetch hint, and the parser reserves
-        // a 256 MiB stack to survive deep `subFrames` nesting — a reservation
+        // a 256 MiB stack to survive deep `subFrames` nesting - a reservation
         // this 256 MB VM cannot map, so calling it here panicked *after* the
         // Discord posts and before the insert, silently dropping every crash
         // uploaded while it was deployed. `scan_binary_uuids` is a flat pass
@@ -779,9 +779,8 @@ async fn lease_pending_symbolications(
         {
             tracing::error!(?err, id = %failed.id, "Failed to post Discord :warning: for exhausted symbolication");
         }
-        // The payload deliberately outlives the failure. Deleting it here made a
-        // symbolicator fix unable to reach the crashes it had already lost;
-        // `reap_expired_failed_payloads` clears it on age instead.
+        // The payload outlives the failure, so a later symbolicator fix can
+        // still reach it. `reap_expired_failed_payloads` clears it on age.
     }
 
     reap_expired_failed_payloads(&app_context).await;
@@ -932,7 +931,7 @@ const FAILED_PAYLOAD_RETENTION: Duration = Duration::from_secs(30 * 24 * 60 * 60
 /// schedule already, and a sweep that only runs when there is a worker to serve
 /// is a sweep that cannot delete anything behind a stopped worker's back.
 ///
-/// Best-effort — a payload that fails to delete is simply retried next sweep.
+/// Best-effort - a payload that fails to delete is simply retried next sweep.
 async fn reap_expired_failed_payloads(app_context: &AppContext) {
     let cutoff_ms =
         chrono::Utc::now().timestamp_millis() - (FAILED_PAYLOAD_RETENTION.as_millis() as i64);
@@ -988,7 +987,7 @@ struct RequeueSymbolicationsResponse {
 /// Returns exhausted symbolications to the queue.
 ///
 /// Exists because a payload that fails three times is out of the worker's reach
-/// forever, even once the bug that failed it is fixed — the deep-stack crashes
+/// forever, even once the bug that failed it is fixed - the deep-stack crashes
 /// rejected by the old parser being the case in point. Requeueing is how a
 /// deploy that fixes symbolication gets applied to the crashes it already lost.
 async fn requeue_symbolications(
@@ -1038,8 +1037,8 @@ async fn requeue_symbolications(
 /// Records a freshly symbolicated crash and, when it matches a known rule,
 /// replies in-thread and marks it reviewed.
 ///
-/// Crashes that match nothing are left unreviewed on purpose — that is the
-/// queue a human works through via `GET /v2/crashes?unreviewed=true`. A match
+/// Crashes that match nothing stay unreviewed, forming the queue a human works
+/// through via `GET /v2/crashes?unreviewed=true`. A match
 /// from a version that already carries the rule's fix
 /// ([`FixStatus::Unfixed`](crate::crash_rules::FixStatus::Unfixed)) is replied
 /// to but *also* left in that queue: the diagnosis is worth posting, but a
@@ -1122,7 +1121,7 @@ pub struct ListCrashesQuery {
     /// Only threads whose newest crash has not been reviewed yet.
     #[serde(default)]
     unreviewed: bool,
-    /// Exact match on the crash's `appVersion` — the build that died.
+    /// Exact match on the crash's `appVersion` - the build that died.
     #[serde(default)]
     app_version: Option<String>,
     /// Exact match on the release the reporting device had installed when it

@@ -239,7 +239,7 @@ actor RoamDataHandler {
 
     #if DEBUG
         private static func debugStartupDatabaseFaultIfNeeded() -> DebugStartupDatabaseFault? {
-            // Don't inject random startup faults under UI/screenshot tests — they
+            // Don't inject random startup faults under UI/screenshot tests - they
             // launch the app multiple times per run and depend on a healthy DB to
             // load test data and render the screens being captured.
             let testFlags: Set<String> = [
@@ -339,7 +339,7 @@ actor RoamDataHandler {
 
             // This method is now re-entrant across the await above (the retry
             // timer and the connectivity banner can both call it). If another
-            // call already installed a persistent database, drop ours — the
+            // call already installed a persistent database, drop ours - the
             // merge landed in the same file either way.
             guard !database.isPersistent else {
                 Log.backend.notice("Discarding duplicate persistent database open")
@@ -379,8 +379,8 @@ actor RoamDataHandler {
     // MARK: - Sorting
     //
     // `cachedDeviceList` (and the list on disk) is always the user's own
-    // arrangement. The chosen sort is applied on the way out — in
-    // `requestDeviceList` and in `notifyDeviceListUpdated` — so every surface
+    // arrangement. The chosen sort is applied on the way out - in
+    // `requestDeviceList` and in `notifyDeviceListUpdated` - so every surface
     // gets the same order without each one having to load device records and
     // sort them itself, and so switching sorts never rewrites stored state.
 
@@ -1006,7 +1006,7 @@ actor RoamDataHandler {
     /// The offsets come from what the user is looking at, which is the sorted
     /// list. Dragging inside a computed sort is itself a statement that the
     /// user wants their own order, so the displayed order is written back as
-    /// the stored one and the sort switches to `.manual` — otherwise the row
+    /// the stored one and the sort switches to `.manual` - otherwise the row
     /// would snap straight back to where the sort put it.
     func reorderDevices(fromOffsets: IndexSet, toOffset: Int) async throws {
         let stored = try cachedDeviceList ?? loadDeviceListFromDisk()
@@ -1038,7 +1038,7 @@ actor RoamDataHandler {
     /// falls back to the device the user opened most recently.
     ///
     /// Views used to do this themselves off a `PrimaryDeviceLoader`, which
-    /// publishes asynchronously — so a view that ran the check before its
+    /// publishes asynchronously - so a view that ran the check before its
     /// loader had caught up saw "no primary device" and helpfully overwrote the
     /// user's last-viewed remote with whatever was at the top of the list.
     /// Deciding it here means the check reads the already-loaded state.
@@ -1576,7 +1576,7 @@ protocol RefreshClient: Sendable {
         private static let minRescanInterval: TimeInterval = 30
 
         // App icons are queried in parallel, but `sendCommand` fails any request
-        // the device hasn't answered inside its 5s timeout — point enough
+        // the device hasn't answered inside its 5s timeout - point enough
         // simultaneous queries at a slow device and its latency turns into
         // outright failures. Keep enough in flight to hide per-request latency
         // without getting there.
@@ -1741,7 +1741,7 @@ protocol RefreshClient: Sendable {
 
             Log.data.notice("Refreshing capabilities and apps")
 
-            // Capabilities and the app list are independent queries — running
+            // Capabilities and the app list are independent queries - running
             // them together stops the app list (and every icon query behind it)
             // from waiting on a round trip it doesn't depend on.
             async let fetchedCapabilities = self.fetchCapabilities(client: client)
@@ -1863,10 +1863,9 @@ protocol RefreshClient: Sendable {
 
                         // Stamp the attempt whether or not it produced an icon:
                         // `lastSyncAt` is what tells the UI this app has already
-                        // been queried, so one that genuinely has no icon settles
-                        // on the fallback instead of showing a loading indicator
-                        // forever. A nil `iconHash` still forces a retry on the
-                        // next refresh.
+                        // been queried, so one with no icon settles on the
+                        // fallback instead of loading forever. A nil `iconHash`
+                        // still forces a retry on the next refresh.
                         afterUpdateApps[appIndex].lastSyncAt = .now
                         hasUnsavedAttempts = true
 
@@ -2125,7 +2124,7 @@ public func inScreenshotTestingContext() -> Bool {
     #endif
 }
 
-/// Returns true when the app is running under any UI-test invocation —
+/// Returns true when the app is running under any UI-test invocation -
 /// either explicitly capturing screenshots, or using the test data store.
 /// Suitable for hiding runtime warnings (network / permission banners) that
 /// otherwise clutter captures, including the empty-state "ScreenScanning"

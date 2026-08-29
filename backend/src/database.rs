@@ -403,10 +403,9 @@ impl DatabaseClient {
 
     /// Records a freshly symbolicated crash against its thread.
     ///
-    /// Upserts so a thread accumulates one row that always describes its most
-    /// recent crash. The review columns are deliberately left untouched: a
-    /// thread reviewed before this crash arrived becomes unreviewed again,
-    /// because `reviewed_at_ms` now trails `latest_crash_at_ms`.
+    /// Upserts, so a thread keeps one row describing its most recent crash.
+    /// The review columns are untouched, so a thread reviewed before this crash
+    /// becomes unreviewed again.
     pub async fn record_crash_for_review(
         &self,
         thread_id: i64,
@@ -592,11 +591,8 @@ impl DatabaseClient {
     /// [`CrashReview::is_unreviewed`]. `before_ms` pages backwards through
     /// `latest_crash_at_ms`; pass the last row's value to get the next page.
     ///
-    /// The two version filters answer different questions and both are needed:
-    /// `app_version` finds the crashes a build *produced*, `installed_version`
-    /// finds the reporters a build is *installed on* — which is how you tell
-    /// whether a release still has users sitting on an old crash. They combine
-    /// with AND, so passing both narrows to one update step.
+    /// `app_version` finds the crashes a build produced; `installed_version`
+    /// finds the reporters a build is installed on. They combine with AND.
     pub async fn list_crash_reviews(
         &self,
         only_unreviewed: bool,
@@ -678,10 +674,8 @@ impl DatabaseClient {
     /// so the row is re-leasable, but keeps the incremented `attempts` from the
     /// lease call, which is what caps retries via the `attempts < 3` filter.
     ///
-    /// Also stamps `retry_after_ms` so the next attempt is spaced out. Without
-    /// it, clearing the lease made the row instantly re-leasable and the worker's
-    /// drain loop burned every attempt within the same second — which is no
-    /// retry at all for the transient failures retries exist to absorb.
+    /// Also stamps `retry_after_ms`, without which the drain loop would burn
+    /// every attempt within the same second.
     pub async fn release_lease_with_error(
         &self,
         id: &str,
@@ -689,11 +683,9 @@ impl DatabaseClient {
     ) -> Result<Option<PendingSymbolication>, anyhow::Error> {
         let now_ms = chrono::Utc::now().timestamp_millis();
         let base_ms = RETRY_BACKOFF_BASE.as_millis() as i64;
-        // Backoff doubles per attempt, derived from the row's own counter so it
-        // stays correct without the caller having to know how many attempts the
-        // lease had already burned. `attempts` includes the one that just
-        // failed, so the first failure waits exactly one base interval. Capped
-        // at 2^7 so a stuck row cannot schedule itself years out.
+        // Doubles per attempt, derived from the row's own counter. `attempts`
+        // includes the failure just recorded, so the first waits one base
+        // interval. Capped at 2^7.
         let row = sqlx::query_as!(
             PendingSymbolication,
             r#"
@@ -733,21 +725,16 @@ impl DatabaseClient {
 impl DatabaseClient {
     /// Returns exhausted symbolications to the queue with a fresh attempt budget.
     ///
-    /// Covers rows already marked `failed_at_ms` and rows that merely ran out of
-    /// attempts, since before the dead-letter fix the latter were left in
-    /// neither state. `error_contains` narrows the reset to a single failure
-    /// mode — requeueing everything would also replay payloads that fail for
-    /// reasons nothing has changed about.
+    /// Covers rows marked `failed_at_ms` and rows that ran out of attempts.
+    /// `error_contains` narrows the reset to a single failure mode.
     ///
-    /// Re-symbolication needs the original payload still on disk; rows whose
-    /// file has since been reaped fail again on their next lease with
-    /// "payload missing on disk", which is the honest outcome.
+    /// Rows whose payload has been reaped fail again on their next lease with
+    /// "payload missing on disk".
     /// Payloads of permanently-failed symbolications old enough to reap.
     ///
-    /// Returns `(id, payload_path)` for rows that failed before `cutoff_ms` and
-    /// whose file has not already been removed. The caller deletes the files and
-    /// reports back via `mark_payload_reaped`, so a delete that fails is simply
-    /// retried on the next sweep rather than being recorded as done.
+    /// Returns `(id, payload_path)` for rows that failed before `cutoff_ms`
+    /// whose file remains. The caller deletes them and reports back via
+    /// `mark_payload_reaped`, so a failed delete retries on the next sweep.
     pub async fn expired_failed_payloads(
         &self,
         cutoff_ms: i64,
@@ -858,10 +845,8 @@ impl DatabaseClient {
 /// Wait after a payload's first failure before it may be leased again; doubles
 /// with each subsequent attempt.
 ///
-/// Minutes rather than seconds because the transient failures retries exist to
-/// absorb — rate-limited ipsw downloads, dSYM fetch blips — recover on that
-/// scale. Retrying inside the same second only converts a temporary outage into
-/// a permanently dead-lettered crash report.
+/// Minutes rather than seconds: rate-limited downloads and fetch blips recover
+/// on that scale, and retrying within the same second just burns attempts.
 const RETRY_BACKOFF_BASE: Duration = Duration::from_secs(5 * 60);
 
 #[derive(Debug, serde::Serialize)]
@@ -898,10 +883,9 @@ pub struct DeviceInfo {
 /// See `migrations/20260811000000_crash_reviews.up.sql` for the unreviewed
 /// predicate; [`CrashReview::is_unreviewed`] mirrors it in Rust.
 ///
-/// These queries were runtime-checked (`query_as::<_, CrashReview>`) until
+/// These queries were runtime-checked until
 /// `20260811120000_users_device_id_text`, because the untyped `users.device_id`
-/// column segfaulted rustc during macro expansion. See that migration for the
-/// details.
+/// column segfaulted rustc during macro expansion.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct CrashReview {
     #[serde(serialize_with = "i64_to_string")]
@@ -993,12 +977,8 @@ mod tests {
         )
     }
 
-    /// Both `record_crash_for_review` and `mark_thread_reviewed` stamp rows with
-    /// `Utc::now()` at millisecond resolution, and `is_unreviewed` compares them
-    /// with a strict `<`. Tests that need one to land strictly after the other
-    /// have to let the clock tick, or the two stamps can be equal and the
-    /// comparison flips. Real crashes and reviews are seconds apart, so this only
-    /// bites in tests.
+    /// Both stamp at millisecond resolution and `is_unreviewed` compares with a
+    /// strict `<`, so tests needing a strict ordering must let the clock tick.
     async fn tick() {
         tokio::time::sleep(Duration::from_millis(2)).await;
     }
@@ -1285,10 +1265,8 @@ mod tests {
             fail_n_times(&db, "a", 1).await;
         }
 
-        // The row is out of attempts with its lease cleared. That combination
-        // matched neither the dead-letter predicate (which required a live
-        // lease) nor the lease predicate (attempts < 3), so it used to sit here
-        // forever and its Discord notification never fired.
+        // Out of attempts with the lease cleared, which matched neither the
+        // dead-letter nor the lease predicate.
         sqlx::query!("UPDATE pending_symbolications SET retry_after_ms = NULL")
             .execute(&db.writer_pool)
             .await
@@ -1337,7 +1315,7 @@ mod tests {
         );
 
         // Once reaped it is not offered again, and it can no longer be
-        // requeued — there is nothing left on disk to symbolicate.
+        // requeued - there is nothing left on disk to symbolicate.
         db.mark_payload_reaped("old").await.expect("mark");
         assert!(
             db.expired_failed_payloads(5000)

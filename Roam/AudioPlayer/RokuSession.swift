@@ -44,7 +44,7 @@ func listenContinually(ecpSession: ECPWebsocketClient, location: String, rtcpPor
             taskGroup.addTask {
                 // Wait for Roku to ACK `set-audio-output` BEFORE starting
                 // any RTCP traffic. If VDLY/RR arrive before Roku has
-                // registered the session, Roku silently drops them — and
+                // registered the session, Roku silently drops them - and
                 // because it also kills RTP after a few seconds without
                 // RRs, racing the ACK destroys the whole stream.
                 do {
@@ -62,7 +62,7 @@ func listenContinually(ecpSession: ECPWebsocketClient, location: String, rtcpPor
                         // RTCP handshake. Roku is forgiving about a missing
                         // VDLY/NCLI exchange and will keep streaming audio. A
                         // failed handshake here only means we never confirmed
-                        // the requested buffer delay — it must not bring down
+                        // the requested buffer delay - it must not bring down
                         // the audio task.
                         do {
                             try await withTimeout(delay: 6.0) {
@@ -129,11 +129,11 @@ actor RTPSession {
 
         // Bind outbound RTCP to the local RTP port (6970), NOT 6971.
         // Roku validates incoming RTCP against the source IP+port it
-        // recorded from `set-audio-output`'s devname — which advertises
+        // recorded from `set-audio-output`'s devname - which advertises
         // <ip>:6970. Packets arriving from any other source port (an
         // ephemeral port, or even 6971 per the RTP+1 convention) fail
         // that check and Roku silently drops them, including the empty
-        // RR that keeps RTP alive — so the audio stream dies after a
+        // RR that keeps RTP alive - so the audio stream dies after a
         // few seconds. Sharing port 6970 with `rtpListener` is fine
         // because both sockets set `allowLocalEndpointReuse` and the
         // kernel demuxes by 4-tuple: RTP from Roku:<ephemeral> goes to
@@ -183,7 +183,7 @@ actor RTPSession {
 
         // Defensive: also drain any RTCP that the kernel routes to this
         // connection. In practice Roku addresses replies to local 6971,
-        // which `rtcpListener` catches — but if a firmware variant sends
+        // which `rtcpListener` catches - but if a firmware variant sends
         // them to 6970 instead, the 4-tuple match against this connection
         // wins and the listener never sees them. Reading here makes both
         // paths feed the same inbox.
@@ -195,7 +195,7 @@ actor RTPSession {
             _: Bool,
             _ error: NWError?
         ) {
-            // Stop the loop on connection close / cancel — otherwise the
+            // Stop the loop on connection close / cancel - otherwise the
             // recursion spins forever firing ECANCELED into the log.
             guard let data else {
                 if let error {
@@ -321,7 +321,7 @@ actor RTPSession {
                 // Now that the listener owns port 6970 (unconnected, with
                 // SO_REUSEPORT via allowLocalEndpointReuse), it's safe to
                 // bring up the outbound RTCP connection that also wants to
-                // bind 6970 — the kernel demuxes by 4-tuple. If we started
+                // bind 6970 - the kernel demuxes by 4-tuple. If we started
                 // the connection first, its connected bind would block the
                 // listener and we'd get EADDRINUSE.
                 Task { [weak self] in await self?.startRemoteRtcpConnectionIfNeeded() }
@@ -469,7 +469,7 @@ actor RTPSession {
             }
         }
         // The retry loop also exits when the surrounding task is cancelled
-        // — without this, a cancellation mid-loop would fall through and
+        // - without this, a cancellation mid-loop would fall through and
         // we'd falsely log "Performed RTCP handshake successfully".
         try Task.checkCancellation()
 
@@ -670,8 +670,8 @@ actor RtcpInbox {
     }
 
     /// Wait for the next packet matching `predicate`. Cancellation removes
-    /// the waiter and resumes with `CancellationError` — never a late
-    /// packet — so subsequent uses of the inbox are unaffected.
+    /// the waiter and resumes with `CancellationError` - never a late
+    /// packet - so subsequent uses of the inbox are unaffected.
     func waitFor(_ predicate: @escaping Predicate) async throws -> RtcpPacket {
         nextID &+= 1
         let id = nextID
@@ -700,7 +700,7 @@ actor RtcpInbox {
 
     private func cancelWaiter(id: UInt64) {
         guard let idx = waiters.firstIndex(where: { $0.id == id }) else {
-            // Already removed by deliver() — its continuation has been
+            // Already removed by deliver() - its continuation has been
             // resumed with the matching packet, nothing to do here.
             return
         }

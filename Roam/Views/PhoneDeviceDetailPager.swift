@@ -8,7 +8,7 @@ import UIKit
 /// hosting `RemoteViewContained`. Selection drives the primary device so
 /// the home grid reflects the same "last-viewed" state.
 ///
-/// The navigation bar is hidden — the user navigates back to the grid via
+/// The navigation bar is hidden - the user navigates back to the grid via
 /// the leftmost-edge swipe-back gesture or the floating "all devices" button
 /// in the bottom-right. The keyboard is toggled by a floating bottom-left
 /// button so it stays put while pages are being swiped (instead of riding
@@ -23,8 +23,8 @@ struct PhoneDeviceDetailPager: View {
 
     @State private var selectedDeviceId: String
     // The page order is frozen at push time. `allDeviceIds` reorders itself
-    // underneath us — discovery inserts new devices at the front, and the
-    // "recently used" sort moves whatever page the user lands on to the top —
+    // underneath us - discovery inserts new devices at the front, and the
+    // "recently used" sort moves whatever page the user lands on to the top -
     // and letting that reach the ForEach would slide pages sideways under the
     // user's thumb. Only membership changes are reconciled; see `syncPages`.
     @State private var pagerDeviceIds: [String]
@@ -38,7 +38,7 @@ struct PhoneDeviceDetailPager: View {
     // rotation leaves the page half-scrolled at the old pixel offset).
     @State private var scrollPositionId: String?
     // Debounces the re-snap so we don't fire mid-rotation when the
-    // PreferenceKey reports each intermediate width — wait for the
+    // PreferenceKey reports each intermediate width - wait for the
     // animation to settle, then snap once.
     @State private var resnapTask: Task<Void, Never>?
 

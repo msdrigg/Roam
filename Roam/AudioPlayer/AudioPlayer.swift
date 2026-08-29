@@ -85,7 +85,7 @@ actor OpusDecoderWithJitterBuffer {
             Int64(
                 (machTimeToSeconds(time.hostTime) - machTimeToSeconds(syncPacket.receivedAt))
                     * Double(packetsPerSec)) + Int64(syncPacket.sequenceNumber)
-        // Don't wrap into UInt16 — rolling sequence numbers live in Int64
+        // Don't wrap into UInt16 - rolling sequence numbers live in Int64
         // space, and a "negative" lastPacketNumber is the correct way to
         // express "we haven't filled the buffer yet, hold packets until
         // playback catches up".
@@ -450,7 +450,7 @@ actor AudioPlayer {
         try catchingAVFAudioExceptions { streamAudioNode.play() }
         Log.headphones
             .notice(
-                "AudioPlayer started — engine running=\(self.engine.isRunning, privacy: .public), player playing=\(self.streamAudioNode.isPlaying, privacy: .public), output format=\(String(describing: self.engine.mainMixerNode.outputFormat(forBus: 0)), privacy: .public)"
+                "AudioPlayer started - engine running=\(self.engine.isRunning, privacy: .public), player playing=\(self.streamAudioNode.isPlaying, privacy: .public), output format=\(String(describing: self.engine.mainMixerNode.outputFormat(forBus: 0)), privacy: .public)"
             )
     }
 

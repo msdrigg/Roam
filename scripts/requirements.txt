@@ -1,5 +1,5 @@
 # Direct dependencies of the helper scripts in this directory. Transitive
-# dependencies are deliberately NOT pinned here.
+# dependencies are intentionally NOT pinned here.
 #
 # This file used to be a full `pip freeze` dump, which pinned transitives too.
 # Dependabot's `scripts-pip` group (.github/dependabot.yml) bumps every pinned

@@ -125,8 +125,8 @@ struct AppLinksView: View {
                     // LazyHGrid stretch and distribute the extra space
                     // between rows, leaving a visible gap between row 1
                     // and row 2 on visionOS (gridHeight 145pt). The
-                    // surrounding `Spacer()`s were similarly redundant —
-                    // the grid already fills the viewport width — and
+                    // surrounding `Spacer()`s were similarly redundant -
+                    // the grid already fills the viewport width - and
                     // removing them avoids any extra vertical Spacer
                     // expansion inside the ScrollView's layout pass.
                     .frame(

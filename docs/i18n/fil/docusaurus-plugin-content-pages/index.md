@@ -20,7 +20,7 @@ Libreng gamitin ang Roam, walang ads at walang bayad na bersyon. Kung nakatulong
 
 :::
 
-Lahat ng gusto mo, wala ng hindi mo kailangan — hatid ng Roam
+Lahat ng gusto mo, wala ng hindi mo kailangan - hatid ng Roam
 
 -   Tumakbo sa Mac, iPhone, iPad, Apple Watch, Vision Pro o Apple TV!
 -   Smart integration sa platform gamit ang keyboard shortcuts sa Mac, at paggamit ng hardware volume buttons para kontrolin ang TV Volume sa iOS
@@ -28,7 +28,7 @@ Lahat ng gusto mo, wala ng hindi mo kailangan — hatid ng Roam
 -   Sinusuportahan ang Headphones mode (a.k.a. private listening) sa Mac, iPad, iPhone, VisionOS, at Apple TV (ipatugtog ang audio ng TV sa iyong device)
 -   Auto-discover ng mga device sa iyong local network agad kapag binuksan ang app
 -   Intuitive na disenyo gamit ang native SwiftUI design system ng Apple
--   Mabilis at magaang gamitin—mas mababa pa sa 8 MB sa lahat ng device at bumubukas sa wala pang kalahating segundo!
+-   Mabilis at magaang gamitin-mas mababa pa sa 8 MB sa lahat ng device at bumubukas sa wala pang kalahating segundo!
 -   Open source (https://github.com/msdrigg/roam)
 
 ## Mga Tampok

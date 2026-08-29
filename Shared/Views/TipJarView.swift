@@ -26,9 +26,8 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         self == .standard ? nil : rawValue
     }
 
-    /// The asset catalog image used for the preview swatch. These are separate
-    /// image sets from the app-icon sets, because icon assets themselves are
-    /// not addressable as `Image(...)` at runtime.
+    /// Preview swatch image. Separate from the app-icon sets, which are not
+    /// addressable as `Image(...)` at runtime.
     var previewAssetName: String {
         self == .standard ? "AppIconPreview" : "\(rawValue)Preview"
     }
@@ -43,12 +42,8 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     }
 }
 
-/// The trailing marker on a settings row that tipping unlocks.
-///
-/// Previously a bare `.caption` label crammed against the row title, which read
-/// as disabled-state fine print rather than as the tappable thing it is. A
-/// tinted capsule at footnote size gives it enough presence to look like an
-/// offer, and enough padding to stop colliding with the title.
+/// The trailing marker on a settings row that tipping unlocks. A tinted
+/// capsule at footnote size, so it reads as an offer rather than fine print.
 struct TipToUnlockBadge: View {
     @AppStorageColor(UserDefaultKeys.customAccentColor) private var accentColor: Color = Color("AccentColor")
 
@@ -64,7 +59,7 @@ struct TipToUnlockBadge: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
         .background(Capsule().fill(accentColor.opacity(0.15)))
-        // Never truncate to "Tip to unl…" — the row title wraps first.
+        // Never truncate to "Tip to unl…" - the row title wraps first.
         .fixedSize()
     }
 }
@@ -190,13 +185,9 @@ private struct TipTierRow: View {
                 }
                 .buttonStyle(.glassIfSupported(isProminent: true))
             } else if inScreenshotTestingContext() {
-                // Screenshot runs have to be deterministic. The redacted pill
-                // below is right for real users (it signals "still loading"),
-                // but it makes the App Store review screenshot useless — the
-                // reviewer needs to see the actual purchase affordance. Same
-                // reasoning as DeviceListItem forcing its status dot green
-                // under screenshot testing. The amounts match the App Store
-                // Connect prices exactly; nothing is purchasable here.
+                // Screenshot runs must be deterministic, and the redacted pill
+                // below hides the purchase affordance the reviewer needs to
+                // see. Amounts match App Store Connect; nothing is purchasable.
                 Button(tier.placeholderPrice) {}
                     .buttonStyle(.glassIfSupported(isProminent: true))
             } else {
@@ -213,7 +204,7 @@ private struct TipTierRow: View {
 }
 
 #if os(iOS)
-    /// Alternate app icons are an iOS/iPadOS affordance — `setAlternateIconName`
+    /// Alternate app icons are an iOS/iPadOS affordance - `setAlternateIconName`
     /// has no macOS, watchOS or visionOS equivalent.
     struct AppIconPickerView: View {
         @State private var store = TipStore.shared

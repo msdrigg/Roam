@@ -5,11 +5,11 @@
 # NOT listed here, so Dependabot will not open version-update PRs against it.
 #
 # Note: this file controls version-update (and security-update) PRs. It does not
-# retroactively dismiss existing Dependabot *alerts* for unlisted paths — those
+# retroactively dismiss existing Dependabot *alerts* for unlisted paths - those
 # are dismissed once in the Security tab (reason: "not used / inaccurate").
 version: 2
 updates:
-  # Rust — main backend
+  # Rust - main backend
   - package-ecosystem: cargo
     directory: /backend
     schedule:
@@ -20,7 +20,7 @@ updates:
         patterns:
           - "*"
 
-  # Rust — gateway
+  # Rust - gateway
   - package-ecosystem: cargo
     directory: /backend-gateway
     schedule:
@@ -31,7 +31,7 @@ updates:
         patterns:
           - "*"
 
-  # JavaScript — Docusaurus docs site
+  # JavaScript - Docusaurus docs site
   - package-ecosystem: npm
     directory: /docs
     schedule:
@@ -42,7 +42,7 @@ updates:
         patterns:
           - "*"
 
-  # Python — helper scripts
+  # Python - helper scripts
   - package-ecosystem: pip
     directory: /scripts
     schedule:

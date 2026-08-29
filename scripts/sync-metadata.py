@@ -22,7 +22,7 @@ import httpx
 import jwt
 from httpx import AsyncClient, Response
 
-# Sibling module — pulled in lazily inside `_get_or_create_tart_vm` so the
+# Sibling module - pulled in lazily inside `_get_or_create_tart_vm` so the
 # rest of the script still imports cleanly on machines without tart/sshpass
 # installed (e.g. when only running metadata sync, no screenshot capture).
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -515,20 +515,20 @@ LANGUAGE_TO_IDENTIFIER: dict[Language, str] = {
 # sizes are rejected. Each entry lists every accepted (width, height) tuple.
 DISPLAY_TYPE_DIMENSIONS: dict[str, list[tuple[int, int]]] = {
     # 6.5"/6.7"/6.9" iPhones all upload to APP_IPHONE_67 (Apple has not
-    # introduced a 6.9-specific slot — APP_IPHONE_69 is rejected by ASC).
+    # introduced a 6.9-specific slot - APP_IPHONE_69 is rejected by ASC).
     # Accepts both the iPhone 14/15 Pro Max dims and the iPhone 16/17 Pro Max
     # dims, in portrait or landscape.
     "APP_IPHONE_67": [(1290, 2796), (2796, 1290), (1320, 2868), (2868, 1320)],
     # Legacy 6.5" iPhone slot (XS Max / 11 Pro Max). Apple keeps this slot
     # available even after introducing 6.7"/6.9". A plain iPhone 11 sim
-    # produces 828x1792 (6.1" dims) which does NOT match — the matching
+    # produces 828x1792 (6.1" dims) which does NOT match - the matching
     # simulator is "iPhone 11 Pro Max" (1242x2688). The 12-15 Pro Max sims
     # render at 1284x2778, also accepted here.
     "APP_IPHONE_65": [(1242, 2688), (2688, 1242), (1284, 2778), (2778, 1284)],
-    # 12.9"/13" iPad Pro slot — Apple accepts both the legacy 12.9" dims and
+    # 12.9"/13" iPad Pro slot - Apple accepts both the legacy 12.9" dims and
     # the 13" M4's native render.
     "APP_IPAD_PRO_3GEN_129": [(2048, 2732), (2732, 2048), (2064, 2752), (2752, 2064)],
-    # Apple Watch Series 10 / 11 (46mm) — same display
+    # Apple Watch Series 10 / 11 (46mm) - same display
     "APP_WATCH_SERIES_10": [(416, 496), (496, 416)],
     "APP_WATCH_ULTRA": [(410, 502), (502, 410)],
     "APP_APPLE_VISION_PRO": [(3840, 2160)],
@@ -706,7 +706,7 @@ def _recover_pngs_from_xcresult_data(
     PNG magic signature and copy them into export_path with names that
     `_collect_locale_screenshots` recognizes. Used on macOS where xcodebuild
     reliably hangs post-test, leaving the bundle's Info.plist unwritten so
-    xcparse refuses to read it — but the screenshot attachments themselves
+    xcparse refuses to read it - but the screenshot attachments themselves
     are written to Data/ as raw blobs by the test.
 
     Files are sorted by mtime (capture order), then assigned the same
@@ -836,7 +836,7 @@ def _boot_sim_and_open_window(udid: str) -> bool:
     Orientation submenu to be reachable via System Events. Without the full
     teardown the Simulator app frequently ends up in a state where its
     `menu bar 1 → Device → Orientation` menu item can't be found by
-    osascript (-1728), even though Simulator is visibly open — typically
+    osascript (-1728), even though Simulator is visibly open - typically
     after xcodebuild's cloned sim is torn down."""
     # Quit Simulator.app to clear any stale menu state from cloned devices
     # left over by `xcodebuild test`.
@@ -894,7 +894,7 @@ def _boot_sim_and_open_window(udid: str) -> bool:
         time.sleep(1.0)
     print(
         f"  Warning: Simulator's Device → Orientation menu never appeared "
-        f"for {udid} after 30s — proceeding anyway"
+        f"for {udid} after 30s - proceeding anyway"
     )
     return True
 
@@ -1002,7 +1002,7 @@ def _capture_ipad_landscape_via_simctl(
             print(f"  Warning: simctl launch failed for iPad landscape: {stderr}")
             return False
 
-        # Wait for the app to render its initial portrait scene fully —
+        # Wait for the app to render its initial portrait scene fully -
         # blocking data load (~1s) + PhoneHomeView -> DeviceSplitRoot
         # appear + DeviceLoader populate + initial layout. RTL locales
         # (Arabic) take noticeably longer for the SwiftUI layout pass to
@@ -1077,7 +1077,7 @@ def _collect_locale_screenshots(
 
     `xcparse screenshots --os --model` flattens attachment names: the test
     attaches a screenshot named "en-US/3/LandscapePrimary" and xcparse writes
-    it as `<os>/<model>/en-US3LandscapePrimary_0_<UUID>.png` — the slashes are
+    it as `<os>/<model>/en-US3LandscapePrimary_0_<UUID>.png` - the slashes are
     *deleted*, not turned into directories. We match by the locale prefix +
     numeric index encoded into the basename, and sort by that index.
 
@@ -1188,8 +1188,8 @@ def _wait_for_menubar_report(
 
 
 def _zoom_menubar_to_app_desktop(png_path: str, report: dict) -> bool:
-    """Crop+zoom a *full-display* MenuBarExtra capture into the top-right —
-    so the real menu bar and the open popover fill most of the frame — then
+    """Crop+zoom a *full-display* MenuBarExtra capture into the top-right -
+    so the real menu bar and the open popover fill most of the frame - then
     resize to the exact 2880x1800 APP_DESKTOP slot, in place.
 
     Why this and not the old crop-then-upscale path: the previous approach
@@ -1289,7 +1289,7 @@ def _zoom_menubar_to_app_desktop(png_path: str, report: dict) -> bool:
     if tool is None:
         print(
             "  Warning: ImageMagick (magick/convert) not found; cannot zoom "
-            "the MenuBarExtra capture — keeping full-display shot. "
+            "the MenuBarExtra capture - keeping full-display shot. "
             "Install with `brew install imagemagick`."
         )
         return False
@@ -1416,7 +1416,7 @@ class MetadataManager:
                 ScreenshotSource(device="Apple Watch Series 11 (46mm)", size="Watch46"),
             ],
             # macOS tests run on the host Mac itself (no simulator), so a single
-            # entry is sufficient — xcodebuild can't pick a "screen size" for
+            # entry is sufficient - xcodebuild can't pick a "screen size" for
             # the host. The captured screenshot's resolution is whatever the
             # test renders; APP_DESKTOP accepts a few standard sizes which the
             # dimension validator will check against.
@@ -1493,7 +1493,7 @@ class MetadataManager:
                         candidates.append(candidate)
         if not candidates:
             print(
-                "Cannot find a Debug-xrsimulator build of Roam.app — run "
+                "Cannot find a Debug-xrsimulator build of Roam.app - run "
                 "`xcodebuild build -scheme Roam -destination "
                 "'platform=visionOS Simulator,name=Apple Vision Pro'` once first."
             )
@@ -1510,7 +1510,7 @@ class MetadataManager:
         ]
 
         # (state_index, attachment_name, extra_launch_args, settle_seconds,
-        #  post_launch_action) — `post_launch_action` runs after the settle
+        #  post_launch_action) - `post_launch_action` runs after the settle
         # delay and before the screenshot. Used by KeyboardOpen to dolly the
         # visionOS camera back so the floating dictation/keyboard pill is
         # inside the captured 3840×2160 framebuffer instead of below it.
@@ -1642,7 +1642,7 @@ class MetadataManager:
 
     def _prepare_vision_keyboard_camera(self) -> None:
         """Position the visionOS sim camera so the system dictation/keyboard
-        pill — which floats below the app window in 3D space — lands inside
+        pill - which floats below the app window in 3D space - lands inside
         the captured 3840×2160 framebuffer instead of below it.
 
         Sequence:
@@ -1721,7 +1721,7 @@ class MetadataManager:
 
         For the MenuBarExtra state we capture the whole native-res desktop
         (with the popover open) and then crop+zoom into the top-right so the
-        menu bar and popover fill most of the frame — coordinates come from
+        menu bar and popover fill most of the frame - coordinates come from
         the app's `-MenuBarExtraReportPath` JSON report. Because every output
         pixel comes from the full-res screenshot (only a mild upscale), the
         menu-bar UI stays crisp; see `_zoom_menubar_to_app_desktop`.
@@ -1783,7 +1783,7 @@ class MetadataManager:
             # `-showMenuBar YES` must be present at launch so the
             # MenuBarExtra scene is inserted at initial scene-graph build.
             # Flipping it at runtime crashes the app (SwiftUI scene-update
-            # recursion) — see Roam/ScreenshotCapture.swift.
+            # recursion) - see Roam/ScreenshotCapture.swift.
             (
                 6,
                 "MenuBarExtra",
@@ -1902,7 +1902,7 @@ class MetadataManager:
         _ensure_cache_schema(os.path.join(tempfile.gettempdir(), "auto-screenshots"))
 
         # visionOS sim's XCTest screenshot capture returns 1x1 placeholders in
-        # Xcode 26 — work around it by using `simctl io screenshot` instead,
+        # Xcode 26 - work around it by using `simctl io screenshot` instead,
         # which captures the full sim display (including the AR background)
         # at the 3840x2160 resolution APP_APPLE_VISION_PRO requires. We can't
         # drive UI taps via simctl, so we capture three states by relaunching
@@ -2060,7 +2060,7 @@ class MetadataManager:
             returncode = -1 if returncode == 0 else returncode
 
         if returncode != 0:
-            # The test may have failed AFTER capturing some attachments — try
+            # The test may have failed AFTER capturing some attachments - try
             # xcparse anyway to salvage what landed in the result bundle.
             print(
                 f"Warning: UI tests for {device_name} in {locale_id} exited "
@@ -2088,7 +2088,7 @@ class MetadataManager:
         extract_result = subprocess.run(extract_command)
 
         # xcparse fails (and unhelpfully still exits 0) when the xcresult
-        # bundle isn't finalized — which is always the case on macOS, since
+        # bundle isn't finalized - which is always the case on macOS, since
         # xcodebuild reliably hangs post-test without writing the bundle's
         # Info.plist. Detect this by checking the export dir post-xcparse:
         # if it's missing or empty, fall back to scanning Data/ for raw
@@ -2104,7 +2104,7 @@ class MetadataManager:
 
         if not _export_has_pngs(screenshots_dir_export):
             print(
-                f"  xcparse produced no PNGs (bundle likely unfinalized) — "
+                f"  xcparse produced no PNGs (bundle likely unfinalized) - "
                 f"scanning {screenshots_dir}/Data for raw PNGs"
             )
             recovered = _recover_pngs_from_xcresult_data(
@@ -2169,7 +2169,7 @@ class MetadataManager:
                     if rot.returncode == 0:
                         new_dims = _read_png_dimensions(fpath)
                         # Strip the eXIf chunk sips inserts to compensate
-                        # for the pixel rotation — without this Finder/
+                        # for the pixel rotation - without this Finder/
                         # Preview/ASC's CDN re-rotate the image back to
                         # the original orientation for display, defeating
                         # the rotation entirely. See _strip_png_exif.
@@ -2185,7 +2185,7 @@ class MetadataManager:
                         print(f"  Warning: sips rotate failed for {fpath}: {stderr}")
 
         # iPhone 11 sim renders at 828x1792 (6.1" dims), but we want the
-        # captures in the APP_IPHONE_65 (6.5") slot — Apple requires 1242x2688.
+        # captures in the APP_IPHONE_65 (6.5") slot - Apple requires 1242x2688.
         # The aspect ratio is identical (1.5x in both axes), so a uniform sips
         # upscale produces a slightly soft but ASC-acceptable image. If a
         # genuine 6.5" sim (e.g. "iPhone 11 Pro Max") is installed and added
@@ -2462,7 +2462,7 @@ async def main():
                 # PHASE 1: generate + validate everything for this locale BEFORE
                 # any destructive App Store Connect operation. If generation or
                 # validation fails for a display type, that set is skipped
-                # entirely — the existing screenshots in App Store Connect are
+                # entirely - the existing screenshots in App Store Connect are
                 # left untouched.
                 try:
                     screenshots_by_platform = metadata_manager.get_screenshots(

@@ -27,7 +27,7 @@ Notes
   port, capture both ends with
   `udp port 6970 or udp port 6971 or udp port <remote-rtcp>`.
 - Picks the right interface: `tshark -D` lists interfaces. On Wi-Fi networks
-  many Roku TVs are joined to a 5 GHz SSID — make sure your Mac is on the same
+  many Roku TVs are joined to a 5 GHz SSID - make sure your Mac is on the same
   segment, otherwise `host 192.168.10.242` matches nothing.
 
 ## 2. Quick sanity check on the capture
@@ -114,7 +114,7 @@ tshark -r /tmp/roam-headphones.pcap \
   > /tmp/roam-opus.raw
 ```
 
-`/tmp/roam-opus.raw` is a *concatenation of bare Opus packets* — there's no
+`/tmp/roam-opus.raw` is a *concatenation of bare Opus packets* - there's no
 container, no length prefixes, and no timing information. To play it back, the
 easiest path is to re-wrap it into an Ogg/Opus file with a known frame size
 (10 ms in this protocol, so 480 samples at 48 kHz).

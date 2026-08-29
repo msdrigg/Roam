@@ -68,7 +68,7 @@ struct ButtonGrid: View {
                     }
                 }
             }
-            // Advisory only, and only the once — CEC either works on this setup
+            // Advisory only, and only the once - CEC either works on this setup
             // or the user needs to go turn it on. Either way the press is sent.
             if isVolumeOverHDMI {
                 VolumeOverHDMITip.attemptedVolume.sendDonation()
@@ -248,7 +248,7 @@ private struct VolumeOverHDMITipContent: View {
 
             Text(
                 // swiftlint:disable:next line_length
-                "This Roku has no speakers of its own, so Roam sends volume to your TV or receiver over HDMI-CEC. If nothing happens, turn CEC on in your TV's settings — it's usually under a brand name like Anynet+, Bravia Sync, SimpLink, or VIERA Link.",
+                "This Roku has no speakers of its own, so Roam sends volume to your TV or receiver over HDMI-CEC. If nothing happens, turn CEC on in your TV's settings - it's usually under a brand name like Anynet+, Bravia Sync, SimpLink, or VIERA Link.",
                 comment: "Body of the popup shown the first time volume is used on an HDMI-connected Roku"
             )
             .font(.callout)

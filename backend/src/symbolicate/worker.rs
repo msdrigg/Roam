@@ -234,7 +234,7 @@ pub async fn run(cli: RoamCli) -> Result<()> {
             .buffer_unordered(parallelism)
             .collect::<Vec<()>>()
             .await;
-        // Restart loop immediately — keep draining until lease returns 0.
+        // Restart loop immediately - keep draining until lease returns 0.
     }
 }
 

@@ -170,7 +170,7 @@ class TartVM:
         `tart run` orphaned by an aborted earlier run (atexit teardown
         skipped on SIGKILL / double Ctrl-C) keeps the VM alive with the
         *previous* run's `--dir=roam-out:<old tmp>` mount. Reusing it
-        would send every capture into a now-deleted host dir — the guest
+        would send every capture into a now-deleted host dir - the guest
         writes `/Volumes/My Shared Files/roam-out/capture-*.png` fine, but
         the host polls *this* run's tmp dir and never sees it
         ("screencapture wrote ... but host never saw ..."). So if the VM
@@ -181,7 +181,7 @@ class TartVM:
         if not self.exists_local():
             # `tart clone` of a remote OCI URL auto-pulls if the image
             # isn't in `~/.tart/cache/OCIs/...`, and uses the cache
-            # otherwise — no separate `tart pull` step needed. Going
+            # otherwise - no separate `tart pull` step needed. Going
             # through pull explicitly re-validates layers against the
             # registry, which is what triggered the "network connection
             # was lost" retry storm we saw on transient connectivity.
@@ -210,7 +210,7 @@ class TartVM:
         self.wait_for_ssh()
         # Ensure the guest boots at the target resolution (one-time
         # permanent set + reboot; persists on disk thereafter). Done in
-        # headless mode only — the interactive setup flow drives this
+        # headless mode only - the interactive setup flow drives this
         # itself so the user can watch.
         if headless:
             self.ensure_guest_display()
@@ -263,7 +263,7 @@ class TartVM:
         persistent path since the share unmounts on stop) and points every
         desktop at it with System Events. A static image set this way
         renders under the headless capture; live aerials/video wallpapers
-        do not. Best-effort — logs a warning rather than aborting the run."""
+        do not. Best-effort - logs a warning rather than aborting the run."""
         if not os.path.isfile(WALLPAPER_HOST_PATH):
             print(
                 f"  Warning: wallpaper {WALLPAPER_HOST_PATH} missing; "
@@ -349,7 +349,7 @@ class TartVM:
         w, h = self.display
         # `tart set --display` configures the virtual display device, but
         # the cirruslabs base image's WindowServer still boots at its
-        # own saved resolution — the actual mode is forced post-boot in
+        # own saved resolution - the actual mode is forced post-boot in
         # ensure_guest_display(). We still set the device size here so the
         # device is at least capable of the target mode.
         display_arg = f"--display={w}x{h}"
@@ -376,7 +376,7 @@ class TartVM:
         # --no-graphics: virt framework still attaches a virtual display
         # device, so WindowServer + screencapture work; just no host window
         # opens, so it can't interrupt your host work. Without that flag,
-        # tart opens a host-side window mirroring the guest display — used
+        # tart opens a host-side window mirroring the guest display - used
         # for the one-time TCC-grant interactive setup flow.
         self._run_proc = subprocess.Popen(
             ["tart", "run", *mode_args, *dir_args, self.name],
@@ -414,7 +414,7 @@ class TartVM:
                 # A cold-booting guest can accept the TCP connection but
                 # stall before the SSH banner/auth completes, so a single
                 # attempt hits the 15s subprocess timeout. That's expected
-                # mid-boot — keep polling until the overall deadline rather
+                # mid-boot - keep polling until the overall deadline rather
                 # than aborting the whole wait.
                 last_msg = "ssh attempt timed out (guest still booting)"
                 time.sleep(3.0)
@@ -505,7 +505,7 @@ class TartVM:
                 return proc
             print(
                 f"  [tart] ssh transient ({proc.returncode}): "
-                f"{(proc.stderr or '').strip().splitlines()[-1] if proc.stderr else ''} — "
+                f"{(proc.stderr or '').strip().splitlines()[-1] if proc.stderr else ''} - "
                 f"retry {attempt + 1}/{retries}"
             )
             self._refresh_ip_after_transient()
@@ -514,7 +514,7 @@ class TartVM:
         return last
 
     def _refresh_ip_after_transient(self) -> None:
-        """Re-resolve the VM IP — guest DHCP can rotate addresses between
+        """Re-resolve the VM IP - guest DHCP can rotate addresses between
         captures and the cached IP goes stale."""
         time.sleep(2.0)
         proc = subprocess.run(
@@ -591,7 +591,7 @@ class TartVM:
         """Make the guest boot at `self.display`.
 
         Runtime display-mode switching (CGConfigure...`.forSession`)
-        breaks WindowServer compositing in the VM — app windows register
+        breaks WindowServer compositing in the VM - app windows register
         but never reach the framebuffer, so captures show only the
         wallpaper. Switching `.permanently` writes the windowserver
         displays prefs to the VM disk; after a reboot macOS initializes
@@ -679,7 +679,7 @@ print("complete rc=\\(rc.rawValue)")
         SwiftUI brings the window up at a restored/ideal size that often
         doesn't fill the 2880x1800 screen nicely; an AX resize gives a
         deterministic frame. Requires the Accessibility TCC grant (added
-        in _grant_tcc). Best-effort — logs a warning on failure."""
+        in _grant_tcc). Best-effort - logs a warning on failure."""
         uid = self._detect_admin_uid()
         swift_src = f'''import AppKit
 import ApplicationServices
@@ -719,10 +719,10 @@ print("resized")
             notification agent whenever a login item / agent / extension
             is registered (Roam's widget extension triggers this on first
             launch). These persist in the usernoted database until
-            dismissed, so killing the daemon alone doesn't clear them —
+            dismissed, so killing the daemon alone doesn't clear them -
             we delete the db file and restart the daemons.
           - The macOS "screen recording" reminder dialog (center),
-            owned by UserNotificationCenter — handled per-capture in
+            owned by UserNotificationCenter - handled per-capture in
             screencapture().
 
         We also disable the BTM notification agent so no new
@@ -756,8 +756,8 @@ print("resized")
 
         Grants two services to every identity in the SSH→launchctl→swift/
         screencapture chain:
-          - kTCCServiceScreenCapture — for the actual captures
-          - kTCCServiceAccessibility — for the AX window resize
+          - kTCCServiceScreenCapture - for the actual captures
+          - kTCCServiceAccessibility - for the AX window resize
         """
         # (client, client_type): 0 = bundle id, 1 = binary path.
         clients: list[tuple[str, int]] = [
@@ -966,7 +966,7 @@ def run_interactive_setup(vm: "TartVM") -> None:
     print("=" * 72)
     print(
         "A host window will open showing the guest macOS desktop.\n"
-        "This script will ask the guest to do two things — please click\n"
+        "This script will ask the guest to do two things - please click\n"
         "'Allow' on each dialog when it appears inside the VM window:\n"
         "  1. Screen recording bypass for `com.apple.sshd-session`\n"
         "  2. Local-network access for `Roam`\n"
@@ -984,7 +984,7 @@ def run_interactive_setup(vm: "TartVM") -> None:
     print(
         "Note: TCC grants (screen recording + accessibility) are now written\n"
         "directly to the guest's TCC.db during install, so the dialogs below\n"
-        "may not even appear. This interactive flow remains as a fallback —\n"
+        "may not even appear. This interactive flow remains as a fallback -\n"
         "if no dialog shows, just press Enter to continue."
     )
     print()
@@ -996,7 +996,7 @@ def run_interactive_setup(vm: "TartVM") -> None:
         "    real capture runs use, so all subsequent runs stay clean."
     )
     capture_target = f"{GUEST_SHARED_ROOT}/{SHARE_OUT}/setup-trigger.png"
-    # Fire-and-forget — we don't care about the result; we only need the
+    # Fire-and-forget - we don't care about the result; we only need the
     # TCC dialog to appear so the user can grant. The capture itself may
     # produce an unusable image while the dialog is up.
     vm.screencapture(["-x", "-t", "png", capture_target])
@@ -1036,17 +1036,17 @@ def build_roam_app() -> str:
     which is required because virtio-fs traversal strips the host's
     signature. Disabling it keeps the in-guest re-sign valid."""
     print("[tart] building Roam (macOS Debug) on host ...")
-    # xcbeautify is optional — fall back to raw output if absent.
+    # xcbeautify is optional - fall back to raw output if absent.
     pipe_cmd = "xcbeautify" if shutil.which("xcbeautify") else "cat"
     subprocess.run(
         f"set -o pipefail && "
         f"xcodebuild build "
         f"-scheme Roam "
         # Pin to arm64 explicitly. Plain `platform=macOS` matches this Mac
-        # twice — once per arch slice (arm64 + x86_64) — so xcodebuild warns
+        # twice - once per arch slice (arm64 + x86_64) - so xcodebuild warns
         # "Using the first of multiple matching destinations". `arch=arm64`
         # disambiguates to a single destination (silencing the warning) and
-        # keeps the build a thin arm64 binary — all the Apple-Silicon guest
+        # keeps the build a thin arm64 binary - all the Apple-Silicon guest
         # needs. (`generic/platform=macOS` also silences it but builds a
         # heavier x86_64+arm64 universal binary.)
         f"-destination 'platform=macOS,arch=arm64' "

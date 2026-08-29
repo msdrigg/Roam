@@ -36,7 +36,7 @@ jobs:
               #
               # The persistent CI development identity (MACOS_DEV_CERT_P12) is
               # imported so automatic signing reuses it instead of minting a new
-              # Apple Development certificate on every ephemeral runner — stale
+              # Apple Development certificate on every ephemeral runner - stale
               # minted certs pile up until the account hits Apple's certificate
               # cap and archiving fails. Recreate the identity with the "ASC
               # Create Development Certificate" workflow if it expires.

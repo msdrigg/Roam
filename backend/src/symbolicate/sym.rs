@@ -640,15 +640,9 @@ impl SymbolicationClient {
             return Ok(());
         }
 
-        // One download per cache, however many payloads want it. A batch
-        // routinely leases several crashes from the same device on the same
-        // build, and each spawned its own `ipsw`. Two of them raced the same
-        // remote DMG, whose FUSE mountpoint is named after the DMG and so is
-        // identical for both: one mounted it, the other got EACCES on the
-        // mountpoint, then the first unmounted and the survivor's copy found
-        // nothing. Both failed after ~14 minutes and left a half-copied cache
-        // behind. Serialize on the cache identity and re-check afterwards, so
-        // the losers of the race find the winner's download and return.
+        // One download per cache. Concurrent `ipsw` runs for the same build
+        // share a FUSE mountpoint and clobber each other, so serialize on the
+        // cache identity and re-check afterwards.
         let cache_key = format!(
             "{}/{}/{}",
             requirement.device_type,
@@ -676,10 +670,9 @@ impl SymbolicationClient {
             "Downloading system dyld_shared_cache via ipsw"
         );
 
-        // Anything already here is the debris of a download that did not finish
-        // — a complete one would have satisfied `dyld_cache_exists` above. Clear
-        // it so `ipsw` writes into an empty directory and cannot mistake a
-        // truncated file for one it already fetched.
+        // Anything here is debris from an unfinished download; a complete one
+        // would have satisfied `dyld_cache_exists` above. Clear it so `ipsw`
+        // cannot mistake a truncated file for one it already fetched.
         if let Err(err) = tokio::fs::remove_dir_all(&dyld_dir).await
             && err.kind() != std::io::ErrorKind::NotFound
         {
@@ -704,11 +697,8 @@ impl SymbolicationClient {
         )
         .await;
 
-        // A download that exits 0 having written nothing is still a failure.
-        // `ipsw` does exactly that when a source has no match for the build,
-        // and trusting the exit status alone published three no-symbol reports
-        // and reaped their payloads -- turning a miss that would have been
-        // retried into permanent loss. Success has to mean a cache is on disk.
+        // `ipsw` exits 0 having written nothing when a source has no match for
+        // the build, so success has to mean a cache is actually on disk.
         let outcome = match outcome {
             Ok(()) => match dyld_cache_exists(&dyld_dir, requirement.arch.as_deref()).await {
                 Ok(true) => Ok(()),
@@ -721,12 +711,8 @@ impl SymbolicationClient {
             Err(err) => Err(err),
         };
 
-        // A failed download leaves whatever it managed to copy. That debris is
-        // worse than nothing: `dyld_cache_exists` only looks for a file named
-        // `dyld_shared_cache*`, so a cache truncated mid-copy reads as present
-        // forever, is never re-downloaded, and fails to parse every time it is
-        // consulted ("Incorrect number of SubCaches"). Clear the entry so the
-        // next attempt starts from scratch.
+        // `dyld_cache_exists` only looks for a `dyld_shared_cache*` name, so a
+        // cache truncated mid-copy would read as present forever. Clear it.
         if let Err(err) = outcome {
             if let Err(remove_err) = tokio::fs::remove_dir_all(&cache_entry_dir).await {
                 tracing::warn!(
@@ -856,15 +842,9 @@ impl SymbolicationClient {
                 "Looking up symbols for binary"
             );
             let lib_started = std::time::Instant::now();
-            // Symbol parsing runs over binaries we do not control — user-uploaded
-            // dSYMs and dyld shared caches — and the object/DWARF readers we call
-            // into can panic on layouts they did not anticipate (e.g. samply-symbols
-            // 0.24.1 subtracts an image's __TEXT vmaddr from every export address,
-            // which underflows for dyld cache images whose exports sit below their
-            // __TEXT segment). One bad binary must not lose the whole report, so
-            // treat a panic exactly like a lookup error: this UUID goes to the
-            // report's "Unresolved UUIDs" section and the other binaries still
-            // symbolicate.
+            // The object/DWARF readers can panic on layouts they did not
+            // anticipate, and we do not control the binaries. Treat a panic as a
+            // lookup error so one bad binary cannot lose the whole report.
             let outcome = match AssertUnwindSafe(self.symbolicate_requested_addresses_for_lib(
                 &breakpad_id,
                 request,
@@ -921,13 +901,11 @@ impl SymbolicationClient {
             &lookup_errors,
         )?;
 
-        // A report where nothing resolved is a wall of hex. Posting it with no
-        // comment is how a macOS crash went out looking like a delivered crash
-        // report when in truth every symbol source had failed. Say so at the
-        // top, where it cannot be mistaken for a normal report.
+        // A report where nothing resolved is a wall of hex, so say so at the
+        // top rather than letting it pass for a normal report.
         if total_addresses > 0 && resolved_addresses == 0 {
             let mut banner = String::from(
-                "!! NO SYMBOLS RESOLVED — every address in this report is unsymbolicated.\n",
+                "!! NO SYMBOLS RESOLVED - every address in this report is unsymbolicated.\n",
             );
             match &system_symbols_error {
                 Some(error) => {
@@ -940,7 +918,7 @@ impl SymbolicationClient {
                 None => {
                     let _ = writeln!(
                         banner,
-                        "!! No dSYM on file for the binaries below — upload it and re-symbolicate."
+                        "!! No dSYM on file for the binaries below - upload it and re-symbolicate."
                     );
                 }
             }
@@ -962,15 +940,9 @@ impl SymbolicationClient {
             "Wrote symbolicated report"
         );
 
-        // Nothing resolved *and* the system symbol source was unreachable means
-        // the inputs were missing, not the symbols: the dyld cache download was
-        // rate-limited or the build was unavailable, both of which usually pass.
-        // Fail so the payload retries with backoff rather than burning its one
-        // delivery on an all-hex report.
-        //
-        // A missing dSYM is the opposite case — it will not fix itself, and the
-        // report's "Unresolved UUIDs" section names exactly which dSYM to
-        // upload, so that report is worth delivering. It ships with the banner.
+        // Nothing resolved plus an unreachable system source means the inputs
+        // were missing, which usually clears on retry, so fail and back off. A
+        // missing dSYM will not fix itself, so that report ships with a banner.
         if total_addresses > 0 && resolved_addresses == 0 {
             if let Some(error) = system_symbols_error {
                 anyhow::bail!(
@@ -992,37 +964,24 @@ impl SymbolicationClient {
 
 /// Stack budget for the payload parse thread.
 ///
-/// serde_json recurses once per nesting level, so lifting the depth cap moves
-/// the failure mode from "clean parse error" to "stack overflow". Unoptimized
-/// builds spend a few KB of frame per level, so this clears tens of thousands
-/// of frames there and far more with optimizations on — well past the few
-/// thousand MetricKit actually emits for a runaway recursion.
+/// serde_json recurses once per nesting level, so lifting the depth cap turns a
+/// clean parse error into a stack overflow. This clears far more frames than
+/// MetricKit emits for a runaway recursion, and costs address space rather than
+/// memory since pages commit only as the parser touches them.
 ///
-/// Costs address space rather than memory: the pages are committed only as the
-/// parser actually touches them, so a shallow payload pays nothing.
-///
-/// "Costs address space rather than memory" holds only where the reservation is
-/// allowed in the first place. Linux's heuristic overcommit refuses a single
-/// mapping larger than RAM outright, so on the 256 MB backend VM (207 MiB after
-/// the kernel) this `mmap` fails, `Builder::spawn` returns `Err`, and the caller
-/// panics. That is why nothing but the worker — which runs on a real machine —
-/// may call `parse_metrickit_payload`; see `scan_binary_uuids` for the
-/// constant-memory scan the backend uses instead.
+/// Linux overcommit refuses a mapping larger than RAM, so the reservation fails
+/// on the 256 MB backend VM. Only the worker may call
+/// `parse_metrickit_payload`; the backend uses `scan_binary_uuids` instead.
 const PAYLOAD_PARSE_STACK_SIZE: usize = 256 * 1024 * 1024;
 
 /// Collect `binaryUUID` values straight out of the raw payload bytes.
 ///
-/// The backend needs the UUID list at ingest to tell a leasing worker which
-/// dSYMs it already holds, but it runs on a 256 MB VM and must never build the
-/// frame tree to get it: `parse_metrickit_payload` reserves a 256 MiB stack,
-/// which that VM cannot map, so ingest panicked after posting to Discord and
-/// before inserting the row. Every crash uploaded between the deploy that
-/// introduced the call and the deploy that removed it was dropped on the floor.
+/// Ingest needs the UUID list to tell a leasing worker which dSYMs it holds,
+/// but runs on a 256 MB VM that cannot map `parse_metrickit_payload`'s stack.
+/// This is a flat forward scan over bytes already in memory.
 ///
-/// This is a flat forward scan — no recursion, no tree, one pass, bounded by the
-/// payload that is already in memory. It is a hint rather than a parse: the
-/// worker re-derives the authoritative set from the parsed payload, so a UUID
-/// this misses costs a dSYM pre-fetch, not a symbol.
+/// A hint rather than a parse: the worker re-derives the authoritative set, so
+/// a missed UUID costs a dSYM pre-fetch, not a symbol.
 pub(crate) fn scan_binary_uuids(bytes: &[u8]) -> BTreeSet<String> {
     const KEY: &[u8] = b"\"binaryUUID\"";
 
@@ -1034,7 +993,7 @@ pub(crate) fn scan_binary_uuids(bytes: &[u8]) -> BTreeSet<String> {
         cursor = after_key;
 
         // Expect `: "<uuid>"`, allowing arbitrary whitespace either side of the
-        // colon — MetricKit pretty-prints with a space, but nothing guarantees
+        // colon - MetricKit pretty-prints with a space, but nothing guarantees
         // it and a compact payload must still scan.
         let rest = &bytes[after_key..];
         let Some(colon) = rest.iter().position(|b| !b.is_ascii_whitespace()) else {
@@ -1076,16 +1035,12 @@ fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 
 /// Parse a MetricKit payload with serde_json's recursion cap lifted.
 ///
-/// `MetricKitCallStackFrame::sub_frames` is self-referential and MetricKit
-/// nests one JSON level per stack frame, so the default 128-deep cap rejected
-/// any crash with a deeper stack. That is precisely the shape a stack overflow
-/// produces — the crash class `describe_stack_overflow` exists to name — so
-/// the reports we most wanted to read were the only ones we could not parse.
+/// MetricKit nests one JSON level per stack frame, so the default 128-deep cap
+/// rejected exactly the deep stacks a stack overflow produces.
 ///
-/// The parse runs on a thread with an oversized stack because
-/// `disable_recursion_limit` removes serde_json's own depth guard. Every
-/// walker over the resulting tree is iterative (see `for_each_frame`), so once
-/// the payload is parsed, depth costs heap rather than stack.
+/// `disable_recursion_limit` removes serde_json's own depth guard, so the parse
+/// runs on an oversized stack. Walkers over the tree are iterative (see
+/// `for_each_frame`), so depth then costs heap rather than stack.
 pub(crate) fn parse_metrickit_payload(bytes: &[u8]) -> Result<MetricKitPayload, serde_json::Error> {
     std::thread::scope(|scope| {
         let handle = std::thread::Builder::new()
@@ -1109,10 +1064,8 @@ pub(crate) fn parse_metrickit_payload(bytes: &[u8]) -> Result<MetricKitPayload, 
 
 /// Visit every frame in `roots` and their descendants, deepest-last.
 ///
-/// Deliberately iterative: payloads are parsed with the depth cap lifted, so a
-/// recursive walk here would just relocate the stack overflow from serde_json
-/// into our own code. The traversal order is not significant to any caller —
-/// all three collectors accumulate into maps keyed by breakpad ID.
+/// Iterative: with the parse depth cap lifted, a recursive walk here would just
+/// relocate the overflow. Order is not significant to any caller.
 fn for_each_frame(
     roots: &[MetricKitCallStackFrame],
     mut visit: impl FnMut(&MetricKitCallStackFrame),
@@ -1136,14 +1089,10 @@ pub(crate) struct MetricKitPayload {
 }
 
 impl MetricKitPayload {
-    /// Walk every call-stack frame and collect the binary UUIDs referenced.
-    /// Used by the upload handler to record which dSYMs the symbolicator will
-    /// need before the row gets handed to a worker.
     /// Every `binaryUUID` in the payload, walked from the parsed frame tree.
     ///
     /// Kept as the reference implementation `scan_binary_uuids` is checked
-    /// against — production reads UUIDs with the scan, because the only caller
-    /// that needed them (ingest) runs where this parse cannot.
+    /// against; production reads UUIDs with the scan.
     #[cfg(test)]
     pub(crate) fn binary_uuids(&self) -> BTreeSet<String> {
         let mut out = BTreeSet::new();
@@ -1280,15 +1229,11 @@ pub(crate) struct MetricKitCallStackFrame {
 impl Drop for MetricKitCallStackFrame {
     /// Free the frame tree iteratively.
     ///
-    /// The derived drop glue recurses once per nesting level, so now that
-    /// arbitrarily deep payloads parse (see `parse_metrickit_payload`), simply
-    /// letting a stack-overflow crash's frame tree go out of scope would
-    /// overflow our own stack — after the parse and the render had both
-    /// carefully avoided doing so.
+    /// The derived drop glue recurses once per nesting level, so letting a deep
+    /// frame tree go out of scope would overflow the stack.
     ///
-    /// Each frame moved into `pending` has already had its children taken, so
-    /// dropping it at the end of an iteration re-enters this impl with an empty
-    /// vector and stops there.
+    /// Each frame moved into `pending` has had its children taken, so dropping
+    /// it re-enters this impl with an empty vector and stops.
     fn drop(&mut self) {
         let mut pending: Vec<MetricKitCallStackFrame> = std::mem::take(&mut self.sub_frames);
         while let Some(mut frame) = pending.pop() {
@@ -1329,11 +1274,9 @@ impl MetricKitCrashDiagnostic {
     }
 }
 
-/// A private temp directory for one `ipsw` invocation, removed on drop.
-///
-/// Held across every exit path of `run_ipsw_dyld_download`, including the
-/// timeout kill and the `bail!` on a non-zero exit, so a failed download does
-/// not leave a partly extracted IPSW behind.
+/// A private temp directory for one `ipsw` invocation, removed on drop. Held
+/// across every exit path of `run_ipsw_dyld_download` so a failed download
+/// leaves no partly extracted IPSW behind.
 struct ScratchDir(Option<PathBuf>);
 
 impl ScratchDir {
@@ -1364,10 +1307,8 @@ impl Drop for ScratchDir {
     }
 }
 
-/// Per-cache download locks, keyed by `<device>/<build>/<arch>`.
-///
-/// Entries are never removed: one small `Arc<Mutex>` per distinct cache the
-/// process has touched, bounded by the device/build pairs in the fleet.
+/// Per-cache download locks, keyed by `<device>/<build>/<arch>`. Entries are
+/// never removed, bounded by the device/build pairs in the fleet.
 fn download_gate(cache_key: &str) -> Arc<tokio::sync::Mutex<()>> {
     static GATES: OnceLock<std::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> =
         OnceLock::new();
@@ -1392,12 +1333,8 @@ async fn extract_dyld_shared_cache(
 ) -> Result<()> {
     let mut failures: Vec<String> = Vec::new();
 
-    // ipsw.me first, for every platform. It was moved behind appledb for Macs
-    // on the belief that it indexes iOS restore images only — but it served
-    // iMac21,1 on 25F80 in production, and did so on the retry *after* appledb
-    // had exhausted its GitHub quota. appledb is community-maintained and picks
-    // up very new builds sooner, which makes it the better fallback rather than
-    // the better first choice.
+    // ipsw.me first on every platform: it serves Macs as well as iOS. appledb
+    // picks up very new builds sooner, which makes it the better fallback.
     match run_ipsw_dyld_download(
         "ipsw.me",
         ipsw_me_args(device_type, build_id, output_dir, arch),
@@ -1408,13 +1345,9 @@ async fn extract_dyld_shared_cache(
         Err(e) => failures.push(format!("ipsw.me: {e:#}")),
     }
 
-    // Everything past this point serves shared caches out of OTA zips, and
-    // `ipsw` can only perform that extraction on a Mac: "extracting
-    // dyld_shared_cache from remote OTA is only supported on macOS". The
-    // symbolicator worker runs on Linux, where ipsw.me is therefore the only
-    // source that can ever produce a cache -- it extracts from an IPSW, via
-    // apfs-fuse. Shelling out to the other two would spend two minutes per
-    // crash collecting the same refusal, so say why and stop.
+    // The remaining sources extract from OTA zips, which `ipsw` supports only
+    // on macOS. On Linux ipsw.me is the only source that can produce a cache,
+    // so stop here rather than spending two minutes collecting the refusal.
     if !cfg!(target_os = "macos") {
         anyhow::bail!(
             "no dyld_shared_cache source had build {build_id} for {device_type} ({}); \
@@ -1454,7 +1387,7 @@ async fn extract_dyld_shared_cache(
     }
 
     // Apple's OTA catalog last. It is the source that can serve a build the
-    // other two cannot — hardware-specific Mac builds and seeds — but it is
+    // other two cannot - hardware-specific Mac builds and seeds - but it is
     // also the slowest to search, so it runs only once the indexed sources have
     // both missed.
     match os_family.and_then(ota_platform) {
@@ -1481,19 +1414,14 @@ async fn extract_dyld_shared_cache(
     );
 }
 
-// There is deliberately no `--beta` flag anywhere below. A seed build like
-// `26A5406e` does need it to appear in a catalog listing, but `ipsw` rejects
-// the combination outright -- "cannot use --beta, --rc or --latest with
-// --build" -- and every lookup here is by exact build. Adding it does not widen
-// the search, it fails the call.
+// No `--beta` below: `ipsw` rejects it alongside `--build`, and every lookup
+// here is by exact build.
 
 /// Map a MetricKit OS family onto the vocabulary `ipsw download ota
 /// --platform` accepts.
 ///
-/// The OTA catalog is keyed by the platform that ships the update rather than
-/// by marketing name, so iPadOS and iPodOS both live under `ios`. bridgeOS has
-/// no OTA platform of its own; returning None makes the caller skip the source
-/// rather than shell out to a command that cannot succeed.
+/// The catalog is keyed by shipping platform, so iPadOS and iPodOS live under
+/// `ios`. bridgeOS has none, and None makes the caller skip the source.
 fn ota_platform(os_family: &str) -> Option<&'static str> {
     match os_family {
         "iOS" | "iPadOS" | "iPodOS" => Some("ios"),
@@ -1541,15 +1469,11 @@ fn appledb_args(
     // appledb doesn't expose --dyld-arch, but the --dyld extractor still
     // honors arch via the payload's arch tag in the cache filename.
     let _ = arch;
-    // --api forces use of the GitHub API instead of a full local clone of
-    // appledb (~250 MB). The clone often hangs the first run on stateless
-    // containers; the API path is a few HTTP calls.
+    // --api uses the GitHub API instead of a ~250 MB local clone, which often
+    // hangs the first run on stateless containers.
     //
-    // --type ota is necessary but not sufficient: `--dyld` extracts a shared
-    // cache out of an OTA zip and nothing else, while --type defaults to
-    // `ipsw`, so without it every attempt died on "dyld_shared_cache(s) can
-    // only be extracted from OTA files (for now)". Fixing that only exposes the
-    // real ceiling, which is the host -- see the macOS gate in
+    // --type ota is required: `--dyld` only extracts from OTA zips, and --type
+    // defaults to `ipsw`. See also the macOS gate in
     // `extract_dyld_shared_cache`.
     let mut args: Vec<std::ffi::OsString> = vec![
         "download".into(),
@@ -1570,11 +1494,8 @@ fn appledb_args(
         "--no-color".into(),
     ];
 
-    // Unauthenticated GitHub API calls get 60 requests/hour per IP, and
-    // resolving one build walks a directory of per-build JSON files — enough to
-    // blow the whole budget on a single crash and then 429 on every retry.
-    // A token raises this to 5000/hour. Optional: without one the download
-    // still works when the quota happens to be free.
+    // Unauthenticated GitHub calls get 60 requests/hour per IP, and one build
+    // lookup can spend all of them. A token raises the limit to 5000/hour.
     if let Some(token) = appledb_api_token() {
         args.push("--api-token".into());
         args.push(token.into());
@@ -1585,10 +1506,8 @@ fn appledb_args(
 
 /// Args for Apple's own OTA catalog.
 ///
-/// The third source, and the only one that needs no third-party index: it
-/// carries hardware-specific builds (`25G82` for Mac17,5) and seeds that never
-/// reach ipsw.me's restore-image catalog, and it costs no GitHub quota. Unlike
-/// appledb this subcommand does expose `--dyld-arch`.
+/// The only source needing no third-party index. Carries hardware-specific
+/// builds and seeds that never reach ipsw.me, and exposes `--dyld-arch`.
 fn ota_args(
     platform: &str,
     device_type: &str,
@@ -1620,10 +1539,8 @@ fn ota_args(
 
 /// GitHub token for appledb's API lookups, if configured.
 ///
-/// Read from the environment rather than plumbed through `RoamCli` so the
-/// worker deployment can set it alongside the other `ipsw` credentials in
-/// `/etc/roam-symbolicator/env`. `GITHUB_TOKEN` is accepted as a fallback
-/// because that is the name CI runners already export.
+/// Read from the environment so the worker can set it alongside the other
+/// `ipsw` credentials. `GITHUB_TOKEN` is accepted as a fallback.
 fn appledb_api_token() -> Option<String> {
     ["IPSW_GITHUB_TOKEN", "GITHUB_TOKEN"]
         .iter()
@@ -1641,11 +1558,9 @@ async fn run_ipsw_dyld_download(label: &str, args: Vec<std::ffi::OsString>) -> R
     use portable_pty::{CommandBuilder, PtySize, native_pty_system};
     use std::io::Read;
 
-    // Cap how many caches download at once. A batch of five crashes from five
-    // different device/build pairs used to run five `ipsw` processes over one
-    // link: each got a fifth of the bandwidth, so all five finished late rather
-    // than one finishing early — the iMac cache took 48 minutes that way. The
-    // gate below is about throughput; `download_gate` is about correctness.
+    // Cap concurrent downloads. Several `ipsw` processes over one link each
+    // get a fraction of the bandwidth and all finish late. This gate is about
+    // throughput; `download_gate` is about correctness.
     static DOWNLOAD_SLOTS: OnceLock<tokio::sync::Semaphore> = OnceLock::new();
     let _slot = DOWNLOAD_SLOTS
         .get_or_init(|| tokio::sync::Semaphore::new(2))
@@ -1674,11 +1589,8 @@ async fn run_ipsw_dyld_download(label: &str, args: Vec<std::ffi::OsString>) -> R
         .collect();
     tracing::info!("Running ipsw with args: {:?}", logged_args);
 
-    // ipsw uses the `mpb` Go progress bar library, which checks `isatty` on its
-    // output and renders nothing when the fd isn't a terminal. Without a pty we
-    // get the bullet log lines but no download progress at all. Allocate a pty
-    // so ipsw believes it's on a terminal, then read its master end like any
-    // other pipe.
+    // ipsw's progress bar checks `isatty` and renders nothing off a terminal,
+    // so allocate a pty and read its master end like any other pipe.
     let pty_system = native_pty_system();
     let pair = pty_system
         .openpty(PtySize {
@@ -1700,14 +1612,10 @@ async fn run_ipsw_dyld_download(label: &str, args: Vec<std::ffi::OsString>) -> R
     // unambiguously real so it doesn't fall back to the no-tty path.
     cmd.env("TERM", "xterm-256color");
 
-    // Give this run its own TMPDIR. `ipsw` mounts the IPSW's filesystem DMG at
-    // `$TMPDIR/<dmg-name>.mount`, a path derived purely from the DMG, so two
-    // runs touching the same remote DMG collide there — and the collision
-    // surfaces as `fusermount3: Permission denied` on the mountpoint, which
-    // reads like a sandbox problem rather than the race it is. `download_gate`
-    // stops same-cache races; this stops the cross-cache case, where different
-    // builds happen to ship an identically named DMG. Best-effort: if the
-    // directory cannot be made, fall through to the shared /tmp.
+    // Give this run its own TMPDIR. `ipsw` mounts the DMG at a path derived
+    // from the DMG name, so two runs on identically named DMGs collide and
+    // report `fusermount3: Permission denied`. `download_gate` covers the
+    // same-cache case; this covers the cross-cache one. Best-effort.
     let scratch = ScratchDir::new();
     if let Some(path) = scratch.path() {
         cmd.env("TMPDIR", path);
@@ -1869,7 +1777,7 @@ fn looks_like_ipsw_progress(line: &str) -> bool {
 }
 
 /// Strips ANSI CSI escape sequences (`\x1b[...<final>`) from `s`. Doesn't try to
-/// handle other escape forms (OSC, charset selection, etc.) — mpb only emits CSI.
+/// handle other escape forms (OSC, charset selection, etc.) - mpb only emits CSI.
 fn strip_ansi_csi(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();
@@ -1915,20 +1823,13 @@ fn extract_ipsw_error_message(stderr: &str, stdout: &str) -> String {
 
 /// On-disk budget for downloaded system dyld shared caches.
 ///
-/// Each cache is 5-6 GB and one is kept per `<device>/<build>` pair, because
-/// Apple builds the shared cache per device family — caches for the same build
-/// and arch on two different models are genuinely different files with
-/// different layouts, so they cannot be shared. The directory therefore grows
-/// without bound as the fleet spreads across models and OS builds.
+/// Each cache is 5-6 GB, one per `<device>/<build>` pair: Apple builds the
+/// shared cache per device family, so two models on the same build have
+/// different files. The directory grows as the fleet spreads.
 const DEFAULT_SYSTEM_CACHE_MAX_BYTES: u64 = 256 * 1024 * 1024 * 1024;
 
-/// Deliberately covers `system/` only.
-///
-/// `uploads/` holds our own app's dSYMs, which are three orders of magnitude
-/// smaller (~50 MB against ~150 GB) and, unlike system caches, are not
-/// re-downloadable: dropping one makes every past crash from that build
-/// permanently unsymbolicatable. They are not what fills the disk and they are
-/// not safe to evict.
+/// Covers `system/` only. `uploads/` holds our own dSYMs, which are far
+/// smaller and are not re-downloadable, so they are never evicted.
 fn system_cache_budget() -> u64 {
     std::env::var("SYMBOLICATE_CACHE_MAX_BYTES")
         .ok()
@@ -1939,9 +1840,8 @@ fn system_cache_budget() -> u64 {
 
 /// Marker file whose mtime records when a cached dyld cache was last used.
 ///
-/// Recorded explicitly rather than read from the cache files' atime, because
-/// the caches are mmapped and every practical mount option (`relatime`,
-/// `noatime`) makes atime either coarse or entirely absent.
+/// Recorded explicitly rather than read from atime, which `relatime` and
+/// `noatime` make coarse or absent.
 const LAST_USED_MARKER: &str = ".last-used";
 
 /// Record that `cache_entry_dir` was used just now. Best-effort: a cache that
@@ -1998,13 +1898,11 @@ fn dir_size_bytes(dir: &Path) -> u64 {
 /// Drop least-recently-used `<device>/<build>` caches until the tree fits in
 /// `max_bytes`.
 ///
-/// Evicting whole entries rather than individual files keeps the cache
-/// self-consistent: a half-deleted entry would still satisfy
-/// `dyld_cache_exists` and then fail to symbolicate. `keep` is never evicted —
-/// it is the entry the caller just downloaded and is about to use.
+/// Whole entries are evicted, not individual files: a half-deleted entry would
+/// still satisfy `dyld_cache_exists` and then fail to symbolicate. `keep` is
+/// the entry the caller is about to use.
 ///
-/// Best-effort throughout. Failing to reclaim space must not fail the
-/// symbolication that triggered it.
+/// Best-effort: failing to reclaim space must not fail the symbolication.
 async fn enforce_system_cache_budget(system_root: &Path, keep: &Path, max_bytes: u64) {
     let system_root = system_root.to_path_buf();
     let keep = keep.to_path_buf();
@@ -2097,13 +1995,10 @@ async fn enforce_system_cache_budget(system_root: &Path, keep: &Path, max_bytes:
 
 /// Files Apple ships alongside the split cache, and `ipsw` copies out last.
 ///
-/// Their presence is what separates a finished download from a truncated one.
-/// Checking for `dyld_shared_cache*` alone is not enough: a cache cut off
-/// mid-copy still has a base file and dozens of subcaches, reads as cached
-/// forever, and then fails to parse on every lookup — which is exactly how
-/// iPhone15,5 on 23F84 ended up permanently unsymbolicatable after two `ipsw`
-/// runs raced each other. Every intact cache on disk carries `.atlas`; iOS adds
-/// `.symbols` and macOS adds `.map`, so any of the three will do.
+/// Their presence separates a finished download from a truncated one: a cache
+/// cut off mid-copy still has a base file and subcaches, so it would read as
+/// cached forever. Every intact cache carries `.atlas`; iOS adds `.symbols`
+/// and macOS adds `.map`, so any of the three will do.
 const DYLD_CACHE_TRAILER_SUFFIXES: [&str; 3] = [".atlas", ".symbols", ".map"];
 
 async fn dyld_cache_exists(dyld_dir: &Path, arch: Option<&str>) -> Result<bool> {
@@ -2238,8 +2133,8 @@ fn bad_access_code_name(exception_type: u64, code: u64) -> Option<&'static str> 
     })
 }
 
-/// True when the address that faulted sits in a guard region below a thread
-/// stack — the signature of a stack overflow.
+/// True when the faulting address sits in a guard region below a thread stack,
+/// which is the signature of a stack overflow.
 ///
 /// `virtualMemoryRegionInfo` is a small VM map with the region containing the
 /// faulting address marked by a leading `--->`:
@@ -2261,10 +2156,9 @@ fn faulting_address_is_in_stack_guard(region_info: &str) -> bool {
 
 /// Collapse a samply candidate-path error into one readable line.
 ///
-/// `SymbolManager` reports every path it tried, and it tries every dyld shared
-/// cache we have on disk crossed with every plausible install path for the
-/// dylib. One missing system cache therefore produces hundreds of near-identical
-/// lines, all saying the same two things.
+/// `SymbolManager` reports every path it tried: each cache on disk crossed
+/// with each plausible install path. One missing cache produces hundreds of
+/// near-identical lines.
 fn summarize_lookup_error(error: &str) -> String {
     let mut absent_paths = 0usize;
     let mut build_mismatches = 0usize;
@@ -2286,11 +2180,11 @@ fn summarize_lookup_error(error: &str) -> String {
     let mut parts: Vec<String> = Vec::new();
     if build_mismatches > 0 {
         // Some cache on disk *did* hold this dylib, just built from a different
-        // OS — so it is a system library and the fix is fetching the right
+        // OS - so it is a system library and the fix is fetching the right
         // dyld shared cache.
         parts.push(format!(
             "{build_mismatches} cached dyld shared cache(s) had this dylib but from a different \
-             OS build — the cache for this crash's OS build was never downloaded"
+             OS build - the cache for this crash's OS build was never downloaded"
         ));
         if absent_paths > 0 {
             parts.push(format!(
@@ -2298,14 +2192,11 @@ fn summarize_lookup_error(error: &str) -> String {
             ));
         }
     } else if absent_paths > 0 {
-        // No cache anywhere held anything at these paths, and no dSYM was on
-        // file either or it would have been tried first. Usually one of our own
-        // binaries with no dSYM uploaded — but not always, so do not assert it.
-        // This message used to, and sent a reader hunting for a missing app
-        // dSYM when the real cause was two Apple frameworks the candidate
-        // paths could not name. The paths are looked up in each cache's `.map`
-        // now, so a system library reaching this branch means the cache for
-        // this OS build is genuinely absent.
+        // No cache held anything at these paths and no dSYM was on file.
+        // Usually one of our own binaries with no dSYM uploaded, but not
+        // always, so do not claim that outright. Paths are resolved through
+        // each cache's `.map`, so a system library here means the cache for
+        // this OS build is absent.
         parts.push(format!(
             "no dSYM on file, and none of the {absent_paths} candidate path(s) exists in any \
              cached dyld shared cache. If this is one of our binaries, upload the dSYM for this \
@@ -2353,7 +2244,7 @@ fn termination_code_explanation(code: u64) -> Option<&'static str> {
             "held a file lock or SQLite/WAL lock on a file in a shared app-group \
              container while being suspended"
         }
-        0x8badf00d => "watchdog timeout — took too long to launch, resume, suspend, or terminate",
+        0x8badf00d => "watchdog timeout - took too long to launch, resume, suspend, or terminate",
         0xbaadca11 => "failed to report a PushKit VoIP call after waking for one",
         0xc00010ff => "terminated because the device got too hot",
         0xdeadfa11 => "force-quit by the user",
@@ -2383,10 +2274,8 @@ fn parse_termination_code(termination_reason: &str) -> Option<u64> {
 /// One-line interpretation of why the process died, assembled from
 /// `exceptionType` / `signal` / `terminationReason`.
 ///
-/// The raw numbers alone are hard to read, and `terminationReason` is the field
-/// that distinguishes an OS policy kill (`EXC_CRASH` + `SIGKILL`) from an actual
-/// fault — so when it is present, say what it means; when it is absent, say so
-/// explicitly rather than leaving the reader to guess.
+/// `terminationReason` is what distinguishes an OS policy kill (`EXC_CRASH` +
+/// `SIGKILL`) from a real fault, so name it when present and say so when not.
 fn describe_termination(
     metadata: &BTreeMap<String, serde_json::Value>,
     termination_reason: Option<&str>,
@@ -2402,10 +2291,9 @@ fn describe_termination(
             Some(name) => format!("{name} ({exception_type})"),
             None => format!("exception type {exception_type}"),
         };
-        // exceptionCode is a `kern_return_t` whose meaning depends on the
-        // exception type; for EXC_BAD_ACCESS it says whether the address was
-        // unmapped or merely unwritable/unreadable, which is the first thing
-        // you want to know.
+        // exceptionCode is a `kern_return_t` read against the exception type.
+        // For EXC_BAD_ACCESS it says whether the address was unmapped or just
+        // unwritable.
         if let Some(code) = metadata_u64(metadata, "exceptionCode") {
             match bad_access_code_name(exception_type, code) {
                 Some(name) => part.push_str(&format!(" / {name} ({code})")),
@@ -2428,13 +2316,11 @@ fn describe_termination(
 
     let mut description = parts.join(" / ");
 
-    // A bad access whose faulting address lands in the guard region below a
-    // thread's stack is a stack overflow, not a wild pointer. This is worth
-    // calling out loudly: it is the one crash class where the backtrace is
-    // routinely empty, so the metadata is all the evidence there is.
+    // A fault in the guard region below a stack is an overflow, not a wild
+    // pointer. Worth naming: the backtrace is routinely empty for these.
     if region_info.is_some_and(faulting_address_is_in_stack_guard) {
         if !description.is_empty() {
-            description.push_str(" — ");
+            description.push_str(" - ");
         }
         description.push_str(
             "stack overflow: the faulting address is inside the Stack Guard region directly \
@@ -2448,37 +2334,34 @@ fn describe_termination(
             let explanation = termination_code_explanation(code)
                 .unwrap_or("see the termination reason above for the owning subsystem");
             if !description.is_empty() {
-                description.push_str(" — ");
+                description.push_str(" - ");
             }
             description.push_str(&format!("0x{code:x}: {explanation}"));
         }
         None => {
-            // EXC_CRASH with SIGKILL is always an OS-initiated kill, never a
-            // fault in the app's own code. Without a terminationReason we can't
-            // say which policy fired, so name the candidates instead of
-            // silently reporting two opaque integers.
+            // EXC_CRASH with SIGKILL is an OS kill, not an app fault. Without
+            // a terminationReason, name the candidate policies.
             if exception_type == Some(10) && signal == Some(9) {
                 description.push_str(
-                    " — killed by the OS, not an in-process fault. No terminationReason in \
+                    " - killed by the OS, not an in-process fault. No terminationReason in \
                      the payload, so the specific policy is unconfirmed; the usual candidates \
                      are 0xdead10cc (suspended while holding a file/SQLite lock in a shared \
                      container), 0x8badf00d (watchdog), and 0xc51bad0* (background task budget).",
                 );
             }
 
-            // EXC_BREAKPOINT / SIGTRAP in a shipped build is not a memory bug
-            // and not a debugger: it is the Swift runtime trapping on purpose.
-            // The innermost frame is always libswiftCore, so the frame that
-            // matters is the first one below it in the app's own binary.
+            // EXC_BREAKPOINT / SIGTRAP in a shipped build is the Swift runtime
+            // trapping. The innermost frame is libswiftCore, so the useful one
+            // is the first below it in the app's binary.
             if exception_type == Some(6) || signal == Some(5) {
                 if !description.is_empty() {
-                    description.push_str(" — ");
+                    description.push_str(" - ");
                 }
                 description.push_str(
                     "a deliberate Swift runtime trap, not a memory fault: force-unwrapping a \
                      nil Optional, indexing out of range, arithmetic overflow, a failed \
                      precondition/assert, or an explicit fatalError. Read the first frame \
-                     below libswiftCore that belongs to the app — that is the call that \
+                     below libswiftCore that belongs to the app - that is the call that \
                      trapped.",
                 );
             }
@@ -2497,16 +2380,11 @@ fn parse_os_build_id(os_version: &str) -> Option<String> {
 /// Canonicalize MetricKit's `osVersion` into the vocabulary `ipsw download
 /// appledb --os` accepts.
 ///
-/// MetricKit names the OS the way Apple does in release notes — "iPhone OS 26.6
-/// (23G71)" — so taking the first whitespace-delimited token yielded "iPhone",
-/// which appledb rejects outright ("valid --os flag choices are: ..."). The
-/// appledb fallback had therefore never once succeeded for an iPhone crash; it
-/// only looked like a rate-limit problem because macOS, the family that does
-/// tokenize correctly, was the one being watched.
+/// MetricKit names the OS as Apple does in release notes ("iPhone OS 26.6
+/// (23G71)"), so the first token is "iPhone", which appledb rejects.
 ///
-/// Unrecognized families return None so the caller skips appledb rather than
-/// shelling out to a command that cannot succeed. The list is appledb's, not
-/// Apple's: visionOS is deliberately absent because appledb does not accept it.
+/// Unrecognized families return None so the caller skips appledb. The list is
+/// appledb's, not Apple's: visionOS is absent because appledb rejects it.
 fn parse_os_family(os_version: &str) -> Option<String> {
     // Longest-first, so "iPhone OS" is matched before any shorter prefix and
     // "iPadOS" is never mistaken for "iOS".
@@ -2545,14 +2423,10 @@ static DYLD_MAP_INDEXES: OnceLock<Mutex<HashMap<PathBuf, Option<Arc<DyldMapIndex
 
 /// The paths to try inside one shared cache for one library.
 ///
-/// Guessing install paths from the library name cannot reach a framework nested
-/// inside another framework -- `AE` lives at
-/// `/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE`,
-/// and `HIToolbox` under `Carbon.framework` the same way -- so those frames came
-/// back unsymbolicated even with the right cache on disk. Every cache ships a
-/// `.map` sidecar listing the real install path of all ~3600 dylibs it holds, so
-/// look the name up there first and fall back to the guesses, which still cover
-/// caches whose sidecar is missing.
+/// Guessed install paths cannot reach a framework nested inside another, such
+/// as `AE` under `CoreServices.framework` or `HIToolbox` under `Carbon`. Each
+/// cache ships a `.map` sidecar listing real install paths, so look the name up
+/// there first and fall back to the guesses when the sidecar is missing.
 fn resolve_dylib_paths_in_cache(
     cache_path: &Path,
     leaf_name: Option<&str>,
@@ -2810,17 +2684,16 @@ fn render_metric_report(
                 "Thread {}{}:",
                 stack_index,
                 if call_stack.thread_attributed {
-                    " (attributed — this is the thread that crashed)"
+                    " (attributed - this is the thread that crashed)"
                 } else {
                     ""
                 }
             )?;
             if call_stack.call_stack_root_frames.is_empty() {
-                // An empty thread is not "nothing happened here" — it means the
-                // unwinder produced no frames, which on the attributed thread is
-                // the difference between a diagnosable crash and an unusable
-                // report. Say so instead of printing a blank line.
-                writeln!(report, "  (no frames — MetricKit captured no backtrace)")?;
+                // An empty thread means the unwinder produced no frames, which
+                // on the attributed thread makes the report unusable. Say so
+                // rather than printing a blank line.
+                writeln!(report, "  (no frames - MetricKit captured no backtrace)")?;
                 if call_stack.thread_attributed && stack_overflow {
                     writeln!(
                         report,
@@ -2853,10 +2726,8 @@ fn render_metric_report(
 
 /// The app's own backtrace of the faulting thread.
 ///
-/// Rendered right below the threads because for a stack overflow it *is* the
-/// thread: MetricKit's unwinder gives up on a blown stack and reports the
-/// attributed thread with zero frames, so without this a recursion crash
-/// carries no frames at all.
+/// Rendered below the threads because for a stack overflow it is the thread:
+/// MetricKit's unwinder gives up on a blown stack and reports zero frames.
 fn render_faulting_thread_backtraces(
     report: &mut String,
     diagnostics: &RoamDebugInfo,
@@ -2878,7 +2749,7 @@ fn render_faulting_thread_backtraces(
         report,
         "Captured by the app's own SIGSEGV/SIGBUS handler, running on an alternate signal \
          stack, in the run that died. Unlike the MetricKit call stacks above this survives a \
-         stack overflow — a frame repeating down this list is the recursion."
+         stack overflow - a frame repeating down this list is the recursion."
     )?;
     for backtrace in backtraces {
         for line in backtrace.lines() {
@@ -2891,20 +2762,16 @@ fn render_faulting_thread_backtraces(
 
 /// Demangle the symbol in one `backtrace_symbols` line.
 ///
-/// The app captures this stack inside its `SIGSEGV` handler, where demangling
-/// is not an option: it allocates, and allocating on an alternate signal stack
-/// after the real stack is gone is how a crash report becomes a second crash.
-/// So the app emits raw linker names — `$s7SwiftUI8AppGraphC14graphDidChangeyyF`
-/// — and the demangling has to happen here instead.
+/// The app captures this stack in its `SIGSEGV` handler, where demangling
+/// would allocate on an alternate signal stack, so it emits raw linker names
+/// and the demangling happens here.
 ///
-/// It matters more than readability. For a stack overflow MetricKit reports the
-/// attributed thread with no frames at all, so this section is the *only* stack
-/// in the report, and [`crate::crash_rules`] matches on demangled names. Left
-/// raw, every recursion crash misses its rule and lands in the manual queue.
+/// [`crate::crash_rules`] matches on demangled names, and for a stack overflow
+/// this is the only stack in the report, so leaving it raw makes every
+/// recursion crash miss its rule.
 ///
 /// `backtrace_symbols` renders `index image address symbol + offset`. Anything
-/// that does not parse is passed through untouched — a mangled frame is worth
-/// more than a dropped one.
+/// that does not parse is passed through untouched.
 fn demangle_backtrace_line(line: &str) -> String {
     // Split after the hex address so the image name, which needs no demangling
     // and may repeat as the fallback symbol, cannot be mistaken for the symbol.
@@ -2967,11 +2834,9 @@ const MAX_LOG_MESSAGE_CHARS: usize = 2000;
 /// Render the captured `os_log` entries, newest last.
 ///
 /// The app collects these with `OSLogStore(scope: .currentProcessIdentifier)`
-/// at the moment `MXMetricManager` hands over the payload. MetricKit delivers
-/// crash payloads on a *later launch*, so today these lines describe the
-/// process that reported the crash rather than the one that crashed. Printing
-/// the log window next to the payload window makes that visible instead of
-/// leaving a reader to assume the lines are pre-crash context.
+/// when `MXMetricManager` hands over the payload. MetricKit delivers payloads
+/// on a later launch, so these lines describe the reporting process, not the
+/// one that crashed. Print both windows so that is visible.
 fn render_logs(
     report: &mut String,
     diagnostics: &RoamDebugInfo,
@@ -2997,10 +2862,9 @@ fn render_logs(
         _ => String::new(),
     };
 
-    // Since the app started keeping its own file log, a crash upload replays
-    // the *dead* run's lines and tags them. Older builds, and uploads whose
-    // file log was empty, still send the reporting process's own log — which
-    // is the launch after the crash and says nothing about what crashed.
+    // With the app's own file log, an upload replays the dead run's lines and
+    // tags them. Older builds still send the reporting process's log, which is
+    // the launch after the crash.
     let from_crashed_run = entries
         .iter()
         .filter(|entry| entry.source.as_deref() == Some("previous-run"))
@@ -3108,14 +2972,10 @@ fn format_log_entry(entry: &LogEntry) -> String {
 
 /// Render one thread's frames.
 ///
-/// MetricKit nests each *caller* inside its callee's `subFrames`, so a crash
-/// thread arrives as a chain rooted at the innermost frame and ending at
-/// `thread_start`. Rendering that chain as a tree indented one level per frame
-/// pushed a 15-frame stack 30 columns to the right and read backwards from
-/// every other crash report. Print it flat and numbered instead — frame 0 is
-/// innermost, matching Apple's crash-report convention. Aggregated call-stack
-/// trees can genuinely branch (one caller, several callees); indent only there,
-/// where the nesting actually carries information.
+/// MetricKit nests each caller inside its callee's `subFrames`, so a crash
+/// thread arrives as a chain from the innermost frame to `thread_start`.
+/// Printed flat and numbered with frame 0 innermost, matching Apple's crash
+/// reports. Aggregated trees can branch, so indent only there.
 fn render_call_stack(
     report: &mut String,
     frames: &[MetricKitCallStackFrame],
@@ -3124,15 +2984,12 @@ fn render_call_stack(
     symbolicated_addresses: &BTreeMap<String, LookedUpAddresses>,
     lookup_errors: &BTreeMap<String, String>,
 ) -> Result<()> {
-    // Walked with an explicit stack rather than recursion. Payloads now parse
-    // with serde_json's depth cap lifted, and the deepest tree we will ever be
-    // handed is a stack overflow — the one report this function exists to make
-    // readable. Recursing here would overflow rendering it.
+    // Explicit stack rather than recursion: with the parse depth cap lifted,
+    // recursing here would overflow on the deep trees this exists to render.
     //
-    // Each entry carries the frame, the depth to indent it at, and the depth
-    // its own children inherit. A level only pushes its children one column
-    // deeper when that level actually branched, which is why the child depth is
-    // fixed by the sibling list rather than recomputed per frame.
+    // Each entry carries the frame, its indent depth, and the depth its
+    // children inherit. Children only indent where the level branched, so the
+    // child depth is fixed by the sibling list.
     let mut stack: Vec<(&MetricKitCallStackFrame, usize, usize)> = Vec::new();
     let child_depth = if frames.len() > 1 {
         branch_depth + 1
@@ -3213,10 +3070,8 @@ fn frame_symbol(
         return format!("(no symbol for {binary_uuid} +0x{offset:x})");
     }
 
-    // Deliberately *not* the lookup error: samply reports one line per
-    // candidate path per dyld cache on disk, so pasting it under every frame
-    // turned a 100-line report into a 6,500-line one. The full reason is
-    // printed once, in the "Unresolved UUIDs" section.
+    // Not the lookup error: samply reports one line per candidate path per
+    // cache, so it is printed once in the "Unresolved UUIDs" section.
     let _ = lookup_errors;
     format!("(unresolved {binary_uuid})")
 }
@@ -3314,10 +3169,8 @@ fn find_dwarf_files_impl(path: &Path, result: &mut Vec<PathBuf>, inside_dsym: bo
         let is_dsym = path
             .file_name()
             .is_some_and(|name| name.to_string_lossy().ends_with(".dSYM"));
-        // A `.dSYM` directory should not legitimately contain another `.dSYM`.
-        // Skip nested ones — they're typically build-tool detritus, and walking
-        // into them feeds non-Mach-O files (Info.plist, etc.) to the UUID
-        // reader, which then fails the whole upload.
+        // Nested `.dSYM` directories are build-tool detritus, and walking them
+        // feeds non-Mach-O files to the UUID reader.
         if is_dsym && inside_dsym {
             return Ok(());
         }
@@ -3439,7 +3292,7 @@ mod tests {
         assert_eq!(parse_os_family(""), None);
 
         // The spelling MetricKit actually emits for an iPhone. Tokenizing on
-        // whitespace gave "iPhone", which appledb rejects — so its fallback had
+        // whitespace gave "iPhone", which appledb rejects - so its fallback had
         // never worked for the platform that produces most of our crashes.
         assert_eq!(
             parse_os_family("iPhone OS 26.6 (23G71)").as_deref(),
@@ -3535,7 +3388,7 @@ mod tests {
             Some("Namespace SPRINGBOARD, Code 0xdead10cc")
         );
 
-        // Absent entirely — the case every payload we have on file hits today.
+        // Absent entirely - the case every payload we have on file hits today.
         let absent = crash_from(serde_json::json!({
             "callStackTree": { "callStacks": [] },
             "diagnosticMetaData": { "signal": 9 }
@@ -3761,7 +3614,7 @@ mod tests {
         assert!(report.contains("Diagnosis:"), "{report}");
         assert!(report.contains("stack overflow"), "{report}");
         assert!(
-            report.contains("Thread 0 (attributed — this is the thread that crashed)"),
+            report.contains("Thread 0 (attributed - this is the thread that crashed)"),
             "{report}"
         );
         assert!(report.contains("no frames"), "{report}");
@@ -3833,7 +3686,7 @@ mod tests {
         )
         .expect("report renders");
 
-        // The candidate-path spam appears nowhere — not per frame, and not in
+        // The candidate-path spam appears nowhere - not per frame, and not in
         // the unresolved section either.
         assert!(
             !report.contains("did not include an entry"),
@@ -3892,9 +3745,8 @@ mod tests {
 
     /// A trimmed `.map` sidecar in the real format: a mapping table, then one
     /// flush-left install path per dylib followed by indented segment lines.
-    /// `AE` and `HIToolbox` are the two that sent thread 1541908323593363529's
-    /// frames back unsymbolicated; `AppKit` stands for the top-level case that
-    /// always worked.
+    /// `AE` and `HIToolbox` cover the nested-framework case; `AppKit` covers
+    /// the top-level one.
     const SAMPLE_DYLD_MAP: &str = "\
 mapping  EX  544KB 0x180000000 -> 0x180088000
 mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
@@ -4064,10 +3916,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         assert!(summary.contains("no dSYM on file"), "{summary}");
         assert!(summary.contains("upload the dSYM for this"), "{summary}");
         assert!(summary.contains("3 candidate path(s)"), "{summary}");
-        // It must not assert that this *is* one of our binaries. It reads that
-        // way, but the same branch fires for a system library the candidate
-        // paths could not name, and asserting sent a reader hunting for a
-        // missing app dSYM that had uploaded fine.
+        // Must not claim this is one of our binaries: the same branch fires
+        // for a system library the candidate paths could not name.
         assert!(summary.contains("if it is a system library"), "{summary}");
     }
 
@@ -4169,7 +4019,7 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         .expect("report renders");
 
         assert!(report.contains("50 older entries omitted"), "{report}");
-        // Oldest dropped, newest kept — the tail is the part worth reading.
+        // Oldest dropped, newest kept - the tail is the part worth reading.
         assert!(!report.contains("entry-0\n"), "{report}");
         assert!(
             report.contains(&format!("entry-{}", MAX_LOG_ENTRIES + 49)),
@@ -4193,9 +4043,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
 
     #[test]
     fn report_names_logs_replayed_from_the_crashed_run() {
-        // The whole point of the app-side file log: these lines predate the
-        // crash, so the report must not repeat the "later launch" warning that
-        // applies to a live `OSLogStore` read.
+        // These lines predate the crash, so the report must not repeat the
+        // "later launch" warning that applies to a live `OSLogStore` read.
         let diagnostics = diagnostics_with_logs(vec![
             LogEntry {
                 source: Some("previous-run".to_string()),
@@ -4281,10 +4130,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         assert!(report.contains("survives a stack overflow"), "{report}");
     }
 
-    /// Frames lifted verbatim from the 1.52 stack overflow on Mac14,10 that the
-    /// menu-bar rule missed: the app captured them raw, so the report carried
-    /// `$s7SwiftUI8AppGraphC14graphDidChangeyyF` where the rule looks for
-    /// `AppGraph.graphDidChange`.
+    /// Frames from the 1.52 stack overflow on Mac14,10, captured raw, so the
+    /// report carries mangled names where the rule looks for demangled ones.
     #[test]
     fn report_demangles_the_in_process_backtrace() {
         let mut diagnostics = empty_diagnostics();
@@ -4350,7 +4197,7 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
     #[test]
     fn report_omits_the_faulting_backtrace_section_when_there_is_none() {
         let mut diagnostics = empty_diagnostics();
-        // An empty capture is not a capture — the section must not appear.
+        // An empty capture is not a capture - the section must not appear.
         diagnostics.faulting_thread_backtraces = Some(vec!["   \n".to_string()]);
 
         let report = render_metric_report(
@@ -4423,11 +4270,9 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         let dyld = temp.path().join("dyld");
         fs::create_dir_all(&dyld).expect("dyld dir");
 
-        // What a download killed mid-copy leaves: a base cache and a run of
-        // subcaches, and nothing else. Treating this as cached is how a device
-        // stopped symbolicating for good — the files satisfied the old check,
-        // so it was never re-downloaded, and samply rejected it every time with
-        // "Incorrect number of SubCaches".
+        // What a download killed mid-copy leaves: a base cache and subcaches
+        // and nothing else. Treated as cached, it is never re-downloaded and
+        // samply rejects it with "Incorrect number of SubCaches".
         fs::write(dyld.join("dyld_shared_cache_arm64e"), b"base").expect("base");
         for n in 1..=35 {
             fs::write(
@@ -4470,11 +4315,10 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
     }
 
     /// Build a payload whose attributed thread is a single chain `depth` frames
-    /// deep — the shape MetricKit emits for a runaway recursion.
+    /// deep, the shape MetricKit emits for a runaway recursion.
     ///
-    /// Assembled as text rather than with `serde_json::json!`, because building
-    /// and serializing a `Value` that deep recurses too — the test would fall
-    /// over on its own fixture before reaching the code under test.
+    /// Assembled as text: building and serializing a `Value` that deep recurses
+    /// too, so the fixture would fail before the code under test ran.
     fn deeply_nested_payload_json(depth: usize) -> String {
         const FRAME: &str = r#"{"binaryName":"Roam","binaryUUID":"4068B2EE-A54F-397E-882D-C5E3A40B789A","offsetIntoBinaryTextSegment":4096"#;
 
@@ -4494,10 +4338,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
 
     #[test]
     fn parses_a_stack_deeper_than_serde_jsons_default_limit() {
-        // serde_json caps nesting at 128 by default. A stack overflow — the
-        // crash we most need symbolicated — nests one level per frame and blew
-        // straight through it, failing with "recursion limit exceeded" before
-        // any symbolication could run.
+        // serde_json caps nesting at 128, and a stack overflow nests one level
+        // per frame, so it failed with "recursion limit exceeded".
         let json = deeply_nested_payload_json(4096);
 
         // The default parser is why this needed fixing.
@@ -4517,10 +4359,9 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
 
     #[test]
     fn scanning_uuids_agrees_with_parsing_them() {
-        // The backend cannot afford `parse_metrickit_payload` — its 256 MiB
-        // stack reservation is larger than the VM's whole RAM — so ingest reads
-        // UUIDs with a flat scan instead. The two must not drift: the scan
-        // decides which dSYMs a worker is offered when it leases the payload.
+        // Ingest reads UUIDs with a flat scan, since the VM cannot map
+        // `parse_metrickit_payload`'s stack. The two must not drift: the scan
+        // decides which dSYMs a worker is offered.
         let real = std::fs::read(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/src/symbolicate/test-crash-payload.json"
@@ -4796,10 +4637,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
 
     #[test]
     fn seed_builds_never_ask_for_the_beta_catalog() {
-        // `--beta` would be the natural way to surface a seed like 26A5406e,
-        // but ipsw rejects it alongside --build ("cannot use --beta, --rc or
-        // --latest with --build"), so emitting it fails the lookup outright
-        // rather than widening it. Every lookup here is by exact build.
+        // ipsw rejects `--beta` alongside `--build`, and every lookup here is
+        // by exact build, so emitting it would fail the call.
         for rendered in [
             appledb_args("macOS", "Mac15,9", "26A5406e", Path::new("/tmp/out"), None),
             ota_args("macos", "Mac15,9", "26A5406e", Path::new("/tmp/out"), None),
@@ -4865,8 +4704,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         // invoked with a flag value ipsw rejects.
         assert_eq!(ota_platform("bridgeOS"), None);
 
-        // Every family parse_os_family can emit must be handled here or
-        // deliberately skipped — a new family must not silently mean "skip".
+        // Every family parse_os_family can emit must be handled or explicitly
+        // skipped, so a new one cannot silently mean "skip".
         for family in [
             "iOS", "iPadOS", "iPodOS", "macOS", "watchOS", "tvOS", "audioOS",
         ] {
@@ -4922,11 +4761,9 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         assert!(paths.contains(&"/usr/lib/CoreFoundation.dylib".to_string()));
     }
 
-    // The .debug dSYM lives under backend/testing-support/dSYMs/Roam.app.debug.dSYM.
-    // It pairs the stripped Roam binary with a fat Roam.debug.dylib that holds
-    // the bulk of the Swift symbols, and was the one missing from the upload
-    // when symbolication of the production payload returned every frame as
-    // "(unresolved ...)". UUIDs verified with `dwarfdump --uuid`.
+    // backend/testing-support/dSYMs/Roam.app.debug.dSYM pairs the stripped
+    // Roam binary with a fat Roam.debug.dylib holding most Swift symbols.
+    // UUIDs verified with `dwarfdump --uuid`.
     const ROAM_DEBUG_BINARY_BREAKPAD_ID: &str = "C634B9DAA08E3551A316BA831333CDCA0";
     const ROAM_DEBUG_DYLIB_BREAKPAD_ID: &str = "F2DD80141670331C87EBC34428FBB75D0";
     const ROAM_DEBUG_DYLIB_UUID: &str = "F2DD8014-1670-331C-87EB-C34428FBB75D";
@@ -5025,10 +4862,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
             .await
             .expect("store .debug dSYM zip");
 
-        // Both UUIDs in the .debug bundle must be indexed; if either is
-        // missing, the production crash payload's "Roam.debug.dylib" frames
-        // come back as "(unresolved ...)" — the failure mode that motivated
-        // this fixture in the first place.
+        // Both UUIDs in the .debug bundle must be indexed, or the payload's
+        // "Roam.debug.dylib" frames come back unresolved.
         assert!(
             stored
                 .indexed_debug_ids
@@ -5074,10 +4909,8 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
             .await
             .expect("store .debug dSYM");
 
-        // Synthetic MetricKit payload referencing a UUID we just indexed.
-        // Offset is arbitrary; symbol resolution at this exact offset isn't
-        // guaranteed (samply may report "no symbol for ..."), but the binary
-        // must still be locatable — which is what this regression guards.
+        // Synthetic payload referencing a UUID we just indexed. The offset is
+        // arbitrary and may not resolve, but the binary must be locatable.
         let payload = serde_json::json!({
             "timeStampBegin": "2026-05-04 08:30:00",
             "timeStampEnd": "2026-05-04 08:30:00",
@@ -5132,13 +4965,10 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn symbolicate_diagnostics_resolves_production_payload_with_matching_dsym() {
-        // The Roam.debug.dylib in the production mkmetrickit-upload.json
-        // payload has UUID 7FF52BDA-EDB7-3091-827E-A6F67F3BA16C. The dSYM
-        // for that exact UUID lives at testing-support/dSYMs/Roam.debug.dylib.dSYM.
-        // With it indexed, the upload's frames for that binary must come
-        // back resolved (not "(unresolved ...)") — even though the rest of
-        // the system frameworks in the payload remain unresolved because we
-        // don't fetch dyld_shared_cache here.
+        // Roam.debug.dylib in mkmetrickit-upload.json has UUID
+        // 7FF52BDA-EDB7-3091-827E-A6F67F3BA16C, whose dSYM is under
+        // testing-support/dSYMs. Its frames must resolve; the system
+        // frameworks stay unresolved since no dyld cache is fetched here.
         let symbolication_root = tempfile::tempdir().expect("tempdir");
         let client = SymbolicationClient::new(symbolication_root.path().to_path_buf());
 
@@ -5203,10 +5033,6 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
             .await
             .expect("symbolicate_diagnostics");
         let report = tokio::fs::read_to_string(&report_path).await.unwrap();
-        // write to ./symbolication-test-report.txt so we can inspect the full report if assertions fail.
-        // tokio::fs::write("symbolication-test-report.txt", &report)
-        //     .await
-        //     .expect("write report for inspection");
 
         // Roam.debug.dylib must no longer appear in the unresolved bucket
         // and no per-frame "(unresolved 7FF52BDA…)" marker may remain.
@@ -5219,7 +5045,7 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         );
         // System framework UUIDs (SwiftUI, AppKit, …) remain unindexed in
         // this test, so the report should still have an Unresolved section
-        // — but it must not list the dylib UUID we just indexed.
+        // - but it must not list the dylib UUID we just indexed.
         if let Some(unresolved_section) = report.split_once("Unresolved UUIDs") {
             let after = unresolved_section.1;
             let next_section_end = after.find("\n\n").unwrap_or(after.len());
@@ -5242,7 +5068,7 @@ mapping  RW   35MB 0x1E5908000 -> 0x1E7C2C000
         let symbolication_root = tempfile::tempdir().expect("tempdir");
         let client = SymbolicationClient::new(symbolication_root.path().to_path_buf());
 
-        // UUID from the real production upload that motivated this fixture —
+        // UUID from the real production upload that motivated this fixture -
         // the build's Roam.debug.dylib was never uploaded, so symbolication
         // returned every frame for it as "(unresolved ...)".
         let missing_uuid = "7FF52BDA-EDB7-3091-827E-A6F67F3BA16C";

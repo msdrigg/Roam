@@ -15,9 +15,7 @@ private let iPadMinContentHeight: CGFloat = 560
 ///   • `PhoneHomeView` on compact iPhone (weather-card grid → paged remote)
 ///   • `DeviceSplitRoot` on iPad and visionOS (sidebar + detail)
 ///
-/// Owns the long-lived sheet plumbing (Add device, Settings, Edit device) and
-/// the background scanning + watch-sync tasks, so the inner roots stay focused
-/// on layout.
+/// Owns the sheet plumbing and the scanning and watch-sync tasks.
 struct RemoteRoot: View {
     @EnvironmentObject private var appDelegate: RoamAppDelegate
 
@@ -122,11 +120,8 @@ struct RemoteRoot: View {
             .customAccentColorTint()
     }
 
-    /// Honors `-OpenSettings` launch arg by pushing the Settings root once the
-    /// view tree is alive. Idempotent so re-fires from `.task` don't double-push.
-    ///
-    /// `-OpenTipJar` implies `-OpenSettings`: the tip jar is a sheet presented
-    /// by SettingsView, so Settings has to be on the path for it to appear.
+    /// Honors `-OpenSettings` once the view tree is alive. Idempotent.
+    /// `-OpenTipJar` implies it, since the tip jar is a SettingsView sheet.
     private func applyLaunchSettingsIfRequested() {
         guard !didApplyLaunchSettings else { return }
         didApplyLaunchSettings = true
@@ -216,7 +211,7 @@ struct RemoteRoot: View {
                     // keyboard. `.frame(maxHeight: .infinity)` alone is a
                     // no-op inside a ScrollView (the content stays at
                     // intrinsic height), but containerRelativeFrame is
-                    // honored — it pins the content's height to the
+                    // honored - it pins the content's height to the
                     // scroll container's height.
                     .applyBuilder {
                         if iPadKeyboardShown {

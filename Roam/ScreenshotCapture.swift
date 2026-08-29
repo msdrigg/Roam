@@ -5,7 +5,7 @@ import SwiftUI
 
 /// macOS screenshot helpers driven by launch arguments.
 ///
-/// The capture itself is performed *outside* the app — the Python
+/// The capture itself is performed *outside* the app - the Python
 /// orchestrator (`scripts/sync-metadata.py` → `scripts/tart_screenshots.py`)
 /// runs `screencapture -x` (or `-R x,y,w,h` for menu-bar crops) inside a
 /// Tart-managed guest VM with a 2880x1800 display. The app's only job
@@ -14,11 +14,11 @@ import SwiftUI
 /// frames so the orchestrator can crop precisely.
 ///
 /// Recognized launch args (all optional):
-///   `-OpenMenuBarExtra`           — force `showMenuBar = true` so SwiftUI
+///   `-OpenMenuBarExtra`           - force `showMenuBar = true` so SwiftUI
 ///                                   installs the `MenuBarExtra`, activate
 ///                                   the app, then click the status item
 ///                                   button to open the popover.
-///   `-MenuBarExtraReportPath <p>` — JSON file the app writes containing
+///   `-MenuBarExtraReportPath <p>` - JSON file the app writes containing
 ///                                   the icon's status-bar window frame,
 ///                                   the popover window frame (when found),
 ///                                   the main display frame, the backing
@@ -43,7 +43,7 @@ enum MacScreenshotCapture {
         guard wantsMenuBarExtra else { return }
 
         // NOTE: `showMenuBar` must already be true when the app's scene
-        // graph is first built — the orchestrator passes `-showMenuBar YES`
+        // graph is first built - the orchestrator passes `-showMenuBar YES`
         // as a launch argument so the @AppStorage reads true from the
         // NSArgumentDomain. Do NOT flip it here at runtime: toggling the
         // `MenuBarExtra(isInserted:)` binding after the scene graph exists
@@ -110,7 +110,7 @@ enum MacScreenshotCapture {
     @MainActor
     private static func statusBarWindow() -> NSWindow? {
         // Prefer the visible NSStatusBarWindow highest on screen (largest
-        // minY) on the main display — that's our menu-bar icon.
+        // minY) on the main display - that's our menu-bar icon.
         NSApp.windows
             .filter { window in
                 guard window.isVisible else { return false }
@@ -148,13 +148,13 @@ enum MacScreenshotCapture {
             }
             try? await Task.sleep(for: .seconds(pollInterval))
         }
-        // Timed out waiting for placement — return whatever we last saw so
+        // Timed out waiting for placement - return whatever we last saw so
         // the caller can still report (with possibly-imperfect coords)
         // rather than failing outright.
         return lastSeen
     }
 
-    /// Depth-first search for the first NSButton in a view subtree — the
+    /// Depth-first search for the first NSButton in a view subtree - the
     /// status item's clickable button lives inside the status bar window's
     /// content view.
     @MainActor
@@ -195,7 +195,7 @@ enum MacScreenshotCapture {
         let pollInterval: TimeInterval = 0.15
         let deadline = Date().addingTimeInterval(timeout)
         // The popover for .menuBarExtraStyle(.window) anchors just below
-        // the menu-bar icon — its top edge should be within ~30pt of the
+        // the menu-bar icon - its top edge should be within ~30pt of the
         // icon window's bottom edge.
         let menuBarBottom = iconFrame.minY
         let skipIDs: Set<String> = ["main", "about", "messages"]
@@ -211,7 +211,7 @@ enum MacScreenshotCapture {
                    skipIDs.contains(identifier) { continue }
                 let cls = NSStringFromClass(type(of: window))
                 if cls.contains("StatusBarWindow") { continue }
-                // Must be in the menu-bar Y range — guard against picking
+                // Must be in the menu-bar Y range - guard against picking
                 // unrelated SwiftUI helper windows that aren't the popover.
                 let gap = menuBarBottom - window.frame.maxY
                 if gap < -5 || gap > 60 { continue }

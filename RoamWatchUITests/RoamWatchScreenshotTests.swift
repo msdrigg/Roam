@@ -19,7 +19,7 @@ final class RoamWatchUITestsScreenshotTests: XCTestCase {
     func captureScreenshots(locale: Locale) async throws {
         print("Capturing screenshot's for \(locale.identifier)")
         let app = XCUIApplication()
-        // Preserve the full BCP-47 identifier (e.g. fr-CA, en-GB) — passing
+        // Preserve the full BCP-47 identifier (e.g. fr-CA, en-GB) - passing
         // only the bare languageCode would lose the regional variant.
         app.launchArguments += ["-AppleLanguages", "(\(locale.identifier))"]
         // -AppleLocale expects NSLocale's underscore form (fr_CA, not fr-CA).
@@ -84,7 +84,7 @@ final class RoamWatchUITestsScreenshotTests: XCTestCase {
         dpAttachment.name = "\(locale.identifier)/5/DevicePickerOpen"
         add(dpAttachment)
 
-        // Skip the SettingsButton + DeviceItem flow on watch — the current
+        // Skip the SettingsButton + DeviceItem flow on watch - the current
         // DevicePicker layout doesn't surface a hittable SettingsButton in the
         // shown state. The 5 captures above (ScreenScanning, Primary,
         // Secondary, Apps, DevicePickerOpen) are sufficient for a watchOS

@@ -95,8 +95,8 @@
         }
 
         /// True when the device tells us it isn't a TV, i.e. a stick or Express
-        /// with no speakers of its own. Volume still gets sent — it leaves over
-        /// HDMI-CEC — this only drives a one-time hint about enabling CEC.
+        /// with no speakers of its own. Volume still gets sent - it leaves over
+        /// HDMI-CEC - this only drives a one-time hint about enabling CEC.
         private var volumeRoutedOverHDMI: Bool {
             selectedDevice?.isTV == false
         }
@@ -132,7 +132,7 @@
         var body: some View {
             // Top of the macOS view tree, and so the re-entry point for any
             // recursion that runs through our own views. Also where the
-            // main-thread stack gets measured — see `RenderTrace`.
+            // main-thread stack gets measured - see `RenderTrace`.
             let _ = RenderTrace.body("macOS.RemoteViewContained")
             configuredContent
         }
@@ -213,7 +213,7 @@
                     await ensureSelectedDevice()
                 }
                 // The window's own status dot, and every dot in the menu-bar
-                // device menu, come from these probes — the ECP session only
+                // device menu, come from these probes - the ECP session only
                 // keeps the connected device's record current.
                 .probingDeviceLiveness(deviceIds, isActive: scenePhase != .background)
                 // Re-probe whenever the app returns to the foreground so the
@@ -585,7 +585,7 @@
                         // to layout (its rendered card is ~100pt). The detail
                         // column's hosting view adopts that as its intrinsic
                         // height, the NSSplitView inflates to ~3300pt, and the
-                        // whole split view gets vertically centered — clipping
+                        // whole split view gets vertically centered - clipping
                         // the sidebar's device list above the window. Bounding
                         // the tips' height keeps the split view at window size.
                         TipView(keyboardShortcutsTip)
@@ -676,10 +676,10 @@
         }
 
         /// Restores the device the user was last on, and only picks a different
-        /// one when that device is genuinely gone.
+        /// one when that device is gone.
         ///
         /// This used to decide off `selectedDevice`, which comes from a loader
-        /// that publishes asynchronously — so on launch it usually ran while
+        /// that publishes asynchronously - so on launch it usually ran while
         /// the primary device was still nil and immediately overwrote the
         /// remembered device with whatever sat at the top of the list. The data
         /// handler already has the loaded state, so it makes the call.
@@ -791,7 +791,7 @@
                 }
             }
             #if DEBUG
-                // Deliberate crash-recovery exercise — never during UI/
+                // Deliberate crash-recovery exercise - never during UI/
                 // screenshot capture, where a random fatalError corrupts the
                 // run (the app launches dozens of times per locale sweep).
                 if Int.random(in: 1...100_000_000) == 1, !inUITestingContext() {

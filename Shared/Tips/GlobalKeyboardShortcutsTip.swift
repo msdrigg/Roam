@@ -31,7 +31,7 @@ struct KeyboardShortcutsRemoteTip: Tip {
     var title: Text = Text("Your keyboard controls the TV")
     var image: Image? = Image(systemName: "keyboard")
     // swiftlint:disable:next line_length
-    var message: Text? = Text("Roam has a keyboard shortcut for every remote button — press ⌘K to see and change them all. You can also type to enter text on the TV and use the arrow keys to navigate, separate from the button shortcuts.")
+    var message: Text? = Text("Roam has a keyboard shortcut for every remote button - press ⌘K to see and change them all. You can also type to enter text on the TV and use the arrow keys to navigate, separate from the button shortcuts.")
 
     var rules: [Rule] {
         #Rule(Self.usedRemote) {
@@ -49,7 +49,7 @@ struct PasteToPlayTip: Tip {
 
     var title: Text = Text("Paste a link to start watching")
     var image: Image? = Image(systemName: "doc.on.clipboard")
-    var message: Text? = Text("Copy a video link, click the Roam window, and press ⌘V. Roam opens the right app on your TV and plays it — works with YouTube, Amazon Prime, Netflix, and many others.")
+    var message: Text? = Text("Copy a video link, click the Roam window, and press ⌘V. Roam opens the right app on your TV and plays it - works with YouTube, Amazon Prime, Netflix, and many others.")
 
     var rules: [Rule] {
         #Rule(KeyboardShortcutsRemoteTip.usedRemote) {

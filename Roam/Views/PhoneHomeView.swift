@@ -84,7 +84,7 @@ struct PhoneHomeView: View {
     // toolbar so the buttons can carry a real liquid-glass effect rather than
     // the default toolbar chrome. Because the inset lives inside `content`,
     // it naturally fades in alongside the `.navigationTransition(.zoom)`
-    // pop from `PhoneDeviceDetailPager` — we intentionally don't suppress
+    // pop from `PhoneDeviceDetailPager` - we intentionally don't suppress
     // that fade so the buttons settle in with the zoom.
 
     private var simulatedBottomBar: some View {
@@ -265,7 +265,7 @@ struct PhoneHomeView: View {
         }
 
         // `move(fromOffsets:toOffset:)` inserts *before* `toOffset`, computed
-        // against the pre-removal indices — so landing on a card further down
+        // against the pre-removal indices - so landing on a card further down
         // the list needs the offset past it, not on it.
         let destination = to > from ? to + 1 : to
         Task {

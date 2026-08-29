@@ -11,7 +11,7 @@ struct AttachButton: View {
     var systemImage: String = "plus.circle.fill"
     var iconColor: Color = .gray
     /// When set, the icon is rendered at this point size instead of the legacy
-    /// resizable fixed frame — used by the iOS paperclip so it sits cleanly
+    /// resizable fixed frame - used by the iOS paperclip so it sits cleanly
     /// inside the text-field capsule.
     var iconPointSize: CGFloat?
 

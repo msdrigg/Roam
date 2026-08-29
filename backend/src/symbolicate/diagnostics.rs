@@ -12,10 +12,8 @@ pub struct LogEntry {
     pub level: Option<String>,
     pub category: Option<String>,
     pub subsystem: Option<String>,
-    /// Which launch wrote the line. `Some("previous-run")` means the app
-    /// replayed it out of its own file log, so it is from the process that
-    /// actually crashed rather than the one that reported the crash. Absent on
-    /// uploads from builds before the file log existed.
+    /// Which launch wrote the line. `Some("previous-run")` means it came from
+    /// the process that crashed rather than the one reporting it.
     #[serde(default)]
     pub source: Option<String>,
 }
@@ -55,10 +53,9 @@ pub struct RoamDebugInfo {
     pub logs: Vec<LogEntry>,
     pub debug_errors: Vec<String>,
     pub language: DebugLanguage,
-    /// Backtraces the app captured from inside its own fatal-signal handler,
-    /// for a run that died on `SIGSEGV`/`SIGBUS`. MetricKit cannot unwind a
-    /// blown stack — it returns an attributed thread with no frames — so for a
-    /// stack overflow this is the only place the recursion is named.
+    /// Backtraces captured in the app's own fatal-signal handler. MetricKit
+    /// returns no frames for a blown stack, so for a stack overflow this is the
+    /// only place the recursion is named.
     #[serde(default)]
     pub faulting_thread_backtraces: Option<Vec<String>>,
 }

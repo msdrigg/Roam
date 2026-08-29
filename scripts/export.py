@@ -234,7 +234,7 @@ class MultipartBody:
         return b""
 
 
-# Delays before the 2nd..7th attempts — seven tries over ~7 minutes. The backend
+# Delays before the 2nd..7th attempts - seven tries over ~7 minutes. The backend
 # is a single small Fly machine that 502s while it restarts or pages in a large
 # upload. The old ladder gave up after 45s, which is not long enough: a machine
 # that has scaled to zero can take minutes to come back with a multi-hundred-MB
@@ -252,8 +252,8 @@ RETRY_JITTER = 0.2
 def is_retryable(error: Exception) -> bool:
     """Whether a later attempt could plausibly succeed.
 
-    A 4xx other than 408/429 means the request itself is wrong — bad api key,
-    payload too large — and will be just as wrong in seven minutes, so it fails
+    A 4xx other than 408/429 means the request itself is wrong - bad api key,
+    payload too large - and will be just as wrong in seven minutes, so it fails
     immediately instead of stretching the build to reach the same conclusion.
     """
     if isinstance(error, urllib.error.HTTPError):
@@ -287,7 +287,7 @@ def with_retries(operation, what: str):
                 reason = f"{type(error).__name__}: {error}"
             delay = round(delay * random.uniform(1 - RETRY_JITTER, 1 + RETRY_JITTER), 1)
             print(
-                f"  {what} failed ({reason}) — retrying in {delay}s "
+                f"  {what} failed ({reason}) - retrying in {delay}s "
                 f"[attempt {index + 2} of {attempts}]",
                 flush=True,
             )
@@ -367,7 +367,7 @@ def upload_dsyms(
                     with urllib.request.urlopen(request, timeout=900) as response:
                         return response.read().decode("utf-8")
                 except urllib.error.HTTPError as error:
-                    # Read the body here — the connection is closed by the time
+                    # Read the body here - the connection is closed by the time
                     # the retry loop or the caller formats the message.
                     error.detail = error.read().decode("utf-8", errors="replace")
                     raise
@@ -396,7 +396,7 @@ def try_upload_dsyms(
     iOS dSYM upload left macOS and visionOS unshipped. Symbols can be re-uploaded
     at any time with `--upload-dsyms`; a half-published release cannot be undone.
 
-    Swallowing the error is therefore only about *ordering*, not severity — the
+    Swallowing the error is therefore only about *ordering*, not severity - the
     caller collects the failures and exits non-zero once every platform has had
     its turn. A build whose symbols never arrived is a broken build: its crash
     reports come back with every app frame unresolved, which also means they
@@ -644,7 +644,7 @@ if __name__ == "__main__":
 
     if dsym_failures:
         # Deferred to here rather than raised at the failing upload so that every
-        # platform still got published — see try_upload_dsyms. By this point
+        # platform still got published - see try_upload_dsyms. By this point
         # there is nothing left to protect, and a green run would be a lie: the
         # release is out with no symbols behind it.
         summary = (

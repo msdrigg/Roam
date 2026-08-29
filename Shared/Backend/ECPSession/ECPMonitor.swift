@@ -39,17 +39,14 @@ final class ECPMonitor {
     var textEditStatus: TextEditStatus = .off
     var ecpClient: ECPWebsocketClient?
 
-    // Incremented every time the monitor switches clients. Callbacks and the
-    // reconnect loop capture the value they were created under and become
-    // no-ops once it moves on, so a retired client's late state updates can
-    // never stomp the current client's state.
+    // Incremented on every client switch. Callbacks capture the value they
+    // were created under and no-op once it moves on.
     private var generation = 0
     private var reconnectTask: Task<Void, Never>?
 
     func setDevice(_ device: Device?) {
-        // Re-selecting the device we're already pointed at (pager pages
-        // re-appearing, scene re-activation) must not tear down the session —
-        // if it's unhealthy, the reconnect loop is already reviving it.
+        // Re-selecting the current device must not tear down the session; the
+        // reconnect loop already revives an unhealthy one.
         if let device, let current = ecpClient, current.location.absoluteString == device.location {
             return
         }
@@ -90,10 +87,8 @@ final class ECPMonitor {
         self.ecpClient = ecpClient
         self.status = .connecting(.now)
         self.textEditStatus = .off
-        // One serialized task so the old client is always retired before the
-        // new one starts. If a later `setDevice` races in, it can only shut
-        // this client down (its `start()` then refuses to run) — it can never
-        // interleave into a resurrected orphan connection.
+        // One serialized task, so the old client is retired before the new one
+        // starts and a racing `setDevice` cannot leave an orphan connection.
         Task {
             await oldEcpClient?.shutdown()
             await ecpClient.start()
@@ -132,9 +127,8 @@ final class ECPMonitor {
         }
     }
 
-    /// The session must never stay dead waiting for user input: whenever the
-    /// current client reports disconnected, retry `start()` on an exponential
-    /// backoff until it connects or the monitor moves to another device.
+    /// Retries `start()` on an exponential backoff whenever the client reports
+    /// disconnected, until it connects or the monitor moves on.
     private func scheduleReconnect(generation: Int) {
         guard reconnectTask == nil else { return }
         Log.connection.notice("Scheduling ECP reconnect loop")

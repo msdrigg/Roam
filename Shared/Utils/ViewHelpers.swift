@@ -305,7 +305,7 @@ extension UserDefaults {
 ///
 /// A material on its own samples the desktop, so a light window or wallpaper
 /// underneath drags it toward white and the glass controls stop reading. The
-/// scrim has to sit *above* the material — a sibling underneath is ignored,
+/// scrim has to sit *above* the material - a sibling underneath is ignored,
 /// since the material samples the backdrop rather than its in-hierarchy
 /// neighbours.
 struct MacAnchoredBackdrop: View {
@@ -362,7 +362,7 @@ extension View {
                 // the Tart screenshot VM (Tahoe guest, Dark appearance), so
                 // captures get the real translucent glass. An earlier
                 // workaround forced `Color.black` under `inUITestingContext()`
-                // for an older VM that couldn't composite it — that produced
+                // for an older VM that couldn't composite it - that produced
                 // an opaque black window and is no longer needed.
                 //
                 // A window-level material samples the desktop behind the
@@ -371,7 +371,7 @@ extension View {
                 // reading against it. Keep the material for the blur, then lay
                 // a scrim of the app's own window color over the top so the
                 // composite stays anchored regardless of what is behind. The
-                // scrim has to sit *above* the material — a sibling placed
+                // scrim has to sit *above* the material - a sibling placed
                 // underneath it gets ignored, since the material samples the
                 // window backdrop rather than its in-hierarchy neighbours.
                 $0.containerBackground(for: .window) {
@@ -390,7 +390,7 @@ extension View {
 
     /// The same anchored backdrop, for the macOS menu-bar panel.
     ///
-    /// `translucentBackground()` only reaches the app's *windows* — a
+    /// `translucentBackground()` only reaches the app's *windows* - a
     /// `MenuBarExtra` panel is not a window container, so it kept the system's
     /// vibrant menu backdrop. That samples whatever happens to be behind the
     /// menu bar, which over a light desktop washed the panel out until the

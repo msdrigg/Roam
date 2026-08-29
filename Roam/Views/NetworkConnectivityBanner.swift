@@ -67,7 +67,7 @@ struct NetworkConnectivityBanner: View {
     @ViewBuilder
     var mainBody: some View {
         // Suppress all connectivity / permission warning banners under any UI
-        // test — they otherwise clutter marketing captures with simulator-
+        // test - they otherwise clutter marketing captures with simulator-
         // environment noise (no Wi-Fi, no Local Network permission). This
         // covers both the "ScreenScanning" empty-state launch (carries only
         // -DataTesting) and the screenshot-mode launch (-ScreenshotTesting).

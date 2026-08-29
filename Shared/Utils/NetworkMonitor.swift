@@ -69,16 +69,13 @@ final class NetworkMonitor {
 
 /// Live reachability for every device in a list, not just the connected one.
 ///
-/// `Device.lastOnlineAt` is only stamped by `refreshDevice`, which only ever
-/// runs against the device the app currently holds an ECP session with — so
-/// every other device's status dot was permanently grey no matter what was
-/// actually powered on. This asks each device directly, with one small
-/// `query/device-info` GET, while a list of devices is on screen.
+/// `Device.lastOnlineAt` is only stamped by `refreshDevice`, which runs against
+/// the connected device, so every other status dot stayed grey. This asks each
+/// device directly with one `query/device-info` GET while a list is on screen.
 ///
-/// Results stay in memory. The probe is a display concern, and writing a
-/// timestamp per device per cycle would put app-group database writes in the
-/// path of a suspension (0xdead10cc) for no lasting benefit — the record's own
-/// `lastOnlineAt` is still the fallback until the first probe lands.
+/// Results stay in memory: writing a timestamp per device per cycle would put
+/// app-group writes in the path of a suspension (0xdead10cc). The record's own
+/// `lastOnlineAt` remains the fallback until the first probe lands.
 @MainActor @Observable
 final class DeviceLivenessMonitor {
     static let shared = DeviceLivenessMonitor()
@@ -164,11 +161,10 @@ final class DeviceLivenessMonitor {
 /// A single cheap request to a device's ECP port, used only to decide whether
 /// it is reachable right now.
 ///
-/// The response body is deliberately not parsed — a status line is all the
-/// caller needs, and skipping the XML is what makes this affordable for a whole
-/// device list at once. Asking for `query/device-info` rather than just opening
-/// a socket means a Roku that has since handed its DHCP lease to some other
-/// machine reads as offline instead of as whatever now answers on that address.
+/// The body is not parsed; a status line is all the caller needs, which keeps
+/// this affordable for a whole device list. Asking for `query/device-info`
+/// rather than opening a socket means a reassigned DHCP lease reads as
+/// offline.
 func deviceRespondsToECP(location: String, timeout: TimeInterval) async -> Bool {
     guard let url = URL(string: "\(location)query/device-info") else {
         return false
@@ -184,7 +180,7 @@ func deviceRespondsToECP(location: String, timeout: TimeInterval) async -> Bool 
         let (_, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { return false }
         // 403 is a Roku refusing control from apps. It is very much powered on
-        // and worth showing as such — the remote surfaces that refusal itself.
+        // and worth showing as such - the remote surfaces that refusal itself.
         return (200...299).contains(http.statusCode) || http.statusCode == 403
     } catch {
         return false
@@ -194,8 +190,7 @@ func deviceRespondsToECP(location: String, timeout: TimeInterval) async -> Bool 
 extension View {
     /// Keeps the online dots for `deviceIds` fresh while this view is on screen.
     ///
-    /// Pass `isActive: false` to stand down (backgrounded, or a list that isn't
-    /// being shown) — the probes are read-only, but there's no one to show them to.
+    /// Pass `isActive: false` to stand down when backgrounded or off screen.
     func probingDeviceLiveness(_ deviceIds: [String], isActive: Bool = true) -> some View {
         task(id: "\(isActive)-\(deviceIds.joined(separator: "|"))") {
             guard isActive else { return }

@@ -9,17 +9,13 @@ struct DiagnosticsRequest: Codable, Sendable {
     let installationInfo: InstallationInfo
 }
 
-/// `MXDiagnosticPayload.jsonRepresentation()` has not been carrying
-/// `terminationReason` / `virtualMemoryRegionInfo` in the payloads we receive,
-/// even though `MXCrashDiagnostic` exposes both as properties. They are the
-/// fields that say *why* the OS killed the process — without them an
-/// `EXC_CRASH` / `SIGKILL` report can only be narrowed to "some OS policy fired"
-/// rather than naming the policy (0xdead10cc, 0x8badf00d, and so on).
+/// `MXDiagnosticPayload.jsonRepresentation()` omits `terminationReason` and
+/// `virtualMemoryRegionInfo`, which are what name the policy behind an
+/// `EXC_CRASH` / `SIGKILL` kill.
 ///
-/// Read them off the diagnostic objects directly and merge them into
-/// `diagnosticMetaData`, which is where the backend report generator looks.
-/// Falls back to the unmodified representation if anything about the shape is
-/// unexpected, so a MetricKit format change can't cost us the whole upload.
+/// Read them off the diagnostic objects and merge them into
+/// `diagnosticMetaData`, where the report generator looks. Falls back to the
+/// unmodified representation if the shape is unexpected.
 private func jsonRepresentationIncludingTerminationFields(_ payload: MXDiagnosticPayload) -> Data {
     let data = payload.jsonRepresentation()
 
@@ -87,7 +83,7 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
             let payloadData = crashPayloads.map {
                 jsonRepresentationIncludingTerminationFields($0)
             }
-            // The window the crashes happened in — always an earlier launch
+            // The window the crashes happened in - always an earlier launch
             // than this one, since MetricKit only delivers on the next start.
             // It selects which run's logs get uploaded (see `getDebugInfo`).
             let crashWindow = crashPayloads.reduce(nil) { (window: DateInterval?, payload) in

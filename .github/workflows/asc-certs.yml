@@ -8,7 +8,7 @@ name: ASC Certificates
 # maximum number of certificates" and releases stop archiving.
 #
 # Run with no input to print the account's certificates. Pass comma-separated
-# certificate IDs to revoke them — the script refuses to revoke anything that
+# certificate IDs to revoke them - the script refuses to revoke anything that
 # is not a development certificate, so distribution / Developer ID identities
 # cannot be lost from here.
 "on":

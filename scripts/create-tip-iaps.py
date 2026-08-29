@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create the four tip-jar in-app purchases in App Store Connect.
 
-Deliberately worded as a "tip"/"support" everywhere, never a "donation":
+Worded as a "tip"/"support" everywhere, never a "donation":
 guideline 3.2.2(iv) forbids collecting funds for charities in-app unless you
 are an approved nonprofit, and reviewers go by the display name and metadata.
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate the alternate app icons unlocked by the tip jar.
 
-Every variant composites the *real* remote artwork — the transparent foreground
+Every variant composites the *real* remote artwork - the transparent foreground
 layer Icon Composer draws the shipping icon from, AppIcon.icon/Assets/
-VisionAppIcon.png — over a different backdrop. The alternates are therefore the
+VisionAppIcon.png - over a different backdrop. The alternates are therefore the
 same icon the user already knows, not a lookalike.
 
 Midnight is the one exception: that artwork is dark purple, which disappears
@@ -52,7 +52,7 @@ def artwork_remote():
     """The shipping icon's own foreground layer, dropped in as a raster.
 
     Icon Composer applies the icon's shadow at render time and that shadow is
-    not part of the layer, so it is reapplied here — without it the remote
+    not part of the layer, so it is reapplied here - without it the remote
     reads as a sticker pasted onto the backdrop rather than sitting on it.
 
     The shadow is an offset copy flattened to black and blurred, rather than
@@ -166,7 +166,7 @@ def write_preview(name, source_png):
     """Preview swatch for the in-app picker.
 
     App icon *sets* are not addressable as `Image(...)` at runtime, so every
-    option in the picker — the default included — needs a plain image set
+    option in the picker - the default included - needs a plain image set
     alongside. The default's absence is what left its cell blank.
     """
     imageset = os.path.join(XCASSETS, f"{name}.imageset")

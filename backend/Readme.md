@@ -207,7 +207,7 @@ fly deploy . --config backend/fly.toml --dockerfile backend/Dockerfile
 `--dockerfile` is needed because the `dockerfile` path in `fly.toml` resolves
 relative to that file, not to the build context. The root `.dockerignore`
 applies automatically and is what keeps `backend/target` (many GB) out of the
-context — don't pass `--ignorefile`, which would override it.
+context - don't pass `--ignorefile`, which would override it.
 
 Useful checks after deploy:
 
@@ -224,7 +224,7 @@ Human support can send :translate: text, /translate text, or <@bot> :translate: 
 
 Every endpoint below sits behind the existing `x-api-key` header, so a triage
 client needs `BACKEND_URL` and `BACKEND_API_KEY` and no Discord credentials of
-its own — the backend proxies Discord with its bot token. The
+its own - the backend proxies Discord with its bot token. The
 `roam-crash-triage` skill in `.claude/skills/` drives all of this.
 
 When a symbolication completes, the backend records the crash against its
@@ -244,18 +244,18 @@ written them.
 
 A report names both, and after an App Store update they differ:
 
-- **`app_version`** — the crash's own MetricKit `appVersion`, the build that
+- **`app_version`** - the crash's own MetricKit `appVersion`, the build that
   died. This is the matching key: scoring against anything else would report
   every historical crash from an updated device as a fix that did not hold.
-- **`installed_version`** — `release=` off the report's `Install:` line, what
+- **`installed_version`** - `release=` off the report's `Install:` line, what
   the device was running when it *uploaded* the payload, up to a day later.
 
 Fix status combines them. A crash predating the rule's `fixed_in` on a device
 still behind it is `fixed` (update prompt); the same crash on a device that has
-already updated past it is `already_updated` — reviewed, but with no update
+already updated past it is `already_updated` - reviewed, but with no update
 prompt, because telling a reporter on 1.54 to update to 1.54 is how this system
 loses their trust. A crash from the fixing release or later is `unfixed` and is
-deliberately left in the queue. A report with neither version is `unknown`.
+left in the queue. A report with neither version is `unknown`.
 
 Both are filterable on `/v2/crashes`, and they answer different questions:
 `app_version=1.53` finds the crashes that build *produced*,
@@ -280,7 +280,7 @@ JavaScript's safe integer range.
 ### Adding an auto-review rule
 
 Rules are a compiled-in list in `src/crash_rules.rs`, matched in order with
-first-match-wins, so narrower rules go first — several distinct bugs share
+first-match-wins, so narrower rules go first - several distinct bugs share
 `EXC_CRASH (10)` / `SIGKILL (9)`. Add a test alongside the rule that covers the
 new report shape and asserts it does not steal matches from existing rules.
 
@@ -302,7 +302,7 @@ and preparing with `-- --lib` alone silently drops their cache entries, so
 These queries used to be runtime-checked (`query_as::<_, T>`) because
 `sqlx_sqlite`'s `column_nullable` calls `CStr::from_ptr` on the declared type
 from `sqlite3_table_column_metadata` with no null check, and SQLite returns NULL
-there for a column declared with no type — `users.device_id PRIMARY KEY` in the
+there for a column declared with no type - `users.device_id PRIMARY KEY` in the
 initial migration was one, so `cargo sqlx prepare` segfaulted rustc.
 `20260811120000_users_device_id_text` gave it an explicit `TEXT` type and the
 macros went back to `query_as!`; preparing locally has worked since.

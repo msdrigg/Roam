@@ -1,5 +1,9 @@
 # Roam
 
+Notes for anyone working in this repo, human or agent. Tool-agnostic on
+purpose: `AGENTS.md` is the file Claude Code, Codex and the other CLI agents
+all read.
+
 ## Formatting is enforced by a pre-commit hook
 
 `.githooks/pre-commit` formats every staged `.rs` file and re-stages it, so a
@@ -13,7 +17,7 @@ git config core.hooksPath .githooks
 Without it the hook silently does nothing. `git config --get core.hooksPath`
 tells you whether this clone is wired up.
 
-The hook is deliberately narrow:
+The hook is narrow by design:
 
 - It formats only the files being committed, never the whole crate, so
   unrelated in-progress work in the tree is left alone.
@@ -23,11 +27,11 @@ The hook is deliberately narrow:
 - It refuses to touch a file with **both** staged and unstaged changes, and
   blocks the commit instead. Formatting the working tree and `git add`-ing it
   would sweep the unstaged edits into the commit.
-- It resolves the edition per file from the nearest `Cargo.toml`, because
-  rustfmt parses according to an edition and getting it wrong is not cosmetic.
+- It resolves the edition per file from the nearest `Cargo.toml`, since rustfmt
+  parses according to an edition.
 - `third_party/`, `vendor/` and `target/` are excluded.
 
-To format by hand, `cargo fmt` in `backend/` — but note it rewrites the whole
+To format by hand, `cargo fmt` in `backend/`, but note it rewrites the whole
 crate, so when someone else has uncommitted work, format just your own files:
 
 ```sh
@@ -37,8 +41,8 @@ cargo fmt --check          # reports diffs without writing
 
 ## Deploying the backend
 
-Deploys are manual and run from the **repository root**, not from `backend/` —
-the Docker build context needs both `backend/` and `docs/src/pages`:
+Deploys are manual and run from the **repository root**, not from `backend/`,
+because the Docker build context needs both `backend/` and `docs/src/pages`:
 
 ```sh
 fly deploy . --config backend/fly.toml --dockerfile backend/Dockerfile
@@ -48,9 +52,8 @@ fly deploy . --config backend/fly.toml --dockerfile backend/Dockerfile
 resolves relative to that file rather than to the build context.
 
 A push to `main` does **not** deploy. The `Deploy` workflow (`deploy-fly.yml`)
-is written to trigger on that push but is disabled at the repository level on
-purpose; check with `gh workflow list --all` before assuming a push shipped
-anything.
+is written to trigger on that push but is disabled at the repository level;
+check with `gh workflow list --all` before assuming a push shipped anything.
 
 ## Backend specifics
 
@@ -64,3 +67,18 @@ that are easy to get wrong:
   compile.
 - `cargo sqlx prepare` rewrites the entire `.sqlx` directory. Diff the result
   before committing and confirm the delta is only the queries you changed.
+
+## Crash triage
+
+`scripts/roam_crashes.py` wraps the backend's crash-review API: list unreviewed
+crashes, read threads, stream symbolicated reports, post replies, mark threads
+reviewed. It needs `BACKEND_URL` and `BACKEND_API_KEY`, both in `backend/.env`:
+
+```sh
+set -a && . ./backend/.env && set +a
+python3 scripts/roam_crashes.py --help
+```
+
+`.claude/skills/roam-crash-triage/SKILL.md` documents the same workflow in more
+detail and is loaded automatically by Claude Code; it is readable directly by
+any other tool.

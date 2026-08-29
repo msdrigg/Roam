@@ -161,7 +161,7 @@ struct SettingsView: View {
                 .task(id: allDeviceRefreshKey) {
                     allDevices = await RoamDataHandler.shared.requestAllDevices(allDeviceIds)
                 }
-                // Keeps the status dot next to each device honest — the record's
+                // Keeps the status dot next to each device honest - the record's
                 // own `lastOnlineAt` only moves for the connected device.
                 .probingDeviceLiveness(allDeviceIds, isActive: scenePhase == .active)
 #if !os(watchOS)

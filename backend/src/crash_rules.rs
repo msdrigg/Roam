@@ -1,48 +1,24 @@
 //! Auto-review rules for symbolicated crash reports.
 //!
-//! When a symbolication completes, the rendered report is matched against
-//! [`RULES`]. The first rule that matches wins: the backend posts its
-//! explanation into the crash thread and marks the thread reviewed, attributed
-//! to `auto:<rule id>`. Anything that matches no rule stays unreviewed and
-//! shows up in `GET /v2/crashes/unreviewed` for a human.
+//! A completed symbolication is matched against [`RULES`]. The first match
+//! wins: its reply is posted in-thread and the thread is marked reviewed as
+//! `auto:<rule id>`. Unmatched reports stay in `GET /v2/crashes/unreviewed`.
 //!
-//! Rules are deliberately a compiled-in list rather than database rows: each
-//! one encodes a diagnosis that was worked out by reading stacks, and its reply
-//! text cites the fix that shipped alongside it. Adding a rule should be a code
-//! review, not a config edit.
-//!
-//! Every rule also records the app version its fix shipped in, and a match is
-//! tagged against the version the crash came from: a crash from before that
-//! release is [`FixStatus::Fixed`] (the user needs to update), one from that
-//! release or later is [`FixStatus::Unfixed`] — the same stack surviving the
-//! fix, which is news — and a report with no readable version is
-//! [`FixStatus::Unknown`].
-//!
-//! A report names *two* versions and they are routinely different. The crash's
-//! own `appVersion` is what MetricKit recorded when the process died; the
-//! `Install:` line is what the device was running when it uploaded the payload,
-//! up to a day later and possibly across an App Store update. Matching keys on
-//! the first — that is the build that crashed — but a crash that predates the
-//! fix on a device that has *already* updated past it is
-//! [`FixStatus::AlreadyUpdated`], not [`FixStatus::Fixed`]: there is nothing
-//! for that reporter to do, and telling them to update to a release they are
-//! running is how this system loses their trust.
+//! Matches are tagged against the crash's own `appVersion`, not the `Install:`
+//! line, which records what the device runs now and can be a later release.
 
 use std::sync::LazyLock;
 
 use regex::Regex;
 
-/// Facts pulled out of a rendered symbolicated report, used for matching and
-/// stored on the review row so the list endpoints can triage without
-/// re-downloading attachments.
+/// Facts pulled out of a rendered report for matching, stored on the review
+/// row so list endpoints can triage without re-downloading attachments.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize)]
 pub struct CrashFacts {
-    /// `appVersion` out of the crash's own metadata: the marketing version of
-    /// the build that died. Absent on reports predating that metadata key.
+    /// Marketing version of the build that died. Absent on older reports.
     pub app_version: Option<String>,
-    /// `release=` off the report's `Install:` line — the version the device was
-    /// running when it *sent* the payload, which is not necessarily the one
-    /// that crashed. See the module docs.
+    /// `release=` off the `Install:` line: what the device ran when it sent
+    /// the payload, not necessarily what crashed.
     pub installed_version: Option<String>,
     pub device_type: Option<String>,
     pub os_version: Option<String>,
@@ -50,20 +26,14 @@ pub struct CrashFacts {
     pub signal: Option<i64>,
     /// Termination code as lowercase hex with an `0x` prefix, e.g. `0x8badf00d`.
     pub termination_code: Option<String>,
-    /// `Thermal Level:` out of the termination reason's `ThermalInfo` block.
-    /// 0 is nominal; 9 is what the OS also labels `Thermal State: critical`.
+    /// `Thermal Level:` from `ThermalInfo`. 0 is nominal, 9 is critical.
     pub thermal_level: Option<i64>,
-    /// The app's own share of the CPU over the watchdog window, from
-    /// `Elapsed application CPU time (seconds): 0.127, 0% CPU`. Deliberately
-    /// the *application* figure and not the `Elapsed total` one: the gap
-    /// between them is what separates a starved process from a busy one.
+    /// The app's own CPU share over the watchdog window, from `Elapsed
+    /// application CPU time`. Not the `Elapsed total` figure.
     pub app_cpu_percent: Option<i64>,
 }
 
 /// Reads `  key: value` out of a rendered report's metadata block.
-///
-/// Runs a handful of times per crash, so it builds its regex per call rather
-/// than carrying a cache.
 fn metadata_value(report: &str, key: &str) -> Option<String> {
     let pattern = format!(r"(?m)^\s*{}: (.+)$", regex::escape(key));
     let regex = Regex::new(&pattern).ok()?;
@@ -85,20 +55,16 @@ fn termination_code(report: &str) -> Option<String> {
 
 /// Reads `Thermal Level:   9` out of the report.
 ///
-/// Matched against the whole report rather than the metadata block: the
-/// `ThermalInfo` list lives inside the multi-line `terminationReason` value, so
-/// [`metadata_value`]'s per-line `key: value` shape does not reach it.
+/// Matched against the whole report: `ThermalInfo` sits inside the multi-line
+/// `terminationReason` value, which [`metadata_value`] does not reach.
 fn thermal_level(report: &str) -> Option<i64> {
     static RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"Thermal Level:\s*(\d+)").expect("valid thermal regex"));
     RE.captures(report)?[1].parse().ok()
 }
 
-/// Reads `release=<version>` off the report's `Install:` line.
-///
-/// That line is rendered from the device's stored installation info, not from
-/// the MetricKit payload, so it says what the device runs *now*. It is the only
-/// place the report records it, and it is deliberately not the matching key.
+/// Reads `release=<version>` off the report's `Install:` line, which records
+/// what the device runs now rather than what crashed.
 fn installed_version(report: &str) -> Option<String> {
     static RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?m)^Install:.*?\brelease=(\S+)").expect("valid install-line regex")
@@ -132,13 +98,9 @@ impl CrashFacts {
         }
     }
 
-    /// The version to place against a rule's `fixed_in`.
-    ///
-    /// The crash's own `appVersion` when the report carries one — that is the
-    /// build that actually died. Reports from before MetricKit recorded it fall
-    /// back to the installed release, which at least bounds the answer; see
-    /// [`CrashFacts::version_phrase`], which says so in the reply rather than
-    /// passing the guess off as a fact.
+    /// The version to place against a rule's `fixed_in`: the crash's own
+    /// `appVersion`, falling back to the installed release on older reports.
+    /// [`CrashFacts::version_phrase`] flags the fallback in the reply.
     pub fn crash_version(&self) -> Option<&str> {
         self.app_version
             .as_deref()
@@ -153,18 +115,15 @@ impl CrashFacts {
         ) {
             (Some(version), _) => format!("from {version}"),
             (None, Some(version)) => format!(
-                "from {version} (the release the device reports installed — this report carries no `appVersion`)"
+                "from {version} (the release the device reports installed - this report carries no `appVersion`)"
             ),
             (None, None) => "from an unrecorded version".to_string(),
         }
     }
 }
 
-/// Parses a dotted numeric version into comparable components.
-///
-/// Anything after the leading `[0-9.]` run is dropped, so `1.51 (204)` and
-/// `1.51-beta` both read as `1.51`. Returns `None` when there is no numeric
-/// component at all.
+/// Parses a dotted numeric version into comparable components. Anything after
+/// the leading `[0-9.]` run is dropped, so `1.51 (204)` reads as `1.51`.
 fn parse_version(version: &str) -> Option<Vec<u64>> {
     let numeric: String = version
         .trim()
@@ -179,25 +138,19 @@ fn parse_version(version: &str) -> Option<Vec<u64>> {
     (!parts.is_empty()).then_some(parts)
 }
 
-/// How a matched rule's fix relates to the version the crash came from.
-///
-/// Comparison is component-wise, so `1.50 < 1.51 < 1.51.1` — a plain string
-/// compare would put `1.5` after `1.50`.
+/// How a matched rule's fix relates to the crash's version. Comparison is
+/// component-wise, so `1.50 < 1.51 < 1.51.1`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FixStatus {
-    /// The crash predates the release that fixed it, and the device is still on
-    /// a build that predates it too: updating resolves it.
+    /// Crash and device both predate the fix; updating resolves it.
     Fixed,
-    /// The crash predates the release that fixed it and the device has since
-    /// updated past it. Same diagnosis as [`FixStatus::Fixed`], but there is no
-    /// action for the reporter — the build that crashed is no longer installed.
+    /// Crash predates the fix and the device has already updated past it, so
+    /// there is no action for the reporter.
     AlreadyUpdated,
-    /// The crash is from the release that fixed it, or later. The fix did not
-    /// hold, so this needs a human even though the stack is recognised.
+    /// Crash is from the fixing release or later, so the fix did not hold.
     Unfixed,
-    /// The rule describes something that is not a defect in the app, so there is
-    /// no version to compare against. See [`CrashRule::environmental`].
+    /// Not a defect in the app, so there is no version to compare against.
     NotADefect,
     /// No usable version on the report at all, or no fix version on the rule.
     Unknown,
@@ -211,24 +164,20 @@ pub struct CrashRule {
     /// App version that shipped this rule's fix, e.g. `"1.51"`. Crashes from
     /// this version onwards are tagged [`FixStatus::Unfixed`].
     pub fixed_in: Option<&'static str>,
-    /// The kill is a property of the device or the OS, not a bug in the app, so
-    /// there is nothing to fix and no version to compare against. Matching
-    /// reports are tagged [`FixStatus::NotADefect`] and reviewed. Set this only
-    /// where the report itself carries the evidence — a rule that merely *looks*
-    /// environmental should stay in the manual queue.
+    /// The kill comes from the device or OS rather than the app. Matching
+    /// reports are tagged [`FixStatus::NotADefect`]. Set only where the report
+    /// itself carries the evidence.
     pub environmental: bool,
     /// Mach exception type, e.g. 10 for `EXC_CRASH`, 12 for `EXC_GUARD`.
     pub exception_type: Option<i64>,
     pub signal: Option<i64>,
     /// Lowercase hex termination code, e.g. `0x8badf00d`.
     pub termination_code: Option<&'static str>,
-    /// Minimum `Thermal Level:` on the report, inclusive. A report with no
-    /// thermal figure does not match a rule that sets this.
+    /// Minimum `Thermal Level:`, inclusive. A report with no thermal figure
+    /// does not match.
     pub min_thermal_level: Option<i64>,
-    /// Maximum `Elapsed application CPU time` percentage, inclusive. A report
-    /// with no CPU figure does not match a rule that sets this. This is the
-    /// app's own share, not the `Elapsed total` figure on the line above it,
-    /// which covers the whole device.
+    /// Maximum `Elapsed application CPU time` percentage, inclusive. This is
+    /// the app's own share, not `Elapsed total`. No figure means no match.
     pub max_app_cpu_percent: Option<i64>,
     /// Substrings that must all appear somewhere in the report (stack frames).
     pub all_of: &'static [&'static str],
@@ -274,13 +223,9 @@ impl CrashRule {
         true
     }
 
-    /// Places the crash's app version against the release that fixed this rule.
-    ///
-    /// Keyed on [`CrashFacts::crash_version`] and not on the installed release:
-    /// a payload delivered after an update still describes the build that died,
-    /// and scoring it against the newer build would report every historical
-    /// crash from an updated device as a fix that did not hold. The installed
-    /// release only decides whether the reporter still has anything to do.
+    /// Places the crash's version against the release that fixed this rule.
+    /// Keyed on [`CrashFacts::crash_version`]; the installed release only
+    /// decides whether the reporter still has anything to do.
     pub fn fix_status(&self, facts: &CrashFacts) -> FixStatus {
         if self.environmental {
             return FixStatus::NotADefect;
@@ -301,8 +246,7 @@ impl CrashRule {
     }
 }
 
-/// A rule matched against one crash, together with where that crash sits
-/// relative to the rule's fix.
+/// A matched rule plus where the crash sits relative to its fix.
 #[derive(Debug, Clone, Copy)]
 pub struct RuleMatch {
     pub rule: &'static CrashRule,
@@ -310,23 +254,22 @@ pub struct RuleMatch {
 }
 
 impl RuleMatch {
-    /// The markdown to post in-thread: the rule's diagnosis, then a line
-    /// placing this particular crash against the fix.
+    /// Markdown to post in-thread: diagnosis, then the fix placement.
     pub fn reply(&self, facts: &CrashFacts) -> String {
         let fixed_in = self.rule.fixed_in.unwrap_or("a later release");
         let version = facts.version_phrase();
         let verdict = match self.status {
             FixStatus::Fixed => format!(
-                ":white_check_mark: **Fixed in {fixed_in}.** This report is {version}, which predates the fix — updating to {fixed_in} or later resolves it."
+                ":white_check_mark: **Fixed in {fixed_in}.** This report is {version}, which predates the fix - updating to {fixed_in} or later resolves it."
             ),
             FixStatus::AlreadyUpdated => format!(
-                ":white_check_mark: **Fixed in {fixed_in}, and already updated.** This report is {version}, which predates the fix, but the device is now on {} — the build that crashed is no longer installed, so there is nothing to do.",
+                ":white_check_mark: **Fixed in {fixed_in}, and already updated.** This report is {version}, which predates the fix, but the device is now on {} - the build that crashed is no longer installed, so there is nothing to do.",
                 facts.installed_version.as_deref().unwrap_or(fixed_in),
             ),
             FixStatus::Unfixed => format!(
-                ":rotating_light: **UNFIXED.** The fix above shipped in {fixed_in}, and this report is {version} — the crash survived it. Left unreviewed for a human."
+                ":rotating_light: **UNFIXED.** The fix above shipped in {fixed_in}, and this report is {version} - the crash survived it. Left unreviewed for a human."
             ),
-            FixStatus::NotADefect => ":thermometer: **Nothing to fix in the app.** The report itself carries the evidence that the system, not Roam, ended the process — see above. Reviewed automatically; reopen the thread if you disagree.".to_string(),
+            FixStatus::NotADefect => ":thermometer: **Nothing to fix in the app.** The report itself carries the evidence that the system, not Roam, ended the process - see above. Reviewed automatically; reopen the thread if you disagree.".to_string(),
             FixStatus::Unknown => match self.rule.fixed_in {
                 Some(version) => format!(
                     ":grey_question: **Fix status unknown.** The fix shipped in {version}, but this report carries neither an `appVersion` nor an installed release, so whether it predates the fix is unclear."
@@ -340,8 +283,7 @@ impl RuleMatch {
         )
     }
 
-    /// One line for the review row, so the triage list carries the tag without
-    /// anyone opening the thread.
+    /// One line for the review row, so triage need not open the thread.
     pub fn review_note(&self, facts: &CrashFacts) -> String {
         let title = self.rule.title;
         match (self.status, self.rule.fixed_in) {
@@ -351,7 +293,7 @@ impl RuleMatch {
                 facts.installed_version.as_deref().unwrap_or(fixed_in),
             ),
             (FixStatus::Unfixed, Some(fixed_in)) => format!(
-                "UNFIXED — still crashing on {} after the {fixed_in} fix: {title}",
+                "UNFIXED - still crashing on {} after the {fixed_in} fix: {title}",
                 facts.crash_version().unwrap_or("a later version"),
             ),
             (FixStatus::NotADefect, _) => format!("{title} (not an app defect)"),
@@ -371,60 +313,60 @@ pub fn match_rule(report: &str, facts: &CrashFacts) -> Option<RuleMatch> {
         })
 }
 
-const DEAD10CC_REPLY: &str = ":ninja: **Auto-review: `0xdead10cc` — suspended while holding the database lock**
+const DEAD10CC_REPLY: &str = ":ninja: **Auto-review: `0xdead10cc` - suspended while holding the database lock**
 
-`EXC_CRASH (10)` / `SIGKILL (9)` with the attributed thread in the middle of a database write. This is not a fault in the app's own code — iOS killed the process deliberately.
+`EXC_CRASH (10)` / `SIGKILL (9)` with the attributed thread in the middle of a database write. This is not a fault in the app's own code; iOS killed the process.
 
 Persistent writes hold an exclusive `flock` on a lock file in the shared app-group container, on top of the SQLite/WAL locks on `Roam.sqlite` beside it. A suspended process still holding those can block the widget extension indefinitely, so the system terminates it.
 
 **Known cause, fix:**
 - a background-task assertion is held across every persistent write, so the process stays alive long enough to commit and release the lock
-- the file lock covers the transaction only — it used to be held across a full snapshot reload that scans every table
+- the file lock covers the transaction only - it used to be held across a full snapshot reload that scans every table
 - automatic device discovery stops when the app is backgrounded, removing the main source of writes still in flight at suspension time";
 
-const EXC_GUARD_REPLY: &str = ":ninja: **Auto-review: `EXC_GUARD` — the SSDP socket was closed twice**
+const EXC_GUARD_REPLY: &str = ":ninja: **Auto-review: `EXC_GUARD` - the SSDP socket was closed twice**
 
 `EXC_GUARD (12)`, attributed to `close()` inside the `defer` in `scanDevicesContinually`.
 
-That function closed its UDP socket in two places: the `onCancel` handler of `withTaskCancellationHandler` (which is what interrupts the blocking `receiveFrom`), and the body's own `defer` as it unwinds. On cancellation both run, so `close(2)` fires twice on the same descriptor. By the second call the kernel has usually reused that number, and when the new owner is a *guarded* descriptor — GRDB's SQLite handles and Network.framework both guard theirs — the process is killed on the spot.
+That function closed its UDP socket in two places: the `onCancel` handler of `withTaskCancellationHandler` (which is what interrupts the blocking `receiveFrom`), and the body's own `defer` as it unwinds. On cancellation both run, so `close(2)` fires twice on the same descriptor. By the second call the kernel has usually reused that number, and when the new owner is a *guarded* descriptor - GRDB's SQLite handles and Network.framework both guard theirs - the process is killed on the spot.
 
 `try? socket.close()` cannot defend against this: `EXC_GUARD` is a Mach exception, not an `errno`.
 
 **Known cause, fix:** both paths now go through a close-once wrapper, so the descriptor reaches `close(2)` exactly once regardless of which path wins the race.";
 
-const SCENE_PHASE_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow — `forceFront` re-entered the SwiftUI update it was called from**
+const SCENE_PHASE_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow - `forceFront` re-entered the SwiftUI update it was called from**
 
-`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer — unbounded recursion.
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer - unbounded recursion.
 
 The cycle is visible in the attributed thread, `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down:
 
-`NSApplication.forceFront` called `makeKeyAndOrderFront` synchronously from a SwiftUI action, so it ran inside `Update.dispatchActions` — still nested in the update pass that queued it. `makeKeyAndOrderFront` posts `NSWindowDidOrderOnScreen` from there, SwiftUI turns that into a scene-phase change, and `AppGraph.graphDidChange` re-enters the update it is already inside. Every level re-evaluates the scene bodies, which runs the action again.
+`NSApplication.forceFront` called `makeKeyAndOrderFront` synchronously from a SwiftUI action, so it ran inside `Update.dispatchActions` - still nested in the update pass that queued it. `makeKeyAndOrderFront` posts `NSWindowDidOrderOnScreen` from there, SwiftUI turns that into a scene-phase change, and `AppGraph.graphDidChange` re-enters the update it is already inside. Every level re-evaluates the scene bodies, which runs the action again.
 
 Launch-time window restoration is what makes it fatal rather than merely wasteful: `NSPersistentUIRestorer` is ordering windows on screen while the app graph is still settling, so the cycle never reaches a quiet state and the stack runs out first.
 
 **Known cause, fix:** `forceFront` now defers to the next runloop turn, so the in-flight update finishes before `makeKeyAndOrderFront` fires and the notification lands on a quiet graph.";
 
-const MENU_BAR_EXTRA_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow — `MenuBarExtra(isInserted:)` re-entered the SwiftUI update pass**
+const MENU_BAR_EXTRA_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow - `MenuBarExtra(isInserted:)` re-entered the SwiftUI update pass**
 
-`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer — unbounded recursion.
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer - unbounded recursion.
 
 MetricKit cannot unwind an overflowed stack, so the attributed thread shows only whatever the Swift runtime was demangling when the last frame would not fit. Read the in-process backtrace instead: it holds `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down, with `MenuBarExtra(isInserted:)` inside the cycle.
 
-Same recursion as `scene-phase-reentrancy-stack-overflow`, driven from a different place. `MenuBarExtra` writes back through its `isInserted` binding while SwiftUI reconciles the scene, and `@AppStorage` forwards even a same-value write to `UserDefaults`. That write posts `didChangeNotification`, which invalidates the body that produced the scene, so `graphDidChange` re-enters the update it is already inside — and every level reconciles `MenuBarExtra` again.
+Same recursion as `scene-phase-reentrancy-stack-overflow`, driven from a different place. `MenuBarExtra` writes back through its `isInserted` binding while SwiftUI reconciles the scene, and `@AppStorage` forwards even a same-value write to `UserDefaults`. That write posts `didChangeNotification`, which invalidates the body that produced the scene, so `graphDidChange` re-enters the update it is already inside - and every level reconciles `MenuBarExtra` again.
 
-**Known cause, fix:** the `isInserted` binding now drops echoes — a write matching the value already stored is not forwarded to `UserDefaults`, so reconciliation no longer dirties the graph it is running inside. Real toggles still write through.";
+**Known cause, fix:** the `isInserted` binding now drops echoes - a write matching the value already stored is not forwarded to `UserDefaults`, so reconciliation no longer dirties the graph it is running inside. Real toggles still write through.";
 
-const SCREEN_PARAMETERS_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow — a screen-parameters change re-entered the SwiftUI update pass during launch restoration**
+const SCREEN_PARAMETERS_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow - a screen-parameters change re-entered the SwiftUI update pass during launch restoration**
 
-`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer — unbounded recursion.
+`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer - unbounded recursion.
 
-Third face of the cycle behind `scene-phase-reentrancy-stack-overflow` and `menu-bar-extra-reentrancy-stack-overflow`: `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down. Neither of their triggers is on this stack — no `forceFront`, no `MenuBarExtra`. Underneath the recursion sits `applicationDidChangeScreenParameters`, posted while `NSPersistentUIRestorer` was still restoring windows from inside `applicationWillFinishLaunching`.
+Third face of the cycle behind `scene-phase-reentrancy-stack-overflow` and `menu-bar-extra-reentrancy-stack-overflow`: `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down. Neither of their triggers is on this stack - no `forceFront`, no `MenuBarExtra`. Underneath the recursion sits `applicationDidChangeScreenParameters`, posted while `NSPersistentUIRestorer` was still restoring windows from inside `applicationWillFinishLaunching`.
 
-`setActivationPolicy` is what closes the loop. Roam called it synchronously from scene `onAppear`/`onDisappear`, and adding or removing the app from the Dock orders windows on and off screen and changes the visible screen frame. AppKit posts `NSApplicationDidChangeScreenParameters` from inside that call, SwiftUI turns it into a scene-phase change, and `graphDidChange` re-enters the update pass it is already inside — every level of which re-evaluates the scene bodies and runs `onAppear` again. Launch restoration is what makes it fatal rather than merely wasteful: the graph never reaches a quiet state, so the stack runs out first.
+`setActivationPolicy` is what closes the loop. Roam called it synchronously from scene `onAppear`/`onDisappear`, and adding or removing the app from the Dock orders windows on and off screen and changes the visible screen frame. AppKit posts `NSApplicationDidChangeScreenParameters` from inside that call, SwiftUI turns it into a scene-phase change, and `graphDidChange` re-enters the update pass it is already inside - every level of which re-evaluates the scene bodies and runs `onAppear` again. Launch restoration is what makes it fatal rather than merely wasteful: the graph never reaches a quiet state, so the stack runs out first.
 
 **Known cause, fix:** all ten `setActivationPolicy` callers now go through a deferred, coalesced wrapper that skips the call outright when the policy already matches, so the in-flight update finishes before AppKit reorders any windows.";
 
-const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — main thread blocked cancelling the Bonjour browser**
+const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog - main thread blocked cancelling the Bonjour browser**
 
 The termination reason pins this down: the process failed to terminate within its 5 second budget.
 
@@ -434,38 +376,38 @@ The attributed thread is the **main thread**, parked in `nw_browser_cancel`, rea
 
 **Known cause, fix:** listener/browser teardown is dispatched onto the queue those objects already run on, so the cancelling thread is never blocked.";
 
-const AUDIO_PLAYER_NODE_EXCEPTION_REPLY: &str = ":ninja: **Auto-review: `SIGABRT` — AVFAudio raised on `play()` against a stale output format**
+const AUDIO_PLAYER_NODE_EXCEPTION_REPLY: &str = ":ninja: **Auto-review: `SIGABRT` - AVFAudio raised on `play()` against a stale output format**
 
 `EXC_CRASH (10)` / `SIGABRT (6)`, and the attributed thread shows why: `objc_exception_throw` out of `-[AVAudioPlayerNode play]`, through `objc_terminate`, into `abort`. An Objective-C exception, not a signal in Roam's own code.
 
-Swift cannot catch those. AVFoundation reports misuse by raising rather than returning an error, and an unhandled raise ends the process immediately — `try` around the call does nothing.
+Swift cannot catch those. AVFoundation reports misuse by raising rather than returning an error, and an unhandled raise ends the process immediately - `try` around the call does nothing.
 
 `AudioPlayer` built its engine connections and its `AVAudioConverter` once, in `init`, against the output device's format at that moment. On iOS a route change tears the session down and `handleRouteChange` rebuilds it, but macOS had no equivalent observer: the user switches default output device, the next `start()` succeeds against the new one, and the player node is still connected with the *old* device's format. `play()` raises on the mismatch.
 
-The `guard engine.isRunning` ahead of it did not help — the engine really was running. It was the graph below it that was stale.
+The `guard engine.isRunning` ahead of it did not help - the engine really was running. It was the graph below it that was stale.
 
 **Known cause, fix:** the graph and converter are now re-derived from the current output format on every `start()`, and a device reporting no usable format is rejected with a thrown error rather than left for AVFAudio to raise on. The `play()` and `scheduleBuffer` calls additionally run under an Objective-C exception trap, so a raise that still slips through surfaces as a Swift error instead of killing the process.";
 
-const LOCAL_NETWORK_CANCEL_RACE_REPLY: &str = ":ninja: **Auto-review: `SIGSEGV` — the Bonjour browser was cancelled before it was started**
+const LOCAL_NETWORK_CANCEL_RACE_REPLY: &str = ":ninja: **Auto-review: `SIGSEGV` - the Bonjour browser was cancelled before it was started**
 
 `EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` on the near-null address `0x54` inside `nw_browser_cancel`, attributed to the local network permission check.
 
-Not the `0x8BADF00D` watchdog kill that `local-network-cancel-watchdog` describes — that one is a *stall* on the main thread and carries a termination reason.
+Not the `0x8BADF00D` watchdog kill that `local-network-cancel-watchdog` describes - that one is a *stall* on the main thread and carries a termination reason.
 
 The faulting address is the tell. `NWBrowser.start(queue:)` is what hands Network.framework the queue it delivers state changes on. Cancel a browser that has a state update handler but no queue and `nw_browser_set_state_locked` calls `dispatch_async` with a NULL queue, faulting at a fixed small offset. Apple has this as a framework bug (r.139710124, https://developer.apple.com/forums/thread/768413); the only defence is to never make the call.
 
-Roam had two paths that could: the `Task.isCancelled` guard that runs before the endpoints are started, and `withTaskCancellationHandler`'s `onCancel`, which fires the instant the task is cancelled — including before the setup closure has reached `start(queue:)`. SwiftUI cancels `.task` work on a scene-phase change, so backgrounding the app during the check was enough.
+Roam had two paths that could: the `Task.isCancelled` guard that runs before the endpoints are started, and `withTaskCancellationHandler`'s `onCancel`, which fires the instant the task is cancelled - including before the setup closure has reached `start(queue:)`. SwiftUI cancels `.task` work on a scene-phase change, so backgrounding the app during the check was enough.
 
-1.52's fix and 1.54's fix both addressed a *different* rule — that `NWBrowser.cancel()` is not safe against itself — and neither stopped this, because the offending call was never a second concurrent cancel. It was the first one, made too early.
+1.52's fix and 1.54's fix both addressed a *different* rule - that `NWBrowser.cancel()` is not safe against itself - and neither stopped this, because the offending call was never a second concurrent cancel. It was the first one, made too early.
 
-**Known cause, fix:** start and cancel now go through an `EndpointLifecycle` wrapper that tracks whether the endpoints were ever started. A cancel arriving before the start is recorded and the teardown skipped entirely — there is nothing bound to tear down — and a cancel arriving *during* the start is deferred until the queue is set. Cancelling twice is still claimed once, and the teardown still runs on the endpoints' own queue, so both earlier fixes are preserved.";
+**Known cause, fix:** start and cancel now go through an `EndpointLifecycle` wrapper that tracks whether the endpoints were ever started. A cancel arriving before the start is recorded and the teardown skipped entirely - there is nothing bound to tear down - and a cancel arriving *during* the start is deferred until the queue is set. Cancelling twice is still claimed once, and the teardown still runs on the endpoints' own queue, so both earlier fixes are preserved.";
 
-const THERMAL_STARVATION_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog — the device was overheating, not the app**
+const THERMAL_STARVATION_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog - the device was overheating, not the app**
 
 `EXC_CRASH (10)` / `SIGKILL (9)` with a watchdog termination reason, but the numbers in that reason rule the app out as the cause:
 
-- **`Thermal State: critical`** (thermal level 9) — the highest tier iOS reports. At that point the system is aggressively throttling every process on the device.
-- **`Elapsed application CPU time: 0% CPU`** — Roam got a rounding error's worth of CPU across the whole watchdog window, while the device as a whole stayed busy. The process was not doing slow work; it was not being scheduled.
+- **`Thermal State: critical`** (thermal level 9) - the highest tier iOS reports. At that point the system is aggressively throttling every process on the device.
+- **`Elapsed application CPU time: 0% CPU`** - Roam got a rounding error's worth of CPU across the whole watchdog window, while the device as a whole stayed busy. The process was not doing slow work; it was not being scheduled.
 
 A scene-update deadline is wall-clock, not CPU-time, so a process that never gets scheduled blows through it without ever running. The attributed thread is whatever the app happened to be parked in when the clock ran out, and reading it will mislead you.
 
@@ -476,11 +418,8 @@ pub static RULES: &[CrashRule] = &[
     CrashRule {
         id: "scene-phase-reentrancy-stack-overflow",
         title: "Stack overflow from forceFront re-entering the SwiftUI update pass",
-        // The deferral shipped in a re-cut 1.52 build, after the first 1.52
-        // builds were already on App Store Connect. Version comparison is
-        // marketing-version only, so a crash from an early 1.52 build reads as
-        // UNFIXED and lands in the manual queue. That is the safe direction --
-        // check `appBuildVersion` on the report before concluding the fix broke.
+        // Fixed in a re-cut 1.52 build. Comparison is marketing-version only,
+        // so early-1.52 crashes read UNFIXED; check `appBuildVersion` first.
         fixed_in: Some("1.52"),
         environmental: false,
         exception_type: Some(1),
@@ -488,9 +427,8 @@ pub static RULES: &[CrashRule] = &[
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // The app frame alone would be too loose -- `forceFront` appears on any
-        // stack that brings a window forward. It is the recursion above it that
-        // makes this the bug, so require the SwiftUI half of the cycle too.
+        // `forceFront` alone is too loose, so require the SwiftUI half of the
+        // recursion too.
         all_of: &[
             "NSApplication.forceFront",
             "AppGraph.graphDidChange",
@@ -499,9 +437,7 @@ pub static RULES: &[CrashRule] = &[
         none_of: &[],
         reply: SCENE_PHASE_REENTRANCY_REPLY,
     },
-    // After the forceFront rule, and explicitly excluding it: both are the same
-    // graphDidChange/scenesDidChange recursion, and a report carrying both
-    // triggers belongs to the narrower one above.
+    // Same recursion as the forceFront rule, which is narrower and goes first.
     CrashRule {
         id: "menu-bar-extra-reentrancy-stack-overflow",
         title: "Stack overflow from MenuBarExtra(isInserted:) re-entering the SwiftUI update pass",
@@ -512,25 +448,14 @@ pub static RULES: &[CrashRule] = &[
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // Deliberately *not* keyed on `isInserted`, though the title names it.
-        // That is a parameter label, and it survives only in the raw symbol:
-        // `DemangleOptions::name_only()` renders the initialiser as
-        // `MenuBarExtra<>.init`, label and all arguments gone. Pairing it with
-        // `AppGraph.graphDidChange`, which exists only *after* demangling, asked
-        // for one report to be mangled and demangled at once -- so this rule
-        // matched nothing in production while seven of its crashes went to the
-        // manual queue. `MenuBarExtra` plus the recursion and the Stack Guard
-        // hit is specific enough, and the rule below excludes MenuBarExtra so
-        // the two cannot collide.
+        // Not keyed on `isInserted`: `name_only()` demangling drops parameter
+        // labels, so it never reaches the report text.
         all_of: &["MenuBarExtra", "AppGraph.graphDidChange", "Stack Guard"],
         none_of: &["NSApplication.forceFront"],
         reply: MENU_BAR_EXTRA_REENTRANCY_REPLY,
     },
-    // Third entry point into the same recursion, after both narrower rules and
-    // excluding both of their triggers. Keyed on the screen-parameters
-    // notification underneath the cycle: the `setActivationPolicy` caller that
-    // posts it is already off the stack by the time the recursion runs away, so
-    // the notification is the only frame naming why this one started.
+    // Third entry point into the same recursion, keyed on the screen-parameters
+    // notification once `setActivationPolicy` is off the stack.
     CrashRule {
         id: "screen-parameters-reentrancy-stack-overflow",
         title: "Stack overflow from a screen-parameters change re-entering the SwiftUI update pass",
@@ -541,9 +466,8 @@ pub static RULES: &[CrashRule] = &[
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // Both halves of the cycle, not just `graphDidChange`: this rule names
-        // no app frame at all, and the notification alone fires on any display
-        // or Dock change.
+        // Both halves of the cycle: this rule names no app frame, and the
+        // notification alone fires on any display or Dock change.
         all_of: &[
             "AppGraph.graphDidChange",
             "AppDelegate.scenesDidChange",
@@ -567,16 +491,11 @@ pub static RULES: &[CrashRule] = &[
         none_of: &[],
         reply: WATCHDOG_REPLY,
     },
-    // Directly after the watchdog rule it is most likely to be confused with.
-    // The two cannot collide -- that one needs a 0x8BADF00D termination code and
-    // this one a SIGSEGV -- but they share `nw_browser_cancel`, so keep them
-    // adjacent for whoever reads this list next.
+    // Kept next to the watchdog rule they share `nw_browser_cancel` with. The
+    // termination code and SIGSEGV keep the two from colliding.
     CrashRule {
-        // The id is historical. The bug was originally read as two threads
-        // racing on `cancel()`; it is really a cancel that lands before
-        // `start(queue:)`. Renaming it would orphan the `auto:` review rows
-        // already in `crash_reviews`, so the id stays and the title carries the
-        // correct diagnosis.
+        // Historical id: the bug is a cancel before `start(queue:)`, not a
+        // race. Renaming would orphan existing `auto:` rows in `crash_reviews`.
         id: "local-network-cancel-race",
         title: "SIGSEGV from cancelling NWBrowser before start(queue:) in the local network check",
         fixed_in: Some("1.55"),
@@ -586,20 +505,14 @@ pub static RULES: &[CrashRule] = &[
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // Keyed on the framework frame alone, like the watchdog rule above.
-        // Pairing it with an app frame is what broke this rule in production:
-        // it required `requestLocalNetworkAuthorization`, then 9d8735db moved
-        // the cancel into a `CancelOnceEndpoints` closure and the attributed
-        // stack stopped naming the function. Both 1.54 crashes matched nothing
-        // and reached the manual queue. `NWBrowser` is used in exactly one file,
-        // so the framework frame cannot over-claim, and the SIGSEGV pair keeps
-        // this off the watchdog rule.
+        // Framework frame alone. Keying on an app frame broke this rule when
+        // 9d8735db moved the cancel into a closure. `NWBrowser` is used in one
+        // file, so the framework frame cannot over-claim.
         all_of: &["nw_browser_cancel"],
         none_of: &[],
         reply: LOCAL_NETWORK_CANCEL_RACE_REPLY,
     },
-    // EXC_CRASH/SIGABRT, so it cannot collide with the two EXC_CRASH/SIGKILL
-    // rules below; the exception pair alone separates them.
+    // EXC_CRASH/SIGABRT, which separates it from the SIGKILL rules below.
     CrashRule {
         id: "audio-player-node-play-exception",
         title: "SIGABRT from AVAudioPlayerNode.play() raising on a stale output format",
@@ -610,9 +523,8 @@ pub static RULES: &[CrashRule] = &[
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // The ObjC throw plus both ends of the call: AVFAudio raising, and Roam
-        // being the one that called it. `AVAudioPlayerNode` on its own would
-        // also claim an unrelated abort that merely had audio on some thread.
+        // Both ends of the call, since `AVAudioPlayerNode` alone would claim
+        // any abort that merely had audio on some thread.
         all_of: &[
             "objc_exception_throw",
             "AVAudioPlayerNode",
@@ -649,10 +561,8 @@ pub static RULES: &[CrashRule] = &[
         none_of: &[],
         reply: DEAD10CC_REPLY,
     },
-    // Last on purpose. This is the broadest rule in the list -- it names no app
-    // frame at all -- so every rule that recognises a *stack* gets first refusal.
-    // A main thread genuinely deadlocked in Roam's own code also reports 0% app
-    // CPU, and the only thing separating it from this is the thermal figure.
+    // Last: broadest rule, naming no app frame. Only the thermal figure
+    // separates it from a real deadlock.
     CrashRule {
         id: "thermal-starvation-watchdog",
         title: "0x8BADF00D watchdog while the device was thermally throttled",
@@ -661,15 +571,10 @@ pub static RULES: &[CrashRule] = &[
         exception_type: Some(10),
         signal: Some(9),
         termination_code: Some("0x8badf00d"),
-        // Level 9 is the top of the scale, reported alongside
-        // `Thermal State: critical`. Nothing below that is evidence of anything.
+        // Top of the scale, reported alongside `Thermal State: critical`.
         min_thermal_level: Some(9),
-        // Not `0`. A starved app still gets scheduled occasionally, and rounding
-        // puts that at a few percent: the iPhone14,5 report that forced this
-        // open showed thermal level 11 and 3% -- 2.122s of app CPU against
-        // 41.210s of device CPU -- and fell outside a `0` bound, reaching the
-        // manual queue as an unrecognised watchdog. What matters is the ratio,
-        // and a single digit against a pegged device is the same story as zero.
+        // Not `0`: a starved app still gets scheduled, and rounding puts that
+        // at a few percent. What matters is the ratio against a pegged device.
         max_app_cpu_percent: Some(5),
         all_of: &[],
         none_of: &[],
@@ -707,7 +612,7 @@ Thread 13 (attributed):
 
     const STACK_OVERFLOW_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
-Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) — stack overflow
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) - stack overflow
 Faulting VM region: 0x16ca6fed0 is in 0x16926c000-0x16ca70000;  bytes after start: 58736336  bytes before end: 303
 --->  Stack Guard                 16926c000-16ca70000    [ 56.0M] ---/rwx SM=PRV
       Stack                       16ca70000-16d26c000    [ 8176K] rw-/rwx SM=SHM
@@ -718,7 +623,7 @@ Metadata:
   exceptionType: 1
   osVersion: macOS 26.5.1 (25F80)
   signal: 11
-Thread 0 (attributed — this is the thread that crashed):
+Thread 0 (attributed - this is the thread that crashed):
   38  SwiftUI +0x1476c7c AppGraph.graphDidChange samples=1
   39  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange samples=1
   40  SwiftUI +0x1476c7c AppGraph.graphDidChange samples=1
@@ -740,22 +645,12 @@ Thread 0 (attributed):
   Network +0x1158200 nw_browser_cancel samples=1
 "#;
 
-    /// Trimmed from the real report on thread 1540815884619227250 (roam 1.52,
-    /// Mac16,12): the same graphDidChange/scenesDidChange recursion as
-    /// `STACK_OVERFLOW_REPORT`, but driven by `MenuBarExtra` rather than
-    /// `forceFront`. MetricKit reports the attributed thread mid-demangle
-    /// because it cannot unwind an overflowed stack; the cycle is only visible
-    /// in the in-process backtrace.
-    ///
-    /// The in-process frames are written the way the renderer emits them, which
-    /// means demangled -- see `demangle_backtrace_line`. An earlier version of
-    /// this fixture spliced a raw `$s7SwiftUI12MenuBarExtraV...isInserted...`
-    /// symbol in beside the already-demangled `AppGraph.graphDidChange`, a
-    /// mixture no real report ever carried, and that is what let the rule's
-    /// `isInserted` needle look load-bearing while it matched nothing.
+    /// Trimmed from thread 1540815884619227250 (roam 1.52, Mac16,12): the same
+    /// recursion as `STACK_OVERFLOW_REPORT`, driven by `MenuBarExtra`. The
+    /// in-process frames are demangled, as the renderer emits them.
     const MENU_BAR_STACK_OVERFLOW_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
-Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) — stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) - stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
 Faulting VM region: 0x16d197ea0 is in 0x169994000-0x16d198000;  bytes after start: 58736288  bytes before end: 351
 --->  Stack Guard                 169994000-16d198000    [ 56.0M] ---/rwx SM=PRV
 Metadata:
@@ -765,7 +660,7 @@ Metadata:
   exceptionType: 1
   osVersion: macOS 26.6.2 (25G83)
   signal: 11
-Thread 0 (attributed — this is the thread that crashed):
+Thread 0 (attributed - this is the thread that crashed):
   0   libswiftCore.dylib +0xae994 DecodedMetadataBuilder::createGenericTypeParameterType samples=1
 
 In-process backtrace of the faulting thread (1)
@@ -776,9 +671,8 @@ In-process backtrace of the faulting thread (1)
   24  SwiftUI +0x10f9b80 specialized AppDelegate.scenesDidChange
 "#;
 
-    /// Trimmed from the real report on thread 1436017918377984024 (roam 1.52,
-    /// iPhone12,1): `nw_browser_cancel` again, but a SIGSEGV rather than the
-    /// watchdog kill `WATCHDOG_REPORT` carries.
+    /// Thread 1436017918377984024 (roam 1.52, iPhone12,1): `nw_browser_cancel`
+    /// with a SIGSEGV rather than `WATCHDOG_REPORT`'s watchdog kill.
     const LOCAL_NETWORK_RACE_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
 Diagnosis: EXC_BAD_ACCESS (1) / KERN_INVALID_ADDRESS (1) / SIGSEGV (11)
@@ -790,7 +684,7 @@ Metadata:
   exceptionType: 1
   osVersion: iPhone OS 18.6.2 (22G100)
   signal: 11
-Thread 9 (attributed — this is the thread that crashed):
+Thread 9 (attributed - this is the thread that crashed):
   2   Network +0xadb8ec nw_browser_cancel samples=1
   3   Roam    +0x173e68 closure #1 in closure #2 in requestLocalNetworkAuthorization at /x/NetworkPermissionsCheck.swift:115 samples=1
   5   Roam    +0x1739e8 closure #2 in requestLocalNetworkAuthorization at /x/NetworkPermissionsCheck.swift:194 samples=1
@@ -807,8 +701,7 @@ Thread 9 (attributed — this is the thread that crashed):
 
     #[test]
     fn the_forcefront_rule_still_wins_when_both_triggers_are_present() {
-        // A report carrying both belongs to the narrower forceFront rule, by
-        // ordering and by this rule's `none_of`.
+        // A report carrying both belongs to the narrower forceFront rule.
         let report = MENU_BAR_STACK_OVERFLOW_REPORT.replace(
             "  20  SwiftUI +0x1476c7c AppGraph.graphDidChange",
             "  20  Roam +0x5e2e8 NSApplication.forceFront at /x/RoamAppDelegate.swift:152\n  21  SwiftUI +0x1476c7c AppGraph.graphDidChange",
@@ -820,15 +713,11 @@ Thread 9 (attributed — this is the thread that crashed):
         );
     }
 
-    /// Trimmed from the real report on thread 1539671345036664922 (roam 1.51,
-    /// Mac17,5). This one MetricKit *could* unwind, so every frame arrived
-    /// demangled and the word `isInserted` appears nowhere in the report --
-    /// the rule that is supposed to own this crash used to require it, and the
-    /// rule below excludes `MenuBarExtra`, so it fell between the two and went
-    /// to the manual queue.
+    /// Thread 1539671345036664922 (roam 1.51, Mac17,5). MetricKit unwound this
+    /// one, so every frame is demangled and `isInserted` appears nowhere.
     const MENU_BAR_DEMANGLED_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
-Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) — stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) - stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
 --->  Stack Guard                 16b3a8000-16ebac000    [ 56.0M] ---/rwx SM=PRV
 Metadata:
   appVersion: 1.51
@@ -837,7 +726,7 @@ Metadata:
   exceptionType: 1
   osVersion: macOS 26.5.2 (25F84)
   signal: 11
-Thread 0 (attributed — this is the thread that crashed):
+Thread 0 (attributed - this is the thread that crashed):
   19  SwiftUICore +0x3e3ae8 static ObservableObject.environmentStore.getter samples=1
   20  Roam        +0x24e874 closure #4 in RoamApp.body.getter at /<compiler-generated> samples=1
   21  SwiftUI     +0x229e44 closure #1 in MenuBarExtra<>.init samples=1
@@ -853,26 +742,22 @@ Thread 0 (attributed — this is the thread that crashed):
         let facts = CrashFacts::from_report(MENU_BAR_DEMANGLED_REPORT);
         let matched = match_rule(MENU_BAR_DEMANGLED_REPORT, &facts).expect("a rule matches");
         assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
-        // `name_only()` demangling drops every argument label, so no rule may
-        // depend on one surviving into the report text.
+        // `name_only()` drops argument labels, so no rule may depend on one.
         assert!(!MENU_BAR_DEMANGLED_REPORT.contains("isInserted"));
     }
 
     #[test]
     fn a_menu_bar_extra_crash_without_the_recursion_is_not_claimed() {
-        // MenuBarExtra appears on plenty of macOS stacks. Only the cycle makes
-        // this the known bug.
+        // MenuBarExtra is common on macOS stacks; only the cycle names the bug.
         let report = MENU_BAR_STACK_OVERFLOW_REPORT
             .replace("AppGraph.graphDidChange", "AppGraph.updateGraph");
         let facts = CrashFacts::from_report(&report);
         assert!(match_rule(&report, &facts).is_none());
     }
 
-    /// Trimmed from the real report on thread 1536532380976812132 (roam 1.54,
-    /// iPhone15,3). The same crash as `LOCAL_NETWORK_RACE_REPORT`, but from
-    /// after 9d8735db moved the cancel into a wrapper: the attributed stack
-    /// names no app function at all, which is why the rule's old
-    /// `requestLocalNetworkAuthorization` key stopped matching.
+    /// Thread 1536532380976812132 (roam 1.54, iPhone15,3): the same crash as
+    /// `LOCAL_NETWORK_RACE_REPORT` after 9d8735db moved the cancel into a
+    /// wrapper, leaving no app function on the attributed stack.
     const LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
 Diagnosis: EXC_BAD_ACCESS (1) / KERN_INVALID_ADDRESS (1) / SIGSEGV (11)
@@ -885,7 +770,7 @@ Metadata:
   exceptionType: 1
   osVersion: iPhone OS 18.6.2 (22G100)
   signal: 11
-Thread 4 (attributed — this is the thread that crashed):
+Thread 4 (attributed - this is the thread that crashed):
   0   libdispatch.dylib +0x79b4 dispatch_async samples=1
   2   Network +0xadb8ec nw_browser_cancel samples=1
   3   Roam    +0x176828 partial apply for closure #2 in CancelOnceEndpoints.cancel at /<compiler-generated> samples=1
@@ -903,8 +788,7 @@ Thread 4 (attributed — this is the thread that crashed):
 
     #[test]
     fn the_two_local_network_rules_do_not_steal_from_each_other() {
-        // Both name `nw_browser_cancel`. The watchdog kill is EXC_CRASH with a
-        // 0x8BADF00D termination code; the race is a SIGSEGV with neither.
+        // Both name `nw_browser_cancel`; the termination code separates them.
         for (report, expected) in [
             (WATCHDOG_REPORT, "local-network-cancel-watchdog"),
             (LOCAL_NETWORK_RACE_REPORT, "local-network-cancel-race"),
@@ -919,10 +803,8 @@ Thread 4 (attributed — this is the thread that crashed):
 
     #[test]
     fn matches_the_cancel_before_start_report_that_names_no_app_frame() {
-        // The regression that sent both 1.54 crashes to the manual queue: the
-        // rule required `requestLocalNetworkAuthorization` and the refactor
-        // stopped the attributed stack from naming it. Keyed on the framework
-        // frame, it matches.
+        // Regression check: the old app-frame key stopped matching after the
+        // refactor. The framework frame does.
         let facts = CrashFacts::from_report(LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT);
         let matched =
             match_rule(LOCAL_NETWORK_CANCEL_BEFORE_START_REPORT, &facts).expect("a rule matches");
@@ -937,9 +819,7 @@ Thread 4 (attributed — this is the thread that crashed):
         let facts = CrashFacts::from_report(&report);
         let matched = match_rule(&report, &facts).expect("a rule matches");
         assert_eq!(matched.rule.id, "local-network-cancel-race");
-        // A crash from 1.55 itself means this fix did not hold either, and the
-        // thread deliberately stays in the manual queue. Two prior fixes for
-        // this stack have already missed.
+        // A 1.55 crash means this fix missed too, so it stays in the queue.
         assert_eq!(matched.status, FixStatus::Unfixed);
     }
 
@@ -971,10 +851,8 @@ Thread 4 (attributed — this is the thread that crashed):
 
     #[test]
     fn a_crash_from_a_rules_own_fix_version_is_tagged_unfixed() {
-        // Each rule is checked at its *own* `fixed_in`, not at a shared version:
-        // the local-network rule moved to 1.55 when the 1.54 fix turned out to
-        // address the wrong mechanism, and pinning both to 1.54 would quietly
-        // stop testing it.
+        // Each rule is checked at its own `fixed_in`; a shared version would
+        // stop testing rules whose fix moved.
         for (report, expected, fix_version) in [
             (
                 MENU_BAR_STACK_OVERFLOW_REPORT,
@@ -997,8 +875,7 @@ Thread 4 (attributed — this is the thread that crashed):
 
     #[test]
     fn a_local_network_crash_from_1_54_now_reads_as_fixed_in_1_55() {
-        // The two 1.54 crashes that reopened this rule. Once 1.55 ships they are
-        // an update prompt, not a manual-queue item.
+        // The two 1.54 crashes that reopened this rule.
         let report = LOCAL_NETWORK_RACE_REPORT.replace("appVersion: 1.52", "appVersion: 1.54");
         let facts = CrashFacts::from_report(&report);
         let matched = match_rule(&report, &facts).expect("still matches");
@@ -1008,8 +885,7 @@ Thread 4 (attributed — this is the thread that crashed):
 
     #[test]
     fn the_1_53_reports_that_forced_these_rules_open_read_as_fixed() {
-        // Both clusters had a 1.53 report in the queue; both fixes landed after
-        // the v1.53 tag. If either of these flips to UNFIXED the fix regressed.
+        // Both fixes landed after v1.53; UNFIXED here means a regression.
         for report in [MENU_BAR_STACK_OVERFLOW_REPORT, LOCAL_NETWORK_RACE_REPORT] {
             let report = report.replace("appVersion: 1.52", "appVersion: 1.53");
             let facts = CrashFacts::from_report(&report);
@@ -1020,9 +896,8 @@ Thread 4 (attributed — this is the thread that crashed):
         }
     }
 
-    /// Trimmed from the real report on thread 1540766480533291048 (roam 1.51,
-    /// Mac16,13): an Objective-C exception out of AVFAudio, which Swift cannot
-    /// catch, so the process aborts.
+    /// Thread 1540766480533291048 (roam 1.51, Mac16,13): an uncatchable
+    /// Objective-C exception out of AVFAudio, so the process aborts.
     const AUDIO_PLAYER_EXCEPTION_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
 Diagnosis: EXC_CRASH (10) / code 0 / SIGABRT (6)
@@ -1033,7 +908,7 @@ Metadata:
   exceptionType: 10
   osVersion: macOS 26.5.2 (25F84)
   signal: 6
-Thread 6 (attributed — this is the thread that crashed):
+Thread 6 (attributed - this is the thread that crashed):
   2   libsystem_c.dylib +0x78644 abort samples=1
   5   libobjc.A.dylib   +0x24894 _objc_terminate() samples=1
   9   libobjc.A.dylib   +0x1aa84 objc_exception_throw samples=1
@@ -1057,7 +932,7 @@ Thread 6 (attributed — this is the thread that crashed):
 
     #[test]
     fn an_abort_without_the_audio_frames_is_not_claimed() {
-        // A bare SIGABRT is not this bug. Both ends of the call must be present.
+        // A bare SIGABRT is not this bug; both ends must be present.
         let report =
             AUDIO_PLAYER_EXCEPTION_REPORT.replace("AudioPlayer.start", "SomeOtherThing.start");
         let facts = CrashFacts::from_report(&report);
@@ -1066,8 +941,7 @@ Thread 6 (attributed — this is the thread that crashed):
 
     #[test]
     fn the_audio_rule_does_not_steal_the_sigkill_crashes() {
-        // DEAD10CC_REPORT and THERMAL_REPORT are also EXC_CRASH. They are
-        // SIGKILL, and this rule is SIGABRT -- that pair is the whole separation.
+        // SIGABRT is what separates this from the SIGKILL EXC_CRASH rules.
         for report in [DEAD10CC_REPORT, THERMAL_REPORT, WATCHDOG_REPORT] {
             let facts = CrashFacts::from_report(report);
             assert_ne!(
@@ -1077,11 +951,9 @@ Thread 6 (attributed — this is the thread that crashed):
         }
     }
 
-    /// Trimmed from the real report on thread 1541908323593363529 (roam 1.53,
-    /// Macmini9,1): the same graphDidChange/scenesDidChange recursion again,
-    /// with neither `forceFront` nor `MenuBarExtra` anywhere on the stack. The
-    /// notification underneath it is `applicationDidChangeScreenParameters`,
-    /// arriving while launch restoration was still ordering windows on screen.
+    /// Thread 1541908323593363529 (roam 1.53, Macmini9,1): the same recursion
+    /// with neither `forceFront` nor `MenuBarExtra` on the stack, triggered by
+    /// `applicationDidChangeScreenParameters` during launch restoration.
     const SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
 Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) â stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
@@ -1123,8 +995,7 @@ Thread 0 (attributed â this is the thread that crashed):
 
     #[test]
     fn the_narrower_scene_rules_win_over_the_screen_parameters_rule() {
-        // A report carrying one of the named triggers as well belongs to that
-        // rule, by ordering and by this rule's `none_of`.
+        // A report naming one of the other triggers belongs to that rule.
         for (trigger, expected) in [
             (
                 "  44  Roam +0x5e2e8 NSApplication.forceFront at /x/RoamAppDelegate.swift:152",
@@ -1149,8 +1020,7 @@ Thread 0 (attributed â this is the thread that crashed):
 
     #[test]
     fn a_screen_parameters_crash_without_the_recursion_is_not_claimed() {
-        // The notification fires on any display or Dock change. Only the cycle
-        // makes this the known bug.
+        // The notification is common; only the cycle names the bug.
         let report = SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT
             .replace("AppGraph.graphDidChange", "AppGraph.updateGraph");
         let facts = CrashFacts::from_report(&report);
@@ -1234,8 +1104,7 @@ Thread 0 (attributed â this is the thread that crashed):
 
     #[test]
     fn a_plain_forcefront_stack_overflow_is_not_claimed() {
-        // Only the recursion makes this the known bug. Bringing a window forward
-        // while some other code overflows the stack must stay in the queue.
+        // Only the recursion names the bug; an unrelated overflow stays queued.
         let report =
             STACK_OVERFLOW_REPORT.replace("AppGraph.graphDidChange", "AppGraph.updateGraph");
         let facts = CrashFacts::from_report(&report);
@@ -1335,9 +1204,8 @@ Thread 0 (attributed):
         assert!(match_rule(report, &facts).is_none());
     }
 
-    /// Trimmed from the real report on thread 1538417638026252298 (roam 1.50,
-    /// iPhone15,5): background scene-update watchdog on a device at the top of
-    /// the thermal scale, with the app scheduled for 0.127s of the 40s window.
+    /// Thread 1538417638026252298 (roam 1.50, iPhone15,5): scene-update
+    /// watchdog on a thermally pegged device, 0.127s of app CPU in 40s.
     const THERMAL_REPORT: &str = r#"
 Crash 1 (version 1.0.0)
 Termination reason: <RBSTerminateContext| domain:10 code:0x8BADF00D explanation:scene-update watchdog transgression: app<com.msdrigg.roam>:15540 exhausted real (wall clock) time allowance of 10.00 seconds
@@ -1361,9 +1229,8 @@ Thread 0 (attributed):
   AttributeGraph +0xc800 AG::Graph::UpdateStack::update() samples=1
 "#;
 
-    /// The iPhone14,5 report from 2026-08-20: same starvation as
-    /// `THERMAL_REPORT`, but the app got a sliver of CPU rather than none, and
-    /// a `max_app_cpu_percent: Some(0)` bound sent it to the manual queue.
+    /// Same starvation as `THERMAL_REPORT` with a sliver of app CPU, which a
+    /// `max_app_cpu_percent: Some(0)` bound would exclude.
     const THERMAL_REPORT_NONZERO_CPU: &str = r#"
 Crash 1 (version 1.0.0)
 Termination reason: <RBSTerminateContext| domain:10 code:0x8BADF00D explanation:scene-update watchdog transgression: app<com.msdrigg.roam>:6475 exhausted real (wall clock) time allowance of 10.00 seconds
@@ -1495,9 +1362,7 @@ Thread 0 (attributed):
         }
     }
 
-    /// The production shape that forced this apart: a macOS `MenuBarExtra`
-    /// stack overflow recorded on 1.53 and delivered after the device had
-    /// already updated to 1.54.
+    /// A 1.53 overflow delivered after the device had updated to 1.54.
     const UPDATED_DEVICE_REPORT: &str = r#"
 Roam MetricKit Crash Diagnostics
 ================================
@@ -1560,9 +1425,7 @@ In-process backtrace of the faulting thread (1)
         );
     }
 
-    /// Fix status keys on the crash, not on the install. Scoring against the
-    /// installed release would report every historical crash from an updated
-    /// device as a fix that did not hold.
+    /// Fix status keys on the crash version, not the installed release.
     #[test]
     fn an_updated_device_does_not_make_an_old_crash_read_as_unfixed() {
         let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
@@ -1593,9 +1456,8 @@ In-process backtrace of the faulting thread (1)
         }
     }
 
-    /// Reports predating the `appVersion` metadata used to be `Unknown` and got
-    /// auto-reviewed on a shrug. The installed release bounds the answer, and
-    /// the reply says where the number came from.
+    /// Reports with no `appVersion` fall back to the installed release, and
+    /// the reply says so.
     #[test]
     fn a_report_without_an_appversion_falls_back_to_the_installed_release() {
         let report = UPDATED_DEVICE_REPORT.replace("  appVersion: 1.53\n", "");
@@ -1604,7 +1466,7 @@ In-process backtrace of the faulting thread (1)
         assert_eq!(facts.crash_version(), Some("1.54"));
 
         let matched = match_rule(&report, &facts).unwrap();
-        // 1.54 is the fixing release, so the safe direction is the manual queue.
+        // 1.54 is the fixing release, so this belongs in the manual queue.
         assert_eq!(matched.status, FixStatus::Unfixed);
         assert!(matched.reply(&facts).contains("carries no `appVersion`"));
 
@@ -1625,9 +1487,8 @@ In-process backtrace of the faulting thread (1)
         );
     }
 
-    /// Every reply this module can post is support-only. Without the marker a
-    /// verdict lands in the reporter's in-app chat and is read back to the AI
-    /// responder as if the user had written it.
+    /// Replies are support-only; without the marker they reach the reporter's
+    /// chat and feed back into the responder.
     #[test]
     fn every_reply_is_support_only() {
         for rule in RULES {

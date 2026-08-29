@@ -536,7 +536,7 @@ struct RoamApp: App {
                 return
             }
             // Xcode 26 iOS sim ignores XCUIDevice.shared.orientation when used from
-            // UI tests — the canvas rotates but the app's scene geometry doesn't
+            // UI tests - the canvas rotates but the app's scene geometry doesn't
             // follow. Drive the rotation app-side via requestGeometryUpdate so the
             // app's window relayouts even when XCTest's orientation handling is
             // broken. Used only under screenshot testing launch args.

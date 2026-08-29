@@ -453,7 +453,7 @@ final class RoamDatabase: @unchecked Sendable {
         // Only the mutating transaction needs the cross-process file lock.
         // Reloading the snapshot afterwards full-scans every table, and holding
         // the flock across that widens the window in which a suspension gets the
-        // app killed with 0xdead10cc — so it runs unlocked, on the same writer
+        // app killed with 0xdead10cc - so it runs unlocked, on the same writer
         // connection.
         try withExclusiveDatabaseLock(fileLock) {
             try db.inTransaction {

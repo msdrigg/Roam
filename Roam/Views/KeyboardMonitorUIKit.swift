@@ -15,8 +15,8 @@
             if enabled {
                 // Overlay a sibling first-responder view instead of re-hosting
                 // `content` in a nested UIHostingController. Re-hosting detaches the
-                // content's scroll view from the enclosing UINavigationController —
-                // which breaks large-title collapse and the scroll-edge effect — and
+                // content's scroll view from the enclosing UINavigationController -
+                // which breaks large-title collapse and the scroll-edge effect - and
                 // makes the nested controller re-apply the window safe area, double-
                 // counting the bottom inset (the home-indicator gap / clipping seen in
                 // the Keyboard Shortcuts panel). Mirrors the macOS implementation,

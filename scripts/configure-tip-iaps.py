@@ -5,7 +5,7 @@ Run after create-tip-iaps.py. Idempotent: existing localizations and price
 schedules are left alone.
 
 Wording note: display names and descriptions say "tip"/"support" and never
-"donation" — guideline 3.2.2(iv) bars in-app collection of funds for charities
+"donation" - guideline 3.2.2(iv) bars in-app collection of funds for charities
 unless you are an approved nonprofit, and review goes by the customer-facing
 strings.
 """
@@ -80,7 +80,7 @@ def set_price(client, iap_id, usd):
         return "price already scheduled"
 
     # Price points are per-IAP and paginated ascending, so the higher tiers sit
-    # well past the first page — walk `links.next` until the match turns up.
+    # well past the first page - walk `links.next` until the match turns up.
     url = f"/v2/inAppPurchases/{iap_id}/pricePoints?filter[territory]={USA}&limit=200"
     match = None
     seen = 0
@@ -142,7 +142,7 @@ def all_territories(client):
 def set_availability(client, iap_id, territories):
     """An IAP stays MISSING_METADATA until territory availability exists.
 
-    Note there is no `availableInAllTerritories` shortcut — the API requires
+    Note there is no `availableInAllTerritories` shortcut - the API requires
     the boolean `availableInNewTerritories` plus an explicit list of every
     territory in the `availableTerritories` relationship.
     """

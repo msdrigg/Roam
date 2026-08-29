@@ -576,7 +576,7 @@ impl DiscordClient {
     /// Opens an attachment download without reading it into memory.
     ///
     /// Returns the live upstream response so the caller can hand
-    /// `bytes_stream()` straight to the HTTP body — attachments here are
+    /// `bytes_stream()` straight to the HTTP body - attachments here are
     /// symbolicated crash reports and full diagnostics dumps, which run to
     /// hundreds of kilobytes each and should never be buffered server-side.
     ///
@@ -607,9 +607,8 @@ impl DiscordClient {
             )));
         }
 
-        // Deliberately no semaphore permit: the CDN is not rate limited with the
-        // bot API, and holding a permit for the whole download would serialise
-        // transfers behind the shared request budget.
+        // No semaphore permit: the CDN is not rate limited with the bot API,
+        // and holding one would serialise transfers behind the request budget.
         let response = self
             .client
             .get(url)

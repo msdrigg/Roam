@@ -4,9 +4,8 @@ import SwiftUI
 /// Card-styled row used in the sidebar of `DeviceSplitRoot` (iPad / macOS /
 /// visionOS) and as a tap target on the iPhone home grid (`PhoneHomeView`).
 ///
-/// Renders the device's icon, name, and a small online-status indicator. While
-/// the device record is still loading it shows a muted placeholder so the
-/// sidebar can render immediately rather than wait for a network round-trip.
+/// Renders the device's icon, name and online indicator, with a muted
+/// placeholder while the record loads.
 struct DeviceSidebarCard: View {
     @State private var deviceLoader: DeviceLoader
     private let deviceId: String
@@ -62,9 +61,8 @@ struct DeviceSidebarCard: View {
     }
 
     private var isOnline: Bool {
-        // Reading through the monitor rather than `device.isOnline()` — only
-        // the connected device gets its `lastOnlineAt` refreshed, so the record
-        // alone can't say anything about the rest of the list.
+        // Read through the monitor: only the connected device gets its
+        // `lastOnlineAt` refreshed.
         DeviceLivenessMonitor.shared.isOnline(device)
     }
 
@@ -76,15 +74,9 @@ struct DeviceSidebarCard: View {
     }
 }
 
-/// Picks the order every device list is shown in.
-///
-/// Lives next to the lists it reorders — the iPhone home screen's `⇅` menu and
-/// the sidebar footer — rather than in Settings, where a sort control for a
-/// handful of devices reads as heavier than the thing it sorts.
-///
-/// Writing through the data handler is what makes the change take effect
-/// immediately: it republishes the device list, so every open list re-renders
-/// in the new order rather than waiting for the next thing to touch it.
+/// Picks the order every device list is shown in. Lives next to the lists it
+/// reorders rather than in Settings. Writing through the data handler
+/// republishes the device list, so open lists re-render immediately.
 struct DeviceSortOrderPicker: View {
     @AppStorage(UserDefaultKeys.deviceSortOrder) private var storedOrder: String =
         DeviceSortOrder.manual.rawValue
@@ -108,9 +100,8 @@ struct DeviceSortOrderPicker: View {
         } label: {
             Text("Sort by", comment: "Header above the device sort options")
         }
-        // Inline, so the options sit directly in the menu under a "Sort by"
-        // header. The default style nests them behind a submenu, which put two
-        // taps between the button and a one-of-three choice.
+        // Inline so the options sit under a "Sort by" header; the default
+        // style nests them behind a submenu.
         .pickerStyle(.inline)
         .accessibilityIdentifier("DeviceSortOrderPicker")
     }

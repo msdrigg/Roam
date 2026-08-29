@@ -177,7 +177,7 @@ struct RoamSwiftTests {
     @Test func fileLogLinesDecodeAsFileLogEntry() throws {
         // `FileLog` writes JSON by hand for speed but reads it back with
         // `JSONDecoder`. The two are written independently, so the escaping has
-        // to be pinned or a stray quote silently drops a line on read — exactly
+        // to be pinned or a stray quote silently drops a line on read - exactly
         // the lines around a crash, which is where log messages are least
         // predictable.
         let awkward = "quote \" backslash \\ newline \n tab \t control \u{01} unicode ✅"

@@ -29,7 +29,7 @@
         @State private var keyboardLeaving: Bool = false
         @State var buttonPresses: [RemoteButton: Int] = [:]
         // Used by `decoratedRemotePage` to re-probe local-network permission on
-        // foreground, which visionOS needs too — so it lives outside the
+        // foreground, which visionOS needs too - so it lives outside the
         // iOS-only block below.
         @Environment(\.scenePhase) private var scenePhase
         #if os(iOS)
@@ -99,8 +99,8 @@
         }
 
         /// True when the device tells us it isn't a TV, i.e. a stick or Express
-        /// with no speakers of its own. Volume still gets sent — it leaves over
-        /// HDMI-CEC — this only drives a one-time hint about enabling CEC.
+        /// with no speakers of its own. Volume still gets sent - it leaves over
+        /// HDMI-CEC - this only drives a one-time hint about enabling CEC.
         var volumeRoutedOverHDMI: Bool {
             selectedDevice?.isTV == false
         }
@@ -150,7 +150,7 @@
             // safe area when nothing renders at the bottom edge. Switch to a
             // positive value while the keyboard-entry overlay or the pasted-URL
             // offer is showing so that content stays above the system keyboard /
-            // the pager's floating button bar instead of clipping below them —
+            // the pager's floating button bar instead of clipping below them -
             // the flexible Spacers above compress to absorb the difference.
             private var iOSBottomPadding: CGFloat {
                 if showKeyboardEntry || showPastedUrlOffer {
@@ -275,7 +275,7 @@
 
         private func refreshDeviceBackoffTask() async {
             // Only the active page may refresh: inactive pager pages share the
-            // same ECP session, which points at the *active* device — refreshing
+            // same ECP session, which points at the *active* device - refreshing
             // through it would write another device's info into this record.
             guard isActive else { return }
             for await _ in exponentialBackoff(min: 30, max: 3600) {
@@ -311,7 +311,7 @@
 
         private func ecpSessionLocationTask() async {
             // Only the active page owns the shared ECP session. In the phone
-            // pager, neighbor pages appear during a swipe — without this guard
+            // pager, neighbor pages appear during a swipe - without this guard
             // they steal the session mid-swipe, and if the swipe bounces back
             // the visible page (which never disappeared) never re-claims it,
             // leaving the session pointed at the wrong device.
@@ -448,7 +448,7 @@
                 .onDisappear(perform: logDisappear)
                 // Both ids include `isActive` so a page (re)claims the shared
                 // session and resumes refreshing the moment it becomes the
-                // active pager page — not just when it appears.
+                // active pager page - not just when it appears.
                 .task(id: "\(isActive),\(selectedDevice?.id ?? "--")", priority: .medium) {
                     await refreshDeviceBackoffTask()
                 }
@@ -656,7 +656,7 @@
             @ViewBuilder
             private var volumeOverlay: some View {
                 // Gate on `isActive` so off-screen pager pages don't also install
-                // hardware volume button interceptors — only the visible page should
+                // hardware volume button interceptors - only the visible page should
                 // be live.
                 if controlVolumeWithHWButtons && !headphonesModeEnabled && isActive {
                     CustomVolumeSliderOverlay(volume: $volume, changeVolume: handleVolumeEvent)
@@ -672,13 +672,13 @@
             }
 
             // Pattern detection only says *whether* the pasteboard looks like a
-            // web URL — it never reads the value, so the system "pasted from"
+            // web URL - it never reads the value, so the system "pasted from"
             // notice is not triggered. The actual contents are only read when
             // the user taps the system PasteButton in the offer banner (a
             // sanctioned paste affordance, which is also notice-free), and the
             // URL is parsed/validated there before anything is sent.
             private func checkForPastedUrl() async {
-                // Only the focused remote page should offer the suggestion — not
+                // Only the focused remote page should offer the suggestion - not
                 // off-screen pager pages, and never outside this view (e.g. the
                 // phone home screen, which doesn't contain this view at all).
                 guard isActive, scenePhase == .active, selectedDevice != nil else {
@@ -699,7 +699,7 @@
                         }
                     }
                 } catch {
-                    // Thrown when the pasteboard is empty or detection fails —
+                    // Thrown when the pasteboard is empty or detection fails -
                     // either way there's nothing to offer.
                     if !Task.isCancelled {
                         withAnimation { showPastedUrlOffer = false }
@@ -866,7 +866,7 @@
                         .frame(maxWidth: .infinity)
                     // In portrait, the trailing Spacer separates the device name
                     // from the body's TopBar. In landscape there's no headroom for
-                    // it — keeping it competes with `horizontalBody`'s internal
+                    // it - keeping it competes with `horizontalBody`'s internal
                     // Spacers and pushes the title above the visible area.
                     if !isHorizontal {
                         Spacer()
@@ -912,7 +912,7 @@
                     pastedUrlBanner
                 #endif
                 // Suppress the unread-developer-message banner under
-                // screenshot tests — it's data-driven by an untrusted
+                // screenshot tests - it's data-driven by an untrusted
                 // count from the testing data fixture and clutters
                 // marketing captures.
                 if unreadMessages > 0 && !inScreenshotTestingContext() {
@@ -939,7 +939,7 @@
             .font(.title2)
             .fontDesign(.rounded)
             // On iOS, compact vertical (landscape iPhone) doesn't have the
-            // headroom for `.extraLarge` bordered buttons — the natural
+            // headroom for `.extraLarge` bordered buttons - the natural
             // HStack height pushes the device-name header off the top of the
             // screen. Step down to `.large` so the layout fits without
             // clipping. Other platforms keep `.extraLarge` unconditionally.
@@ -1291,7 +1291,7 @@
                 }
             }
             #if DEBUG
-                // Deliberate crash-recovery exercise — never during UI/
+                // Deliberate crash-recovery exercise - never during UI/
                 // screenshot capture, where a random fatalError corrupts the
                 // run (the app launches dozens of times per locale sweep).
                 if Int.random(in: 1...100) == 1, !inUITestingContext() {

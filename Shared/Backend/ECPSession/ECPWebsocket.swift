@@ -155,7 +155,7 @@ actor ECPWebsocketClient {
 
         if button == .volumeUp || button == .volumeDown {
             guard await self.tryReserveVolumeSlot() else {
-                Log.connection.notice("Dropping \(button.description, privacy: .public) — in-flight volume cap reached")
+                Log.connection.notice("Dropping \(button.description, privacy: .public) - in-flight volume cap reached")
                 return
             }
             do {
@@ -197,7 +197,7 @@ actor ECPWebsocketClient {
                 }
             }
         } onCancel: {
-            // Fail only this request — cancelling one caller's task (e.g. a
+            // Fail only this request - cancelling one caller's task (e.g. a
             // pager page disappearing mid-refresh) must not tear down the
             // shared connection for everyone else.
             Task {
@@ -641,7 +641,7 @@ actor ECPWebsocketClient {
 
     func viabilityDidChange(isViable: Bool) {
         if isViable {
-            // Only report connected when the connection is actually ready —
+            // Only report connected when the connection is actually ready -
             // viability alone doesn't mean the websocket handshake completed.
             if case .ready = connection.state {
                 self.reportStateChange(.connected)

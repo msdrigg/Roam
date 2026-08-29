@@ -192,7 +192,7 @@ public struct Device: AppEntity, Equatable, Identifiable, Hashable, Codable {
         return Date().timeIntervalSince(lastOnlineAt) < 60
     }
 
-    // Explicit Equatable — broken into independent guard statements rather
+    // Explicit Equatable - broken into independent guard statements rather
     // than a flat `&&` chain. The synthesized version was 130-176ms; a flat
     // chain of 38 comparisons was 505ms; per-statement guards type-check
     // each comparison independently.
@@ -239,7 +239,7 @@ public struct Device: AppEntity, Equatable, Identifiable, Hashable, Codable {
     }
 }
 
-/// How the device list is ordered everywhere it is shown — the iPhone grid, the
+/// How the device list is ordered everywhere it is shown - the iPhone grid, the
 /// iPad / macOS sidebar, the macOS device menu, and Settings.
 ///
 /// The stored device list is always the user's own order: it is what `.manual`
@@ -286,7 +286,7 @@ public enum DeviceSortOrder: String, CaseIterable, Identifiable, Sendable {
     ///
     /// `sorted(by:)` isn't stable, so every comparison falls through to the
     /// stored position rather than leaving equal elements to swap around
-    /// between calls — two devices with the same name would otherwise trade
+    /// between calls - two devices with the same name would otherwise trade
     /// places on every refresh.
     public func apply(to ids: [String], device: (String) -> Device?) -> [String] {
         guard self != .manual else { return ids }

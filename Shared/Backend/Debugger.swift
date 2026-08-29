@@ -19,8 +19,8 @@ struct LogEntry: Codable {
     /// Which launch wrote the line. `nil` for entries read live out of
     /// `OSLogStore`, which by definition come from the running process;
     /// `"previous-run"` for lines replayed from `FileLog` after a crash. The
-    /// distinction is the whole point of the file log, so it travels with the
-    /// entry rather than being inferred from timestamps at the far end.
+    /// distinction travels with the entry rather than being inferred from
+    /// timestamps at the far end.
     let source: String?
 
     init(entry: OSLogEntry) {
@@ -232,7 +232,7 @@ func getDebugInfo(userInitiated: Bool = false, crashWindow: DateInterval? = nil)
     if crashWindow != nil {
         entries = FileLog.collect(around: crashWindow).map(LogEntry.init(fileEntry:))
         if entries.isEmpty {
-            // No file log yet — a build from before this existed, or a first
+            // No file log yet - a build from before this existed, or a first
             // launch that crashed. Say so rather than silently shipping the
             // relaunch's log as if it were the crash's.
             debugErrors.append(

@@ -45,8 +45,8 @@ import UIKit
         // initialised `self` in the expiration handler.  If the expiration
         // handler ran /before/ I got a chance to set `self.taskID` to `t`,
         // things would end badly.  However, that can’t happen because I’m
-        // running on the main thread — courtesy of the Dispatch precondition
-        // above — and the expiration handler also runs on the main thread.
+        // running on the main thread - courtesy of the Dispatch precondition
+        // above - and the expiration handler also runs on the main thread.
         self.taskID = .invalid
         let t = UIApplication.shared.beginBackgroundTask(withName: "\(name)-\(uuid.uuidString)") {
             self.taskDidExpire()

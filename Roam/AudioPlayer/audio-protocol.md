@@ -95,7 +95,7 @@ RTCP uses UDP in both directions:
 | Client to Roku | Roku host, advertised RTCP port or default `5150`. |
 | Roku to client | Client local RTCP port `6971`. |
 
-The outgoing RTCP connection uses an OS-assigned ephemeral source port — pinning it to `6971` (the listener's port) caused the kernel to deliver any 4-tuple-matching reply to the outbound connection instead of the listener, silently dropping Roku's responses. Incoming RTCP is received on local UDP port `6971`, which matches the conventional RTP port plus one. Roku addresses replies to that port regardless of our source port, so the dedicated listener picks them up cleanly.
+The outgoing RTCP connection uses an OS-assigned ephemeral source port - pinning it to `6971` (the listener's port) caused the kernel to deliver any 4-tuple-matching reply to the outbound connection instead of the listener, silently dropping Roku's responses. Incoming RTCP is received on local UDP port `6971`, which matches the conventional RTP port plus one. Roku addresses replies to that port regardless of our source port, so the dedicated listener picks them up cleanly.
 
 The implementation parses RTCP version 2 packets with packet types:
 

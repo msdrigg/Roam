@@ -8371,12 +8371,12 @@
                 }
             }
         },
-        "Copy a video link (YouTube, Netflix, Hulu, and more) and Roam will offer to play it on your TV. This appears whenever any web link is copied — even ones Roam can't play. You can turn it off in Settings.": {
+        "Copy a video link (YouTube, Netflix, Hulu, and more) and Roam will offer to play it on your TV. This appears whenever any web link is copied - even ones Roam can't play. You can turn it off in Settings.": {
             "localizations": {
                 "ar": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "انسخ رابط فيديو (من YouTube أو Netflix أو Hulu وغيرها) وسيعرض Roam تشغيله على تلفازك. يظهر هذا كلما تم نسخ أي رابط ويب — حتى الروابط التي لا يستطيع Roam تشغيلها. يمكنك إيقافه من الإعدادات."
+                        "value": "انسخ رابط فيديو (من YouTube أو Netflix أو Hulu وغيرها) وسيعرض Roam تشغيله على تلفازك. يظهر هذا كلما تم نسخ أي رابط ويب - حتى الروابط التي لا يستطيع Roam تشغيلها. يمكنك إيقافه من الإعدادات."
                     }
                 },
                 "de": {
@@ -8400,7 +8400,7 @@
                 "fil": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Kopyahin ang link ng video (YouTube, Netflix, Hulu, at iba pa) at mag-aalok ang Roam na i-play ito sa iyong TV. Lumalabas ito tuwing kinokopya ang anumang web link — kahit ang mga hindi kayang i-play ng Roam. Maaari mo itong i-off sa Mga Setting."
+                        "value": "Kopyahin ang link ng video (YouTube, Netflix, Hulu, at iba pa) at mag-aalok ang Roam na i-play ito sa iyong TV. Lumalabas ito tuwing kinokopya ang anumang web link - kahit ang mga hindi kayang i-play ng Roam. Maaari mo itong i-off sa Mga Setting."
                     }
                 },
                 "fr": {
@@ -8424,41 +8424,41 @@
                 "pa": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "ਵੀਡੀਓ ਲਿੰਕ (YouTube, Netflix, Hulu, ਅਤੇ ਹੋਰ) ਕਾਪੀ ਕਰੋ ਅਤੇ Roam ਇਸਨੂੰ ਤੁਹਾਡੇ ਟੀਵੀ 'ਤੇ ਚਲਾਉਣ ਦੀ ਪੇਸ਼ਕਸ਼ ਕਰੇਗਾ। ਇਹ ਹਰ ਵਾਰ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ ਜਦੋਂ ਕੋਈ ਵੀ ਵੈੱਬ ਲਿੰਕ ਕਾਪੀ ਕੀਤਾ ਜਾਂਦਾ ਹੈ — ਉਹ ਵੀ ਜਿਨ੍ਹਾਂ ਨੂੰ Roam ਚਲਾ ਨਹੀਂ ਸਕਦਾ। ਤੁਸੀਂ ਇਸਨੂੰ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਬੰਦ ਕਰ ਸਕਦੇ ਹੋ।"
+                        "value": "ਵੀਡੀਓ ਲਿੰਕ (YouTube, Netflix, Hulu, ਅਤੇ ਹੋਰ) ਕਾਪੀ ਕਰੋ ਅਤੇ Roam ਇਸਨੂੰ ਤੁਹਾਡੇ ਟੀਵੀ 'ਤੇ ਚਲਾਉਣ ਦੀ ਪੇਸ਼ਕਸ਼ ਕਰੇਗਾ। ਇਹ ਹਰ ਵਾਰ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ ਜਦੋਂ ਕੋਈ ਵੀ ਵੈੱਬ ਲਿੰਕ ਕਾਪੀ ਕੀਤਾ ਜਾਂਦਾ ਹੈ - ਉਹ ਵੀ ਜਿਨ੍ਹਾਂ ਨੂੰ Roam ਚਲਾ ਨਹੀਂ ਸਕਦਾ। ਤੁਸੀਂ ਇਸਨੂੰ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਬੰਦ ਕਰ ਸਕਦੇ ਹੋ।"
                     }
                 },
                 "pt-BR": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Copie um link de vídeo (YouTube, Netflix, Hulu e outros) e o Roam oferecerá a opção de reproduzi-lo na sua TV. Isso aparece sempre que qualquer link da web é copiado — até mesmo aqueles que o Roam não consegue reproduzir. Você pode desativar isso em Configurações."
+                        "value": "Copie um link de vídeo (YouTube, Netflix, Hulu e outros) e o Roam oferecerá a opção de reproduzi-lo na sua TV. Isso aparece sempre que qualquer link da web é copiado - até mesmo aqueles que o Roam não consegue reproduzir. Você pode desativar isso em Configurações."
                     }
                 },
                 "pt-PT": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Copie uma ligação de vídeo (YouTube, Netflix, Hulu, entre outros) e o Roam irá sugerir reproduzi-la na sua TV. Isto aparece sempre que qualquer ligação Web é copiada — mesmo aquelas que o Roam não consegue reproduzir. Pode desativar esta opção nas Definições."
+                        "value": "Copie uma ligação de vídeo (YouTube, Netflix, Hulu, entre outros) e o Roam irá sugerir reproduzi-la na sua TV. Isto aparece sempre que qualquer ligação Web é copiada - mesmo aquelas que o Roam não consegue reproduzir. Pode desativar esta opção nas Definições."
                     }
                 },
                 "vi": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Sao chép liên kết video (YouTube, Netflix, Hulu, v.v.) và Roam sẽ đề nghị phát video đó trên TV của bạn. Thông báo này xuất hiện bất cứ khi nào một liên kết web được sao chép — kể cả những liên kết Roam không thể phát. Bạn có thể tắt tính năng này trong Cài đặt."
+                        "value": "Sao chép liên kết video (YouTube, Netflix, Hulu, v.v.) và Roam sẽ đề nghị phát video đó trên TV của bạn. Thông báo này xuất hiện bất cứ khi nào một liên kết web được sao chép - kể cả những liên kết Roam không thể phát. Bạn có thể tắt tính năng này trong Cài đặt."
                     }
                 },
                 "zh-Hans": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "复制视频链接（YouTube、Netflix、Hulu 等），Roam 会提示在你的电视上播放。每当复制任何网页链接时都会出现此提示——即使是 Roam 无法播放的链接也会如此。你可以在“设置”中将其关闭。"
+                        "value": "复制视频链接（YouTube、Netflix、Hulu 等），Roam 会提示在你的电视上播放。每当复制任何网页链接时都会出现此提示--即使是 Roam 无法播放的链接也会如此。你可以在“设置”中将其关闭。"
                     }
                 }
             }
         },
-        "Copy a video link, click the Roam window, and press ⌘V. Roam opens the right app on your TV and plays it — works with YouTube, Amazon Prime, Netflix, and many others.": {
+        "Copy a video link, click the Roam window, and press ⌘V. Roam opens the right app on your TV and plays it - works with YouTube, Amazon Prime, Netflix, and many others.": {
             "localizations": {
                 "ar": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "انسخ رابط فيديو، وانقر على نافذة Roam، ثم اضغط على ⌘V. يفتح Roam التطبيق المناسب على تلفازك ويشغّل الفيديو — يعمل مع YouTube وAmazon Prime وNetflix وغيرها الكثير."
+                        "value": "انسخ رابط فيديو، وانقر على نافذة Roam، ثم اضغط على ⌘V. يفتح Roam التطبيق المناسب على تلفازك ويشغّل الفيديو - يعمل مع YouTube وAmazon Prime وNetflix وغيرها الكثير."
                     }
                 },
                 "de": {
@@ -8482,55 +8482,55 @@
                 "fil": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Kopyahin ang link ng video, i-click ang window ng Roam, at pindutin ang ⌘V. Bubuksan ng Roam ang tamang app sa iyong TV at ipe-play ito — gumagana sa YouTube, Amazon Prime, Netflix, at marami pang iba."
+                        "value": "Kopyahin ang link ng video, i-click ang window ng Roam, at pindutin ang ⌘V. Bubuksan ng Roam ang tamang app sa iyong TV at ipe-play ito - gumagana sa YouTube, Amazon Prime, Netflix, at marami pang iba."
                     }
                 },
                 "fr": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Copiez un lien vidéo, cliquez sur la fenêtre Roam, puis appuyez sur ⌘V. Roam ouvre la bonne application sur votre téléviseur et lance la lecture — fonctionne avec YouTube, Amazon Prime, Netflix et bien d’autres."
+                        "value": "Copiez un lien vidéo, cliquez sur la fenêtre Roam, puis appuyez sur ⌘V. Roam ouvre la bonne application sur votre téléviseur et lance la lecture - fonctionne avec YouTube, Amazon Prime, Netflix et bien d’autres."
                     }
                 },
                 "fr-CA": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Copiez un lien vidéo, cliquez sur la fenêtre de Roam, puis appuyez sur ⌘V. Roam ouvre la bonne application sur votre télé et lance la lecture — fonctionne avec YouTube, Amazon Prime, Netflix et bien d’autres."
+                        "value": "Copiez un lien vidéo, cliquez sur la fenêtre de Roam, puis appuyez sur ⌘V. Roam ouvre la bonne application sur votre télé et lance la lecture - fonctionne avec YouTube, Amazon Prime, Netflix et bien d’autres."
                     }
                 },
                 "it": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Copia il link di un video, fai clic sulla finestra di Roam e premi ⌘V. Roam apre l’app giusta sulla tua TV e lo riproduce — funziona con YouTube, Amazon Prime, Netflix e molti altri."
+                        "value": "Copia il link di un video, fai clic sulla finestra di Roam e premi ⌘V. Roam apre l’app giusta sulla tua TV e lo riproduce - funziona con YouTube, Amazon Prime, Netflix e molti altri."
                     }
                 },
                 "pa": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "ਵੀਡੀਓ ਲਿੰਕ ਕਾਪੀ ਕਰੋ, Roam ਵਿੰਡੋ ’ਤੇ ਕਲਿੱਕ ਕਰੋ, ਅਤੇ ⌘V ਦਬਾਓ। Roam ਤੁਹਾਡੇ TV ’ਤੇ ਸਹੀ ਐਪ ਖੋਲ੍ਹਦਾ ਹੈ ਅਤੇ ਇਸਨੂੰ ਚਲਾਉਂਦਾ ਹੈ — YouTube, Amazon Prime, Netflix ਅਤੇ ਹੋਰ ਕਈਆਂ ਨਾਲ ਕੰਮ ਕਰਦਾ ਹੈ।"
+                        "value": "ਵੀਡੀਓ ਲਿੰਕ ਕਾਪੀ ਕਰੋ, Roam ਵਿੰਡੋ ’ਤੇ ਕਲਿੱਕ ਕਰੋ, ਅਤੇ ⌘V ਦਬਾਓ। Roam ਤੁਹਾਡੇ TV ’ਤੇ ਸਹੀ ਐਪ ਖੋਲ੍ਹਦਾ ਹੈ ਅਤੇ ਇਸਨੂੰ ਚਲਾਉਂਦਾ ਹੈ - YouTube, Amazon Prime, Netflix ਅਤੇ ਹੋਰ ਕਈਆਂ ਨਾਲ ਕੰਮ ਕਰਦਾ ਹੈ।"
                     }
                 },
                 "pt-BR": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Copie um link de vídeo, clique na janela do Roam e pressione ⌘V. O Roam abre o app certo na sua TV e reproduz o vídeo — funciona com YouTube, Amazon Prime, Netflix e muitos outros."
+                        "value": "Copie um link de vídeo, clique na janela do Roam e pressione ⌘V. O Roam abre o app certo na sua TV e reproduz o vídeo - funciona com YouTube, Amazon Prime, Netflix e muitos outros."
                     }
                 },
                 "pt-PT": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Copie uma ligação de vídeo, clique na janela do Roam e prima ⌘V. O Roam abre a aplicação certa na sua TV e reproduz o vídeo — funciona com YouTube, Amazon Prime, Netflix e muitos outros."
+                        "value": "Copie uma ligação de vídeo, clique na janela do Roam e prima ⌘V. O Roam abre a aplicação certa na sua TV e reproduz o vídeo - funciona com YouTube, Amazon Prime, Netflix e muitos outros."
                     }
                 },
                 "vi": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Sao chép liên kết video, nhấp vào cửa sổ Roam và nhấn ⌘V. Roam sẽ mở đúng ứng dụng trên TV của bạn và phát video đó — hoạt động với YouTube, Amazon Prime, Netflix và nhiều dịch vụ khác."
+                        "value": "Sao chép liên kết video, nhấp vào cửa sổ Roam và nhấn ⌘V. Roam sẽ mở đúng ứng dụng trên TV của bạn và phát video đó - hoạt động với YouTube, Amazon Prime, Netflix và nhiều dịch vụ khác."
                     }
                 },
                 "zh-Hans": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "复制视频链接，点击 Roam 窗口，然后按 ⌘V。Roam 会在你的电视上打开相应的应用并播放视频——适用于 YouTube、Amazon Prime、Netflix 等众多平台。"
+                        "value": "复制视频链接，点击 Roam 窗口，然后按 ⌘V。Roam 会在你的电视上打开相应的应用并播放视频--适用于 YouTube、Amazon Prime、Netflix 等众多平台。"
                     }
                 }
             }
@@ -26204,18 +26204,18 @@
                 }
             }
         },
-        "Roam has a keyboard shortcut for every remote button — press ⌘K to see and change them all. You can also type to enter text on the TV and use the arrow keys to navigate, separate from the button shortcuts.": {
+        "Roam has a keyboard shortcut for every remote button - press ⌘K to see and change them all. You can also type to enter text on the TV and use the arrow keys to navigate, separate from the button shortcuts.": {
             "localizations": {
                 "ar": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "يحتوي Roam على اختصار لوحة مفاتيح لكل زر في جهاز التحكم عن بُعد — اضغط على ⌘K لعرضها جميعًا وتغييرها. يمكنك أيضًا الكتابة لإدخال نص على التلفاز واستخدام مفاتيح الأسهم للتنقل، بشكل منفصل عن اختصارات الأزرار."
+                        "value": "يحتوي Roam على اختصار لوحة مفاتيح لكل زر في جهاز التحكم عن بُعد - اضغط على ⌘K لعرضها جميعًا وتغييرها. يمكنك أيضًا الكتابة لإدخال نص على التلفاز واستخدام مفاتيح الأسهم للتنقل، بشكل منفصل عن اختصارات الأزرار."
                     }
                 },
                 "de": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam hat für jede Fernbedienungstaste ein Tastaturkürzel — drücke ⌘K, um sie alle anzuzeigen und zu ändern. Du kannst außerdem tippen, um Text auf dem Fernseher einzugeben, und die Pfeiltasten zur Navigation verwenden, unabhängig von den Tastenkürzeln für die Tasten."
+                        "value": "Roam hat für jede Fernbedienungstaste ein Tastaturkürzel - drücke ⌘K, um sie alle anzuzeigen und zu ändern. Du kannst außerdem tippen, um Text auf dem Fernseher einzugeben, und die Pfeiltasten zur Navigation verwenden, unabhängig von den Tastenkürzeln für die Tasten."
                     }
                 },
                 "es": {
@@ -26233,7 +26233,7 @@
                 "fil": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "May keyboard shortcut ang Roam para sa bawat button ng remote — pindutin ang ⌘K para makita at baguhin ang lahat ng ito. Maaari ka ring mag-type para maglagay ng text sa TV at gamitin ang mga arrow key para mag-navigate, hiwalay sa mga shortcut ng button."
+                        "value": "May keyboard shortcut ang Roam para sa bawat button ng remote - pindutin ang ⌘K para makita at baguhin ang lahat ng ito. Maaari ka ring mag-type para maglagay ng text sa TV at gamitin ang mga arrow key para mag-navigate, hiwalay sa mga shortcut ng button."
                     }
                 },
                 "fr": {
@@ -26245,7 +26245,7 @@
                 "fr-CA": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam propose un raccourci clavier pour chaque bouton de la télécommande — appuyez sur ⌘K pour les voir et les modifier tous. Vous pouvez aussi taper pour entrer du texte sur le téléviseur et utiliser les touches fléchées pour naviguer, séparément des raccourcis des boutons."
+                        "value": "Roam propose un raccourci clavier pour chaque bouton de la télécommande - appuyez sur ⌘K pour les voir et les modifier tous. Vous pouvez aussi taper pour entrer du texte sur le téléviseur et utiliser les touches fléchées pour naviguer, séparément des raccourcis des boutons."
                     }
                 },
                 "it": {
@@ -26257,31 +26257,31 @@
                 "pa": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam ਕੋਲ ਰਿਮੋਟ ਦੇ ਹਰ ਬਟਨ ਲਈ ਕੀਬੋਰਡ ਸ਼ਾਰਟਕੱਟ ਹੈ — ਉਹਨਾਂ ਸਭ ਨੂੰ ਵੇਖਣ ਅਤੇ ਬਦਲਣ ਲਈ ⌘K ਦਬਾਓ। ਤੁਸੀਂ TV ‘ਤੇ ਟੈਕਸਟ ਦਰਜ ਕਰਨ ਲਈ ਟਾਈਪ ਵੀ ਕਰ ਸਕਦੇ ਹੋ ਅਤੇ ਬਟਨ ਸ਼ਾਰਟਕੱਟਾਂ ਤੋਂ ਵੱਖਰੇ ਤੌਰ ‘ਤੇ ਨੈਵੀਗੇਟ ਕਰਨ ਲਈ ਐਰੋ ਕੀਜ਼ ਵਰਤ ਸਕਦੇ ਹੋ।"
+                        "value": "Roam ਕੋਲ ਰਿਮੋਟ ਦੇ ਹਰ ਬਟਨ ਲਈ ਕੀਬੋਰਡ ਸ਼ਾਰਟਕੱਟ ਹੈ - ਉਹਨਾਂ ਸਭ ਨੂੰ ਵੇਖਣ ਅਤੇ ਬਦਲਣ ਲਈ ⌘K ਦਬਾਓ। ਤੁਸੀਂ TV ‘ਤੇ ਟੈਕਸਟ ਦਰਜ ਕਰਨ ਲਈ ਟਾਈਪ ਵੀ ਕਰ ਸਕਦੇ ਹੋ ਅਤੇ ਬਟਨ ਸ਼ਾਰਟਕੱਟਾਂ ਤੋਂ ਵੱਖਰੇ ਤੌਰ ‘ਤੇ ਨੈਵੀਗੇਟ ਕਰਨ ਲਈ ਐਰੋ ਕੀਜ਼ ਵਰਤ ਸਕਦੇ ਹੋ।"
                     }
                 },
                 "pt-BR": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "O Roam tem um atalho de teclado para cada botão do controle remoto — pressione ⌘K para ver e alterar todos eles. Você também pode digitar para inserir texto na TV e usar as teclas de seta para navegar, separadamente dos atalhos dos botões."
+                        "value": "O Roam tem um atalho de teclado para cada botão do controle remoto - pressione ⌘K para ver e alterar todos eles. Você também pode digitar para inserir texto na TV e usar as teclas de seta para navegar, separadamente dos atalhos dos botões."
                     }
                 },
                 "pt-PT": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "O Roam tem um atalho de teclado para cada botão do comando — prima ⌘K para os ver e alterar todos. Também pode escrever para introduzir texto na TV e usar as teclas de seta para navegar, separadamente dos atalhos dos botões."
+                        "value": "O Roam tem um atalho de teclado para cada botão do comando - prima ⌘K para os ver e alterar todos. Também pode escrever para introduzir texto na TV e usar as teclas de seta para navegar, separadamente dos atalhos dos botões."
                     }
                 },
                 "vi": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam có phím tắt cho mọi nút trên điều khiển từ xa — nhấn ⌘K để xem và thay đổi tất cả. Bạn cũng có thể nhập để điền văn bản trên TV và dùng các phím mũi tên để điều hướng, tách biệt với các phím tắt của nút."
+                        "value": "Roam có phím tắt cho mọi nút trên điều khiển từ xa - nhấn ⌘K để xem và thay đổi tất cả. Bạn cũng có thể nhập để điền văn bản trên TV và dùng các phím mũi tên để điều hướng, tách biệt với các phím tắt của nút."
                     }
                 },
                 "zh-Hans": {
                     "stringUnit": {
                         "state": "translated",
-                        "value": "Roam 为每个遥控器按钮都提供了键盘快捷键——按 ⌘K 即可查看并更改所有快捷键。你还可以通过键盘在电视上输入文本，并使用方向键进行导航，这些操作与按钮快捷键相互独立。"
+                        "value": "Roam 为每个遥控器按钮都提供了键盘快捷键--按 ⌘K 即可查看并更改所有快捷键。你还可以通过键盘在电视上输入文本，并使用方向键进行导航，这些操作与按钮快捷键相互独立。"
                     }
                 }
             }

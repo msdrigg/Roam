@@ -142,8 +142,8 @@ final class RoamAppDelegate: NSObject, NSApplicationDelegate, UNUserNotification
 extension NSApplication {
     /// Brings the window with `id` to the front on the next runloop turn.
     ///
-    /// The hop is not cosmetic. Every caller is a SwiftUI action -- `onAppear`,
-    /// a button, a hotkey handler -- so a synchronous body would run inside
+    /// The hop matters. Every caller is a SwiftUI action (`onAppear`, a button,
+    /// a hotkey handler), so a synchronous body would run inside
     /// `Update.dispatchActions`, still nested in the update pass that queued it.
     /// `makeKeyAndOrderFront` posts `NSWindowDidOrderOnScreen` from there,
     /// SwiftUI turns that into a scene-phase change, and

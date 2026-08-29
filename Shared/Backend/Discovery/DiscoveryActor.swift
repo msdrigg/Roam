@@ -236,7 +236,7 @@ private func discoveryNWInterfaceNames(_ interfaces: [NWInterface]) -> [String] 
 /// automatic scanning on the way to the background removes the main source of
 /// writes that can still be in flight at suspension time.
 ///
-/// Only applies to automatic/continual scanning — a user-initiated pull-to-refresh
+/// Only applies to automatic/continual scanning - a user-initiated pull-to-refresh
 /// only ever runs in the foreground. macOS has no equivalent suspension policy, so
 /// scanning keeps running there.
 func discoveryPaused(for scenePhase: ScenePhase) -> Bool {

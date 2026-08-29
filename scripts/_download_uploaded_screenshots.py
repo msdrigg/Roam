@@ -68,7 +68,7 @@ async def _amain(locale_filter: list[str] | None):
                         if not urls:
                             print(f"    {dt}/{fn}: no templateUrl")
                             continue
-                        # templateUrl uses {w}x{h}{f} substitutions — request
+                        # templateUrl uses {w}x{h}{f} substitutions - request
                         # the full-res source by asking for huge dims; ASC
                         # returns the original asset when w/h exceed it.
                         full_url = urls.replace("{w}", "10000") \
