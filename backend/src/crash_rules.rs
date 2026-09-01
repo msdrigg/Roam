@@ -334,37 +334,15 @@ That function closed its UDP socket in two places: the `onCancel` handler of `wi
 
 **Known cause, fix:** both paths now go through a close-once wrapper, so the descriptor reaches `close(2)` exactly once regardless of which path wins the race.";
 
-const SCENE_PHASE_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow - `forceFront` re-entered the SwiftUI update it was called from**
+const SCENE_UPDATE_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow - the macOS scene update pass re-entered itself**
 
 `EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer - unbounded recursion.
 
-The cycle is visible in the attributed thread, `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down:
+MetricKit cannot unwind an overflowed stack, so the attributed thread often shows only whatever the Swift runtime was demangling when the last frame would not fit. The in-process backtrace holds the cycle: `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` for dozens of pairs.
 
-`NSApplication.forceFront` called `makeKeyAndOrderFront` synchronously from a SwiftUI action, so it ran inside `Update.dispatchActions` - still nested in the update pass that queued it. `makeKeyAndOrderFront` posts `NSWindowDidOrderOnScreen` from there, SwiftUI turns that into a scene-phase change, and `AppGraph.graphDidChange` re-enters the update it is already inside. Every level re-evaluates the scene bodies, which runs the action again.
+Something dirties the app graph from inside the update pass that is building it, so the pass re-enters itself, and every level re-evaluates the scene bodies. Four entrances have been found and closed so far - `forceFront` calling `makeKeyAndOrderFront` synchronously (1.52), `MenuBarExtra` writing back through `isInserted` and `setActivationPolicy` reordering windows (1.54), and a scene `onChange` writing the app's `@State` at launch (unreleased). The crash outlived the first three, so this reply does not claim the current one holds.
 
-Launch-time window restoration is what makes it fatal rather than merely wasteful: `NSPersistentUIRestorer` is ordering windows on screen while the app graph is still settling, so the cycle never reaches a quiet state and the stack runs out first.
-
-**Known cause, fix:** `forceFront` now defers to the next runloop turn, so the in-flight update finishes before `makeKeyAndOrderFront` fires and the notification lands on a quiet graph.";
-
-const MENU_BAR_EXTRA_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow - `MenuBarExtra(isInserted:)` re-entered the SwiftUI update pass**
-
-`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer - unbounded recursion.
-
-MetricKit cannot unwind an overflowed stack, so the attributed thread shows only whatever the Swift runtime was demangling when the last frame would not fit. Read the in-process backtrace instead: it holds `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down, with `MenuBarExtra(isInserted:)` inside the cycle.
-
-Same recursion as `scene-phase-reentrancy-stack-overflow`, driven from a different place. `MenuBarExtra` writes back through its `isInserted` binding while SwiftUI reconciles the scene, and `@AppStorage` forwards even a same-value write to `UserDefaults`. That write posts `didChangeNotification`, which invalidates the body that produced the scene, so `graphDidChange` re-enters the update it is already inside - and every level reconciles `MenuBarExtra` again.
-
-**Known cause, fix:** the `isInserted` binding now drops echoes - a write matching the value already stored is not forwarded to `UserDefaults`, so reconciliation no longer dirties the graph it is running inside. Real toggles still write through.";
-
-const SCREEN_PARAMETERS_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overflow - a screen-parameters change re-entered the SwiftUI update pass during launch restoration**
-
-`EXC_BAD_ACCESS (1)` / `SIGSEGV (11)` with the faulting address inside the **Stack Guard** region below the main thread's stack: the main thread ran off the end of its stack. Not a dangling pointer - unbounded recursion.
-
-Third face of the cycle behind `scene-phase-reentrancy-stack-overflow` and `menu-bar-extra-reentrancy-stack-overflow`: `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` all the way down. Neither of their triggers is on this stack - no `forceFront`, no `MenuBarExtra`. Underneath the recursion sits `applicationDidChangeScreenParameters`, posted while `NSPersistentUIRestorer` was still restoring windows from inside `applicationWillFinishLaunching`.
-
-`setActivationPolicy` is what closes the loop. Roam called it synchronously from scene `onAppear`/`onDisappear`, and adding or removing the app from the Dock orders windows on and off screen and changes the visible screen frame. AppKit posts `NSApplicationDidChangeScreenParameters` from inside that call, SwiftUI turns it into a scene-phase change, and `graphDidChange` re-enters the update pass it is already inside - every level of which re-evaluates the scene bodies and runs `onAppear` again. Launch restoration is what makes it fatal rather than merely wasteful: the graph never reaches a quiet state, so the stack runs out first.
-
-**Known cause, fix:** all ten `setActivationPolicy` callers now go through a deferred, coalesced wrapper that skips the call outright when the policy already matches, so the in-flight update finishes before AppKit reorders any windows.";
+The seeding frame varies between reports and is sometimes absent entirely, which is why this rule keys on the cycle rather than on any one trigger.";
 
 const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog - main thread blocked cancelling the Bonjour browser**
 
@@ -416,31 +394,12 @@ A scene-update deadline is wall-clock, not CPU-time, so a process that never get
 /// Ordered: the first match wins, so put narrower rules first.
 pub static RULES: &[CrashRule] = &[
     CrashRule {
-        id: "scene-phase-reentrancy-stack-overflow",
-        title: "Stack overflow from forceFront re-entering the SwiftUI update pass",
-        // Fixed in a re-cut 1.52 build. Comparison is marketing-version only,
-        // so early-1.52 crashes read UNFIXED; check `appBuildVersion` first.
-        fixed_in: Some("1.52"),
-        environmental: false,
-        exception_type: Some(1),
-        signal: Some(11),
-        termination_code: None,
-        min_thermal_level: None,
-        max_app_cpu_percent: None,
-        // `forceFront` alone is too loose, so require the SwiftUI half of the
-        // recursion too.
-        all_of: &[
-            "NSApplication.forceFront",
-            "AppGraph.graphDidChange",
-            "Stack Guard",
-        ],
-        none_of: &[],
-        reply: SCENE_PHASE_REENTRANCY_REPLY,
-    },
-    // Same recursion as the forceFront rule, which is narrower and goes first.
-    CrashRule {
-        id: "menu-bar-extra-reentrancy-stack-overflow",
-        title: "Stack overflow from MenuBarExtra(isInserted:) re-entering the SwiftUI update pass",
+        id: "scene-update-reentrancy-stack-overflow",
+        title: "Stack overflow from the macOS scene update pass re-entering itself",
+        // The last release that claimed to fix this. 1.52 and 1.54 each closed
+        // an entrance and the crash outlived both, so 1.54 and later read
+        // UNFIXED and stay in the manual queue. Move this on once a release
+        // holds, not when one ships.
         fixed_in: Some("1.54"),
         environmental: false,
         exception_type: Some(1),
@@ -448,34 +407,19 @@ pub static RULES: &[CrashRule] = &[
         termination_code: None,
         min_thermal_level: None,
         max_app_cpu_percent: None,
-        // Not keyed on `isInserted`: `name_only()` demangling drops parameter
-        // labels, so it never reaches the report text.
-        all_of: &["MenuBarExtra", "AppGraph.graphDidChange", "Stack Guard"],
-        none_of: &["NSApplication.forceFront"],
-        reply: MENU_BAR_EXTRA_REENTRANCY_REPLY,
-    },
-    // Third entry point into the same recursion, keyed on the screen-parameters
-    // notification once `setActivationPolicy` is off the stack.
-    CrashRule {
-        id: "screen-parameters-reentrancy-stack-overflow",
-        title: "Stack overflow from a screen-parameters change re-entering the SwiftUI update pass",
-        fixed_in: Some("1.54"),
-        environmental: false,
-        exception_type: Some(1),
-        signal: Some(11),
-        termination_code: None,
-        min_thermal_level: None,
-        max_app_cpu_percent: None,
-        // Both halves of the cycle: this rule names no app frame, and the
-        // notification alone fires on any display or Dock change.
+        // Both halves of the cycle plus the overflow, and no app frame. The
+        // frame that seeds it differs per report (`forceFront`, `MenuBarExtra`,
+        // `applicationDidChangeScreenParameters`, or, on thread
+        // 1543063503160606833, a `Settings` scene carrying none of the three),
+        // so keying on one of them mis-attributes the rest and drops the
+        // reports that carry none.
         all_of: &[
             "AppGraph.graphDidChange",
             "AppDelegate.scenesDidChange",
-            "applicationDidChangeScreenParameters",
             "Stack Guard",
         ],
-        none_of: &["NSApplication.forceFront", "MenuBarExtra"],
-        reply: SCREEN_PARAMETERS_REENTRANCY_REPLY,
+        none_of: &[],
+        reply: SCENE_UPDATE_REENTRANCY_REPLY,
     },
     CrashRule {
         id: "local-network-cancel-watchdog",
@@ -694,14 +638,15 @@ Thread 9 (attributed - this is the thread that crashed):
     fn matches_the_menu_bar_extra_stack_overflow() {
         let facts = CrashFacts::from_report(MENU_BAR_STACK_OVERFLOW_REPORT);
         let matched = match_rule(MENU_BAR_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
-        assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
-        // The report is from 1.52 and the echo-drop shipped in 1.54.
+        assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
+        // The report is from 1.52 and the last claimed fix was 1.54.
         assert_eq!(matched.status, FixStatus::Fixed);
     }
 
     #[test]
-    fn the_forcefront_rule_still_wins_when_both_triggers_are_present() {
-        // A report carrying both belongs to the narrower forceFront rule.
+    fn one_rule_claims_the_cycle_whichever_trigger_is_on_the_stack() {
+        // Before consolidation these were three rules racing on trigger frames,
+        // which mis-attributed reports carrying more than one.
         let report = MENU_BAR_STACK_OVERFLOW_REPORT.replace(
             "  20  SwiftUI +0x1476c7c AppGraph.graphDidChange",
             "  20  Roam +0x5e2e8 NSApplication.forceFront at /x/RoamAppDelegate.swift:152\n  21  SwiftUI +0x1476c7c AppGraph.graphDidChange",
@@ -709,8 +654,52 @@ Thread 9 (attributed - this is the thread that crashed):
         let facts = CrashFacts::from_report(&report);
         assert_eq!(
             match_rule(&report, &facts).map(|m| m.rule.id),
-            Some("scene-phase-reentrancy-stack-overflow")
+            Some("scene-update-reentrancy-stack-overflow")
         );
+    }
+
+    /// Thread 1543063503160606833 (roam 1.54, Mac16,1): the cycle with none of
+    /// the three trigger frames anywhere in the report, dying in a `Settings`
+    /// scene body 40 minutes into the run. No rule claimed this before
+    /// consolidation.
+    const SETTINGS_STACK_OVERFLOW_REPORT: &str = r#"
+Crash 1 (version 1.0.0)
+Diagnosis: EXC_BAD_ACCESS (1) / KERN_PROTECTION_FAILURE (2) / SIGSEGV (11) - stack overflow: the faulting address is inside the Stack Guard region directly below a thread stack
+Faulting VM region: 0x16c98bfd0 is in 0x169188000-0x16c98c000;  bytes after start: 58736592  bytes before end: 47
+--->  Stack Guard                 169188000-16c98c000    [ 56.0M] ---/rwx SM=PRV
+Metadata:
+  appVersion: 1.54
+  deviceType: Mac16,1
+  exceptionCode: 2
+  exceptionType: 1
+  osVersion: macOS 26.6.2 (25G83)
+  signal: 11
+Thread 0 (attributed - this is the thread that crashed):
+  0   libswiftCore.dylib +0xae994 Demangler::getDependentGenericParamType samples=1
+
+In-process backtrace of the faulting thread (1)
+  20  SwiftUI     +0x8a82a4 Settings.body.getter
+  23  SwiftUI     +0x8c0080 SceneBodyAccessor.updateBody
+  31  SwiftUI     +0x1476c7c AppGraph.graphDidChange
+  32  SwiftUI     +0x10f9b80 specialized AppDelegate.scenesDidChange
+  33  SwiftUI     +0x1476c7c AppGraph.graphDidChange
+  34  SwiftUI     +0x10f9b80 specialized AppDelegate.scenesDidChange
+"#;
+
+    #[test]
+    fn matches_the_cycle_with_no_trigger_frame_at_all() {
+        for absent in [
+            "NSApplication.forceFront",
+            "MenuBarExtra",
+            "applicationDidChangeScreenParameters",
+        ] {
+            assert!(!SETTINGS_STACK_OVERFLOW_REPORT.contains(absent));
+        }
+        let facts = CrashFacts::from_report(SETTINGS_STACK_OVERFLOW_REPORT);
+        let matched = match_rule(SETTINGS_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
+        assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
+        // 1.54 is the last claimed fix, so a 1.54 crash stays in the queue.
+        assert_eq!(matched.status, FixStatus::Unfixed);
     }
 
     /// Thread 1539671345036664922 (roam 1.51, Mac17,5). MetricKit unwound this
@@ -741,7 +730,7 @@ Thread 0 (attributed - this is the thread that crashed):
     fn matches_the_menu_bar_extra_stack_overflow_with_no_parameter_labels() {
         let facts = CrashFacts::from_report(MENU_BAR_DEMANGLED_REPORT);
         let matched = match_rule(MENU_BAR_DEMANGLED_REPORT, &facts).expect("a rule matches");
-        assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
+        assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
         // `name_only()` drops argument labels, so no rule may depend on one.
         assert!(!MENU_BAR_DEMANGLED_REPORT.contains("isInserted"));
     }
@@ -834,16 +823,17 @@ Thread 4 (attributed - this is the thread that crashed):
 
     #[test]
     fn the_new_rules_do_not_steal_the_existing_crashes() {
+        // `STACK_OVERFLOW_REPORT` belongs to the scene-update rule, so it is
+        // checked in `matches_the_scene_phase_stack_overflow` instead.
         for report in [
             DEAD10CC_REPORT,
             GUARD_REPORT,
             WATCHDOG_REPORT,
             THERMAL_REPORT,
-            STACK_OVERFLOW_REPORT,
         ] {
             let facts = CrashFacts::from_report(report);
             let matched = match_rule(report, &facts).map(|m| m.rule.id);
-            assert_ne!(matched, Some("menu-bar-extra-reentrancy-stack-overflow"));
+            assert_ne!(matched, Some("scene-update-reentrancy-stack-overflow"));
             assert_ne!(matched, Some("local-network-cancel-race"));
             assert_ne!(matched, Some("audio-player-node-play-exception"));
         }
@@ -856,7 +846,7 @@ Thread 4 (attributed - this is the thread that crashed):
         for (report, expected, fix_version) in [
             (
                 MENU_BAR_STACK_OVERFLOW_REPORT,
-                "menu-bar-extra-reentrancy-stack-overflow",
+                "scene-update-reentrancy-stack-overflow",
                 "1.54",
             ),
             (
@@ -985,10 +975,7 @@ Thread 0 (attributed â this is the thread that crashed):
         let facts = CrashFacts::from_report(SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT);
         let matched =
             match_rule(SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
-        assert_eq!(
-            matched.rule.id,
-            "screen-parameters-reentrancy-stack-overflow"
-        );
+        assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
         // The report is from 1.53 and the deferred wrapper shipped in 1.54.
         assert_eq!(matched.status, FixStatus::Fixed);
     }
@@ -999,11 +986,11 @@ Thread 0 (attributed â this is the thread that crashed):
         for (trigger, expected) in [
             (
                 "  44  Roam +0x5e2e8 NSApplication.forceFront at /x/RoamAppDelegate.swift:152",
-                "scene-phase-reentrancy-stack-overflow",
+                "scene-update-reentrancy-stack-overflow",
             ),
             (
                 "  44  SwiftUI +0x8dc94a8 $s7SwiftUI12MenuBarExtraVA2A4TextVRszrlE_10isInserted7contentACyAEq_G",
-                "menu-bar-extra-reentrancy-stack-overflow",
+                "scene-update-reentrancy-stack-overflow",
             ),
         ] {
             let report = SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT.replace(
@@ -1028,21 +1015,21 @@ Thread 0 (attributed â this is the thread that crashed):
     }
 
     #[test]
-    fn the_screen_parameters_rule_does_not_steal_the_other_crashes() {
+    fn the_scene_update_rule_does_not_steal_the_other_crashes() {
+        // Keying on the cycle rather than a trigger frame widens the rule, so
+        // every crash that is not the cycle has to stay out of it.
         for report in [
             DEAD10CC_REPORT,
             GUARD_REPORT,
             WATCHDOG_REPORT,
             THERMAL_REPORT,
-            STACK_OVERFLOW_REPORT,
-            MENU_BAR_STACK_OVERFLOW_REPORT,
             LOCAL_NETWORK_RACE_REPORT,
             AUDIO_PLAYER_EXCEPTION_REPORT,
         ] {
             let facts = CrashFacts::from_report(report);
             assert_ne!(
                 match_rule(report, &facts).map(|m| m.rule.id),
-                Some("screen-parameters-reentrancy-stack-overflow")
+                Some("scene-update-reentrancy-stack-overflow")
             );
         }
     }
@@ -1053,10 +1040,7 @@ Thread 0 (attributed â this is the thread that crashed):
             SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT.replace("appVersion: 1.53", "appVersion: 1.54");
         let facts = CrashFacts::from_report(&report);
         let matched = match_rule(&report, &facts).expect("still matches");
-        assert_eq!(
-            matched.rule.id,
-            "screen-parameters-reentrancy-stack-overflow"
-        );
+        assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
         assert_eq!(matched.status, FixStatus::Unfixed);
     }
 
@@ -1097,7 +1081,7 @@ Thread 0 (attributed â this is the thread that crashed):
     fn matches_the_scene_phase_stack_overflow() {
         let facts = CrashFacts::from_report(STACK_OVERFLOW_REPORT);
         let matched = match_rule(STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
-        assert_eq!(matched.rule.id, "scene-phase-reentrancy-stack-overflow");
+        assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
         // The report is from 1.51 and the deferral shipped in 1.52.
         assert_eq!(matched.status, FixStatus::Fixed);
     }
@@ -1122,7 +1106,7 @@ Thread 0 (attributed â this is the thread that crashed):
             let facts = CrashFacts::from_report(report);
             assert_ne!(
                 match_rule(report, &facts).map(|m| m.rule.id),
-                Some("scene-phase-reentrancy-stack-overflow")
+                Some("scene-update-reentrancy-stack-overflow")
             );
         }
     }
@@ -1409,7 +1393,7 @@ In-process backtrace of the faulting thread (1)
     fn a_crash_predating_the_fix_on_a_device_that_already_updated_is_not_an_update_prompt() {
         let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
         let matched = match_rule(UPDATED_DEVICE_REPORT, &facts).expect("the stack is recognised");
-        assert_eq!(matched.rule.id, "menu-bar-extra-reentrancy-stack-overflow");
+        assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
         assert_eq!(matched.status, FixStatus::AlreadyUpdated);
 
         let reply = matched.reply(&facts);
@@ -1420,7 +1404,7 @@ In-process backtrace of the faulting thread (1)
         // The row says both versions, so the queue shows it without the thread.
         assert_eq!(
             matched.review_note(&facts),
-            "Stack overflow from MenuBarExtra(isInserted:) re-entering the SwiftUI update pass \
+            "Stack overflow from the macOS scene update pass re-entering itself \
              (fixed in 1.54; device already on 1.54)"
         );
     }

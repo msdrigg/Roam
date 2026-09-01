@@ -1,8 +1,29 @@
 # Roam
 
 Notes for anyone working in this repo, human or agent. Tool-agnostic on
-purpose: `AGENTS.md` is the file Claude Code, Codex and the other CLI agents
-all read.
+purpose: `AGENTS.md` is the file the CLI coding agents all read, so there is
+no vendor-specific instructions file here.
+
+
+## Prose and comments
+
+Comments earn their place. Prefer clear code, and keep commentary near 9% of
+non-blank lines in Rust and 5% in TypeScript.
+
+- Document a constraint the code cannot show for itself: a wire format, a
+  hardware quirk, an ordering requirement, a bug being worked around.
+- Do not narrate the line below, and do not justify the alternative you did not
+  pick. That is a design diary, not documentation.
+- Avoid the rhetorical register: "load-bearing", "the whole point", "worth
+  noting", "turns out", "by design", "note that", and the adverbs
+  "deliberately", "silently", "actually".
+- Keep every functional comment. `SAFETY:`, `eslint-disable`,
+  `@ts-expect-error`, `clippy::`, doctest fences and licence headers are code,
+  not prose.
+- Never use an em-dash, in comments, docs, commit messages, log lines or UI
+  copy. Use a comma, a full stop, or parentheses.
+- Commit messages follow the same rules and carry no tool-attribution trailers
+  (`Co-Authored-By`, `Claude-Session`) and no vendor names.
 
 ## Formatting is enforced by a pre-commit hook
 

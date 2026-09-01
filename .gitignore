@@ -10,3 +10,8 @@ AppIcons/generated/
 
 # Local SPM package build artifacts
 LocalPackages/**/.build/
+
+# Crash payloads pulled from the support threads. They carry install ids, LAN
+# addresses and thread contents, and they are re-downloadable from the backend
+# (scripts/roam_crashes.py).
+crash-analysis/
