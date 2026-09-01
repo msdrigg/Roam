@@ -14,7 +14,7 @@
         "write-translations": "docusaurus write-translations",
         "write-heading-ids": "docusaurus write-heading-ids",
         "typecheck": "tsc",
-        "up-all": "yarn up '*' --mode=update-lockfile"
+        "up-all": "bun update --latest"
     },
     "dependencies": {
         "@docusaurus/core": "^3.10.2",
@@ -80,6 +80,5 @@
     },
     "engines": {
         "node": ">=18.0"
-    },
-    "packageManager": "yarn@4.9.2"
+    }
 }
