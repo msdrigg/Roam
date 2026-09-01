@@ -27,7 +27,7 @@ struct RoamApp: App {
     @KeyboardShortcutStorage(.chatWithDeveloper) var messagesShortcut: CustomKeyboardShortcut?
     @State var hotkeyRef: Any?
 
-    var metricManager = RoamMetricManager()
+    let metricManager = RoamMetricManager.shared
     init() {
         // Before anything else worth logging: this run's log file has to exist
         // for this run's lines to survive it, and the backtrace trap is only
@@ -112,7 +112,6 @@ struct RoamApp: App {
                     )
                     .preferredColorScheme(.dark)
             }
-            .keyboardShortcut(showRoamShortcut?.shortcut)
             .onChange(of: showRoamShortcut, initial: true) { _, new in
                 if let currentHotkeyRef = hotkeyRef {
                     hotkeyRef = nil
@@ -158,7 +157,64 @@ struct RoamApp: App {
             pasteboardCommand
             addDeviceCommand
             refreshMessagesCommand
+            windowCommands
             helpCommand
+        }
+
+        /// The Window menu entries, carrying the shortcuts that open each
+        /// window.
+        ///
+        /// These shortcuts used to be `Scene.keyboardShortcut` on the `Window`
+        /// scenes. Do not move them back. On macOS 26.5 through 26.7 that
+        /// modifier is fatal at launch: after every scene update,
+        /// `AppDelegate.scenesDidChange` copies the scene list's shortcut table
+        /// into `AppGraph._sceneKeyboardShortcuts` with `AGGraphSetValue`,
+        /// which compares a dictionary by storage identity rather than by
+        /// contents, so a non-empty table reads as changed on every pass. That
+        /// attribute feeds the root scene environment, so the "change" dirties
+        /// every scene body, the scene list gets a new version, and
+        /// `scenesDidChange` calls `AppGraph.graphDidChange` again from inside
+        /// the pass that called it, until the main thread runs off its stack
+        /// (roam 1.50 through 1.55, `EXC_BAD_ACCESS` in Stack Guard). An empty
+        /// table is the shared empty dictionary storage and compares equal, so
+        /// the pass settles after one round. Menu commands land in
+        /// `CommandsList`, which is not part of that table.
+        @CommandsBuilder
+        private var windowCommands: some Commands {
+            CommandGroup(replacing: .windowList) {
+                Button(
+                    action: { showWindow("main") },
+                    label: {
+                        Text("Roam", comment: "Window menu item that opens the main Roam window")
+                    }
+                )
+                .keyboardShortcut(showRoamShortcut?.shortcut)
+
+                Button(
+                    action: { showWindow("messages") },
+                    label: {
+                        Text("Messages", comment: "Window menu item that opens the messages window")
+                    }
+                )
+                .keyboardShortcut(messagesShortcut?.shortcut)
+
+                Button(
+                    action: { showWindow("keyboard-shortcuts") },
+                    label: {
+                        Text(
+                            "Keyboard Shortcuts",
+                            comment: "Window menu item that opens the keyboard shortcuts window")
+                    }
+                )
+                .keyboardShortcut(keyboardShortcutPanelShortcut?.shortcut)
+            }
+        }
+
+        private func showWindow(_ id: String) {
+            openWindow(id: id)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                NSApp.forceFront(id)
+            }
         }
 
         private var appInfoCommand: some Commands {
@@ -328,18 +384,9 @@ struct RoamApp: App {
         ///
         /// `MenuBarExtra` treats `isInserted` as two-way and writes back through
         /// it while it reconciles the status item. `@AppStorage` forwards every
-        /// write to `UserDefaults` -- including same-value ones, which still
-        /// post `didChangeNotification` -- and that invalidates `body`, the
-        /// getter that produced the scene being reconciled. Rebuilding it hands
-        /// `MenuBarExtra` the binding again, it writes back again, and
-        /// `graphDidChange` / `scenesDidChange` alternate until the main thread
-        /// runs off the end of its stack. `ScreenshotCapture` documents the same
-        /// loop from the other side: flipping this binding at runtime, once the
-        /// scene graph exists, is what sets it off.
-        ///
-        /// Dropping the echo is what makes the graph settle: a reconcile that
-        /// changes nothing no longer dirties the scene that caused it. Genuine
-        /// toggles -- the user unchecking the preference -- still write through.
+        /// write to `UserDefaults`, same-value ones included, and each one
+        /// invalidates `body` for nothing. Genuine toggles (the user unchecking
+        /// the preference) still write through.
         private var menuBarInserted: Binding<Bool> {
             let storage = self.$showMenuBar
             return Binding(
@@ -441,7 +488,6 @@ struct RoamApp: App {
                     }
                     .preferredColorScheme(.dark)
             }
-            .keyboardShortcut(messagesShortcut?.shortcut)
             .windowResizability(.contentSize)
 
             Window("Keyboard Shortcuts", id: "keyboard-shortcuts") {
@@ -461,7 +507,6 @@ struct RoamApp: App {
                     }
                     .preferredColorScheme(.dark)
             }
-            .keyboardShortcut(keyboardShortcutPanelShortcut?.shortcut)
             .windowResizability(.contentSize)
         #endif
 

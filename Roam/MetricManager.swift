@@ -64,6 +64,14 @@ private func jsonRepresentationIncludingTerminationFields(_ payload: MXDiagnosti
 }
 
 final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
+    /// The process's subscriber. Construct no others.
+    ///
+    /// SwiftUI rebuilds the `App` value on every invalidation, so an instance
+    /// stored in a property of `RoamApp` is re-created each time, and each
+    /// re-creation is an `MXMetricManager` subscribe plus the discarded
+    /// instance's unsubscribe. A runaway scene update ran that ~96 times.
+    static let shared = RoamMetricManager()
+
     override init() {
         super.init()
         MXMetricManager.shared.add(self)
