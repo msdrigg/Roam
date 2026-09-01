@@ -340,9 +340,11 @@ const SCENE_UPDATE_REENTRANCY_REPLY: &str = ":ninja: **Auto-review: stack overfl
 
 MetricKit cannot unwind an overflowed stack, so the attributed thread often shows only whatever the Swift runtime was demangling when the last frame would not fit. The in-process backtrace holds the cycle: `AppGraph.graphDidChange` alternating with `AppDelegate.scenesDidChange` for dozens of pairs.
 
-Something dirties the app graph from inside the update pass that is building it, so the pass re-enters itself, and every level re-evaluates the scene bodies. Four entrances have been found and closed so far - `forceFront` calling `makeKeyAndOrderFront` synchronously (1.52), `MenuBarExtra` writing back through `isInserted` and `setActivationPolicy` reordering windows (1.54), and a scene `onChange` writing the app's `@State` at launch (unreleased). The crash outlived the first three, so this reply does not claim the current one holds.
+The pass is seeded by a scene-phase change delivered inside a SwiftUI update, almost always AppKit's launch-time window restoration ordering the main window on screen (`NSPersistentUIRestorer` -> `AppKitWindowController.windowDidOrderOnScreen` -> `PlatformSceneCache.setPhase`). What keeps it going is inside SwiftUI on macOS 26.5 through 26.7, read from the 26.6.2 binary: `AppDelegate.scenesDidChange` copies the scene list's `Scene.keyboardShortcut` table into `AppGraph._sceneKeyboardShortcuts` with `AGGraphSetValue`, and AttributeGraph compares that dictionary by storage identity, not contents, so a non-empty table counts as changed on every pass. The attribute feeds the root scene environment, the change dirties every scene body, the scene list comes back with a new version, and `scenesDidChange` calls `graphDidChange` again from inside the pass that called it. An empty table is the shared empty storage and compares equal, so the pass settles.
 
-The seeding frame varies between reports and is sometimes absent entirely, which is why this rule keys on the cycle rather than on any one trigger.";
+Roam put `.keyboardShortcut` on three `Window` scenes, which is the whole trigger. The seeding frame (`forceFront`, `MenuBarExtra`, `applicationDidChangeScreenParameters`, a `Settings` body) varies between reports and only shows where the stack happened to run out, which is why this rule keys on the cycle rather than on any one of them.
+
+**Known cause, fix:** the window shortcuts moved from `Scene.keyboardShortcut` to Window-menu commands, so the scene shortcut table stays empty and the update pass cannot re-enter itself.";
 
 const WATCHDOG_REPLY: &str = ":ninja: **Auto-review: `0x8BADF00D` watchdog - main thread blocked cancelling the Bonjour browser**
 
@@ -396,11 +398,10 @@ pub static RULES: &[CrashRule] = &[
     CrashRule {
         id: "scene-update-reentrancy-stack-overflow",
         title: "Stack overflow from the macOS scene update pass re-entering itself",
-        // The last release that claimed to fix this. 1.52 and 1.54 each closed
-        // an entrance and the crash outlived both, so 1.54 and later read
-        // UNFIXED and stay in the manual queue. Move this on once a release
-        // holds, not when one ships.
-        fixed_in: Some("1.54"),
+        // 1.52 and 1.54 each closed a seeding path and the crash outlived both;
+        // 1.56 removes the `Scene.keyboardShortcut` table that sustains the
+        // cycle. A 1.56 or later report here means that diagnosis is wrong.
+        fixed_in: Some("1.56"),
         environmental: false,
         exception_type: Some(1),
         signal: Some(11),
@@ -639,7 +640,7 @@ Thread 9 (attributed - this is the thread that crashed):
         let facts = CrashFacts::from_report(MENU_BAR_STACK_OVERFLOW_REPORT);
         let matched = match_rule(MENU_BAR_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
         assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
-        // The report is from 1.52 and the last claimed fix was 1.54.
+        // The report is from 1.52 and the fix shipped in 1.56.
         assert_eq!(matched.status, FixStatus::Fixed);
     }
 
@@ -698,8 +699,8 @@ In-process backtrace of the faulting thread (1)
         let facts = CrashFacts::from_report(SETTINGS_STACK_OVERFLOW_REPORT);
         let matched = match_rule(SETTINGS_STACK_OVERFLOW_REPORT, &facts).expect("a rule matches");
         assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
-        // 1.54 is the last claimed fix, so a 1.54 crash stays in the queue.
-        assert_eq!(matched.status, FixStatus::Unfixed);
+        // A 1.54 crash predates the 1.56 fix.
+        assert_eq!(matched.status, FixStatus::Fixed);
     }
 
     /// Thread 1539671345036664922 (roam 1.51, Mac17,5). MetricKit unwound this
@@ -847,7 +848,7 @@ Thread 4 (attributed - this is the thread that crashed):
             (
                 MENU_BAR_STACK_OVERFLOW_REPORT,
                 "scene-update-reentrancy-stack-overflow",
-                "1.54",
+                "1.56",
             ),
             (
                 LOCAL_NETWORK_RACE_REPORT,
@@ -1035,9 +1036,9 @@ Thread 0 (attributed â this is the thread that crashed):
     }
 
     #[test]
-    fn a_screen_parameters_crash_from_1_54_onwards_is_tagged_unfixed() {
+    fn a_screen_parameters_crash_from_1_56_onwards_is_tagged_unfixed() {
         let report =
-            SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT.replace("appVersion: 1.53", "appVersion: 1.54");
+            SCREEN_PARAMETERS_STACK_OVERFLOW_REPORT.replace("appVersion: 1.53", "appVersion: 1.56");
         let facts = CrashFacts::from_report(&report);
         let matched = match_rule(&report, &facts).expect("still matches");
         assert_eq!(matched.rule.id, "scene-update-reentrancy-stack-overflow");
@@ -1352,7 +1353,7 @@ Roam MetricKit Crash Diagnostics
 ================================
 
 Payload window: 2026-08-24 11:42:00 -> 2026-08-24 11:42:00
-Install: user_id=lrm-uxk-vwf build=20260825.0750154.0 release=1.54 platform=macOS os=Version 26.5.2 (Build 25F84) locale=en
+Install: user_id=lrm-uxk-vwf build=20260901.0000000.0 release=1.56 platform=macOS os=Version 26.5.2 (Build 25F84) locale=en
 
 Crash 1 (version 1.0.0)
 Faulting VM region: 0x16d26b000 is in 0x16ca70000-0x16d26c000
@@ -1374,7 +1375,7 @@ In-process backtrace of the faulting thread (1)
         let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
         // Two versions, and they disagree. The crash is the older one.
         assert_eq!(facts.app_version.as_deref(), Some("1.53"));
-        assert_eq!(facts.installed_version.as_deref(), Some("1.54"));
+        assert_eq!(facts.installed_version.as_deref(), Some("1.56"));
         assert_eq!(facts.crash_version(), Some("1.53"));
 
         // Reports with no Install line at all still parse.
@@ -1383,12 +1384,12 @@ In-process backtrace of the faulting thread (1)
             None
         );
         // As do devices that never reported a release.
-        let unknown = UPDATED_DEVICE_REPORT.replace("release=1.54", "release=unknown");
+        let unknown = UPDATED_DEVICE_REPORT.replace("release=1.56", "release=unknown");
         assert_eq!(CrashFacts::from_report(&unknown).installed_version, None);
     }
 
-    /// The bug this rewrite exists for: the reporter was on 1.54 and the reply
-    /// told them to update to 1.54.
+    /// The bug this rewrite exists for: the reporter was already on the fix
+    /// version and the reply told them to update to it.
     #[test]
     fn a_crash_predating_the_fix_on_a_device_that_already_updated_is_not_an_update_prompt() {
         let facts = CrashFacts::from_report(UPDATED_DEVICE_REPORT);
@@ -1398,14 +1399,14 @@ In-process backtrace of the faulting thread (1)
 
         let reply = matched.reply(&facts);
         assert!(reply.contains("already updated"));
-        assert!(reply.contains("device is now on 1.54"));
-        assert!(!reply.contains("updating to 1.54 or later resolves it"));
+        assert!(reply.contains("device is now on 1.56"));
+        assert!(!reply.contains("updating to 1.56 or later resolves it"));
 
         // The row says both versions, so the queue shows it without the thread.
         assert_eq!(
             matched.review_note(&facts),
             "Stack overflow from the macOS scene update pass re-entering itself \
-             (fixed in 1.54; device already on 1.54)"
+             (fixed in 1.56; device already on 1.56)"
         );
     }
 
@@ -1417,23 +1418,23 @@ In-process backtrace of the faulting thread (1)
         assert_ne!(matched.status, FixStatus::Unfixed);
 
         // Still on the old build: the update prompt is the right answer there.
-        let behind = UPDATED_DEVICE_REPORT.replace("release=1.54", "release=1.53");
+        let behind = UPDATED_DEVICE_REPORT.replace("release=1.56", "release=1.53");
         let facts = CrashFacts::from_report(&behind);
         let matched = match_rule(&behind, &facts).unwrap();
         assert_eq!(matched.status, FixStatus::Fixed);
         assert!(
             matched
                 .reply(&facts)
-                .contains("updating to 1.54 or later resolves it")
+                .contains("updating to 1.56 or later resolves it")
         );
     }
 
     #[test]
     fn a_crash_on_the_fixing_release_is_unfixed_however_the_device_is_installed() {
-        for install in ["release=1.54", "release=1.55"] {
+        for install in ["release=1.56", "release=1.57"] {
             let report = UPDATED_DEVICE_REPORT
-                .replace("appVersion: 1.53", "appVersion: 1.54")
-                .replace("release=1.54", install);
+                .replace("appVersion: 1.53", "appVersion: 1.56")
+                .replace("release=1.56", install);
             let facts = CrashFacts::from_report(&report);
             let matched = match_rule(&report, &facts).unwrap();
             assert_eq!(matched.status, FixStatus::Unfixed, "{install}");
@@ -1447,15 +1448,15 @@ In-process backtrace of the faulting thread (1)
         let report = UPDATED_DEVICE_REPORT.replace("  appVersion: 1.53\n", "");
         let facts = CrashFacts::from_report(&report);
         assert_eq!(facts.app_version, None);
-        assert_eq!(facts.crash_version(), Some("1.54"));
+        assert_eq!(facts.crash_version(), Some("1.56"));
 
         let matched = match_rule(&report, &facts).unwrap();
-        // 1.54 is the fixing release, so this belongs in the manual queue.
+        // 1.56 is the fixing release, so this belongs in the manual queue.
         assert_eq!(matched.status, FixStatus::Unfixed);
         assert!(matched.reply(&facts).contains("carries no `appVersion`"));
 
         // A device still behind the fix reads as fixed, not as unknown.
-        let behind = report.replace("release=1.54", "release=1.52");
+        let behind = report.replace("release=1.56", "release=1.52");
         let facts = CrashFacts::from_report(&behind);
         assert_eq!(
             match_rule(&behind, &facts).unwrap().status,
