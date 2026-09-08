@@ -72,6 +72,17 @@ fly deploy . --config backend/fly.toml --dockerfile backend/Dockerfile
 `--dockerfile` is required because the `dockerfile` path inside `fly.toml`
 resolves relative to that file rather than to the build context.
 
+The backend reads `CRASH_API_KEY` and refuses to start without it, so a first
+deploy after the App Attest change needs its secrets set:
+
+```sh
+fly secrets set CRASH_API_KEY=... LEGACY_APP_API_KEY=... --app roam-backend
+```
+
+`CRASH_API_KEY` guards the crash, symbolication and Discord-proxy routes and no
+app build carries it. `LEGACY_APP_API_KEY` is the key older releases still send;
+unset it to cut those releases off. `backend/Readme.md` has the full split.
+
 A push to `main` does **not** deploy. The `Deploy` workflow (`deploy-fly.yml`)
 is written to trigger on that push but is disabled at the repository level;
 check with `gh workflow list --all` before assuming a push shipped anything.
@@ -93,7 +104,7 @@ that are easy to get wrong:
 
 `scripts/roam_crashes.py` wraps the backend's crash-review API: list unreviewed
 crashes, read threads, stream symbolicated reports, post replies, mark threads
-reviewed. It needs `BACKEND_URL` and `BACKEND_API_KEY`, both in `backend/.env`:
+reviewed. It needs `BACKEND_URL` and `CRASH_API_KEY`, both in `backend/.env`:
 
 ```sh
 set -a && . ./backend/.env && set +a

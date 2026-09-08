@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO attest_challenges (challenge, issued_at_ms, expires_at_ms)\n             VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "924f9408d0d854f4de39c8e950478f373a88db2f97eb46aee43fd21d3c81c4b6"
+}

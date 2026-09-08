@@ -26,9 +26,64 @@ pub struct RoamCli {
     #[arg(long, env)]
     pub backend_url: String,
 
-    /// Backend API Key
+    /// API key for the crash and symbolication tooling: the symbolication
+    /// worker, `scripts/roam_crashes.py`, and dSYM upload from CI. Never
+    /// shipped inside the app.
     #[arg(long, env)]
-    pub backend_api_key: String,
+    pub crash_api_key: String,
+
+    /// The key older app releases still send as `x-api-key`. Accepted on user
+    /// routes only, under tight rate limits, until those releases age out.
+    /// Leave unset to refuse every unattested legacy client.
+    #[arg(long, env)]
+    pub legacy_app_api_key: Option<String>,
+
+    /// Apple Developer team id that App Attest attestations must claim.
+    #[arg(long, env, default_value = "2865NTZ7H3")]
+    pub app_attest_team_id: String,
+
+    /// Comma-separated bundle ids allowed to register an attested key.
+    #[arg(
+        long,
+        env,
+        value_delimiter = ',',
+        default_value = "com.msdrigg.roam,com.msdrigg.roam.watchkitapp"
+    )]
+    pub app_attest_bundle_ids: Vec<String>,
+
+    /// Accept attestations from the App Attest development environment. Builds
+    /// signed with a development profile attest there, so production must leave
+    /// this off or an attestation proves nothing about the app that sent it.
+    #[arg(long, env, default_value_t = false)]
+    pub app_attest_allow_development: bool,
+
+    /// Lifetime of an issued app session. Short because the client refreshes it
+    /// with an assertion in the background and holds the token only in memory.
+    #[arg(long, env, default_value_t = 3600)]
+    pub app_session_ttl_seconds: u64,
+
+    /// Durable writes an hour allowed to an attested device. Set well above
+    /// any human conversation, so it catches a compromised client rather than
+    /// an ordinary one. Polling and typing notifications are never metered.
+    #[arg(long, env, default_value_t = 60)]
+    pub attested_hourly_limit: u32,
+
+    /// Durable writes an hour allowed per address to a release that predates
+    /// attestation. Keyed by address rather than install because those releases
+    /// cannot prove which install they are, so it has to tolerate several users
+    /// sharing one carrier NAT address.
+    #[arg(long, env, default_value_t = 120)]
+    pub legacy_hourly_limit: u32,
+
+    /// Writes an hour allowed to a device that cannot attest.
+    ///
+    /// App Attest reached macOS only in macOS 27, and Roam still deploys to
+    /// macOS 15, so this is the ordinary path for most Mac users rather than a
+    /// rare fallback. The limit has to leave a support conversation usable
+    /// while staying far below anything worth automating, because claiming to
+    /// be unattestable costs an attacker nothing.
+    #[arg(long, env, default_value_t = 60)]
+    pub unattested_hourly_limit: u32,
 
     /// APNS Key ID
     #[arg(long, env, default_value = "")]

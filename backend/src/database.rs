@@ -842,6 +842,259 @@ impl DatabaseClient {
     }
 }
 
+// ---------------------------------------------------------------------------
+// App Attest credentials and the sessions they mint
+// ---------------------------------------------------------------------------
+
+/// A Secure Enclave key that passed attestation, and the anti-replay state for
+/// the assertions it signs.
+#[derive(Debug, Clone)]
+pub struct AttestKey {
+    pub key_id: String,
+    pub public_key: Vec<u8>,
+    /// Install id bound at registration. It never moves to another id, so an
+    /// attested key can only ever act as the conversation it first claimed.
+    pub user_id: String,
+    pub bundle_id: String,
+    pub environment: String,
+    pub sign_count: i64,
+    pub replay_window: i64,
+    pub revoked_at_ms: Option<i64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppSession {
+    pub session_id: String,
+    /// Null for the unattested fallback issued to devices with no Secure Enclave.
+    pub key_id: Option<String>,
+    pub user_id: String,
+    pub attested: bool,
+    pub bundle_id: Option<String>,
+    pub expires_at_ms: i64,
+}
+
+impl DatabaseClient {
+    pub async fn issue_challenge(
+        &self,
+        challenge: &str,
+        issued_at_ms: i64,
+        expires_at_ms: i64,
+    ) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "INSERT INTO attest_challenges (challenge, issued_at_ms, expires_at_ms)
+             VALUES (?, ?, ?)",
+            challenge,
+            issued_at_ms,
+            expires_at_ms,
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error issuing attestation challenge")?;
+        Ok(())
+    }
+
+    /// Spends a challenge, reporting whether this caller is the one that got it.
+    ///
+    /// The guard lives in the `UPDATE` rather than in a read followed by a
+    /// write, so two clients racing on the same challenge cannot both win.
+    pub async fn consume_challenge(
+        &self,
+        challenge: &str,
+        now_ms: i64,
+    ) -> Result<bool, anyhow::Error> {
+        let result = sqlx::query!(
+            "UPDATE attest_challenges SET consumed_at_ms = ?
+             WHERE challenge = ? AND consumed_at_ms IS NULL AND expires_at_ms > ?",
+            now_ms,
+            challenge,
+            now_ms,
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error consuming attestation challenge")?;
+        Ok(result.rows_affected() == 1)
+    }
+
+    /// Stores a freshly attested key, or leaves an existing one untouched.
+    ///
+    /// A repeat registration is a client retry: Apple only ever attests a key
+    /// once. The conflict branch therefore refreshes nothing that would let a
+    /// second call move the key to another install id or rewind its replay
+    /// state. It returns the `user_id` actually on file so the caller can tell
+    /// the client which conversation it owns.
+    pub async fn register_attest_key(
+        &self,
+        key: &AttestKey,
+        receipt: &[u8],
+        now_ms: i64,
+    ) -> Result<String, anyhow::Error> {
+        sqlx::query!(
+            "INSERT INTO attest_keys (
+                 key_id, public_key, user_id, bundle_id, environment, receipt,
+                 sign_count, replay_window, created_at_ms, last_seen_at_ms
+             )
+             VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)
+             ON CONFLICT (key_id) DO UPDATE SET last_seen_at_ms = excluded.last_seen_at_ms",
+            key.key_id,
+            key.public_key,
+            key.user_id,
+            key.bundle_id,
+            key.environment,
+            receipt,
+            now_ms,
+            now_ms,
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error registering attestation key")?;
+
+        let stored = sqlx::query_scalar!(
+            r#"SELECT user_id as "user_id!: String" FROM attest_keys WHERE key_id = ?"#,
+            key.key_id
+        )
+        .fetch_one(&self.writer_pool)
+        .await
+        .context("Error reading back registered attestation key")?;
+        Ok(stored)
+    }
+
+    pub async fn get_attest_key(&self, key_id: &str) -> Result<Option<AttestKey>, anyhow::Error> {
+        let key = sqlx::query_as!(
+            AttestKey,
+            r#"SELECT
+                   key_id as "key_id!: String",
+                   public_key as "public_key!: Vec<u8>",
+                   user_id as "user_id!: String",
+                   bundle_id as "bundle_id!: String",
+                   environment as "environment!: String",
+                   sign_count as "sign_count!",
+                   replay_window as "replay_window!",
+                   revoked_at_ms
+               FROM attest_keys WHERE key_id = ?"#,
+            key_id
+        )
+        .fetch_optional(&self.reader_pool)
+        .await
+        .context("Error loading attestation key")?;
+        Ok(key)
+    }
+
+    /// Folds an accepted assertion counter into the stored replay window.
+    ///
+    /// The write is conditional on the window still holding the values the
+    /// caller verified against, so two concurrent assertions cannot both commit
+    /// from the same starting state and lose one of the two counters.
+    pub async fn record_assertion(
+        &self,
+        key_id: &str,
+        previous: (i64, i64),
+        next: (i64, i64),
+        now_ms: i64,
+    ) -> Result<bool, anyhow::Error> {
+        let (previous_count, previous_window) = previous;
+        let (next_count, next_window) = next;
+        let result = sqlx::query!(
+            "UPDATE attest_keys
+             SET sign_count = ?, replay_window = ?, last_seen_at_ms = ?
+             WHERE key_id = ? AND sign_count = ? AND replay_window = ?",
+            next_count,
+            next_window,
+            now_ms,
+            key_id,
+            previous_count,
+            previous_window,
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error recording assertion counter")?;
+        Ok(result.rows_affected() == 1)
+    }
+
+    pub async fn create_session(
+        &self,
+        token_hash: &[u8],
+        session: &AppSession,
+        issued_at_ms: i64,
+    ) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            "INSERT INTO app_sessions (
+                 token_hash, session_id, key_id, user_id, attested, bundle_id,
+                 issued_at_ms, expires_at_ms
+             )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            token_hash,
+            session.session_id,
+            session.key_id,
+            session.user_id,
+            session.attested,
+            session.bundle_id,
+            issued_at_ms,
+            session.expires_at_ms,
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error creating app session")?;
+        Ok(())
+    }
+
+    pub async fn get_session(
+        &self,
+        token_hash: &[u8],
+        now_ms: i64,
+    ) -> Result<Option<AppSession>, anyhow::Error> {
+        let session = sqlx::query_as!(
+            AppSession,
+            r#"SELECT
+                   session_id as "session_id!: String",
+                   key_id,
+                   user_id as "user_id!: String",
+                   attested as "attested!: bool",
+                   bundle_id,
+                   expires_at_ms as "expires_at_ms!"
+               FROM app_sessions
+               WHERE token_hash = ? AND expires_at_ms > ?"#,
+            token_hash,
+            now_ms,
+        )
+        .fetch_optional(&self.reader_pool)
+        .await
+        .context("Error loading app session")?;
+        Ok(session)
+    }
+
+    /// Drops every session minted for a key, so revoking a credential takes
+    /// effect before the sessions it already issued expire.
+    pub async fn revoke_sessions_for_key(&self, key_id: &str) -> Result<u64, anyhow::Error> {
+        let result = sqlx::query!("DELETE FROM app_sessions WHERE key_id = ?", key_id)
+            .execute(&self.writer_pool)
+            .await
+            .context("Error revoking sessions for attestation key")?;
+        Ok(result.rows_affected())
+    }
+
+    /// Clears expired sessions and challenges. Both tables are write-once per
+    /// app launch, so without a sweep they grow with every install forever.
+    pub async fn reap_expired_attest_state(
+        &self,
+        now_ms: i64,
+    ) -> Result<(u64, u64), anyhow::Error> {
+        let sessions = sqlx::query!("DELETE FROM app_sessions WHERE expires_at_ms <= ?", now_ms)
+            .execute(&self.writer_pool)
+            .await
+            .context("Error reaping expired app sessions")?
+            .rows_affected();
+        let challenges = sqlx::query!(
+            "DELETE FROM attest_challenges WHERE expires_at_ms <= ?",
+            now_ms
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error reaping expired attestation challenges")?
+        .rows_affected();
+        Ok((sessions, challenges))
+    }
+}
+
 /// Wait after a payload's first failure before it may be leased again; doubles
 /// with each subsequent attempt.
 ///
@@ -1384,5 +1637,200 @@ mod tests {
             db.failed_symbolication_ids(None).await.expect("dry run"),
             vec!["other".to_string()]
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // App Attest storage
+    // -----------------------------------------------------------------------
+
+    fn attest_key(key_id: &str, user_id: &str) -> AttestKey {
+        AttestKey {
+            key_id: key_id.to_string(),
+            public_key: vec![0x04; 65],
+            user_id: user_id.to_string(),
+            bundle_id: "com.msdrigg.roam".to_string(),
+            environment: "production".to_string(),
+            sign_count: 0,
+            replay_window: 0,
+            revoked_at_ms: None,
+        }
+    }
+
+    fn session_for(key_id: Option<&str>, user_id: &str, expires_at_ms: i64) -> AppSession {
+        AppSession {
+            session_id: format!("sid-{user_id}"),
+            key_id: key_id.map(str::to_string),
+            user_id: user_id.to_string(),
+            attested: key_id.is_some(),
+            bundle_id: Some("com.msdrigg.roam".to_string()),
+            expires_at_ms,
+        }
+    }
+
+    #[tokio::test]
+    async fn an_attested_key_round_trips() {
+        let (db, _dir) = test_client().await;
+        let key = attest_key("aa11", "aaa-bbb-ccc");
+        db.register_attest_key(&key, b"receipt", 1_000)
+            .await
+            .expect("register");
+
+        let stored = db
+            .get_attest_key("aa11")
+            .await
+            .expect("read")
+            .expect("present");
+        assert_eq!(stored.user_id, "aaa-bbb-ccc");
+        assert_eq!(stored.public_key, vec![0x04; 65]);
+        assert_eq!(stored.bundle_id, "com.msdrigg.roam");
+        assert_eq!(stored.sign_count, 0);
+        assert!(stored.revoked_at_ms.is_none());
+    }
+
+    #[tokio::test]
+    async fn a_key_keeps_the_install_id_it_first_claimed() {
+        let (db, _dir) = test_client().await;
+        db.register_attest_key(&attest_key("aa11", "original-id"), b"r", 1_000)
+            .await
+            .expect("first registration");
+
+        // A second registration for the same key must not move it to another
+        // conversation.
+        let bound = db
+            .register_attest_key(&attest_key("aa11", "someone-elses-id"), b"r", 2_000)
+            .await
+            .expect("second registration");
+
+        assert_eq!(bound, "original-id");
+        let stored = db.get_attest_key("aa11").await.unwrap().unwrap();
+        assert_eq!(stored.user_id, "original-id");
+    }
+
+    #[tokio::test]
+    async fn a_challenge_may_only_be_spent_once() {
+        let (db, _dir) = test_client().await;
+        db.issue_challenge("chal", 1_000, 9_000)
+            .await
+            .expect("issue");
+
+        assert!(db.consume_challenge("chal", 2_000).await.expect("first"));
+        assert!(
+            !db.consume_challenge("chal", 2_001).await.expect("second"),
+            "a spent challenge cannot be replayed"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_expired_challenge_cannot_be_spent() {
+        let (db, _dir) = test_client().await;
+        db.issue_challenge("chal", 1_000, 5_000)
+            .await
+            .expect("issue");
+        assert!(!db.consume_challenge("chal", 5_001).await.expect("expired"));
+    }
+
+    #[tokio::test]
+    async fn an_unknown_challenge_is_refused() {
+        let (db, _dir) = test_client().await;
+        assert!(
+            !db.consume_challenge("never-issued", 1)
+                .await
+                .expect("query")
+        );
+    }
+
+    #[tokio::test]
+    async fn a_session_is_readable_by_token_hash_until_it_expires() {
+        let (db, _dir) = test_client().await;
+        db.register_attest_key(&attest_key("aa11", "user"), b"r", 1_000)
+            .await
+            .unwrap();
+        let session = session_for(Some("aa11"), "user", 10_000);
+        db.create_session(b"hash-a", &session, 1_000)
+            .await
+            .expect("create");
+
+        let found = db.get_session(b"hash-a", 9_999).await.expect("read");
+        assert_eq!(found.expect("present").user_id, "user");
+
+        assert!(
+            db.get_session(b"hash-a", 10_000)
+                .await
+                .expect("read")
+                .is_none(),
+            "expiry is exclusive of the boundary"
+        );
+        assert!(
+            db.get_session(b"wrong-hash", 1)
+                .await
+                .expect("read")
+                .is_none()
+        );
+    }
+
+    #[tokio::test]
+    async fn revoking_a_key_drops_the_sessions_it_minted() {
+        let (db, _dir) = test_client().await;
+        db.register_attest_key(&attest_key("aa11", "user"), b"r", 1_000)
+            .await
+            .unwrap();
+        db.create_session(b"hash-a", &session_for(Some("aa11"), "user", 99_000), 1_000)
+            .await
+            .unwrap();
+        let mut other = session_for(None, "other", 99_000);
+        other.session_id = "sid-other".to_string();
+        db.create_session(b"hash-b", &other, 1_000).await.unwrap();
+
+        assert_eq!(db.revoke_sessions_for_key("aa11").await.expect("revoke"), 1);
+        assert!(db.get_session(b"hash-a", 2_000).await.unwrap().is_none());
+        assert!(
+            db.get_session(b"hash-b", 2_000).await.unwrap().is_some(),
+            "an unrelated session survives"
+        );
+    }
+
+    #[tokio::test]
+    async fn recording_an_assertion_is_a_compare_and_set() {
+        let (db, _dir) = test_client().await;
+        db.register_attest_key(&attest_key("aa11", "user"), b"r", 1_000)
+            .await
+            .unwrap();
+
+        assert!(
+            db.record_assertion("aa11", (0, 0), (5, 1), 2_000)
+                .await
+                .expect("first"),
+            "the state matched what the caller verified against"
+        );
+
+        assert!(
+            !db.record_assertion("aa11", (0, 0), (6, 1), 3_000)
+                .await
+                .expect("stale"),
+            "a caller working from stale state must not overwrite a newer counter"
+        );
+
+        let stored = db.get_attest_key("aa11").await.unwrap().unwrap();
+        assert_eq!(stored.sign_count, 5);
+        assert_eq!(stored.replay_window, 1);
+    }
+
+    #[tokio::test]
+    async fn the_reaper_clears_only_expired_rows() {
+        let (db, _dir) = test_client().await;
+        db.issue_challenge("old", 0, 1_000).await.unwrap();
+        db.issue_challenge("fresh", 0, 90_000).await.unwrap();
+        db.create_session(b"old", &session_for(None, "a", 1_000), 0)
+            .await
+            .unwrap();
+        let mut fresh = session_for(None, "b", 90_000);
+        fresh.session_id = "sid-fresh".to_string();
+        db.create_session(b"fresh", &fresh, 0).await.unwrap();
+
+        let (sessions, challenges) = db.reap_expired_attest_state(50_000).await.expect("reap");
+        assert_eq!((sessions, challenges), (1, 1));
+
+        assert!(db.get_session(b"fresh", 60_000).await.unwrap().is_some());
+        assert!(db.consume_challenge("fresh", 60_000).await.unwrap());
     }
 }

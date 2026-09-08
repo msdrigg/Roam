@@ -167,7 +167,7 @@ pub async fn run(cli: RoamCli) -> Result<()> {
         .await
         .context("preparing dSYM cache directory")?;
     let client = SymbolicationClient::new(dsym_dir.clone());
-    let api = WorkerApi::new(cli.backend_url.clone(), cli.backend_api_key.clone())?;
+    let api = WorkerApi::new(cli.backend_url.clone(), cli.crash_api_key.clone())?;
 
     let payloads_dir = PathBuf::from(&cli.data_dir).join("worker-payloads");
     tokio::fs::create_dir_all(&payloads_dir)

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE attest_challenges SET consumed_at_ms = ?\n             WHERE challenge = ? AND consumed_at_ms IS NULL AND expires_at_ms > ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "127fe95313d1c630d8b4a073a9f589951de4f0de3cb38f9e57263e539dd01a25"
+}

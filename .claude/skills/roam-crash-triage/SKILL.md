@@ -1,6 +1,6 @@
 ---
 name: roam-crash-triage
-description: Triage Roam crash reports through the backend API - list unreviewed crashes, read Discord threads and messages with pagination, stream symbolicated reports and other attachments, post replies, and mark threads reviewed. Use when asked to look at crashes, check what crashes are outstanding, read a crash report or thread, reply to a crash, or work through the crash review queue. Needs only BACKEND_URL and BACKEND_API_KEY, both already in ./backend/.env - never a Discord token.
+description: Triage Roam crash reports through the backend API - list unreviewed crashes, read Discord threads and messages with pagination, stream symbolicated reports and other attachments, post replies, and mark threads reviewed. Use when asked to look at crashes, check what crashes are outstanding, read a crash report or thread, reply to a crash, or work through the crash review queue. Needs only BACKEND_URL and CRASH_API_KEY, both already in ./backend/.env - never a Discord token.
 ---
 
 # Roam crash triage
@@ -11,7 +11,7 @@ variables are enough:
 
 ```bash
 export BACKEND_URL=https://backend.roam.msd3.io
-export BACKEND_API_KEY=...            # sent as the x-api-key header
+export CRASH_API_KEY=...              # sent as the x-api-key header
 ```
 
 Both already live in `./backend/.env` in this repo - source it rather than
@@ -80,7 +80,7 @@ until its next crash.
 ## Start here: what needs attention
 
 ```bash
-curl -s -H "x-api-key: $BACKEND_API_KEY" \
+curl -s -H "x-api-key: $CRASH_API_KEY" \
   "$BACKEND_URL/v2/crashes?unreviewed=true&limit=50"
 ```
 
@@ -105,7 +105,7 @@ the last page. Loop until it is `null`.
 One thread:
 
 ```bash
-curl -s -H "x-api-key: $BACKEND_API_KEY" "$BACKEND_URL/v2/crashes/<thread_id>"
+curl -s -H "x-api-key: $CRASH_API_KEY" "$BACKEND_URL/v2/crashes/<thread_id>"
 ```
 
 ## Reading a thread
@@ -113,7 +113,7 @@ curl -s -H "x-api-key: $BACKEND_API_KEY" "$BACKEND_URL/v2/crashes/<thread_id>"
 List messages, newest first (`limit` 1–100, default 50):
 
 ```bash
-curl -s -H "x-api-key: $BACKEND_API_KEY" \
+curl -s -H "x-api-key: $CRASH_API_KEY" \
   "$BACKEND_URL/v2/discord/threads/<thread_id>/messages?limit=50"
 ```
 
@@ -124,7 +124,7 @@ integer range, so every id in these APIs is a string on the wire.
 One message:
 
 ```bash
-curl -s -H "x-api-key: $BACKEND_API_KEY" \
+curl -s -H "x-api-key: $CRASH_API_KEY" \
   "$BACKEND_URL/v2/discord/threads/<thread_id>/messages/<message_id>"
 ```
 
@@ -132,7 +132,7 @@ All threads in the support forum (`archived_pages` walks 100 archived threads
 per page, 0 = active only, max 20):
 
 ```bash
-curl -s -H "x-api-key: $BACKEND_API_KEY" \
+curl -s -H "x-api-key: $CRASH_API_KEY" \
   "$BACKEND_URL/v2/discord/threads?archived_pages=3"
 ```
 
@@ -143,7 +143,7 @@ buffered server-side, so large diagnostics dumps are fine. Take the
 `attachments[].id` from a message and:
 
 ```bash
-curl -s -H "x-api-key: $BACKEND_API_KEY" \
+curl -s -H "x-api-key: $CRASH_API_KEY" \
   "$BACKEND_URL/v2/discord/threads/<thread_id>/messages/<message_id>/attachments/<attachment_id>" \
   -o symbolicated.txt
 ```
@@ -178,7 +178,7 @@ say nothing about it.
 Post a reply (mentions are always suppressed):
 
 ```bash
-curl -s -X POST -H "x-api-key: $BACKEND_API_KEY" -H "Content-Type: application/json" \
+curl -s -X POST -H "x-api-key: $CRASH_API_KEY" -H "Content-Type: application/json" \
   "$BACKEND_URL/v2/discord/threads/<thread_id>/messages" \
   -d '{"content": "...", "reply_to_message_id": "<crash_message_id>"}'
 ```
@@ -186,7 +186,7 @@ curl -s -X POST -H "x-api-key: $BACKEND_API_KEY" -H "Content-Type: application/j
 Then mark the thread reviewed. Every field is optional:
 
 ```bash
-curl -s -X POST -H "x-api-key: $BACKEND_API_KEY" -H "Content-Type: application/json" \
+curl -s -X POST -H "x-api-key: $CRASH_API_KEY" -H "Content-Type: application/json" \
   "$BACKEND_URL/v2/crashes/<thread_id>/review" \
   -d '{"reviewed_by": "scott", "reviewed_message_id": "<reply_id>", "note": "..."}'
 ```
@@ -194,14 +194,14 @@ curl -s -X POST -H "x-api-key: $BACKEND_API_KEY" -H "Content-Type: application/j
 Reopen one you want to revisit:
 
 ```bash
-curl -s -X DELETE -H "x-api-key: $BACKEND_API_KEY" \
+curl -s -X DELETE -H "x-api-key: $CRASH_API_KEY" \
   "$BACKEND_URL/v2/crashes/<thread_id>/review"
 ```
 
 ## Auto-review rules
 
 ```bash
-curl -s -H "x-api-key: $BACKEND_API_KEY" "$BACKEND_URL/v2/crashes/rules"
+curl -s -H "x-api-key: $CRASH_API_KEY" "$BACKEND_URL/v2/crashes/rules"
 ```
 
 Rules live in `backend/src/crash_rules.rs` as a compiled-in list, matched in

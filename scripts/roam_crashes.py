@@ -2,11 +2,11 @@
 """Roam crash triage over the backend API.
 
 Talks only to the Roam backend, which proxies Discord with its own bot
-credentials -- this needs BACKEND_URL and BACKEND_API_KEY, never a Discord
+credentials -- this needs BACKEND_URL and CRASH_API_KEY, never a Discord
 token.
 
     export BACKEND_URL=https://backend.roam.msd3.io
-    export BACKEND_API_KEY=...
+    export CRASH_API_KEY=...
 
     roam_crashes.py unreviewed
     roam_crashes.py unreviewed --app-version 1.50 --all-pages
@@ -31,9 +31,9 @@ TIMEOUT = 120
 
 def _config():
     base = os.environ.get("BACKEND_URL")
-    key = os.environ.get("BACKEND_API_KEY")
+    key = os.environ.get("CRASH_API_KEY")
     if not base or not key:
-        sys.exit("Set BACKEND_URL and BACKEND_API_KEY")
+        sys.exit("Set BACKEND_URL and CRASH_API_KEY")
     return base.rstrip("/"), key
 
 

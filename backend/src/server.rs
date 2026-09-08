@@ -12,7 +12,7 @@ use crate::{
 };
 use anyhow::Context;
 use axum::{
-    Json,
+    Extension, Json,
     body::{Body, to_bytes},
     extract::{DefaultBodyLimit, Multipart, Path, Query, State},
     http::{HeaderName, Request, StatusCode, header},
@@ -20,6 +20,9 @@ use axum::{
     routing::post,
 };
 use axum::{Router, routing::get, serve::ListenerExt};
+use base64::{Engine, prelude::BASE64_STANDARD};
+#[cfg(test)]
+use clap::Parser;
 pub use error::ApiError;
 use futures::{StreamExt, stream};
 use opentelemetry::trace::{SpanKind, TraceContextExt};
@@ -31,7 +34,6 @@ use tower_http::{
     cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer},
     request_id::{MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer},
     trace::{DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer},
-    validate_request::{ValidateRequest, ValidateRequestHeaderLayer},
 };
 use tracing::{Level, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -40,7 +42,7 @@ use uuid::Uuid;
 /// How long a leased payload stays out before another worker can re-claim it.
 const LEASE_TTL: Duration = Duration::from_secs(15 * 60);
 
-use crate::{AppContext, discord::DiscordMessage};
+use crate::{AppContext, auth::Caller, discord::DiscordMessage};
 
 const UPLOAD_LIMIT: usize = 10 * 1024 * 1024;
 
@@ -111,54 +113,11 @@ fn build_app(app_context: AppContext) -> Router {
             OpenTelemetryRequestId,
         ))
         .layer(cors)
-        .layer(ValidateRequestHeaderLayer::custom(ValidateApiKey::new(
-            app_context.backend_api_key,
-        )))
         .layer(PropagateRequestIdLayer::new(x_request_id))
         .layer(CatchPanicLayer::new())
         .layer(DefaultBodyLimit::max(
             1024 * 1024 * 70, // 70 MB
         ))
-}
-
-#[derive(Clone, Debug)]
-struct ValidateApiKey {
-    api_key: String,
-}
-
-impl ValidateApiKey {
-    fn new(api_key: String) -> Self {
-        Self { api_key }
-    }
-}
-
-impl ValidateRequest<axum::body::Body> for ValidateApiKey {
-    type ResponseBody = axum::body::Body;
-
-    fn validate(
-        &mut self,
-        request: &mut Request<axum::body::Body>,
-    ) -> Result<(), axum::http::Response<Self::ResponseBody>> {
-        let path = request.uri().path();
-        // If path is /health, don't require an API key
-        if path == "/health" {
-            return Ok(());
-        }
-        let api_key = request
-            .headers()
-            .get("x-api-key")
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default();
-
-        if api_key != self.api_key {
-            return Err(axum::http::Response::builder()
-                .status(401)
-                .body(Body::from("Unauthorized"))
-                .unwrap());
-        }
-
-        Ok(())
-    }
 }
 
 // A `MakeRequestId` that increments an atomic counter
@@ -179,23 +138,23 @@ fn get_current_trace_id() -> Uuid {
     Uuid::from_bytes(trace_id.to_bytes())
 }
 
+/// The API is split into three zones by who is allowed to call them.
+///
+/// `public` is unauthenticated: health, and the attestation handshake a client
+/// has to complete before it holds any credential. `crash` is the internal
+/// tooling key, which no app build ever carries. `app` is everything the app
+/// calls, behind an attested session or, for older releases, the legacy key.
 fn router(app_context: AppContext) -> Router {
-    Router::new()
+    let public = Router::new()
         .route("/health", get(|| async { "Healthy!" }))
         .route("/", get(|| async { "Hello, world!" }))
-        .route("/messages/{user_id}", get(get_user_messages))
-        .route("/updates/{user_id}", get(get_user_state))
-        .route("/new-message", post(new_message_old))
-        .route("/v2/new-message", post(new_message))
-        .route("/v2/upload-diagnostics", post(upload_metric_diagnostics))
-        // Streams to disk, so the global 70 MB body limit must not apply here.
-        .route(
-            "/v2/upload-roam-dsym",
-            post(upload_roam_dsym).layer(DefaultBodyLimit::disable()),
-        )
-        // Crash review tracking. All of these sit behind the existing
-        // `x-api-key` layer, so a triage client needs the backend key and no
-        // Discord credentials of its own.
+        .route("/v3/attest/challenge", post(attest_challenge))
+        .route("/v3/attest/register", post(attest_register))
+        .route("/v3/attest/session", post(attest_session))
+        .route("/v3/attest/unattested", post(attest_unattested_session));
+
+    let crash = Router::new()
+        // Crash review tracking.
         .route("/v2/crashes", get(list_crashes))
         .route("/v2/crashes/rules", get(list_crash_rules))
         .route("/v2/crashes/{thread_id}", get(get_crash))
@@ -203,7 +162,7 @@ fn router(app_context: AppContext) -> Router {
             "/v2/crashes/{thread_id}/review",
             post(review_crash).delete(unreview_crash),
         )
-        // Discord proxy. Lets the same key read threads, messages and
+        // Discord proxy. Lets the crash key read threads, messages and
         // attachments without ever handling a bot token.
         .route("/v2/discord/threads", get(list_discord_threads))
         .route(
@@ -222,15 +181,379 @@ fn router(app_context: AppContext) -> Router {
         .route("/v2/symbolicate/dsym/{uuid}", get(get_dsym_by_uuid))
         .route("/v2/symbolicate/result", post(submit_symbolication_result))
         .route("/v2/symbolicate/requeue", post(requeue_symbolications))
+        // Streams to disk, so the global 70 MB body limit must not apply here.
+        .route(
+            "/v2/upload-roam-dsym",
+            post(upload_roam_dsym).layer(DefaultBodyLimit::disable()),
+        )
+        .route("/user-info/{user_id}", get(get_user_info))
+        .route("/thread-info/{thread_id}", get(get_thread_info))
+        .layer(axum::middleware::from_fn_with_state(
+            app_context.clone(),
+            crate::auth::crash_auth,
+        ));
+
+    let app = Router::new()
+        .route("/messages/{user_id}", get(get_user_messages))
+        .route("/updates/{user_id}", get(get_user_state))
+        .route("/new-message", post(new_message_old))
+        .route("/v2/new-message", post(new_message))
+        .route("/v2/upload-diagnostics", post(upload_metric_diagnostics))
         .route("/new-apns", post(new_apns))
         .route(
             "/upload-diagnostics/{diagnostic_key}",
             post(upload_diagnostics),
         )
-        .route("/user-info/{user_id}", get(get_user_info))
         .route("/typing/{user_id}", post(update_user_typing))
-        .route("/thread-info/{thread_id}", get(get_thread_info))
-        .with_state(app_context)
+        .layer(axum::middleware::from_fn_with_state(
+            app_context.clone(),
+            crate::auth::app_auth,
+        ));
+
+    public.merge(crash).merge(app).with_state(app_context)
+}
+
+// ---------------------------------------------------------------------------
+// App Attest handshake
+// ---------------------------------------------------------------------------
+
+/// How long a challenge stays spendable.
+const CHALLENGE_TTL: Duration = Duration::from_secs(5 * 60);
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ChallengeResponse {
+    challenge: String,
+    expires_at_ms: i64,
+}
+
+/// Hands out a single-use challenge.
+///
+/// Unauthenticated by necessity: a client that has never attested holds no
+/// credential to present here, so the only control available is the rate limit.
+async fn attest_challenge(
+    State(app_context): State<AppContext>,
+    headers: axum::http::HeaderMap,
+) -> Result<Json<ChallengeResponse>, ApiError> {
+    let now = crate::auth::now_ms();
+    let ip = crate::auth::client_ip(&headers);
+    if !app_context.rate_limiter().check(
+        &format!("challenge:{ip}"),
+        60,
+        Duration::from_secs(3600),
+        now,
+    ) {
+        return Err(ApiError::RateLimited("Too many challenges".to_string()));
+    }
+
+    let challenge = crate::auth::random_token();
+    let expires_at_ms = now + CHALLENGE_TTL.as_millis() as i64;
+    app_context
+        .db_client()
+        .issue_challenge(&challenge, now, expires_at_ms)
+        .await
+        .map_err(ApiError::DatabaseError)?;
+
+    Ok(Json(ChallengeResponse {
+        challenge,
+        expires_at_ms,
+    }))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RegisterRequest {
+    /// The key identifier `DCAppAttestService.generateKey` returned, base64 as
+    /// the framework hands it over.
+    key_id: String,
+    /// Base64 of the CBOR attestation object.
+    attestation: String,
+    challenge: String,
+    /// Install id this device wants to own. Honoured only the first time a key
+    /// registers; the response carries whatever the key is actually bound to.
+    user_id: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SessionResponse {
+    token: String,
+    session_id: String,
+    /// The install id the caller is bound to, which after a reinstall is the
+    /// one already on file rather than the one the client just generated.
+    user_id: String,
+    expires_at_ms: i64,
+    attested: bool,
+}
+
+async fn attest_register(
+    State(app_context): State<AppContext>,
+    headers: axum::http::HeaderMap,
+    Json(request): Json<RegisterRequest>,
+) -> Result<Json<SessionResponse>, ApiError> {
+    let now = crate::auth::now_ms();
+    let ip = crate::auth::client_ip(&headers);
+    if !app_context.rate_limiter().check(
+        &format!("register:{ip}"),
+        20,
+        Duration::from_secs(3600),
+        now,
+    ) {
+        return Err(ApiError::RateLimited("Too many registrations".to_string()));
+    }
+
+    if !app_context
+        .db_client()
+        .consume_challenge(&request.challenge, now)
+        .await
+        .map_err(ApiError::DatabaseError)?
+    {
+        return Err(ApiError::Unauthorized(
+            "Challenge is unknown, spent, or expired".to_string(),
+        ));
+    }
+
+    let key_id = BASE64_STANDARD
+        .decode(&request.key_id)
+        .map_err(|_| ApiError::BadRequest("keyId is not valid base64".to_string()))?;
+    let attestation = BASE64_STANDARD
+        .decode(&request.attestation)
+        .map_err(|_| ApiError::BadRequest("attestation is not valid base64".to_string()))?;
+
+    let verified = crate::attest::verify_attestation(
+        &attestation,
+        &key_id,
+        &request.challenge,
+        app_context.attest_policy(),
+        chrono::Utc::now(),
+    )
+    .map_err(|err| {
+        tracing::warn!(?err, %ip, "Rejected App Attest registration");
+        ApiError::Unauthorized("Attestation is not valid".to_string())
+    })?;
+
+    let key = crate::database::AttestKey {
+        key_id: crate::auth::hex(&verified.key_id),
+        public_key: verified.public_key,
+        user_id: request.user_id.clone(),
+        bundle_id: verified.bundle_id.clone(),
+        environment: verified.environment.as_str().to_string(),
+        sign_count: 0,
+        replay_window: 0,
+        revoked_at_ms: None,
+    };
+    let bound_user_id = app_context
+        .db_client()
+        .register_attest_key(&key, &verified.receipt, now)
+        .await
+        .map_err(ApiError::DatabaseError)?;
+
+    if bound_user_id != request.user_id {
+        tracing::info!(
+            key_id = %key.key_id,
+            bound_user_id = %bound_user_id,
+            requested_user_id = %request.user_id,
+            "Attested key kept its original install id"
+        );
+    }
+
+    let (token, session) = crate::auth::mint_session(
+        &app_context,
+        &bound_user_id,
+        Some(key.key_id.clone()),
+        Some(verified.bundle_id),
+        true,
+    )
+    .await?;
+
+    tracing::info!(
+        key_id = %key.key_id,
+        user_id = %bound_user_id,
+        environment = %verified.environment.as_str(),
+        "Registered an attested key"
+    );
+
+    Ok(Json(SessionResponse {
+        token,
+        session_id: session.session_id,
+        user_id: bound_user_id,
+        expires_at_ms: session.expires_at_ms,
+        attested: true,
+    }))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RefreshRequest {
+    key_id: String,
+    /// Base64 of the CBOR assertion.
+    assertion: String,
+    /// Base64 of the exact client data bytes the assertion signed. On this
+    /// route its `s` field carries the challenge rather than a session id,
+    /// because the caller has no session yet.
+    client_data: String,
+}
+
+/// Exchanges an assertion for a fresh session.
+///
+/// This is the only place a session comes from after the one-time registration,
+/// so a client that loses its token proves possession of the Secure Enclave key
+/// again rather than falling back to anything weaker.
+async fn attest_session(
+    State(app_context): State<AppContext>,
+    Json(request): Json<RefreshRequest>,
+) -> Result<Json<SessionResponse>, ApiError> {
+    let now = crate::auth::now_ms();
+
+    let assertion = BASE64_STANDARD
+        .decode(&request.assertion)
+        .map_err(|_| ApiError::BadRequest("assertion is not valid base64".to_string()))?;
+    let client_data = BASE64_STANDARD
+        .decode(&request.client_data)
+        .map_err(|_| ApiError::BadRequest("clientData is not valid base64".to_string()))?;
+
+    let key_id = crate::auth::hex(
+        &BASE64_STANDARD
+            .decode(&request.key_id)
+            .map_err(|_| ApiError::BadRequest("keyId is not valid base64".to_string()))?,
+    );
+
+    let key = app_context
+        .db_client()
+        .get_attest_key(&key_id)
+        .await
+        .map_err(ApiError::DatabaseError)?
+        .ok_or_else(|| ApiError::Unauthorized("Attested key is unknown".to_string()))?;
+    if key.revoked_at_ms.is_some() {
+        return Err(ApiError::Unauthorized(
+            "Attested key was revoked".to_string(),
+        ));
+    }
+
+    let verified = crate::attest::verify_assertion(
+        &assertion,
+        &key.public_key,
+        &client_data,
+        app_context.attest_policy(),
+        &key.bundle_id,
+    )
+    .map_err(|err| {
+        tracing::warn!(%key_id, ?err, "Rejected session refresh assertion");
+        ApiError::Unauthorized("Assertion is not valid".to_string())
+    })?;
+
+    let parsed: crate::auth::AssertionClientData = serde_json::from_slice(&client_data)
+        .map_err(|_| ApiError::BadRequest("clientData is not the expected shape".to_string()))?;
+    if parsed.p != "/v3/attest/session" || parsed.m != "POST" {
+        return Err(ApiError::Unauthorized(
+            "Assertion does not cover this request".to_string(),
+        ));
+    }
+    if !app_context
+        .db_client()
+        .consume_challenge(&parsed.s, now)
+        .await
+        .map_err(ApiError::DatabaseError)?
+    {
+        return Err(ApiError::Unauthorized(
+            "Challenge is unknown, spent, or expired".to_string(),
+        ));
+    }
+
+    crate::auth::commit_counter(
+        &app_context,
+        &key_id,
+        key.sign_count,
+        key.replay_window,
+        verified.counter,
+        now,
+    )
+    .await?;
+
+    let (token, session) = crate::auth::mint_session(
+        &app_context,
+        &key.user_id,
+        Some(key_id),
+        Some(key.bundle_id),
+        true,
+    )
+    .await?;
+
+    Ok(Json(SessionResponse {
+        token,
+        session_id: session.session_id,
+        user_id: key.user_id,
+        expires_at_ms: session.expires_at_ms,
+        attested: true,
+    }))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UnattestedRequest {
+    user_id: String,
+    challenge: String,
+    /// What the client reported about why it cannot attest, recorded so the
+    /// size of this population can be watched rather than guessed at.
+    #[serde(default)]
+    reason: Option<String>,
+}
+
+/// Issues a session to a device where App Attest is unavailable.
+///
+/// This is not a rare fallback. App Attest reached macOS only in macOS 27 and
+/// Roam deploys to macOS 15, so every Mac below 27 arrives here, as does the
+/// Simulator and the 2019 Intel iMac. The session is capped at
+/// `UNATTESTED_HOURLY_LIMIT` writes an hour: usable for a support
+/// conversation, worthless for automation. Each one records the platform that
+/// asked, because a client claiming to be unattestable on a platform where
+/// App Attest works is a tampering signal rather than an old Mac.
+async fn attest_unattested_session(
+    State(app_context): State<AppContext>,
+    headers: axum::http::HeaderMap,
+    Json(request): Json<UnattestedRequest>,
+) -> Result<Json<SessionResponse>, ApiError> {
+    let now = crate::auth::now_ms();
+    let ip = crate::auth::client_ip(&headers);
+    if !app_context.rate_limiter().check(
+        &format!("unattested-session:{ip}"),
+        3,
+        Duration::from_secs(3600),
+        now,
+    ) {
+        return Err(ApiError::RateLimited(
+            "Too many unattested sessions".to_string(),
+        ));
+    }
+
+    if !app_context
+        .db_client()
+        .consume_challenge(&request.challenge, now)
+        .await
+        .map_err(ApiError::DatabaseError)?
+    {
+        return Err(ApiError::Unauthorized(
+            "Challenge is unknown, spent, or expired".to_string(),
+        ));
+    }
+
+    tracing::warn!(
+        user_id = %request.user_id,
+        %ip,
+        reason = request.reason.as_deref().unwrap_or("--"),
+        "Issued an unattested session"
+    );
+
+    let (token, session) =
+        crate::auth::mint_session(&app_context, &request.user_id, None, None, false).await?;
+
+    Ok(Json(SessionResponse {
+        token,
+        session_id: session.session_id,
+        user_id: request.user_id,
+        expires_at_ms: session.expires_at_ms,
+        attested: false,
+    }))
 }
 
 #[derive(serde::Deserialize)]
@@ -320,8 +643,10 @@ impl DiscordMessageDownload {
 async fn get_user_state(
     Path(device_id): Path<String>,
     Query(query): Query<AfterQuery>,
+    Extension(caller): Extension<Caller>,
     State(app_context): State<AppContext>,
 ) -> Result<Json<UserState>, ApiError> {
+    caller.authorize_user(&device_id)?;
     let user = app_context
         .get_or_create_user(&device_id, &UserUpdate::default())
         .await?;
@@ -352,8 +677,10 @@ async fn get_user_state(
 async fn get_user_messages(
     Path(device_id): Path<String>,
     Query(query): Query<AfterQuery>,
+    Extension(caller): Extension<Caller>,
     State(app_context): State<AppContext>,
 ) -> Result<Json<Vec<DiscordMessage>>, ApiError> {
+    caller.authorize_user(&device_id)?;
     let user = app_context
         .get_or_create_user(&device_id, &UserUpdate::default())
         .await?;
@@ -380,6 +707,7 @@ struct ApnsRequest {
 
 async fn new_apns(
     State(app_context): State<AppContext>,
+    Extension(caller): Extension<Caller>,
     Json(req): Json<ApnsRequest>,
 ) -> Result<String, ApiError> {
     let ApnsRequest {
@@ -387,6 +715,7 @@ async fn new_apns(
         user_id: device_id,
         installation_info,
     } = req;
+    caller.authorize_user(&device_id)?;
 
     let user = app_context
         .get_or_create_user(
@@ -438,6 +767,7 @@ struct DiagnosticRequest {
 
 async fn upload_metric_diagnostics(
     State(app_context): State<AppContext>,
+    Extension(caller): Extension<Caller>,
     Json(diagnostic_request): Json<DiagnosticRequest>,
 ) -> Result<(), ApiError> {
     let DiagnosticRequest {
@@ -446,6 +776,7 @@ async fn upload_metric_diagnostics(
         diagnostics,
         metrics_payloads,
     } = diagnostic_request;
+    caller.authorize_user(&device_id)?;
 
     let user = app_context
         .get_or_create_user(
@@ -1485,6 +1816,7 @@ async fn submit_symbolication_result(
 
 async fn new_message(
     State(app_context): State<AppContext>,
+    Extension(caller): Extension<Caller>,
     Json(message_request): Json<MessageRequestV2>,
 ) -> Result<Json<DiscordMessageDownload>, ApiError> {
     let MessageRequestV2 {
@@ -1494,6 +1826,7 @@ async fn new_message(
         attachment,
         nonce,
     } = message_request;
+    caller.authorize_user(&device_id)?;
     let attachment_summary = attachment
         .as_ref()
         .map(|attachment| {
@@ -1580,6 +1913,7 @@ async fn new_message(
 
 async fn new_message_old(
     State(app_context): State<AppContext>,
+    Extension(caller): Extension<Caller>,
     Json(message_request): Json<MessageRequest>,
 ) -> Result<(), ApiError> {
     let MessageRequest {
@@ -1590,6 +1924,7 @@ async fn new_message_old(
         attachments,
         nonce,
     } = message_request;
+    caller.authorize_user(&device_id)?;
     let options = DiscordMessageOptions {
         nonce,
         ..Default::default()
@@ -1637,11 +1972,18 @@ async fn new_message_old(
 
 async fn upload_diagnostics(
     Path(diagnostic_key): Path<String>,
+    Extension(caller): Extension<Caller>,
     State(app_context): State<AppContext>,
     body: Body,
 ) -> Result<String, ApiError> {
     // Previous versions of debug logs had a diagnostic key in the form of "xxx-xxx-xxx-date"
+    if diagnostic_key.len() < 11 {
+        return Err(ApiError::BadRequest(
+            "Diagnostic key is too short to carry a user id".to_string(),
+        ));
+    }
     let device_id = diagnostic_key[..11].to_string();
+    caller.authorize_user(&device_id)?;
     let user = app_context
         .get_or_create_user(
             &device_id,
@@ -1706,8 +2048,10 @@ async fn get_user_info(
 
 async fn update_user_typing(
     Path(user_id): Path<String>,
+    Extension(caller): Extension<Caller>,
     State(app_context): State<AppContext>,
 ) -> Result<(), ApiError> {
+    caller.authorize_user(&user_id)?;
     let Some(user) = app_context
         .db_client()
         .get_user_with_id(&user_id)
@@ -1778,6 +2122,8 @@ mod error {
         DatabaseError(#[serde(serialize_with = "serialize_anyhow")] anyhow::Error),
         #[error("Not found: {0}")]
         NotFound(String),
+        #[error("Rate limited: {0}")]
+        RateLimited(String),
     }
 
     impl IntoResponse for ApiError {
@@ -1792,7 +2138,7 @@ mod error {
             };
             match &self {
                 // User errors don't get logged
-                Self::Unauthorized { .. } => {}
+                Self::Unauthorized { .. } | Self::RateLimited { .. } => {}
                 _ => {
                     tracing::error!(error = ?self, "Request error");
                 }
@@ -1814,7 +2160,220 @@ mod error {
                 Self::SymbolicationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 Self::DiscordError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 Self::BadRequest(_) => StatusCode::BAD_REQUEST,
+                Self::RateLimited(_) => StatusCode::TOO_MANY_REQUESTS,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::to_bytes;
+    use tower::ServiceExt;
+
+    /// A throwaway P-256 key in the shape `ApnsClient` parses. Nothing signs
+    /// with it; it exists so `AppContext::new` can be built in a test.
+    const TEST_APNS_KEY: &str = "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JR0hBZ0VBTUJNR0J5cUdTTTQ5QWdFR0NDcUdTTTQ5QXdFSEJHMHdhd0lCQVFRZzY0QVRVemJIcmdLMSt5RmEKYVUvUEl0Z3FHTytLY2IzRUg4Si9uVE4zeWhXaFJBTkNBQVFSR0VjcUpWS3BnTUViMGFjS3liRm1lLzk5TU02ZwpudUtoMTBRVHp5UHFqelpibjVKTStmWEpTR2F5ZWp2MFQzaVB3dkwzL3MvYlJ5QnZDbC82K2xiUwotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg";
+
+    const CRASH_KEY: &str = "crash-key-for-tests";
+    const LEGACY_KEY: &str = "legacy-app-key-for-tests";
+
+    async fn test_app() -> (Router, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cli = crate::cli::RoamCli::parse_from([
+            "roam-backend",
+            "--backend-url",
+            "http://localhost:8080",
+            "--crash-api-key",
+            CRASH_KEY,
+            "--legacy-app-api-key",
+            LEGACY_KEY,
+            "--data-dir",
+            dir.path().to_str().unwrap(),
+            "--apns-key-id",
+            "TESTKEYID1",
+            "--apns-team-id",
+            "TESTTEAMID",
+            "--apns-bundle-id",
+            "com.msdrigg.roam",
+            "--apns-private-key",
+            TEST_APNS_KEY,
+            "--apns-disabled",
+        ]);
+        let app_context = AppContext::new(cli).await.expect("app context");
+        (build_app(app_context), dir)
+    }
+
+    /// Sends one request and reports the status. Auth runs ahead of every
+    /// handler, so a rejection is observable without any of the Discord or
+    /// APNS machinery a 200 would need.
+    async fn status(app: &Router, method: &str, path: &str, key: Option<(&str, &str)>) -> u16 {
+        let mut builder = Request::builder().method(method).uri(path);
+        if let Some((header, value)) = key {
+            builder = builder.header(header, value);
+        }
+        let request = builder
+            .header("content-type", "application/json")
+            .body(Body::from("{}"))
+            .expect("request");
+        app.clone()
+            .oneshot(request)
+            .await
+            .expect("response")
+            .status()
+            .as_u16()
+    }
+
+    #[tokio::test]
+    async fn health_needs_no_credential() {
+        let (app, _dir) = test_app().await;
+        assert_eq!(status(&app, "GET", "/health", None).await, 200);
+    }
+
+    #[tokio::test]
+    async fn the_crash_zone_takes_only_the_crash_key() {
+        let (app, _dir) = test_app().await;
+        for path in [
+            "/v2/crashes",
+            "/v2/discord/threads",
+            "/v2/symbolicate/lease",
+            "/user-info/aaa-bbb-ccc",
+        ] {
+            assert_eq!(
+                status(&app, "GET", path, None).await,
+                401,
+                "{path} unguarded"
+            );
+            assert_eq!(
+                status(&app, "GET", path, Some(("x-api-key", LEGACY_KEY))).await,
+                401,
+                "{path} accepted the key older app builds ship"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn the_crash_key_does_not_open_the_app_zone() {
+        let (app, _dir) = test_app().await;
+        assert_eq!(
+            status(
+                &app,
+                "GET",
+                "/updates/aaa-bbb-ccc",
+                Some(("x-api-key", CRASH_KEY))
+            )
+            .await,
+            401
+        );
+    }
+
+    #[tokio::test]
+    async fn the_app_zone_refuses_an_unauthenticated_caller() {
+        let (app, _dir) = test_app().await;
+        for (method, path) in [
+            ("GET", "/updates/aaa-bbb-ccc"),
+            ("GET", "/messages/aaa-bbb-ccc"),
+            ("POST", "/v2/new-message"),
+            ("POST", "/new-apns"),
+            ("POST", "/typing/aaa-bbb-ccc"),
+        ] {
+            assert_eq!(status(&app, method, path, None).await, 401, "{path}");
+        }
+    }
+
+    #[tokio::test]
+    async fn a_bogus_bearer_token_is_refused() {
+        let (app, _dir) = test_app().await;
+        assert_eq!(
+            status(
+                &app,
+                "GET",
+                "/updates/aaa-bbb-ccc",
+                Some(("authorization", "Bearer not-a-real-session")),
+            )
+            .await,
+            401
+        );
+    }
+
+    #[tokio::test]
+    async fn a_challenge_is_issued_without_a_credential_and_spends_once() {
+        let (app, dir) = test_app().await;
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v3/attest/challenge")
+                    .header("content-type", "application/json")
+                    .body(Body::from("{}"))
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(response.status(), 200);
+
+        let body = to_bytes(response.into_body(), 64 * 1024)
+            .await
+            .expect("body");
+        let issued: serde_json::Value = serde_json::from_slice(&body).expect("json");
+        let challenge = issued["challenge"].as_str().expect("challenge");
+        assert_eq!(challenge.len(), 64);
+
+        // Registration is what spends it, and this attestation is nonsense, so
+        // the call fails. The challenge is gone either way.
+        let register = |body: String| {
+            let app = app.clone();
+            async move {
+                app.oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri("/v3/attest/register")
+                        .header("content-type", "application/json")
+                        .body(Body::from(body))
+                        .expect("request"),
+                )
+                .await
+                .expect("response")
+                .status()
+                .as_u16()
+            }
+        };
+        let payload = serde_json::json!({
+            "keyId": BASE64_STANDARD.encode([0u8; 32]),
+            "attestation": BASE64_STANDARD.encode(b"not an attestation"),
+            "challenge": challenge,
+            "userId": "aaa-bbb-ccc",
+        })
+        .to_string();
+        assert_eq!(register(payload.clone()).await, 401);
+        assert_eq!(
+            register(payload).await,
+            401,
+            "the challenge cannot be presented a second time"
+        );
+        drop(dir);
+    }
+
+    #[tokio::test]
+    async fn a_legacy_caller_reaches_the_app_zone_but_not_the_crash_zone() {
+        let (app, _dir) = test_app().await;
+        // A legacy read gets past auth and into the handler, which then fails
+        // reaching Discord. Anything other than 401 proves the key was taken.
+        assert_ne!(
+            status(
+                &app,
+                "GET",
+                "/updates/aaa-bbb-ccc",
+                Some(("x-api-key", LEGACY_KEY))
+            )
+            .await,
+            401
+        );
+        assert_eq!(
+            status(&app, "GET", "/v2/crashes", Some(("x-api-key", LEGACY_KEY))).await,
+            401
+        );
     }
 }

@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                   key_id as \"key_id!: String\",\n                   public_key as \"public_key!: Vec<u8>\",\n                   user_id as \"user_id!: String\",\n                   bundle_id as \"bundle_id!: String\",\n                   environment as \"environment!: String\",\n                   sign_count as \"sign_count!\",\n                   replay_window as \"replay_window!\",\n                   revoked_at_ms\n               FROM attest_keys WHERE key_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "key_id!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "key_id"
+          }
+        }
+      },
+      {
+        "name": "public_key!: Vec<u8>",
+        "ordinal": 1,
+        "type_info": "Blob",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "public_key"
+          }
+        }
+      },
+      {
+        "name": "user_id!: String",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "name": "bundle_id!: String",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "bundle_id"
+          }
+        }
+      },
+      {
+        "name": "environment!: String",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "environment"
+          }
+        }
+      },
+      {
+        "name": "sign_count!",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "sign_count"
+          }
+        }
+      },
+      {
+        "name": "replay_window!",
+        "ordinal": 6,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "replay_window"
+          }
+        }
+      },
+      {
+        "name": "revoked_at_ms",
+        "ordinal": 7,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "revoked_at_ms"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "513b6eca8cfad886bdc294d4740cccfc7bf3ccc06c449b993456b40eb9f59e7d"
+}

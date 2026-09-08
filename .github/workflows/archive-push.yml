@@ -71,13 +71,6 @@ jobs:
                   printf '%s\n' "$XCODE_API_SECRET" > "$HOME/.private_keys/AuthKey_${XCODE_API_KEY}.p8"
                   chmod 600 "$HOME/.private_keys/AuthKey_${XCODE_API_KEY}.p8"
 
-            - name: Create Secrets.xcconfig
-              # Vars.xcconfig does `#include? "Secrets.xcconfig"`, which feeds
-              # $(BACKEND_API_KEY) into Roam/Info.plist and RoamWatch/Info.plist.
-              env:
-                  BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
-              run: printf 'BACKEND_API_KEY = %s\n' "$BACKEND_API_KEY" > Secrets.xcconfig
-
             - name: Install xcbeautify
               run: command -v xcbeautify >/dev/null || brew install xcbeautify
 

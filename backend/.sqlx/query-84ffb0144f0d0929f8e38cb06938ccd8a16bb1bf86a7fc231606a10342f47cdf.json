@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO attest_keys (\n                 key_id, public_key, user_id, bundle_id, environment, receipt,\n                 sign_count, replay_window, created_at_ms, last_seen_at_ms\n             )\n             VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)\n             ON CONFLICT (key_id) DO UPDATE SET last_seen_at_ms = excluded.last_seen_at_ms",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "84ffb0144f0d0929f8e38cb06938ccd8a16bb1bf86a7fc231606a10342f47cdf"
+}

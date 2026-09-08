@@ -4,8 +4,6 @@
 <dict>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Roam adds an image to your photo library only when you tap Save to photos on an attachment in your support conversation with the developer, for example saving a screenshot the developer sent you while helping troubleshoot your Roku setup.</string>
-	<key>BACKEND_API_KEY</key>
-	<string>$(BACKEND_API_KEY)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

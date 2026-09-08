@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT user_id as \"user_id!: String\" FROM attest_keys WHERE key_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "user_id!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "attest_keys",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5171cbf7d1490c5739f660672163ac8f89499e2c43a40cba3224dea8877921a1"
+}

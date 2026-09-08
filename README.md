@@ -33,13 +33,24 @@ A Roku remote that puts users first
 
 ## License
 
-&copy; 2025 Scott Driggers.
+&copy; 2023&ndash;2026 Scott Driggers. All rights reserved.
 
-This project is licensed under either of
+Roam is **source-available**, not open source. It is licensed under the
+[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)
+([`LICENSE.txt`](LICENSE.txt)):
 
--   [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0) ([`LICENSE-APACHE`](LICENSE-APACHE))
--   [MIT license](https://opensource.org/licenses/MIT) ([`LICENSE-MIT`](LICENSE-MIT))
+-   **Free for any noncommercial purpose.** You may use, modify, distribute, and
+    build on Roam for noncommercial use — personal projects, research, education,
+    and noncommercial organizations — provided you keep the `Required Notice:`
+    copyright line and a copy of the license with any copies you share.
+-   **Commercial use requires a separate license.** The PolyForm Noncommercial
+    license does not grant any commercial use. Publishing an app based on Roam,
+    redistributing it commercially, or any for-profit use requires a separate
+    commercial license (which may carry a fee or royalty). To obtain one, contact
+    **scott@msd3.io**.
 
-at your option.
+Third-party components bundled with Roam remain under their own licenses. The
+"Roam" name, logo, and icon are trademarks of Scott Driggers and are not
+licensed for reuse.
 
-The [SPDX](https://spdx.dev) license identifier for this project is `MIT OR Apache-2.0`.
+The SPDX license identifier for this project is `PolyForm-Noncommercial-1.0.0`.

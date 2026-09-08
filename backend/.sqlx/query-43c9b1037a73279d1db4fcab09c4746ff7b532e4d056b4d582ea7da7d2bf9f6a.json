@@ -1,0 +1,86 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT\n                   session_id as \"session_id!: String\",\n                   key_id,\n                   user_id as \"user_id!: String\",\n                   attested as \"attested!: bool\",\n                   bundle_id,\n                   expires_at_ms as \"expires_at_ms!\"\n               FROM app_sessions\n               WHERE token_hash = ? AND expires_at_ms > ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "session_id!: String",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "app_sessions",
+            "name": "session_id"
+          }
+        }
+      },
+      {
+        "name": "key_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "app_sessions",
+            "name": "key_id"
+          }
+        }
+      },
+      {
+        "name": "user_id!: String",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "app_sessions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "name": "attested!: bool",
+        "ordinal": 3,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "app_sessions",
+            "name": "attested"
+          }
+        }
+      },
+      {
+        "name": "bundle_id",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "app_sessions",
+            "name": "bundle_id"
+          }
+        }
+      },
+      {
+        "name": "expires_at_ms!",
+        "ordinal": 5,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "app_sessions",
+            "name": "expires_at_ms"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "43c9b1037a73279d1db4fcab09c4746ff7b532e4d056b4d582ea7da7d2bf9f6a"
+}

@@ -1,1 +1,8 @@
 #include? "Secrets.xcconfig"
+
+// App Attest environment the app claims in its entitlement. Development builds
+// attest against Apple's development environment and the production backend
+// refuses those, so a debug build talking to production is rejected rather than
+// quietly trusted.
+APP_ATTEST_ENVIRONMENT = production
+APP_ATTEST_ENVIRONMENT[config=Debug] = development

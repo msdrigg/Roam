@@ -43,7 +43,8 @@ DISCORD_BOT_ID=
 DISCORD_GUILD_ID=
 DISCORD_TOKEN=
 BACKEND_URL=
-BACKEND_API_KEY=
+CRASH_API_KEY=
+LEGACY_APP_API_KEY=
 APNS_KEY_ID=
 APNS_TEAM_ID=
 APNS_PRIVATE_KEY=
@@ -176,7 +177,7 @@ fly secrets set \
   DISCORD_GUILD_ID=... \
   DISCORD_TOKEN=... \
   BACKEND_URL=... \
-  BACKEND_API_KEY=... \
+  CRASH_API_KEY=... \
   APNS_KEY_ID=... \
   APNS_TEAM_ID=... \
   APNS_PRIVATE_KEY=... \
@@ -220,12 +221,106 @@ curl https://backend.roam.msd3.io/health
 
 Human support can send :translate: text, /translate text, or <@bot> :translate: text; reply-style :translate: also uses the referenced message text.
 
+## Authentication
+
+The API is split into three zones, and which credential a route wants depends
+only on which zone it is in.
+
+**Public.** `/health`, `/`, and the `/v3/attest/*` handshake. A client that has
+never attested holds nothing to present, so these are rate limited by IP
+instead of authenticated.
+
+**Crash tooling**, guarded by `CRASH_API_KEY`. The symbolication worker,
+`scripts/roam_crashes.py`, dSYM upload from CI, the Discord proxy, and
+`/user-info` and `/thread-info`. No app build has ever carried this key and
+none should: it can read and post to the support Discord.
+
+**App routes**, guarded by an App Attest session. Everything the app calls.
+A client registers a Secure Enclave key once (`POST /v3/attest/register`),
+then exchanges an assertion for a session (`POST /v3/attest/session`) on each
+launch. The session token is a bearer credential the app holds only in memory.
+
+Inside that zone, routes are classified by what they cost, not by HTTP method.
+Only the four that create something durable (`/v2/new-message`, `/new-message`,
+`/v2/upload-diagnostics`, `/new-apns`, plus the legacy
+`/upload-diagnostics/{key}`) require `X-Roam-Assertion` and
+`X-Roam-Client-Data`, and only those are metered. So a token lifted out of the
+app's memory can read that install's own messages and nothing more.
+
+Method-based classification looks equivalent and is not. `/typing` is a POST
+the app sends every five seconds while someone is composing (720/hour), and
+polling repeats every ten to sixty seconds (up to 360/hour). Metering either
+breaks an ordinary conversation, and signing `/typing` puts a Secure Enclave
+operation on a five-second timer, which is the assertion volume Apple's
+guidance warns about. `auth.rs::requires_proof` and `requiresProof` in
+`Shared/Backend/AppAttestation.swift` are the two halves of this list and have
+to agree. `attest_keys.sign_count` plus
+`replay_window` implement a 64-wide anti-replay window over assertion
+counters, which rejects a captured assertion on its second use while still
+accepting two that raced.
+
+Apple's guidance is to require a strictly increasing counter. A strict
+high-water mark also rejects the older of any two assertions that arrive out of
+order, which HTTP does whenever the app has two writes in flight, so the window
+trades that for a bounded reordering tolerance. Every counter is still spendable
+exactly once, which is the property the anti-replay rule is there to provide.
+
+An attested key is bound to the install id it first registered and never moves
+to another, so a session can only address its own conversation. When a
+reinstall clears `UserDefaults`, the backend hands the original id back and the
+client adopts it, which is why the support thread survives a reinstall.
+
+`LEGACY_APP_API_KEY` is the key older releases still send. It is accepted on
+app routes only and carries no install binding. Only durable writes are
+metered, at `LEGACY_HOURLY_LIMIT` per address per hour; polling and typing are
+never metered, because throttling those would break the installs this key
+exists to keep working. The budget is keyed by address because a release that
+predates attestation cannot prove which install it is, which is also why it has
+to be loose enough to tolerate several subscribers behind one carrier NAT
+address. Unset it to refuse those releases outright.
+
+The budget applies to message posting only, never to diagnostics upload. A
+rejected send stays queued in the app and goes out on the next attempt, so a 429
+there costs a delay; `MetricManager` in every shipped build deletes its cached
+payload whatever the response says, so a 429 on diagnostics would destroy the
+crash report instead. `auth.rs::is_metered` is deliberately narrower than
+`requires_proof` for that reason. (The client bug is fixed going forward, but
+the builds already in the field cannot be.)
+
+The three write budgets are `ATTESTED_HOURLY_LIMIT` (60), `LEGACY_HOURLY_LIMIT`
+(120 per address) and `UNATTESTED_HOURLY_LIMIT` (60). Attested and unattested
+sit at the same number on purpose: with App Attest unavailable below macOS 27,
+an unattested caller is an ordinary Mac user far more often than a suspect, and
+the detection signal is the logged platform rather than a tighter cap.
+
+`APP_ATTEST_ALLOW_DEVELOPMENT` must stay off in production. Builds signed with
+a development profile attest against Apple's development environment, and
+accepting those means the attestation proves nothing about the app that sent
+it.
+
+Devices where App Attest is unavailable can take `POST /v3/attest/unattested`,
+which returns a session capped at `UNATTESTED_HOURLY_LIMIT` writes an hour.
+
+This is not a rare fallback. App Attest reached macOS only in **macOS 27**
+(WWDC 2026 session 201), and the Roam target deploys to macOS 15, so every Mac
+below 27 authenticates here, as does the Simulator and the 2019 Intel iMac. The
+limit is set to leave a support conversation usable while staying far below
+anything worth automating, because claiming to be unattestable costs an
+attacker nothing.
+
+Each unattested session is logged at `warn` with the platform and OS version
+the client reported. That field is the signal worth watching: a Mac on 15.7 is
+expected, while an iPhone on 18.6 claiming it cannot attest is a tampering
+indicator, which is how Apple recommends treating `isSupported`. Expect this
+path to drain as macOS 27 rolls out.
+
 ## Crash review API
 
-Every endpoint below sits behind the existing `x-api-key` header, so a triage
-client needs `BACKEND_URL` and `BACKEND_API_KEY` and no Discord credentials of
-its own - the backend proxies Discord with its bot token. The
-`roam-crash-triage` skill in `.claude/skills/` drives all of this.
+Every endpoint below sits behind `x-api-key: $CRASH_API_KEY`, so a triage
+client needs `BACKEND_URL` and `CRASH_API_KEY` and no Discord credentials of
+its own - the backend proxies Discord with its bot token. No app build carries
+this key; see [Authentication](#authentication). The `roam-crash-triage` skill
+in `.claude/skills/` drives all of this.
 
 When a symbolication completes, the backend records the crash against its
 thread and matches the report against the auto-review rules in

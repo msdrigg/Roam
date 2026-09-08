@@ -4,7 +4,5 @@
 <dict>
 	<key>CURRENT_PROJECT_VERSION</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>BACKEND_API_KEY</key>
-	<string>$(BACKEND_API_KEY)</string>
 </dict>
 </plist>

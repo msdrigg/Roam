@@ -33,77 +33,39 @@ import urllib.request
 # The two Unauthenticated keys likely belong to a different issuer than the one above.
 
 
-# Where BACKEND_API_KEY may live, in priority order. Secrets.xcconfig is the
-# only one Xcode reads; the rest are sources we can populate it from so that a
-# local archive stops depending on a gitignored file being present by luck.
-BACKEND_API_KEY_SOURCES = ("Secrets.xcconfig", ".env", "backend/.env")
+def verify_archived_attest_entitlement(platform: str, archive_path: str):
+    """Prove the App Attest entitlement made it into the artifact that was built.
 
-
-def ensure_backend_api_key():
-    """Guarantee Secrets.xcconfig exists with a real key before archiving.
-
-    Vars.xcconfig pulls it in with `#include?`, so a missing file is silent:
-    `$(BACKEND_API_KEY)` in Roam/Info.plist expands to the empty string, the
-    build succeeds, and the shipped app sends `x-api-key: ` on every backend
-    call -- which the server answers with 401. That is how 1.49 and 1.50 went
-    out with a dead developer chat.
-
-    CI writes Secrets.xcconfig from a repo secret. Locally the same value is
-    already sitting in backend/.env, so copy it across rather than making the
-    developer remember to hand-create a file they cannot commit.
-    """
-    if load_dotenv("Secrets.xcconfig").get("BACKEND_API_KEY"):
-        return
-
-    for source in BACKEND_API_KEY_SOURCES:
-        key = os.environ.get("BACKEND_API_KEY") or load_dotenv(source).get(
-            "BACKEND_API_KEY"
-        )
-        if key:
-            with open("Secrets.xcconfig", "w") as file:
-                file.write(f"BACKEND_API_KEY = {key}\n")
-            print(f"Wrote Secrets.xcconfig from {source}")
-            return
-
-    raise SystemExit(
-        "BACKEND_API_KEY is missing or empty.\n"
-        "Vars.xcconfig includes Secrets.xcconfig optionally, so without it the "
-        "app ships with an empty key and every backend request 401s.\n"
-        "Set $BACKEND_API_KEY, or add it to one of: "
-        + ", ".join(BACKEND_API_KEY_SOURCES)
-    )
-
-
-def verify_archived_api_key(platform: str, archive_path: str):
-    """Read the key back out of the artifact that was actually built.
-
-    The pre-flight check proves the file exists; this proves the value made it
-    through Vars.xcconfig into the app's Info.plist. It catches the failure
-    modes a file check cannot: a renamed variable, a target whose build
-    configuration lost its baseConfigurationReference, a stale build dir.
+    Nothing secret ships in the bundle any more, but the app still cannot reach
+    the backend without this entitlement: `DCAppAttestService` refuses to
+    generate a key, every request falls through to the unattested path, and the
+    build goes out with a developer chat that answers 401. Vars.xcconfig sets
+    `APP_ATTEST_ENVIRONMENT` and the entitlements files interpolate it, so the
+    failure modes are the same ones the old key check caught: a renamed
+    variable, a target that lost its baseConfigurationReference, a stale build
+    directory.
     """
     import glob
 
-    candidates = glob.glob(f"{archive_path}/Products/Applications/*.app/Info.plist")
-    candidates += glob.glob(
-        f"{archive_path}/Products/Applications/*.app/Contents/Info.plist"
-    )
+    candidates = glob.glob(f"{archive_path}/Products/Applications/*.app")
     if not candidates:
-        raise SystemExit(f"No app Info.plist found in {archive_path}")
+        raise SystemExit(f"No app bundle found in {archive_path}")
 
-    for plist in candidates:
-        value = subprocess.run(
-            ["/usr/libexec/PlistBuddy", "-c", "Print :BACKEND_API_KEY", plist],
+    for app in candidates:
+        entitlements = subprocess.run(
+            ["codesign", "-d", "--entitlements", ":-", app],
             capture_output=True,
             text=True,
-        ).stdout.strip()
-        if not value:
+        ).stdout
+        if "com.apple.developer.devicecheck.appattest-environment" not in entitlements:
             raise SystemExit(
-                f"{platform}: BACKEND_API_KEY is empty in {plist}.\n"
-                "The archive would ship with a dead backend connection "
-                "(developer chat, diagnostics upload). Refusing to continue."
+                f"{platform}: {app} carries no App Attest entitlement.\n"
+                "The archive would ship unable to authenticate against the "
+                "backend (developer chat, diagnostics upload). Refusing to "
+                "continue."
             )
-    print(f"BACKEND_API_KEY present in the {platform} archive")
+        expected = "development" if "development" in entitlements else "production"
+        print(f"App Attest entitlement present in {app} ({expected})")
 
 
 def archive_application(platform: str, render_github_actions: bool = False):
@@ -118,7 +80,7 @@ def archive_application(platform: str, render_github_actions: bool = False):
         shell=True,
         check=True,
     )
-    verify_archived_api_key(platform, archive_path)
+    verify_archived_attest_entitlement(platform, archive_path)
     print(f"Archive succeeded for platform {platform}")
 
 
@@ -297,7 +259,7 @@ def with_retries(operation, what: str):
 def upload_dsyms(
     platform: str,
     backend_url: str,
-    backend_api_key: str,
+    crash_api_key: str,
     bundle_identifier: str,
 ):
     archive_path = f"./Archives/XCArchives/{platform}.xcarchive"
@@ -359,7 +321,7 @@ def upload_dsyms(
                     headers={
                         "Content-Type": f"multipart/form-data; boundary={boundary}",
                         "Content-Length": str(content_length),
-                        "x-api-key": backend_api_key,
+                        "x-api-key": crash_api_key,
                     },
                     method="POST",
                 )
@@ -385,7 +347,7 @@ def upload_dsyms(
 def try_upload_dsyms(
     platform: str,
     backend_url: str,
-    backend_api_key: str,
+    crash_api_key: str,
     bundle_identifier: str,
     render_github_actions: bool = False,
 ) -> bool:
@@ -403,7 +365,7 @@ def try_upload_dsyms(
     match no auto-review rule and land in the manual queue with nothing to read.
     """
     try:
-        upload_dsyms(platform, backend_url, backend_api_key, bundle_identifier)
+        upload_dsyms(platform, backend_url, crash_api_key, bundle_identifier)
         return True
     except Exception as error:
         # ::error:: surfaces in the Actions summary instead of scrolling past in
@@ -563,8 +525,9 @@ if __name__ == "__main__":
         help="Backend base URL. Falls back to BACKEND_URL in the environment or .env",
     )
     parser.add_argument(
-        "--backend-api-key",
-        help="Backend API key. Falls back to BACKEND_API_KEY in the environment or .env",
+        "--crash-api-key",
+        help="Crash and symbolication API key. Falls back to CRASH_API_KEY in "
+        "the environment or .env",
     )
     parser.add_argument(
         "--bundle-identifier",
@@ -595,12 +558,11 @@ if __name__ == "__main__":
         bump_versions()
 
     if args.archive:
-        ensure_backend_api_key()
         for platform in args.platform or []:
             archive_application(platform, render_github_actions=args.github_actions)
 
     backend_url = None
-    backend_api_key = None
+    crash_api_key = None
     dsym_failures: list[str] = []
     if args.upload_dsyms:
         dotenv_values = load_dotenv(args.env_file)
@@ -608,8 +570,8 @@ if __name__ == "__main__":
             backend_url = resolve_required_config(
                 "BACKEND_URL", args.backend_url, dotenv_values
             )
-            backend_api_key = resolve_required_config(
-                "BACKEND_API_KEY", args.backend_api_key, dotenv_values
+            crash_api_key = resolve_required_config(
+                "CRASH_API_KEY", args.crash_api_key, dotenv_values
             )
         except ValueError as error:
             parser.error(str(error))
@@ -618,7 +580,7 @@ if __name__ == "__main__":
         # A bare --publish uploads an archive built by an earlier invocation,
         # which may predate the pre-flight check, so re-verify the artifact.
         for platform in args.platform or []:
-            verify_archived_api_key(
+            verify_archived_attest_entitlement(
                 platform, f"./Archives/XCArchives/{platform}.xcarchive"
             )
         for platform in args.platform or []:
@@ -626,7 +588,7 @@ if __name__ == "__main__":
             if args.upload_dsyms and not try_upload_dsyms(
                 platform,
                 backend_url,
-                backend_api_key,
+                crash_api_key,
                 args.bundle_identifier,
                 render_github_actions=args.github_actions,
             ):
@@ -636,7 +598,7 @@ if __name__ == "__main__":
             if not try_upload_dsyms(
                 platform,
                 backend_url,
-                backend_api_key,
+                crash_api_key,
                 args.bundle_identifier,
                 render_github_actions=args.github_actions,
             ):

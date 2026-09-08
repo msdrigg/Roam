@@ -15,6 +15,8 @@ use crate::symbolicate::{DsymUploadMetadata, StoredDsymArchive, SymbolicationCli
 
 pub mod ai_responder;
 pub mod apns;
+pub mod attest;
+pub mod auth;
 pub mod cli;
 pub mod crash_rules;
 pub mod database;
@@ -41,7 +43,14 @@ pub struct AppContext {
     discord_bot_id: i64,
     backend_url: String,
     apns_disabled: bool,
-    backend_api_key: String,
+    crash_api_key: String,
+    legacy_app_api_key: Option<String>,
+    attest_policy: Arc<attest::AttestPolicy>,
+    app_session_ttl: Duration,
+    attested_hourly_limit: u32,
+    legacy_hourly_limit: u32,
+    unattested_hourly_limit: u32,
+    rate_limiter: auth::RateLimiter,
     data_dir: PathBuf,
     port: u16,
     ai_responder_enabled: bool,
@@ -98,7 +107,18 @@ impl AppContext {
             discord_bot_id: cli.discord_bot_id,
             discord_token: cli.discord_token,
             backend_url: cli.backend_url,
-            backend_api_key: cli.backend_api_key,
+            crash_api_key: cli.crash_api_key,
+            legacy_app_api_key: cli.legacy_app_api_key,
+            attest_policy: Arc::new(attest::AttestPolicy {
+                team_id: cli.app_attest_team_id,
+                bundle_ids: cli.app_attest_bundle_ids,
+                allow_development: cli.app_attest_allow_development,
+            }),
+            app_session_ttl: Duration::from_secs(cli.app_session_ttl_seconds),
+            attested_hourly_limit: cli.attested_hourly_limit,
+            legacy_hourly_limit: cli.legacy_hourly_limit,
+            unattested_hourly_limit: cli.unattested_hourly_limit,
+            rate_limiter: auth::RateLimiter::default(),
             user_create_lock: Arc::new(tokio::sync::Mutex::new(())),
             presence_info: Default::default(),
             port: cli.port,
@@ -149,8 +169,36 @@ impl AppContext {
         &self.backend_url
     }
 
-    pub fn backend_api_key(&self) -> &str {
-        &self.backend_api_key
+    pub fn crash_api_key(&self) -> &str {
+        &self.crash_api_key
+    }
+
+    pub fn legacy_app_api_key(&self) -> Option<&str> {
+        self.legacy_app_api_key.as_deref()
+    }
+
+    pub fn attest_policy(&self) -> &attest::AttestPolicy {
+        &self.attest_policy
+    }
+
+    pub fn app_session_ttl(&self) -> Duration {
+        self.app_session_ttl
+    }
+
+    pub fn attested_hourly_limit(&self) -> u32 {
+        self.attested_hourly_limit
+    }
+
+    pub fn legacy_hourly_limit(&self) -> u32 {
+        self.legacy_hourly_limit
+    }
+
+    pub fn unattested_hourly_limit(&self) -> u32 {
+        self.unattested_hourly_limit
+    }
+
+    pub fn rate_limiter(&self) -> &auth::RateLimiter {
+        &self.rate_limiter
     }
 
     pub fn ai_responder_enabled(&self) -> bool {

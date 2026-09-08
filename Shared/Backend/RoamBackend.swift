@@ -3,15 +3,8 @@ import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
-private let globalBackendURL = "https://backend.roam.msd3.io"
-// private let globalBackendURL = "http://localhost:8080"
-
-private func getAPIKey() -> String? {
-    let apiKey = Bundle.main.infoDictionary?["BACKEND_API_KEY"] as? String
-
-    Log.backend.debug("Got api key \(apiKey ?? "--", privacy: .public)")
-    return apiKey
-}
+let globalBackendURL = "https://backend.roam.msd3.io"
+// let globalBackendURL = "http://localhost:8080"
 
 public func getSystemInstallID() -> String {
     var ids: [String] = []
@@ -23,6 +16,19 @@ public func getSystemInstallID() -> String {
     let defaultVar = ids.joined(separator: "-")
 
     return UserDefaultInfo(key: "system-install-id", defaultValue: defaultVar).get()
+}
+
+/// Adopts the install id the backend considers authoritative.
+///
+/// An attested key keeps the id it registered with, so when a reinstall clears
+/// `UserDefaults` the backend hands back the original id and the support
+/// conversation follows the device instead of starting over.
+public func adoptUserID(_ userId: String) {
+    guard !userId.isEmpty, userId != getSystemInstallID() else {
+        return
+    }
+    Log.backend.notice("Adopting install id \(userId, privacy: .public) from the backend")
+    UserDefaults.standard.set(userId, forKey: "system-install-id")
 }
 
 private struct UserDefaultInfo<Value> {
@@ -166,9 +172,8 @@ func getMessagingUpdates(after: String?) async throws -> MessagingUpdateResponse
 
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
-    request.addValue(getAPIKey() ?? "", forHTTPHeaderField: "x-api-key")
 
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await BackendAuth.shared.authorizedData(for: request)
     let statusCode =
         if let httpResponse = response as? HTTPURLResponse {
             httpResponse.statusCode
@@ -206,9 +211,8 @@ public func sendTyping() async throws {
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
-    request.addValue(getAPIKey() ?? "", forHTTPHeaderField: "x-api-key")
 
-    let (data, response) = try await URLSession.shared.data(for: request)
+    let (data, response) = try await BackendAuth.shared.authorizedData(for: request)
     let statusCode =
         if let httpResponse = response as? HTTPURLResponse {
             httpResponse.statusCode
@@ -261,7 +265,6 @@ public func uploadApnsToken(_ token: String) async throws {
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
-    request.addValue(getAPIKey() ?? "", forHTTPHeaderField: "x-api-key")
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
     let messageRequest = APNSRequest(
@@ -277,7 +280,7 @@ public func uploadApnsToken(_ token: String) async throws {
     }
 
     do {
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await BackendAuth.shared.authorizedData(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             Log.backend.error(
@@ -326,7 +329,6 @@ public func sendMessageDirect(
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
-    request.addValue(getAPIKey() ?? "", forHTTPHeaderField: "x-api-key")
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
     var workersAttachment: WorkersAttachmentUpload?
@@ -381,7 +383,7 @@ public func sendMessageDirect(
         Log.backend.notice(
             "Starting send-message HTTP POST url=\(url.absoluteString, privacy: .public) user=\(userId, privacy: .public) nonce=\(nonce ?? "--", privacy: .public)"
         )
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await BackendAuth.shared.authorizedData(for: request)
         Log.backend.notice(
             "Finished send-message HTTP POST user=\(userId, privacy: .public) nonce=\(nonce ?? "--", privacy: .public) responseBytes=\(data.count, privacy: .public)"
         )

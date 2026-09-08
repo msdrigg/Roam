@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE attest_keys\n             SET sign_count = ?, replay_window = ?, last_seen_at_ms = ?\n             WHERE key_id = ? AND sign_count = ? AND replay_window = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "f18f5ee1cd7284d5573b9828245fd4218e952d13115c1c0623eac63797c1e6b1"
+}

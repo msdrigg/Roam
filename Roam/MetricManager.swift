@@ -211,10 +211,21 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
 
                     let statusCode = try await uploadDiagnosticsV2(diagnosticsRequest)
 
+                    // Only a delivered payload may be dropped. This used to
+                    // remove the file for any status, so a 401, a 429 or a 500
+                    // discarded the crash report instead of leaving it to be
+                    // retried on the next launch.
+                    guard statusCode == 200 else {
+                        Log.backend.error(
+                            "Keeping cached diagnostic file after status \(statusCode, privacy: .public): \(fileURL.lastPathComponent, privacy: .public)"
+                        )
+                        continue
+                    }
+
                     try FileManager.default.removeItem(at: fileURL)
                     fileCount -= 1
                     Log.backend.notice(
-                        "Successfully upload attempted with code \(statusCode, privacy: .public) and removed cached diagnostic file: \(fileURL.lastPathComponent, privacy: .public)"
+                        "Uploaded and removed cached diagnostic file: \(fileURL.lastPathComponent, privacy: .public)"
                     )
                 } catch {
                     Log.backend.error(
@@ -253,13 +264,6 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
     }
 }
 
-private let globalBackendURL = "https://backend.roam.msd3.io"
-
-private func getAPIKey() -> String? {
-    let apiKey = Bundle.main.infoDictionary?["BACKEND_API_KEY"] as? String
-    Log.backend.debug("Got api key \(apiKey ?? "--", privacy: .public)")
-    return apiKey
-}
 
 // Throws on connection error, returns status code for any error. Logs response
 private func uploadDiagnosticsV2(_ request: DiagnosticsRequest) async throws -> Int {
@@ -269,7 +273,6 @@ private func uploadDiagnosticsV2(_ request: DiagnosticsRequest) async throws -> 
 
     var urlRequest = URLRequest(url: url)
     urlRequest.httpMethod = "POST"
-    urlRequest.addValue(getAPIKey() ?? "", forHTTPHeaderField: "x-api-key")
     urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
     let encoder = JSONEncoder()
@@ -284,7 +287,7 @@ private func uploadDiagnosticsV2(_ request: DiagnosticsRequest) async throws -> 
         throw error
     }
 
-    let (data, response) = try await URLSession.shared.data(for: urlRequest)
+    let (data, response) = try await BackendAuth.shared.authorizedData(for: urlRequest)
 
     guard let httpResponse = response as? HTTPURLResponse else {
         Log.backend.error(
