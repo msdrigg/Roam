@@ -221,17 +221,116 @@ fn requires_proof(path: &str) -> bool {
     ) || path.starts_with("/upload-diagnostics/")
 }
 
-/// Routes the hourly budget applies to, which is narrower than the routes that
-/// must prove the key.
+/// Hourly ceiling per class of route.
 ///
-/// Only message posting is metered. A rejected send stays queued in the app and
-/// goes out on the next attempt, so a 429 there costs a delay. Diagnostics
-/// upload cannot be treated the same way: every shipped client deletes its
-/// cached payload whatever the response says, so metering that route would
-/// destroy crash reports rather than defer them. Push registration is naturally
-/// once per launch and worth nothing to an abuser.
-fn is_metered(path: &str) -> bool {
-    matches!(path, "/v2/new-message" | "/new-message")
+/// Every route is metered, but the ceilings differ by two orders of magnitude
+/// because the traffic does: the app posts a typing notice every five seconds
+/// (720/hour) and polls every ten to sixty (up to 360/hour), while a person
+/// sends a handful of messages an hour. The wide ceilings are not spam control,
+/// they are a backstop against a client stuck in a loop; the message budget is
+/// the spam control.
+///
+/// Diagnostics sits high on purpose. Every shipped `MetricManager` deletes its
+/// cached payload whatever the response says, so a 429 there loses a crash
+/// report rather than deferring it. The ceiling has to sit far above any real
+/// backlog, which the client already bounds at ten files and 31 days.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Budget {
+    Messages,
+    Diagnostics,
+    Push,
+    Typing,
+    Reads,
+}
+
+const DIAGNOSTICS_HOURLY_LIMIT: u32 = 200;
+const PUSH_HOURLY_LIMIT: u32 = 60;
+const TYPING_HOURLY_LIMIT: u32 = 2_000;
+const READ_HOURLY_LIMIT: u32 = 2_000;
+
+/// Legacy callers are bucketed per address when the path does not name an
+/// install, so the low-volume classes have to tolerate several subscribers
+/// sharing one carrier NAT address.
+const LEGACY_NAT_FACTOR: u32 = 5;
+
+impl Budget {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Messages => "messages",
+            Self::Diagnostics => "diagnostics",
+            Self::Push => "push",
+            Self::Typing => "typing",
+            Self::Reads => "reads",
+        }
+    }
+
+    fn refusal(self) -> &'static str {
+        match self {
+            Self::Messages => "Too many messages in the last hour",
+            _ => "Too many requests in the last hour",
+        }
+    }
+}
+
+fn budget_for(path: &str) -> Budget {
+    match path {
+        "/v2/new-message" | "/new-message" => Budget::Messages,
+        "/v2/upload-diagnostics" => Budget::Diagnostics,
+        "/new-apns" => Budget::Push,
+        p if p.starts_with("/upload-diagnostics/") => Budget::Diagnostics,
+        p if p.starts_with("/typing/") => Budget::Typing,
+        _ => Budget::Reads,
+    }
+}
+
+/// The install id a path names.
+///
+/// The three highest-volume routes carry it, which lets a legacy caller be
+/// bucketed per install rather than per address. Without that, one carrier NAT
+/// address would put every subscriber behind it into a single typing bucket.
+fn path_user_id(path: &str) -> Option<&str> {
+    ["/typing/", "/updates/", "/messages/"]
+        .iter()
+        .find_map(|prefix| path.strip_prefix(prefix))
+        .filter(|rest| !rest.is_empty() && !rest.contains('/'))
+}
+
+/// Applies the ceiling for `path` to `subject`.
+fn enforce_budget(
+    app_context: &AppContext,
+    path: &str,
+    subject: &str,
+    legacy: bool,
+    now: i64,
+) -> Result<(), ApiError> {
+    let budget = budget_for(path);
+    let base = match budget {
+        Budget::Messages if legacy => app_context.legacy_hourly_limit(),
+        Budget::Messages => app_context.message_hourly_limit(),
+        Budget::Diagnostics => DIAGNOSTICS_HOURLY_LIMIT,
+        Budget::Push => PUSH_HOURLY_LIMIT,
+        Budget::Typing => TYPING_HOURLY_LIMIT,
+        Budget::Reads => READ_HOURLY_LIMIT,
+    };
+    // A legacy caller bucketed by address covers several people; one bucketed
+    // by the install it names does not.
+    let limit = if legacy && budget != Budget::Messages && path_user_id(path).is_none() {
+        base.saturating_mul(LEGACY_NAT_FACTOR)
+    } else {
+        base
+    };
+
+    if app_context.rate_limiter().check(
+        &format!("{}:{subject}", budget.label()),
+        limit,
+        Duration::from_secs(3600),
+        now,
+    ) {
+        return Ok(());
+    }
+
+    tracing::warn!(%path, budget = budget.label(), limit, "Refused a request over its hourly ceiling");
+    Err(ApiError::RateLimited(budget.refusal().to_string()))
 }
 
 /// Authenticates every app-facing route.
@@ -277,18 +376,13 @@ async fn authenticate_session(
         .ok_or_else(|| ApiError::Unauthorized("Session is unknown or expired".to_string()))?;
 
     if !session.attested {
-        if is_metered(path)
-            && !app_context.rate_limiter().check(
-                &format!("unattested:{}", session.user_id),
-                app_context.unattested_hourly_limit(),
-                Duration::from_secs(3600),
-                now,
-            )
-        {
-            return Err(ApiError::RateLimited(
-                "Too many messages from this device in the last hour".to_string(),
-            ));
-        }
+        enforce_budget(
+            app_context,
+            path,
+            &format!("unattested:{}", session.user_id),
+            false,
+            now,
+        )?;
         return Ok(Caller {
             kind: CallerKind::Unattested,
             user_id: Some(session.user_id),
@@ -305,19 +399,6 @@ async fn authenticate_session(
     if requires_proof(path) {
         verify_request_assertion(app_context, &session, &key_id, headers, method, path, now)
             .await?;
-
-        if is_metered(path)
-            && !app_context.rate_limiter().check(
-                &format!("attested:{}", session.user_id),
-                app_context.attested_hourly_limit(),
-                Duration::from_secs(3600),
-                now,
-            )
-        {
-            return Err(ApiError::RateLimited(
-                "Too many messages from this device in the last hour".to_string(),
-            ));
-        }
     }
 
     Ok(Caller {
@@ -465,22 +546,16 @@ fn authenticate_legacy(
         return Err(ApiError::Unauthorized("Unauthorized".to_string()));
     }
 
-    // Only durable writes are metered, and the budget is per IP because a
-    // release predating attestation cannot prove which install it is. Polling
-    // and typing go unmetered: they are most of the app's traffic, and capping
-    // them would break the very installs this key exists to keep working.
-    if is_metered(path)
-        && !app_context.rate_limiter().check(
-            &format!("legacy-write:{}", client_ip(headers)),
-            app_context.legacy_hourly_limit(),
-            Duration::from_secs(3600),
-            now,
-        )
-    {
-        return Err(ApiError::RateLimited(
-            "Too many messages from this address in the last hour".to_string(),
-        ));
-    }
+    // A release predating attestation cannot prove which install it is, so it
+    // is bucketed by the install its path names where there is one, and by
+    // address otherwise. The ceilings still have to clear real client traffic:
+    // capping polling or typing would break the very installs this key exists
+    // to keep working.
+    let subject = match path_user_id(path) {
+        Some(user_id) => format!("legacy-user:{user_id}"),
+        None => format!("legacy-ip:{}", client_ip(headers)),
+    };
+    enforce_budget(app_context, path, &subject, true, now)?;
 
     Ok(Caller {
         kind: CallerKind::Legacy,
@@ -587,26 +662,53 @@ mod tests {
         }
     }
 
-    /// A 429 on diagnostics is not a delay, it is data loss: `MetricManager`
-    /// deletes the cached payload whatever the response says, and that code is
-    /// already in the field where it cannot be fixed.
+    /// Every route now has a ceiling, but they are not the same ceiling. A 429
+    /// on diagnostics is not a delay, it is data loss: `MetricManager` deletes
+    /// the cached payload whatever the response says, and that code is already
+    /// in the field where it cannot be fixed. So diagnostics is metered far
+    /// above any real backlog, which the client itself bounds at ten files.
     #[test]
-    fn diagnostics_upload_proves_the_key_but_is_never_metered() {
-        for path in [
-            "/v2/upload-diagnostics",
-            "/upload-diagnostics/aaa-bbb-ccc-2026",
-        ] {
-            assert!(requires_proof(path), "{path} still has to prove the key");
-            assert!(!is_metered(path), "{path} must never be refused for volume");
-        }
-        assert!(requires_proof("/new-apns"));
-        assert!(!is_metered("/new-apns"));
+    fn every_route_lands_in_a_budget() {
+        assert!(matches!(budget_for("/v2/new-message"), Budget::Messages));
+        assert!(matches!(budget_for("/new-message"), Budget::Messages));
+        assert!(matches!(
+            budget_for("/v2/upload-diagnostics"),
+            Budget::Diagnostics
+        ));
+        assert!(matches!(
+            budget_for("/upload-diagnostics/aaa-bbb-ccc-2026"),
+            Budget::Diagnostics
+        ));
+        assert!(matches!(budget_for("/new-apns"), Budget::Push));
+        assert!(matches!(budget_for("/typing/aaa-bbb-ccc"), Budget::Typing));
+        assert!(matches!(budget_for("/updates/aaa-bbb-ccc"), Budget::Reads));
+        assert!(matches!(budget_for("/messages/aaa"), Budget::Reads));
     }
 
     #[test]
-    fn message_posting_is_the_metered_route() {
-        assert!(is_metered("/v2/new-message"));
-        assert!(is_metered("/new-message"));
+    fn the_high_volume_routes_clear_real_client_traffic() {
+        // Measured from the app: typing is one post per 5s and polling is one
+        // per 10s at its fastest.
+        const { assert!(TYPING_HOURLY_LIMIT > 720, "an hour of composing must fit") };
+        const { assert!(READ_HOURLY_LIMIT > 360, "an hour of polling must fit") };
+        const {
+            assert!(
+                DIAGNOSTICS_HOURLY_LIMIT > 10,
+                "the client caches at most ten payloads before pruning"
+            )
+        };
+    }
+
+    #[test]
+    fn a_legacy_caller_is_bucketed_per_install_where_the_path_names_one() {
+        // Otherwise one carrier NAT address puts every subscriber behind it
+        // into a single typing bucket.
+        assert_eq!(path_user_id("/typing/aaa-bbb-ccc"), Some("aaa-bbb-ccc"));
+        assert_eq!(path_user_id("/updates/aaa-bbb-ccc"), Some("aaa-bbb-ccc"));
+        assert_eq!(path_user_id("/messages/aaa-bbb-ccc"), Some("aaa-bbb-ccc"));
+        assert_eq!(path_user_id("/v2/new-message"), None);
+        assert_eq!(path_user_id("/typing/"), None);
+        assert_eq!(path_user_id("/typing/a/b"), None);
     }
 
     #[test]

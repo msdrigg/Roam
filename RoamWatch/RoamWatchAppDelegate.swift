@@ -67,6 +67,12 @@ extension RoamWatchAppDelegate: WKApplicationDelegate {
         Log.lifecycle.notice("Did finish launching")
         self.networkMonitor.startMonitoring()
 
+        // The watch widget extension cannot reach the backend itself, so any
+        // fatal error it logged is waiting in the shared app group.
+        Task {
+            await DeferredBackendErrors.drain()
+        }
+
         UNUserNotificationCenter.current().delegate = self
 
         let hasSentFirstMessage = UserDefaults.standard.bool(forKey: UserDefaultKeys.hasSentFirstMessage)

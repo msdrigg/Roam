@@ -14,6 +14,9 @@ use p256::ecdsa::signature::hazmat::PrehashVerifier;
 use sha2::{Digest, Sha256, Sha384};
 use x509_parser::prelude::*;
 
+mod receipt;
+pub use receipt::{ReceiptError, VerifiedReceipt, verify_receipt};
+
 mod replay;
 pub use replay::ReplayWindow;
 
@@ -23,7 +26,7 @@ mod tests;
 /// Apple App Attestation Root CA, fetched from
 /// <https://www.apple.com/certificateauthority/Apple_App_Attestation_Root_CA.pem>.
 /// P-384, valid to 2045.
-const APPLE_ROOT_CA_DER: &[u8] = include_bytes!("apple_app_attest_root_ca.der");
+pub(crate) const APPLE_ROOT_CA_DER: &[u8] = include_bytes!("apple_app_attest_root_ca.der");
 
 /// credCert extension carrying the attestation nonce.
 const NONCE_EXTENSION_OID: &str = "1.2.840.113635.100.8.2";

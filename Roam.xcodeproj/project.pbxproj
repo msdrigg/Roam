@@ -94,6 +94,9 @@
 		AF2C85A62D37183E00A167B2 /* ECPProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2C85A52D37183600A167B2 /* ECPProtocol.swift */; };
 		AF2C85A72D37183E00A167B2 /* ECPProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2C85A52D37183600A167B2 /* ECPProtocol.swift */; };
 		AF2F54EF2BCE58EF00BAE156 /* RoamBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F54EE2BCE58EF00BAE156 /* RoamBackend.swift */; };
+		52B49D520517195384C1ECD1 /* DeferredErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A32D9794850667F22E6E0E /* DeferredErrors.swift */; };
+		51DFC5879E47D64EB24CF2B6 /* DeferredErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A32D9794850667F22E6E0E /* DeferredErrors.swift */; };
+		54FD4A580FC50E6A8D983A3D /* DeferredErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A32D9794850667F22E6E0E /* DeferredErrors.swift */; };
 		DC3A6D97CCBDF40EBE910BD5 /* AppAttestation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271ACBC186E49083614354A3 /* AppAttestation.swift */; };
 		5EA5A35DF65569A7C852011D /* AppAttestation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271ACBC186E49083614354A3 /* AppAttestation.swift */; };
 		8B82FA6F58416011492A2909 /* AppAttestation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271ACBC186E49083614354A3 /* AppAttestation.swift */; };
@@ -489,6 +492,7 @@
 		AF2C85A22D370DA700A167B2 /* ECPWebsocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECPWebsocket.swift; sourceTree = "<group>"; };
 		AF2C85A52D37183600A167B2 /* ECPProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECPProtocol.swift; sourceTree = "<group>"; };
 		AF2F54EE2BCE58EF00BAE156 /* RoamBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamBackend.swift; sourceTree = "<group>"; };
+		66A32D9794850667F22E6E0E /* DeferredErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeferredErrors.swift; sourceTree = "<group>"; };
 		271ACBC186E49083614354A3 /* AppAttestation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAttestation.swift; sourceTree = "<group>"; };
 		AFAA1D0012E0000100BAE156 /* TipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipStore.swift; sourceTree = "<group>"; };
 		AF30DD292D39B1FC00FD8B9A /* ECPMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECPMessages.swift; sourceTree = "<group>"; };
@@ -1076,6 +1080,7 @@
 				AF5FDAD52ADB3C4B006CDEB3 /* NetworkUtils.swift */,
 				AFE89A2C2B9E793E0078387C /* Debugger.swift */,
 				AF2F54EE2BCE58EF00BAE156 /* RoamBackend.swift */,
+				66A32D9794850667F22E6E0E /* DeferredErrors.swift */,
 				271ACBC186E49083614354A3 /* AppAttestation.swift */,
 				AFAA1D0012E0000100BAE156 /* TipStore.swift */,
 			);
@@ -1429,6 +1434,7 @@
 				AFD9C4FB2AE983BF00C4079C /* DeviceApi.swift in Sources */,
 				AF3BDD152DCF8F9200DABFA6 /* XMLStreamingDecoder.swift in Sources */,
 				AF2F54F02BCE58EF00BAE156 /* RoamBackend.swift in Sources */,
+				52B49D520517195384C1ECD1 /* DeferredErrors.swift in Sources */,
 				DC3A6D97CCBDF40EBE910BD5 /* AppAttestation.swift in Sources */,
 				AFAA1D0012E0000300BAE156 /* TipStore.swift in Sources */,
 				AFD9C4EC2AE980BF00C4079C /* NetworkHelpers.swift in Sources */,
@@ -1530,6 +1536,7 @@
 				AF6A8F942D060834004AB1D2 /* NetworkUtils.swift in Sources */,
 				AF0042872AEABA9F0051BB1E /* CollectionHelpers.swift in Sources */,
 				AFCD235B2DCAA6530000E80E /* RoamBackend.swift in Sources */,
+				51DFC5879E47D64EB24CF2B6 /* DeferredErrors.swift in Sources */,
 				5EA5A35DF65569A7C852011D /* AppAttestation.swift in Sources */,
 				AFAA1D0012E0000400BAE156 /* TipStore.swift in Sources */,
 				AFBDE4562DD5341700DD1741 /* FileLock.swift in Sources */,
@@ -1591,6 +1598,7 @@
 				AF19CA2B2AE54AD100A42DFF /* SSDPDiscovery.swift in Sources */,
 				AF3446AD2D5FE8CF0037EFC8 /* WrongAttempts.swift in Sources */,
 				AF2F54EF2BCE58EF00BAE156 /* RoamBackend.swift in Sources */,
+				54FD4A580FC50E6A8D983A3D /* DeferredErrors.swift in Sources */,
 				8B82FA6F58416011492A2909 /* AppAttestation.swift in Sources */,
 				AFAA1D0012E0000200BAE156 /* TipStore.swift in Sources */,
 				AF3AD5572AE2928600E2D780 /* TopBar.swift in Sources */,

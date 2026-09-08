@@ -36,6 +36,15 @@ public enum FileLog {
     private static let maxRunFiles = 8
     private static let flushThresholdBytes = 16 * 1024
     private static let flushInterval: TimeInterval = 1
+    /// How long after launch to write through instead of batching.
+    ///
+    /// `flushNow()` only fires on background/terminate, so a run that dies
+    /// inside `flushInterval` leaves nothing on disk and its crash reads as
+    /// having no log at all -- which is exactly what a `SIGKILL` seconds into a
+    /// background resume looks like. The launch window is both the most likely
+    /// place to die unflushed and the cheapest to write through, so pay for it
+    /// there and batch normally afterwards.
+    private static let eagerFlushWindow: TimeInterval = 10
 
     private static let queue = DispatchQueue(
         label: "com.msdrigg.roam.file-log", qos: .utility)
@@ -58,7 +67,23 @@ public enum FileLog {
             started = true
             pruneOldRuns()
         }
+        // `collect` picks a file by recency and cannot prove it found the run
+        // that died. The pid can: MetricKit's metadata carries one, so a reader
+        // holding both can check rather than assume.
+        append(
+            level: "Notice", category: "Lifecycle",
+            message: "Run started pid=\(pid) process=\(processName)")
         observeLifecycle()
+    }
+
+    /// Record how this run began, once the platform can say.
+    ///
+    /// A background resume and a user opening the app die differently -- the
+    /// first to `0xdead10cc` while it holds a lock in the shared container, the
+    /// second to a watchdog -- and the stacks alone do not separate them.
+    /// `state` is caller-supplied to keep UIKit and AppKit out of this file.
+    public static func recordLaunchState(_ state: String) {
+        append(level: "Notice", category: "Lifecycle", message: "Launch state=\(state)")
     }
 
     /// Flush before the process suspends; the flush timer stops running then.
@@ -113,7 +138,9 @@ public enum FileLog {
         let line = encodedLine(
             timestamp: timestamp, level: level, category: category, message: message)
         buffer.append(contentsOf: Array(line.utf8))
-        if buffer.count >= flushThresholdBytes {
+        if buffer.count >= flushThresholdBytes
+            || timestamp - launchedAt.timeIntervalSince1970 < eagerFlushWindow
+        {
             flush()
         } else {
             scheduleFlush()
@@ -220,6 +247,13 @@ public enum FileLog {
     ///
     /// `window` is MetricKit's payload window. Anything logged after it belongs
     /// to a later launch and is dropped, including this run's own file.
+    ///
+    /// Selection is by **recency, not identity**: this returns the newest
+    /// previous run that has lines in the window, which is usually the run that
+    /// died but is not guaranteed to be. A run killed before its first flush
+    /// contributes nothing and silently yields the run before it instead.
+    /// Compare the `Run started pid=` marker against the report's pid before
+    /// reading these lines as the crash's.
     public static func collect(around window: DateInterval?, limit: Int = 5000) -> [FileLogEntry] {
         guard let directory = directoryURL() else { return [] }
         let manager = FileManager.default

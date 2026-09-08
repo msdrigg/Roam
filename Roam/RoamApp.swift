@@ -40,19 +40,27 @@ struct RoamApp: App {
         #endif
         installSIGPIPEHandler()
 
-        #if !os(macOS)
-            let dontKillAssertion = QActivityRunInBackgroundAssertion(name: "Tips.configure")
-            if dontKillAssertion.isReleased() {
-                return
-            }
-            defer {
-                dontKillAssertion.release()
-            }
-        #endif
+        // Nothing outside this process reads the tips store -- the widget has no
+        // TipKit at all -- so it has no business in the group container, where a
+        // suspended lock holder is what 0xdead10cc kills for. TipKit loads that
+        // store on its own Task, well after `configure` returns, so no assertion
+        // taken here could have covered it anyway.
         try? Tips.configure([
             .displayFrequency(.immediate),
-            .datastoreLocation(.groupContainer(identifier: mainAppGroup)),
+            .datastoreLocation(.applicationDefault),
         ])
+
+        #if !os(macOS)
+            // The database *is* in the group container, so this one is real.
+            // `beginBackgroundTask` rather than `performExpiringActivity`: the
+            // grant has to be in hand before the first lock is taken, and
+            // `performExpiringActivity` resolves asynchronously, so it usually
+            // is not. Never gate the initialization itself on holding it --
+            // running on an uninitialized handler is worse than running
+            // unguarded.
+            let dontKillAssertion = QRunInBackgroundAssertion(name: "roam-launch-database-init")
+            defer { dontKillAssertion.release() }
+        #endif
         RoamDataHandler.initializeSharedBlocking()
         migrateOffSwiftData()
     }

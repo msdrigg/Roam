@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO receipt_bindings (\n                 fingerprint, user_id, bundle_id, app_version,\n                 first_seen_at_ms, last_seen_at_ms\n             )\n             VALUES (?, ?, ?, ?, ?, ?)\n             ON CONFLICT (fingerprint) DO UPDATE SET\n                 last_seen_at_ms = excluded.last_seen_at_ms,\n                 app_version = excluded.app_version",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "ae4f8cfcdd5cd76f9ab6eaff374e127826f8fb345bc18578c85a46cf3659953f"
+}

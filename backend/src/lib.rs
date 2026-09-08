@@ -47,9 +47,10 @@ pub struct AppContext {
     legacy_app_api_key: Option<String>,
     attest_policy: Arc<attest::AttestPolicy>,
     app_session_ttl: Duration,
-    attested_hourly_limit: u32,
+    message_hourly_limit: u32,
     legacy_hourly_limit: u32,
     unattested_hourly_limit: u32,
+    app_attest_fallback_enabled: bool,
     rate_limiter: auth::RateLimiter,
     data_dir: PathBuf,
     port: u16,
@@ -115,9 +116,10 @@ impl AppContext {
                 allow_development: cli.app_attest_allow_development,
             }),
             app_session_ttl: Duration::from_secs(cli.app_session_ttl_seconds),
-            attested_hourly_limit: cli.attested_hourly_limit,
+            message_hourly_limit: cli.message_hourly_limit,
             legacy_hourly_limit: cli.legacy_hourly_limit,
             unattested_hourly_limit: cli.unattested_hourly_limit,
+            app_attest_fallback_enabled: cli.app_attest_fallback_enabled,
             rate_limiter: auth::RateLimiter::default(),
             user_create_lock: Arc::new(tokio::sync::Mutex::new(())),
             presence_info: Default::default(),
@@ -185,8 +187,8 @@ impl AppContext {
         self.app_session_ttl
     }
 
-    pub fn attested_hourly_limit(&self) -> u32 {
-        self.attested_hourly_limit
+    pub fn message_hourly_limit(&self) -> u32 {
+        self.message_hourly_limit
     }
 
     pub fn legacy_hourly_limit(&self) -> u32 {
@@ -195,6 +197,10 @@ impl AppContext {
 
     pub fn unattested_hourly_limit(&self) -> u32 {
         self.unattested_hourly_limit
+    }
+
+    pub fn app_attest_fallback_enabled(&self) -> bool {
+        self.app_attest_fallback_enabled
     }
 
     pub fn rate_limiter(&self) -> &auth::RateLimiter {

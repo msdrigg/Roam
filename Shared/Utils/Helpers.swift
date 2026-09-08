@@ -676,6 +676,14 @@ func getNotificationSettings() {
 func sendBackendError(_ message: String, logEntries: [LogEntry]? = nil, file: StaticString = #file, line: UInt = #line) async {
     let sendingMessage = ":ninja:\nFatal error logged: \(message)\n\nFile: \(file)\nLine: \(line)\n\nThis is likely a bug in the app."
 
+    #if WIDGET
+        // A widget extension cannot authenticate with the backend: App Attest
+        // covers Action and SSO extensions only, and an extension bundle has no
+        // App Store receipt. Hand the report to the containing app instead of
+        // giving widgets a weaker credential.
+        DeferredBackendErrors.enqueue(sendingMessage)
+        return
+    #else
     do {
         _ = try await sendMessageDirect(message: sendingMessage, attachment: nil).get()
 
@@ -699,6 +707,7 @@ func sendBackendError(_ message: String, logEntries: [LogEntry]? = nil, file: St
     } catch {
         Log.lifecycle.warning("Error sending fatal log to backend: \(error, privacy: .public)")
     }
+    #endif
 }
 #endif
 

@@ -62,11 +62,11 @@ pub struct RoamCli {
     #[arg(long, env, default_value_t = 3600)]
     pub app_session_ttl_seconds: u64,
 
-    /// Durable writes an hour allowed to an attested device. Set well above
+    /// Messages an hour allowed to one install. Set well above
     /// any human conversation, so it catches a compromised client rather than
     /// an ordinary one. Polling and typing notifications are never metered.
     #[arg(long, env, default_value_t = 60)]
-    pub attested_hourly_limit: u32,
+    pub message_hourly_limit: u32,
 
     /// Durable writes an hour allowed per address to a release that predates
     /// attestation. Keyed by address rather than install because those releases
@@ -75,6 +75,14 @@ pub struct RoamCli {
     #[arg(long, env, default_value_t = 120)]
     pub legacy_hourly_limit: u32,
 
+    /// Serve the macOS receipt fallback at all.
+    ///
+    /// Turn this off once macOS 27 is the deployment floor: at that point every
+    /// supported OS can attest, the route has no legitimate caller left, and
+    /// the client half comes out of the app in the same release.
+    #[arg(long, env, default_value_t = true)]
+    pub app_attest_fallback_enabled: bool,
+
     /// Writes an hour allowed to a device that cannot attest.
     ///
     /// App Attest reached macOS only in macOS 27, and Roam still deploys to
@@ -82,7 +90,7 @@ pub struct RoamCli {
     /// rare fallback. The limit has to leave a support conversation usable
     /// while staying far below anything worth automating, because claiming to
     /// be unattestable costs an attacker nothing.
-    #[arg(long, env, default_value_t = 60)]
+    #[arg(long, env, default_value_t = 30)]
     pub unattested_hourly_limit: u32,
 
     /// APNS Key ID

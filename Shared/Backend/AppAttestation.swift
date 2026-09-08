@@ -52,6 +52,8 @@ private func platformDescription() -> String {
 public enum BackendAuthError: Error, LocalizedError {
     case attestationRejected(Int, String)
     case missingKey
+    case missingReceipt
+    case attestationUnavailable(String)
     case badResponse
 
     public var errorDescription: String? {
@@ -60,6 +62,10 @@ public enum BackendAuthError: Error, LocalizedError {
             return "The backend rejected attestation (\(code)): \(body)"
         case .missingKey:
             return "No attestation key is available"
+        case .missingReceipt:
+            return "No App Store receipt is available to authenticate with"
+        case let .attestationUnavailable(reason):
+            return "App Attest is unavailable and this platform has no fallback: \(reason)"
         case .badResponse:
             return "The backend returned an unexpected response"
         }
@@ -100,6 +106,22 @@ private struct SessionResponse: Decodable {
 /// without the hardware that holds it. Recovering the token from memory buys
 /// an attacker reads at most, because every write has to carry a fresh
 /// assertion that only that hardware can produce.
+#if os(macOS)
+    /// The Mac App Store receipt, base64 encoded.
+    ///
+    /// Present in every App Store copy. A local build has none, which is why
+    /// development against production needs the backend's development flag
+    /// rather than a client-side bypass.
+    private func appStoreReceipt() -> String? {
+        guard let url = Bundle.main.appStoreReceiptURL,
+            let data = try? Data(contentsOf: url)
+        else {
+            return nil
+        }
+        return data.base64EncodedString()
+    }
+#endif
+
 public actor BackendAuth {
     public static let shared = BackendAuth()
 
@@ -166,44 +188,48 @@ public actor BackendAuth {
         let service = DCAppAttestService.shared
         let bundleID = Bundle.main.bundleIdentifier ?? "--"
 
-        // Widget extensions cannot attest at all: Apple supports App Attest in
-        // Action and SSO extensions only. The widget target still compiles
-        // `sendBackendError`, which posts a message when it logs a fatal error,
-        // so failing here would silently stop those reports arriving.
-        guard attestableBundleIDs.contains(bundleID) else {
-            Log.backend.warning(
-                "\(bundleID, privacy: .public) cannot attest; requesting an unattested session"
-            )
-            return try await unattestedSession(
-                reason: "\(bundleID) cannot attest; \(platformDescription())")
-        }
-        guard service.isSupported else {
-            // App Attest reached macOS only in macOS 27, so every Mac below
-            // that lands here, as do the Simulator and the 2019 Intel iMac.
-            // The backend caps what the resulting session can do.
-            let platform = platformDescription()
-            Log.backend.warning(
-                "App Attest is unsupported on \(platform, privacy: .public); requesting an unattested session"
-            )
-            return try await unattestedSession(reason: "isSupported == false; \(platform)")
+        guard attestableBundleIDs.contains(bundleID), service.isSupported else {
+            return try await fallbackSession(
+                reason: "isSupported=\(service.isSupported) bundle=\(bundleID)")
         }
 
         do {
             return try await attestedSession(service: service)
         } catch {
-            // Attestation is the preferred path, not a required one. A missing
-            // capability in the provisioning profile, an outage at Apple's
-            // attestation service, or a bad response here would otherwise take
-            // the support conversation down with it. Falling back costs nothing
-            // an attacker does not already have, because claiming to be
-            // unattestable is free either way, and the next session tries
-            // again.
             Log.backend.error(
-                "Attestation failed (\(error, privacy: .public)); falling back to an unattested session"
+                "Attestation failed: \(error, privacy: .public)")
+            return try await fallbackSession(reason: "attestation failed: \(error)")
+        }
+    }
+
+    /// The macOS-only fallback, for Macs below macOS 27 where App Attest does
+    /// not exist.
+    ///
+    /// This is compiled out of every other platform on purpose. iOS 18,
+    /// watchOS 11 and visionOS 2 all support App Attest, so a client there
+    /// claiming it cannot attest is tampering rather than an old OS, and a
+    /// binary that does not contain this code cannot be talked into using it.
+    /// The backend refuses the route without a valid Apple-signed receipt, so
+    /// the two halves have to be removed together when macOS 27 is the floor.
+    private func fallbackSession(reason: String) async throws -> Session {
+        #if os(macOS)
+            let platform = platformDescription()
+            guard let receipt = appStoreReceipt() else {
+                Log.backend.error(
+                    "No App Store receipt available on \(platform, privacy: .public); cannot authenticate"
+                )
+                throw BackendAuthError.missingReceipt
+            }
+            Log.backend.warning(
+                "Falling back to a receipt-backed session on \(platform, privacy: .public): \(reason, privacy: .public)"
             )
             return try await unattestedSession(
-                reason: "attestation failed on \(platformDescription()): \(error)")
-        }
+                receipt: receipt, reason: "\(reason); \(platform)")
+        #else
+            // No fallback exists here, and none should: every supported OS on
+            // this platform can attest.
+            throw BackendAuthError.attestationUnavailable(reason)
+        #endif
     }
 
     private func attestedSession(service: DCAppAttestService) async throws -> Session {
@@ -268,11 +294,12 @@ public actor BackendAuth {
         return session(from: response)
     }
 
-    private func unattestedSession(reason: String) async throws -> Session {
+    private func unattestedSession(receipt: String, reason: String) async throws -> Session {
         let challenge = try await fetchChallenge()
         let body: [String: String] = [
             "userId": getSystemInstallID(),
             "challenge": challenge,
+            "receipt": receipt,
             "reason": reason,
         ]
         let response: SessionResponse = try await post("/v3/attest/unattested", body: body)

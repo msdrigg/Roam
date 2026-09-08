@@ -493,26 +493,40 @@ async fn attest_session(
 struct UnattestedRequest {
     user_id: String,
     challenge: String,
+    /// Base64 of the Mac App Store receipt from `Bundle.main.appStoreReceiptURL`.
+    /// Required: without it the caller is only asserting it cannot attest, and
+    /// an assertion is not a credential.
+    receipt: String,
     /// What the client reported about why it cannot attest, recorded so the
     /// size of this population can be watched rather than guessed at.
     #[serde(default)]
     reason: Option<String>,
 }
 
-/// Issues a session to a device where App Attest is unavailable.
+/// Issues a session to a Mac that cannot attest, against its App Store receipt.
 ///
-/// This is not a rare fallback. App Attest reached macOS only in macOS 27 and
-/// Roam deploys to macOS 15, so every Mac below 27 arrives here, as does the
-/// Simulator and the 2019 Intel iMac. The session is capped at
-/// `UNATTESTED_HOURLY_LIMIT` writes an hour: usable for a support
-/// conversation, worthless for automation. Each one records the platform that
-/// asked, because a client claiming to be unattestable on a platform where
-/// App Attest works is a tampering signal rather than an old Mac.
+/// App Attest reached macOS only in macOS 27 and Roam deploys to macOS 15, so
+/// every Mac below 27 authenticates here. The receipt is what makes that a
+/// credential rather than a claim: an earlier cut took the client's word for
+/// "I cannot attest", which any caller can say. Only macOS builds compile the
+/// code that calls this, and only a genuine Apple-signed receipt gets past it.
+///
+/// What a receipt proves is narrower than an attestation. It is a static file,
+/// so it establishes that a genuine App Store receipt for this bundle exists,
+/// not that this request came from the Mac it was issued to. Binding one
+/// receipt to one install is what caps a copied receipt to a single
+/// conversation.
 async fn attest_unattested_session(
     State(app_context): State<AppContext>,
     headers: axum::http::HeaderMap,
     Json(request): Json<UnattestedRequest>,
 ) -> Result<Json<SessionResponse>, ApiError> {
+    if !app_context.app_attest_fallback_enabled() {
+        return Err(ApiError::Unauthorized(
+            "This build must attest; the receipt fallback is closed".to_string(),
+        ));
+    }
+
     let now = crate::auth::now_ms();
     let ip = crate::auth::client_ip(&headers);
     if !app_context.rate_limiter().check(
@@ -537,20 +551,54 @@ async fn attest_unattested_session(
         ));
     }
 
+    let receipt_der = BASE64_STANDARD
+        .decode(&request.receipt)
+        .map_err(|_| ApiError::BadRequest("receipt is not valid base64".to_string()))?;
+    let receipt = crate::attest::verify_receipt(
+        &receipt_der,
+        &app_context.attest_policy().bundle_ids,
+        chrono::Utc::now(),
+    )
+    .map_err(|err| {
+        tracing::warn!(?err, %ip, "Rejected an App Store receipt");
+        ApiError::Unauthorized("App Store receipt is not valid".to_string())
+    })?;
+
+    let bound_user_id = app_context
+        .db_client()
+        .bind_receipt(
+            &receipt.fingerprint,
+            &request.user_id,
+            &receipt.bundle_id,
+            &receipt.app_version,
+            now,
+        )
+        .await
+        .map_err(ApiError::DatabaseError)?;
+
     tracing::warn!(
-        user_id = %request.user_id,
+        user_id = %bound_user_id,
+        requested_user_id = %request.user_id,
         %ip,
+        bundle_id = %receipt.bundle_id,
+        app_version = %receipt.app_version,
         reason = request.reason.as_deref().unwrap_or("--"),
-        "Issued an unattested session"
+        "Issued an unattested session against an App Store receipt"
     );
 
-    let (token, session) =
-        crate::auth::mint_session(&app_context, &request.user_id, None, None, false).await?;
+    let (token, session) = crate::auth::mint_session(
+        &app_context,
+        &bound_user_id,
+        None,
+        Some(receipt.bundle_id),
+        false,
+    )
+    .await?;
 
     Ok(Json(SessionResponse {
         token,
         session_id: session.session_id,
-        user_id: request.user_id,
+        user_id: bound_user_id,
         expires_at_ms: session.expires_at_ms,
         attested: false,
     }))

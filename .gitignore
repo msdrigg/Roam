@@ -15,3 +15,7 @@ LocalPackages/**/.build/
 # addresses and thread contents, and they are re-downloadable from the backend
 # (scripts/roam_crashes.py).
 crash-analysis/
+
+# Xcode build output from command-line `xcodebuild -derivedDataPath`/SPM builds.
+build/
+LocalPackages/**/build/

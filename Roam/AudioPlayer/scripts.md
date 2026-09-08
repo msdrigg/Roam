@@ -105,7 +105,7 @@ client-side AsyncStream bug.
 To replay or feed into a different decoder, extract the RTP payload bytes.
 
 ```bash
-tshark -r /tmp/roam-headphones.pcap \
+tshark -r /tmp/roam-headphones-sept-8-2026.pcap \
   -d "udp.port==6970,rtp" \
   -Y "rtp and rtp.p_type == 97" \
   -T fields -e rtp.payload \

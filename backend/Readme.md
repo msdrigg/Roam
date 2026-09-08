@@ -298,21 +298,59 @@ a development profile attest against Apple's development environment, and
 accepting those means the attestation proves nothing about the app that sent
 it.
 
-Devices where App Attest is unavailable can take `POST /v3/attest/unattested`,
-which returns a session capped at `UNATTESTED_HOURLY_LIMIT` writes an hour.
+### The macOS fallback
 
-This is not a rare fallback. App Attest reached macOS only in **macOS 27**
-(WWDC 2026 session 201), and the Roam target deploys to macOS 15, so every Mac
-below 27 authenticates here, as does the Simulator and the 2019 Intel iMac. The
-limit is set to leave a support conversation usable while staying far below
-anything worth automating, because claiming to be unattestable costs an
-attacker nothing.
+App Attest reached macOS only in **macOS 27** (WWDC 2026 session 201), and the
+Roam target deploys to macOS 15, so Macs below 27 cannot attest at all. They
+authenticate at `POST /v3/attest/unattested` with their **Mac App Store
+receipt** instead, which every copy carries because Roam ships
+`app-store-connect` on every platform.
 
-Each unattested session is logged at `warn` with the platform and OS version
-the client reported. That field is the signal worth watching: a Mac on 15.7 is
-expected, while an iPhone on 18.6 claiming it cannot attest is a tampering
-indicator, which is how Apple recommends treating `isSupported`. Expect this
-path to drain as macOS 27 rolls out.
+The receipt is verified properly: CMS SignedData, chain walked to the pinned
+**Apple Root CA** (`apple_root_ca.der`, which is *not* the App Attest root),
+RSA signature checked over the signed attributes with the `messageDigest`
+binding the payload, then the bundle id matched against the policy. An earlier
+cut took the client's word for "I cannot attest", which any caller can say;
+that was not a credential.
+
+What a receipt proves is narrower than an attestation, and the gap is worth
+stating. It is a static file, so verifying it establishes that a genuine App
+Store receipt for this bundle exists, not that the request came from the Mac it
+was issued to. `receipt_bindings` maps one receipt to the first install that
+presented it and hands that install id back on every later use, so a copied
+receipt reaches the conversation it was copied from rather than opening a new
+one.
+
+**No other platform has a fallback, and no other platform ships the code for
+one.** iOS 18, watchOS 11 and visionOS 2 all support App Attest, so a client
+there claiming it cannot attest is tampering rather than an old OS. The client
+half is inside `#if os(macOS)`, so an iOS binary does not contain the path at
+all, and the server half refuses without a valid receipt. Both halves come out
+together when macOS 27 becomes the floor.
+
+Widget extensions cannot attest on any platform (Apple supports App Attest in
+Action and SSO extensions only) and an extension bundle carries no receipt
+either. Rather than give them a weaker credential, `sendBackendError` in a
+widget writes the report into the shared app group and the containing app
+sends it on its next launch. See `Shared/Backend/DeferredErrors.swift`.
+
+An unattested session has the same capabilities as an attested one under a
+lower message ceiling (`UNATTESTED_HOURLY_LIMIT`, 30, against
+`MESSAGE_HOURLY_LIMIT`, 60): a receipt is replayable where an assertion is not,
+so the weaker credential buys the smaller budget, and a refused send stays
+queued in the app rather than being lost. Each session is logged at `warn` with
+the platform, bundle id and app version the receipt named.
+
+`APP_ATTEST_FALLBACK_ENABLED=false` closes the route outright. Set it once
+macOS 27 is the deployment floor, in the same release that removes the
+`#if os(macOS)` block from the client.
+
+Two limits are worth stating plainly. A local Xcode build carries no receipt at
+all, so developing against a production backend on a Mac below 27 needs a real
+App Store or TestFlight build rather than a client-side bypass. And an iOS
+receipt names the same bundle id as a Mac one, so a receipt extracted from an
+iOS device would satisfy this route; the install binding, the lower ceiling and
+the logging are what bound that, not the receipt check itself.
 
 ## Crash review API
 

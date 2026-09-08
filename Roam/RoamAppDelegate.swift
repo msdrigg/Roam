@@ -389,6 +389,17 @@ private enum ActivationPolicyCoalescer {
         }
 
         func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+            let launchState: String = {
+                switch application.applicationState {
+                case .active: return "active"
+                case .inactive: return "inactive"
+                case .background: return "background"
+                @unknown default: return "unknown"
+                }
+            }()
+            let reasons = (launchOptions ?? [:]).keys.map(\.rawValue).sorted().joined(separator: ",")
+            FileLog.recordLaunchState(reasons.isEmpty ? launchState : "\(launchState) options=\(reasons)")
+
             self.networkMonitor.startMonitoring()
             let hasSentFirstMessage = UserDefaults.standard.bool(forKey: UserDefaultKeys.hasSentFirstMessage)
             if hasSentFirstMessage {

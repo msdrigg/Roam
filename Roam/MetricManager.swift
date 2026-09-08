@@ -77,6 +77,9 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
         MXMetricManager.shared.add(self)
         Task {
             await uploadCachedDiagnostics()
+            // Widget extensions cannot reach the backend themselves, so any
+            // fatal error one logged is waiting in the shared app group.
+            await DeferredBackendErrors.drain()
         }
     }
 

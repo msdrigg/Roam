@@ -1072,6 +1072,50 @@ impl DatabaseClient {
         Ok(result.rows_affected())
     }
 
+    /// Binds a receipt to the install that first presented it, and reports the
+    /// install actually on file.
+    ///
+    /// A receipt is a static file, so the same one can be presented from
+    /// anywhere. Keeping the first binding means a copied receipt reaches the
+    /// conversation it was copied from rather than opening a new one.
+    pub async fn bind_receipt(
+        &self,
+        fingerprint: &[u8],
+        user_id: &str,
+        bundle_id: &str,
+        app_version: &str,
+        now_ms: i64,
+    ) -> Result<String, anyhow::Error> {
+        sqlx::query!(
+            "INSERT INTO receipt_bindings (
+                 fingerprint, user_id, bundle_id, app_version,
+                 first_seen_at_ms, last_seen_at_ms
+             )
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT (fingerprint) DO UPDATE SET
+                 last_seen_at_ms = excluded.last_seen_at_ms,
+                 app_version = excluded.app_version",
+            fingerprint,
+            user_id,
+            bundle_id,
+            app_version,
+            now_ms,
+            now_ms,
+        )
+        .execute(&self.writer_pool)
+        .await
+        .context("Error binding App Store receipt")?;
+
+        let stored = sqlx::query_scalar!(
+            r#"SELECT user_id as "user_id!: String" FROM receipt_bindings WHERE fingerprint = ?"#,
+            fingerprint
+        )
+        .fetch_one(&self.writer_pool)
+        .await
+        .context("Error reading back the receipt binding")?;
+        Ok(stored)
+    }
+
     /// Clears expired sessions and challenges. Both tables are write-once per
     /// app launch, so without a sweep they grow with every install forever.
     pub async fn reap_expired_attest_state(

@@ -12,17 +12,19 @@ struct RoamWatch: App {
             "Getting WatchConnectivity \(String(describing: WatchConnectivity.shared), privacy: .public)"
         )
 
-        let dontKillAssertion = QActivityRunInBackgroundAssertion(name: "Tips.configure")
-        if dontKillAssertion.isReleased() {
-            return
-        }
-        defer {
-            dontKillAssertion.release()
-        }
+        // Same reasoning as the iOS app: the tips store is private to this
+        // process, so keep it out of the group container.
         try? Tips.configure([
             .displayFrequency(.immediate),
-            .datastoreLocation(.groupContainer(identifier: mainAppGroup)),
+            .datastoreLocation(.applicationDefault),
         ])
+
+        // The database is in the group container and does need the assertion.
+        // On watchOS this is still the expiring-activity flavour, which parks a
+        // Dispatch worker -- one per launch is affordable. The initialization
+        // runs either way; it is never skipped for want of an assertion.
+        let dontKillAssertion = QRunInBackgroundAssertion(name: "roam-launch-database-init")
+        defer { dontKillAssertion.release() }
         RoamDataHandler.initializeSharedBlocking()
         migrateOffSwiftData()
     }
