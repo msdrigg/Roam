@@ -8,12 +8,6 @@ hide_table_of_contents: true
 
 ## About Roam
 
-:::warning
-
-This is a support page for the Roam application, not Roly. I recently learned that the Roly app has copied my source code and app store page, even linking here to my support page. This is fraudulent and incorrect. 
-
-:::
-
 :::tip[Buy me a coffee]
 
 Roam is free with no ads and no paid tier. If it's useful to you, you can [leave a tip](/coffee).

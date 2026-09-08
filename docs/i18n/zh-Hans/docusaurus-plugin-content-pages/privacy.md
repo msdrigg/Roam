@@ -4,12 +4,6 @@ hide_table_of_contents: true
 
 # 隐私政策
 
-:::warning
-
-这不是 Roly 应用的隐私政策。Roly 不是 Scott Driggers 开发或支持的。除了用于 Roku 的 `Roam` 应用外，Scott Driggers 没有开发或支持任何其他应用。
-
-:::
-
 Scott Driggers 将 Roam 应用作为免费应用构建。本服务由 Scott Driggers 免费提供，旨在按原样使用。
 
 本页面用于告知访问者有关我在用户决定使用我的服务时，关于个人信息的收集、使用和披露的政策。

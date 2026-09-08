@@ -4,12 +4,6 @@ hide_table_of_contents: true
 
 # Datenschutzerklärung
 
-:::warning
-
-Dies ist keine Datenschutzerklärung für die Roly-App. Roly wird weder von Scott Driggers entwickelt noch unterstützt. Ebenso gilt dies für alle anderen Anwendungen außer der `Roam`-App für Roku.
-
-:::
-
 Scott Driggers hat die Roam-App als kostenlose App entwickelt. Dieser DIENST wird von Scott Driggers kostenlos bereitgestellt und ist zur Nutzung wie besehen vorgesehen.
 
 Diese Seite dient dazu, Besucher über meine Richtlinien bezüglich der Erhebung, Nutzung und Offenlegung personenbezogener Daten zu informieren, falls jemand meinen Dienst nutzt.

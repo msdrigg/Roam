@@ -4,12 +4,6 @@ hide_table_of_contents: true
 
 # Patakaran sa Pribasya
 
-:::warning
-
-Hindi ito ang patakaran sa pribasya ng Roly app. Ang Roly ay hindi dinivelop o sinusuportahan ni Scott Driggers. Wala ring ibang application maliban sa `Roam` app para sa Roku.
-
-:::
-
 Ang Roam app ay ginawa ni Scott Driggers bilang isang Libreng app. Ang SERBISYO na ito ay ibinibigay ni Scott Driggers nang walang bayad at ito ay nilalayong gamitin kung paano ito ay.
 
 Ang pahinang ito ay inilaan upang ipaalam sa mga bisita ang aking mga patakaran ukol sa pangongolekta, paggamit, at paglalathala ng Personal na Impormasyon kung sakaling piliin ng sinuman na gamitin ang aking Serbisyo.

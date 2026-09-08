@@ -4,12 +4,6 @@ hide_table_of_contents: true
 
 # Politique de confidentialité
 
-:::warning
-
-Ceci n'est pas une politique de confidentialité pour l'application Roly. Roly n'est ni développée ni soutenue par Scott Driggers. Aucune autre application en dehors de l'application `Roam` pour Roku ne l'est non plus.
-
-:::
-
 Scott Driggers a créé l'application Roam comme une application gratuite. Ce SERVICE est fourni par Scott Driggers sans aucun coût et est destiné à être utilisé tel quel.
 
 Cette page a pour but d'informer les visiteurs concernant mes politiques en matière de collecte, d'utilisation et de divulgation des Informations Personnelles si quelqu’un décide d’utiliser mon Service.

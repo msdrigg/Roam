@@ -4,12 +4,6 @@ hide_table_of_contents: true
 
 # Chính Sách Bảo Mật
 
-:::warning
-
-Đây không phải là chính sách bảo mật của ứng dụng Roly. Roly không được phát triển hoặc hỗ trợ bởi Scott Driggers. Ngoài ứng dụng `Roam` dành cho Roku, không có bất kỳ ứng dụng nào khác do Scott Driggers phát triển.
-
-:::
-
 Scott Driggers xây dựng ứng dụng Roam như một ứng dụng miễn phí. DỊCH VỤ này được cung cấp bởi Scott Driggers hoàn toàn miễn phí và dự định sử dụng nguyên trạng.
 
 Trang này được dùng để thông báo cho khách truy cập về các chính sách của tôi liên quan đến việc thu thập, sử dụng và tiết lộ Thông Tin Cá Nhân nếu ai đó quyết định sử dụng Dịch Vụ của tôi.

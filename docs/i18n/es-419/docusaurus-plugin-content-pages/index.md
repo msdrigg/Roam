@@ -8,12 +8,6 @@ hide_table_of_contents: true
 
 ## Acerca de Roam
 
-:::warning
-
-Esta es una página de soporte para la aplicación Roam, no para Roly. Recientemente descubrí que la aplicación Roly copió mi código fuente y la página de la app store, incluso enlazando aquí a mi página de soporte. Esto es fraudulento e incorrecto. 
-
-:::
-
 :::tip[Invítame un café]
 
 Roam es gratis, sin anuncios y sin niveles de pago. Si te resulta útil, puedes [dejar una propina](/coffee).

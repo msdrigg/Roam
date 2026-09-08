@@ -8,12 +8,6 @@ hide_table_of_contents: true
 
 ## Tungkol sa Roam
 
-:::warning
-
-Ito ay support page para sa Roam application, hindi Roly. Kamakailan ko lang nalaman na kinopya ng Roly app ang aking source code at app store page, pati na rin ang pag-link dito sa support page ko. Ito ay panlilinlang at mali.
-
-:::
-
 :::tip[Bilhan mo ako ng kape]
 
 Libreng gamitin ang Roam, walang ads at walang bayad na bersyon. Kung nakatulong ito sa'yo, pwede kang [magbigay ng tip](/coffee).
