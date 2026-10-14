@@ -5,7 +5,7 @@
 //! sections (in-process backtrace, debug errors, logs) that belong to the
 //! upload rather than to any one crash.
 
-use std::sync::LazyLock;
+use std::{borrow::Cow, sync::LazyLock};
 
 use regex::Regex;
 
@@ -66,6 +66,31 @@ fn day_of(timestamp: &str) -> Option<String> {
     RE.find(timestamp).map(|m| m.as_str().to_string())
 }
 
+/// The report with its `Hang N` sections cut out.
+///
+/// Hangs render as one run between the last crash and the trailing sections.
+/// A hang stack is not the crash's, so rules and per-crash facts must not see
+/// it: a hang inside `DatabaseFileLock` would otherwise close an unrelated
+/// `SIGKILL` as a lock suspension.
+pub fn without_hangs(report: &str) -> Cow<'_, str> {
+    static HANG_RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?m)^Hang \d+(?: \(version [^)]*\))?\s*$").expect("valid hang regex")
+    });
+    let Some(start) = HANG_RE.find(report).map(|m| m.start()) else {
+        return Cow::Borrowed(report);
+    };
+    let mut end = report.len();
+    let mut offset = start;
+    for line in report[start..].split_inclusive('\n') {
+        if TRAILING_HEADERS.iter().any(|h| line.starts_with(h)) {
+            end = offset;
+            break;
+        }
+        offset += line.len();
+    }
+    Cow::Owned(format!("{}{}", &report[..start], &report[end..]))
+}
+
 /// Byte ranges of each `Crash N` section, paired with `N`.
 fn crash_sections(report: &str) -> Vec<(i64, usize, usize)> {
     static CRASH_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -105,8 +130,10 @@ fn crash_sections(report: &str) -> Vec<(i64, usize, usize)> {
 }
 
 /// One entry per `Crash N` section. A report that predates those headers but
-/// still carries a `Metadata:` block is read as a single crash.
+/// still carries a `Metadata:` block is read as a single crash. A report of
+/// hangs alone has no crashes.
 pub fn parse_report(report: &str) -> Vec<ParsedCrash> {
+    let report = &*without_hangs(report);
     let mut sections = crash_sections(report);
     if sections.is_empty() {
         if !report.contains("\nMetadata:") {
@@ -185,6 +212,46 @@ Logs (2 entries, 2026-09-13 04:24:44.000Z -> 2026-09-16 00:51:14.000Z)
 Crash 3 is not a section, it is a log line
   appVersion: 9.99
 ";
+
+    const CRASH_WITH_HANG_REPORT: &str = "Payload window: 2026-10-12 14:12:00 -> 2026-10-12 14:12:00
+Install: user_id=dgy-xxh-wcj build=20261006.0253120.0 release=1.59 platform=iOS os=26.6.1 locale=en
+
+Crash 1 (version 1.0.0)
+Metadata:
+  appVersion: 1.59
+  exceptionType: 10
+  signal: 9
+Threads (frame 0 is innermost):
+Thread 0 (attributed - this is the thread that crashed):
+  0   libsystem_kernel.dylib       +0x11e0      pread samples=1
+
+Hang 1 (version 1.0.0)
+Hang duration: 4 sec
+Metadata:
+  appVersion: 1.58
+Threads (frame 0 is innermost):
+Thread 0 (attributed - the thread that hung, sampled across the hang):
+  0   Roam                         +0x54788     specialized DatabaseFileLock.withExclusiveLock<A> samples=40
+
+Logs (none captured)
+";
+
+    #[test]
+    fn hang_sections_stay_out_of_crash_facts_and_rules() {
+        let stripped = without_hangs(CRASH_WITH_HANG_REPORT);
+        assert!(!stripped.contains("Hang 1"));
+        assert!(!stripped.contains("DatabaseFileLock"));
+        assert!(stripped.contains("pread"));
+        assert!(stripped.ends_with("Logs (none captured)\n"));
+
+        let crashes = parse_report(CRASH_WITH_HANG_REPORT);
+        assert_eq!(crashes.len(), 1);
+        assert_eq!(crashes[0].facts.app_version.as_deref(), Some("1.59"));
+        // `database-lock-suspension` would claim this SIGKILL off the hang's frame.
+        assert_eq!(crashes[0].matched_rule_id, None);
+
+        assert!(matches!(without_hangs(TWO_CRASH_REPORT), Cow::Borrowed(_)));
+    }
 
     #[test]
     fn splits_each_crash_with_shared_header() {

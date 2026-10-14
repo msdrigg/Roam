@@ -792,6 +792,7 @@ impl SymbolicationClient {
         tracing::info!(
             payload_bytes = payload_bytes.len(),
             crash_diagnostics = payload.crash_diagnostics.len(),
+            hang_diagnostics = payload.hang_diagnostics.len(),
             "Parsed MetricKit payload"
         );
 
@@ -807,7 +808,7 @@ impl SymbolicationClient {
         };
 
         let mut requests = BTreeMap::new();
-        for crash in &payload.crash_diagnostics {
+        for crash in payload.diagnostics() {
             for call_stack in &crash.call_stack_tree.call_stacks {
                 for frame in &call_stack.call_stack_root_frames {
                     Self::collect_symbolication_requests(frame, &mut requests);
@@ -1086,9 +1087,20 @@ pub(crate) struct MetricKitPayload {
     pub(crate) time_stamp_end: Option<String>,
     #[serde(default)]
     pub(crate) crash_diagnostics: Vec<MetricKitCrashDiagnostic>,
+    /// `MXHangDiagnostic` serializes the same `callStackTree` and
+    /// `diagnosticMetaData` shape, with `hangDuration` in the metadata.
+    #[serde(default)]
+    pub(crate) hang_diagnostics: Vec<MetricKitCrashDiagnostic>,
 }
 
 impl MetricKitPayload {
+    /// Crashes, then hangs.
+    pub(crate) fn diagnostics(&self) -> impl Iterator<Item = &MetricKitCrashDiagnostic> {
+        self.crash_diagnostics
+            .iter()
+            .chain(self.hang_diagnostics.iter())
+    }
+
     /// Every `binaryUUID` in the payload, walked from the parsed frame tree.
     ///
     /// Kept as the reference implementation `scan_binary_uuids` is checked
@@ -1096,7 +1108,7 @@ impl MetricKitPayload {
     #[cfg(test)]
     pub(crate) fn binary_uuids(&self) -> BTreeSet<String> {
         let mut out = BTreeSet::new();
-        for crash in &self.crash_diagnostics {
+        for crash in self.diagnostics() {
             for stack in &crash.call_stack_tree.call_stacks {
                 for frame in &stack.call_stack_root_frames {
                     collect_binary_uuids(frame, &mut out);
@@ -1111,7 +1123,7 @@ impl MetricKitPayload {
     /// reader to match a bare hex string against the stacks below it.
     fn binary_names_by_breakpad_id(&self) -> BTreeMap<String, String> {
         let mut out = BTreeMap::new();
-        for crash in &self.crash_diagnostics {
+        for crash in self.diagnostics() {
             for stack in &crash.call_stack_tree.call_stacks {
                 for frame in &stack.call_stack_root_frames {
                     collect_binary_names(frame, &mut out);
@@ -1252,8 +1264,7 @@ struct SystemSymbolRequirement {
 
 impl MetricKitPayload {
     fn system_symbol_requirement(&self) -> Option<SystemSymbolRequirement> {
-        self.crash_diagnostics
-            .iter()
+        self.diagnostics()
             .find_map(MetricKitCrashDiagnostic::system_symbol_requirement)
     }
 }
@@ -2675,46 +2686,45 @@ fn render_metric_report(
             }
         }
 
-        if !crash.call_stack_tree.call_stacks.is_empty() {
-            writeln!(report, "Threads (frame 0 is innermost):")?;
+        render_threads(
+            &mut report,
+            crash,
+            " (attributed - this is the thread that crashed)",
+            stack_overflow,
+            symbolicated_addresses,
+            lookup_errors,
+        )?;
+    }
+
+    // After every crash and before the trailing sections, which
+    // `crash_records::without_hangs` relies on to cut them back out.
+    for (hang_index, hang) in payload.hang_diagnostics.iter().enumerate() {
+        writeln!(
+            report,
+            "Hang {}{}",
+            hang_index + 1,
+            hang.version
+                .as_deref()
+                .map(|version| format!(" (version {version})"))
+                .unwrap_or_default()
+        )?;
+        if let Some(duration) = metadata_string(&hang.diagnostic_meta_data, "hangDuration") {
+            writeln!(report, "Hang duration: {duration}")?;
         }
-        for (stack_index, call_stack) in crash.call_stack_tree.call_stacks.iter().enumerate() {
-            writeln!(
-                report,
-                "Thread {}{}:",
-                stack_index,
-                if call_stack.thread_attributed {
-                    " (attributed - this is the thread that crashed)"
-                } else {
-                    ""
-                }
-            )?;
-            if call_stack.call_stack_root_frames.is_empty() {
-                // An empty thread means the unwinder produced no frames, which
-                // on the attributed thread makes the report unusable. Say so
-                // rather than printing a blank line.
-                writeln!(report, "  (no frames - MetricKit captured no backtrace)")?;
-                if call_stack.thread_attributed && stack_overflow {
-                    writeln!(
-                        report,
-                        "  The crash is a stack overflow, and MetricKit unwinds in-process: \
-                         there was no stack left to walk, so the frames that would name the \
-                         runaway call are unrecoverable from this payload."
-                    )?;
-                }
-            } else {
-                let mut next_index = 0usize;
-                render_call_stack(
-                    &mut report,
-                    &call_stack.call_stack_root_frames,
-                    0,
-                    &mut next_index,
-                    symbolicated_addresses,
-                    lookup_errors,
-                )?;
+        if !hang.diagnostic_meta_data.is_empty() {
+            writeln!(report, "Metadata:")?;
+            for (key, value) in &hang.diagnostic_meta_data {
+                writeln!(report, "  {key}: {}", render_json_scalar(value))?;
             }
-            writeln!(report)?;
         }
+        render_threads(
+            &mut report,
+            hang,
+            " (attributed - the thread that hung, sampled across the hang)",
+            false,
+            symbolicated_addresses,
+            lookup_errors,
+        )?;
     }
 
     render_faulting_thread_backtraces(&mut report, diagnostics)?;
@@ -2722,6 +2732,58 @@ fn render_metric_report(
     render_logs(&mut report, diagnostics, payload)?;
 
     Ok(report)
+}
+
+fn render_threads(
+    report: &mut String,
+    diagnostic: &MetricKitCrashDiagnostic,
+    attributed_label: &str,
+    stack_overflow: bool,
+    symbolicated_addresses: &BTreeMap<String, LookedUpAddresses>,
+    lookup_errors: &BTreeMap<String, String>,
+) -> Result<()> {
+    let call_stacks = &diagnostic.call_stack_tree.call_stacks;
+    if !call_stacks.is_empty() {
+        writeln!(report, "Threads (frame 0 is innermost):")?;
+    }
+    for (stack_index, call_stack) in call_stacks.iter().enumerate() {
+        writeln!(
+            report,
+            "Thread {}{}:",
+            stack_index,
+            if call_stack.thread_attributed {
+                attributed_label
+            } else {
+                ""
+            }
+        )?;
+        if call_stack.call_stack_root_frames.is_empty() {
+            // An empty thread means the unwinder produced no frames, which
+            // on the attributed thread makes the report unusable. Say so
+            // rather than printing a blank line.
+            writeln!(report, "  (no frames - MetricKit captured no backtrace)")?;
+            if call_stack.thread_attributed && stack_overflow {
+                writeln!(
+                    report,
+                    "  The crash is a stack overflow, and MetricKit unwinds in-process: \
+                     there was no stack left to walk, so the frames that would name the \
+                     runaway call are unrecoverable from this payload."
+                )?;
+            }
+        } else {
+            let mut next_index = 0usize;
+            render_call_stack(
+                report,
+                &call_stack.call_stack_root_frames,
+                0,
+                &mut next_index,
+                symbolicated_addresses,
+                lookup_errors,
+            )?;
+        }
+        writeln!(report)?;
+    }
+    Ok(())
 }
 
 /// The app's own backtrace of the faulting thread.
@@ -3518,6 +3580,87 @@ mod tests {
         let diagnosis_at = report.find("Diagnosis:").expect("diagnosis line");
         let metadata_at = report.find("Metadata:").expect("metadata block");
         assert!(diagnosis_at < metadata_at, "{report}");
+    }
+
+    #[test]
+    fn report_renders_hangs_after_crashes() {
+        let payload: MetricKitPayload = serde_json::from_value(serde_json::json!({
+            "timeStampBegin": "2026-10-12 14:12:00",
+            "timeStampEnd": "2026-10-12 14:12:00",
+            "crashDiagnostics": [{
+                "version": "1.0.0",
+                "callStackTree": { "callStacks": [] },
+                "diagnosticMetaData": { "exceptionType": 10, "signal": 9 }
+            }],
+            "hangDiagnostics": [{
+                "version": "1.0.0",
+                "callStackTree": {
+                    "callStackPerThread": true,
+                    "callStacks": [{
+                        "threadAttributed": true,
+                        "callStackRootFrames": [{
+                            "binaryName": "SwiftUICore",
+                            "offsetIntoBinaryTextSegment": 4096,
+                            "sampleCount": 18,
+                            "subFrames": []
+                        }]
+                    }]
+                },
+                "diagnosticMetaData": { "hangDuration": "9.25 sec", "appVersion": "1.59" }
+            }]
+        }))
+        .expect("payload deserializes");
+        assert_eq!(payload.diagnostics().count(), 2);
+
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(
+            report.contains("Hang 1 (version 1.0.0)\nHang duration: 9.25 sec\n"),
+            "{report}"
+        );
+        assert!(report.contains("the thread that hung"), "{report}");
+        assert!(report.contains("samples=18"), "{report}");
+        let crash_at = report.find("Crash 1").expect("crash section");
+        let hang_at = report.find("Hang 1").expect("hang section");
+        let logs_at = report.find("Logs (").expect("logs section");
+        assert!(crash_at < hang_at && hang_at < logs_at, "{report}");
+        assert_eq!(crate::crash_records::parse_report(&report).len(), 1);
+    }
+
+    #[test]
+    fn report_of_hangs_alone_has_no_crashes() {
+        let payload: MetricKitPayload = serde_json::from_value(serde_json::json!({
+            "hangDiagnostics": [{
+                "callStackTree": { "callStacks": [] },
+                "diagnosticMetaData": { "hangDuration": "3 sec", "appVersion": "1.59" }
+            }]
+        }))
+        .expect("payload deserializes");
+
+        let report = render_metric_report(
+            &empty_diagnostics(),
+            &empty_device_info(),
+            &payload,
+            &BTreeMap::new(),
+            &BTreeMap::new(),
+        )
+        .expect("report renders");
+
+        assert!(
+            report.contains("Hang 1\nHang duration: 3 sec\n"),
+            "{report}"
+        );
+        assert!(
+            crate::crash_records::parse_report(&report).is_empty(),
+            "{report}"
+        );
     }
 
     /// The `virtualMemoryRegionInfo` from the macOS 26.6.2 crash that motivated

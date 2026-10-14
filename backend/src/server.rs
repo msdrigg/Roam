@@ -1482,6 +1482,7 @@ async fn auto_review_crash(
     crash_message_id: i64,
     report: &str,
 ) -> anyhow::Result<()> {
+    let report = &*crate::crash_records::without_hangs(report);
     let facts = crate::crash_rules::CrashFacts::from_report(report);
     app_context
         .db_client()
@@ -2017,8 +2018,15 @@ async fn submit_symbolication_result(
             // Track the crash for review, then let the rules engine try to
             // close it out. A failure here must not fail the symbolication
             // result the worker just delivered, so everything is logged rather
-            // than propagated.
-            if let Err(err) = auto_review_crash(&app_context, row.thread_id, posted.id, &text).await
+            // than propagated. A report of hangs alone is posted for reading
+            // but is not a crash to review.
+            if crate::crash_records::parse_report(&text).is_empty() {
+                tracing::info!(
+                    thread_id = row.thread_id,
+                    "Symbolicated report has no crashes; not queued for review"
+                );
+            } else if let Err(err) =
+                auto_review_crash(&app_context, row.thread_id, posted.id, &text).await
             {
                 tracing::error!(
                     ?err,
