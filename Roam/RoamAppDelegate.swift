@@ -419,8 +419,18 @@ private enum ActivationPolicyCoalescer {
                 @unknown default: return "unknown"
                 }
             }()
+            var launch = launchState
+            // iOS sets this for a launch it starts ahead of the user opening the
+            // app. Such a launch carries no launch options and builds the UI.
+            if ProcessInfo.processInfo.environment["ActivePrewarm"] == "1" {
+                launch += " prewarm"
+            }
             let reasons = (launchOptions ?? [:]).keys.map(\.rawValue).sorted().joined(separator: ",")
-            FileLog.recordLaunchState(reasons.isEmpty ? launchState : "\(launchState) options=\(reasons)")
+            if !reasons.isEmpty {
+                launch += " options=\(reasons)"
+            }
+            FileLog.recordLaunchState(launch)
+            MainThreadStallMonitor.noteLaunch(launch)
 
             self.networkMonitor.startMonitoring()
             self.timedMute.resumeIfNeeded()
@@ -467,6 +477,12 @@ private enum ActivationPolicyCoalescer {
             RoamDataHandler.initializeSharedAtLaunch()
             migrateOffSwiftData()
             return true
+        }
+
+        func applicationWillTerminate(_: UIApplication) {
+            Log.lifecycle.notice(
+                "applicationWillTerminate; \(MainThreadStallMonitor.describeLastAnswer(), privacy: .public)")
+            FileLog.flushNow()
         }
 
         func handleTypingNotification() {

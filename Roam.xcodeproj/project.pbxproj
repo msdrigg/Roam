@@ -40,6 +40,7 @@
 		AF0D09F22CDE5C410098122E /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0D09EE2CDE5C3B0098122E /* Helpers.swift */; };
 		AF0D09F42CDE64750098122E /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0D09EE2CDE5C3B0098122E /* Helpers.swift */; };
 		AF1065CF2DE7A8DE0058E45A /* MetricManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1065CE2DE7A8D50058E45A /* MetricManager.swift */; };
+		AF1065D32DE7A8DE0058E45A /* MainThreadStallMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1065D22DE7A8D50058E45A /* MainThreadStallMonitor.swift */; };
 		AF15C2492AE8672700B79FD9 /* RoamWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */; };
 		AF15C2532AE8672800B79FD9 /* Roam.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF15C2462AE8672700B79FD9 /* Roam.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AF1899F22C1CB204001EDA78 /* NavigationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF1899F12C1CB200001EDA78 /* NavigationManager.swift */; };
@@ -475,6 +476,7 @@
 		AF0C82942AEBFB4600CBE7F8 /* APIHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIHelpers.swift; sourceTree = "<group>"; };
 		AF0D09EE2CDE5C3B0098122E /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		AF1065CE2DE7A8D50058E45A /* MetricManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricManager.swift; sourceTree = "<group>"; };
+		AF1065D22DE7A8D50058E45A /* MainThreadStallMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainThreadStallMonitor.swift; sourceTree = "<group>"; };
 		AF11D36A2AD2D0B800527AF6 /* AppLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLinksView.swift; sourceTree = "<group>"; };
 		AF15C2462AE8672700B79FD9 /* Roam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Roam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF15C2482AE8672700B79FD9 /* RoamWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoamWatchApp.swift; sourceTree = "<group>"; };
@@ -1029,6 +1031,7 @@
 				AFAA1D0012E0000800BAE156 /* TipJar.storekit */,
 				AFDB19A52C0D8E4A00C4DAB7 /* Info.plist */,
 				AF1065CE2DE7A8D50058E45A /* MetricManager.swift */,
+				AF1065D22DE7A8D50058E45A /* MainThreadStallMonitor.swift */,
 				AFC0FFEE1A2B3C4D5E6F7081 /* HeadphonesModeController.swift */,
 				AFA4ECF6875139375470B831 /* TimedMuteController.swift */,
 				AFC24EFE2AD0E5A1002AB66C /* RoamApp.swift */,
@@ -1682,6 +1685,7 @@
 				AF2C85A72D37183E00A167B2 /* ECPProtocol.swift in Sources */,
 				AFD590D62AEC787700189620 /* ModelContainer.swift in Sources */,
 				AF1065CF2DE7A8DE0058E45A /* MetricManager.swift in Sources */,
+				AF1065D32DE7A8DE0058E45A /* MainThreadStallMonitor.swift in Sources */,
 				AF2C372F2D53D23E00D7B79F /* NetworkConnectivityBanner.swift in Sources */,
 				AF6D560D2DCE47EE00B00780 /* AsyncTimerSequence.swift in Sources */,
 				AF736A822DCD57DD0028A2B4 /* Attachment.swift in Sources */,

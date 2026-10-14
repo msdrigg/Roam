@@ -161,6 +161,23 @@ context. The interesting parts of a symbolicated report are:
 
 Read the attributed thread. Other threads are usually idle and will mislead you.
 
+**Hangs.** Builds after 1.59 upload MetricKit hang diagnostics too. They render
+as `Hang N` sections after the crashes, with a `Hang duration:` line and a main
+thread sampled across the whole stall (`samples=` counts show where the time
+went). A report of hangs alone is posted to the thread but never enters the
+review queue, and hang sections are cut out before rules and per-crash records
+see the report. For a watchdog crash, look for a hang report in the same thread
+around the same time.
+
+For a watchdog kill, also check the `Lifecycle` log lines from the run that
+died. On those builds the app's own stall monitor writes
+`Main thread unresponsive for Ns` every 2s while main is stuck, which tells one
+long stall from a string of short ones. `SIGTERM received` means the system
+asked the app to quit, `applicationWillTerminate` means the main thread got to
+handle that, and `Launch state=... prewarm` marks a launch iOS started ahead of
+the user. `Launch state=background` alone means little, because a scene-based
+app reports `background` in `didFinishLaunching` even when the user opened it.
+
 **When the attributed thread has no frames**, the process blew its stack:
 MetricKit cannot unwind an overflowed stack and reports the thread empty. Go to
 the in-process backtrace instead - a frame repeating down that list is the

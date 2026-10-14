@@ -92,12 +92,21 @@ final class RoamMetricManager: NSObject, MXMetricManagerSubscriber, Sendable {
 
     func didReceive(_ payload: [MXDiagnosticPayload]) {
         Log.backend.notice("Getting \(payload.count, privacy: .public) payloads in metric manager")
-        let crashPayloads = payload.filter { $0.crashDiagnostics?.isEmpty == false }
+        // Hangs upload too: a hang report samples the main thread across the
+        // whole stall, where a watchdog crash carries one sample.
+        let crashPayloads = payload.filter {
+            $0.crashDiagnostics?.isEmpty == false || $0.hangDiagnostics?.isEmpty == false
+        }
         if !crashPayloads.isEmpty {
+            let crashCount = crashPayloads.reduce(0) { $0 + ($1.crashDiagnostics?.count ?? 0) }
+            let hangCount = crashPayloads.reduce(0) { $0 + ($1.hangDiagnostics?.count ?? 0) }
+            Log.backend.notice(
+                "MetricKit delivered \(crashCount, privacy: .public) crashes and \(hangCount, privacy: .public) hangs"
+            )
             let payloadData = crashPayloads.map {
                 jsonRepresentationIncludingTerminationFields($0)
             }
-            // The window the crashes happened in - always an earlier launch
+            // The window the diagnostics happened in - always an earlier launch
             // than this one, since MetricKit only delivers on the next start.
             // It selects which run's logs get uploaded (see `getDebugInfo`).
             let crashWindow = crashPayloads.reduce(nil) { (window: DateInterval?, payload) in

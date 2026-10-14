@@ -37,6 +37,7 @@ struct RoamApp: App {
         // useful if it beats the crash.
         FileLog.start()
         CrashStackTrap.install()
+        MainThreadStallMonitor.start()
         Log.lifecycle.notice("Starting Roam")
         #if !os(macOS)
             installAborter()
