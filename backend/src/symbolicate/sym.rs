@@ -3179,7 +3179,7 @@ fn extract_zip_archive<R: Read + Seek>(dsym_zip: R, extracted_root: &Path) -> Re
             .by_index(index)
             .with_context(|| format!("reading zip entry {index}"))?;
         let Some(enclosed_name) = file.enclosed_name() else {
-            tracing::warn!(entry = file.name(), "Skipping unsafe zip entry path");
+            tracing::warn!(entry = ?file.name(), "Skipping unsafe zip entry path");
             continue;
         };
         let out_path = extracted_root.join(enclosed_name);
