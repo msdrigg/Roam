@@ -6,4 +6,4 @@ Roam est une application gratuite sans publicité!
 -   Prise en charge du mode écouteurs (écoutez l’audio de votre téléviseur dans vos écouteurs)
 -   Détection automatique des appareils sur votre réseau local dès l’ouverture de l’application
 -   Design intuitif basé sur le système de design natif SwiftUI d’Apple
--   Rapide et léger (téléchargement de 11 Mo) et s’ouvre instantanément
+-   Rapide et léger (téléchargement de 6 Mo) et s’ouvre instantanément

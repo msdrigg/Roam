@@ -6,4 +6,4 @@
 -   Soporta modo de auriculares (escucha el audio de tu TV a través de tus auriculares)
 -   Detecta dispositivos en tu red local tan pronto como abres la aplicación
 -   Diseño intuitivo con el sistema nativo SwiftUI de Apple
--   Rápida y liviana (descarga de 11 MB) y se abre al instante
+-   Rápida y liviana (descarga de 6 MB) y se abre al instante

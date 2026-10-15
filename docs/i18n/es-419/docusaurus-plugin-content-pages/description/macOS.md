@@ -6,4 +6,4 @@
 -   Soporte para modo audífonos (reproduce el audio de tu TV en tus audífonos)
 -   Detecta dispositivos en tu red local en cuanto abres la app
 -   Diseño intuitivo con el sistema de diseño nativo SwiftUI de Apple
--   Rápida y liviana (descarga de 11 MB) y se abre al instante
+-   Rápida y liviana (descarga de 6 MB) y se abre al instante
