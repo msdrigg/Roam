@@ -53,6 +53,17 @@ final class ECPMonitor {
             return
         }
 
+        // `@Observable` invalidates readers on every assignment, equal or not,
+        // and the remote page reads `textEditStatus` from its body. Clearing an
+        // already-clear monitor at launch re-ran that body in the middle of the
+        // split view's first layout, which held a cold iPad launch in a layout
+        // loop for tens of seconds.
+        if device == nil, ecpClient == nil, reconnectTask == nil, case .disconnected = status,
+            textEditStatus == .off
+        {
+            return
+        }
+
         generation += 1
         reconnectTask?.cancel()
         reconnectTask = nil
@@ -64,7 +75,7 @@ final class ECPMonitor {
                 Log.connection.error("Could not parse URL for selected device \(device?.location ?? "nil", privacy: .public)")
             }
             status = .disconnected(.now)
-            textEditStatus = .off
+            if textEditStatus != .off { textEditStatus = .off }
             Task {
                 await oldEcpClient?.shutdown()
             }
@@ -88,7 +99,7 @@ final class ECPMonitor {
         )
         self.ecpClient = ecpClient
         self.status = .connecting(.now)
-        self.textEditStatus = .off
+        if textEditStatus != .off { textEditStatus = .off }
         // One serialized task, so the old client is retired before the new one
         // starts and a racing `setDevice` cannot leave an orphan connection.
         Task {
