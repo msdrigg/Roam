@@ -131,6 +131,7 @@ struct PhoneHomeView: View {
                         $0.safeAreaInset(edge: .bottom, spacing: 0) { simulatedBottomBar }
                     }
                 }
+                .background(NavigationTransitionRepair())
                 .navigationDestination(for: String.self) { deviceId in
                     detailDestination(for: deviceId)
                 }
@@ -485,6 +486,75 @@ struct PhoneHomeView: View {
     private func runManualScan() async {
         guard let scanIPV4Actor, let scanSSDPActor else { return }
         await performManualDeviceScan(ipv4Actor: scanIPV4Actor, ssdpActor: scanSSDPActor)
+    }
+}
+
+/// Restores the grid after a cancelled zoom transition. Swiping back from the
+/// pager, or flinging back a push that was grabbed mid-zoom, reaches the grid
+/// as a cancelled push. UIKit then sometimes leaves the navigation bar the
+/// pager hid at zero alpha, so the large title draws over the list without
+/// its safe-area inset, and leaves the pager's own toolbar view on screen
+/// over the grid's bottom bar. Seen on iOS 27.0.
+private struct NavigationTransitionRepair: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> Controller { Controller() }
+
+    func updateUIViewController(_ controller: Controller, context: Context) {}
+
+    final class Controller: UIViewController {
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            transitionCoordinator?.animate(alongsideTransition: nil) { [weak self] context in
+                guard context.isCancelled else { return }
+                // UIKit finishes unwinding after this callback returns.
+                DispatchQueue.main.async {
+                    self?.restoreNavigationBar()
+                    self?.hideOrphanedToolbars()
+                }
+            }
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            restoreNavigationBar()
+            hideOrphanedToolbars()
+        }
+
+        /// The grid's bottom bar is drawn in its own view, and the navigation
+        /// controller's toolbar sits unused, so any other visible toolbar
+        /// belongs to a pager that is no longer on the stack.
+        private func hideOrphanedToolbars() {
+            guard let nav = navigationController, nav.viewControllers.count == 1,
+                nav.transitionCoordinator == nil, let window = nav.view.window
+            else {
+                return
+            }
+            var orphans: [UIToolbar] = []
+            func collect(_ view: UIView) {
+                if let toolbar = view as? UIToolbar, toolbar !== nav.toolbar, !toolbar.isHidden,
+                    toolbar.bounds.height > 0, toolbar.bounds.height < window.bounds.height / 2
+                {
+                    orphans.append(toolbar)
+                }
+                view.subviews.forEach(collect)
+            }
+            collect(window)
+            for toolbar in orphans {
+                Log.userInteraction.notice("Hiding a toolbar left behind by a cancelled transition")
+                toolbar.isHidden = true
+            }
+        }
+
+        private func restoreNavigationBar() {
+            guard let nav = navigationController, !nav.isNavigationBarHidden,
+                nav.viewControllers.count == 1, nav.navigationBar.alpha < 1
+            else {
+                return
+            }
+            Log.userInteraction.notice("Restoring navigation bar left invisible by a cancelled transition")
+            nav.navigationBar.alpha = 1
+            nav.view.setNeedsLayout()
+            nav.view.layoutIfNeeded()
+        }
     }
 }
 
