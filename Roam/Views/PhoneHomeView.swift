@@ -396,8 +396,8 @@ struct PhoneHomeView: View {
     }
 
     private func openDevice(_ deviceId: String) {
-        // A tap that lands while the pager is still zooming away is ignored.
-        guard !zoomPresenter.isPresenting else { return }
+        // A tap that lands while the pager is zooming away opens once it is gone.
+        guard zoomPresenter.canPresent else { return }
         selectedDeviceId = deviceId
         zoomPresenter.present(deviceId: deviceId, animated: true)
     }
@@ -517,11 +517,12 @@ final class DeviceZoomPresenter {
     private var pending: (deviceId: String, animated: Bool)?
     private let sources = NSMapTable<NSString, UIView>.strongToWeakObjects()
 
-    /// True from the moment a presentation starts until its dismissal ends.
-    var isPresenting: Bool { isShowing }
+    /// False while the pager is up, but true again once it starts zooming
+    /// away, so a tap on another card during the zoom is not lost.
+    var canPresent: Bool { !isShowing || presented?.isBeingDismissed == true }
 
     func present(deviceId: String, animated: Bool) {
-        guard !isShowing else { return }
+        guard canPresent else { return }
         pending = (deviceId, animated)
         presentPendingIfPossible()
     }
@@ -545,6 +546,11 @@ final class DeviceZoomPresenter {
         guard isShowing else { return }
         isShowing = false
         onPresentedChange?(false)
+        // The pager's disappearance can arrive before UIKit clears it as the
+        // presented controller, which would refuse the queued presentation.
+        Task { @MainActor [weak self] in
+            self?.presentPendingIfPossible()
+        }
     }
 
     /// Dismisses once a Duo has finished moving to its inner display.
