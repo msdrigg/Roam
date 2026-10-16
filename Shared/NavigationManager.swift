@@ -25,6 +25,9 @@ final class NavigationManager {
     var selectedTab: AppTab = .device("")
     var settingsNavigationPath: [NavigationDestination] = []
     var showSettings: Bool = false
+    /// Set while the iPhone pager is presented over the device grid, so the
+    /// root sheets present from the pager instead.
+    var phonePagerIsPresented: Bool = false
     #endif
 
     #if os(macOS)

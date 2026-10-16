@@ -1,15 +1,16 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
 
 /// Adaptive phone root: a sidebar and remote on the inner display,
 /// or a device grid and pushed pager in compact layouts.
 ///
-/// Tapping a card pushes `PhoneDeviceDetailPager` on a local `NavigationStack`.
-/// On iOS 18+ the push uses a `.zoom` matched-transition for the Weather-style
-/// effect; older OSes and foldables fall back to a default push.
+/// Tapping a card presents `PhoneDeviceDetailPager` full screen, zooming out of
+/// the card the way Weather opens a city. `DeviceZoomPresenter` does this in
+/// UIKit; see its comment for why.
 ///
-/// When the grid first appears, the selected device's pager is pushed without
-/// animation so the app opens to the last-viewed remote.
+/// When the grid first appears, the selected device's pager is presented
+/// without animation so the app opens to the last-viewed remote.
 struct PhoneHomeView: View {
     @EnvironmentObject private var appDelegate: RoamAppDelegate
     @Environment(\.scenePhase) private var scenePhase
@@ -19,17 +20,14 @@ struct PhoneHomeView: View {
     @State private var devicesLoader = DeviceListLoader(dataHandler: .shared)
     @State private var primaryDeviceLoader = PrimaryDeviceLoader(dataHandler: .shared)
     @State private var messageLoader = MessageListLoader(dataHandler: .shared)
-    @State private var path: [String] = []
     @State private var didAutoOpenPrimary = false
-    // Only an unfolded iPhone Duo reaches the sidebar layout. Folding pushes
-    // the pager over a grid that was never on screen, so there is no card to
-    // zoom back to, and foldables skip the zoom altogether.
-    @AppStorage(UserDefaultKeys.phoneHasShownSidebar) private var isFoldable = false
+    // Nil on a phone without a hinge, or while its state is unknown.
+    @State private var isHingeOpen: Bool?
+    @State private var zoomPresenter = DeviceZoomPresenter()
     @State private var scanIPV4Actor: DeviceDiscoveryActor?
     @State private var scanSSDPActor: DeviceDiscoveryActor?
     @State private var dropTargetId: String?
 
-    @Namespace private var cardNamespace
     // Shared by both navigation modes and the compact grid zoom transition.
     @State private var selectedDeviceId: String?
 
@@ -38,7 +36,9 @@ struct PhoneHomeView: View {
     private var unreadMessages: Int { messageLoader.unreadCount }
 
     var body: some View {
-        Group {
+        // A ZStack rather than a Group, which would give each branch its own
+        // hinge observer and rebuild it on every fold.
+        ZStack {
             if usesSidebar {
                 NavigationStack {
                     PhoneDeviceDetailPager(
@@ -53,11 +53,22 @@ struct PhoneHomeView: View {
                 phoneNavigation
             }
         }
-        .onChange(of: usesSidebar, initial: true) { oldValue, usesSidebar in
-            if usesSidebar { isFoldable = true }
-            guard oldValue != usesSidebar else { return }
+        .background(
+            HingeObserver { [zoomPresenter] isOpen in
+                isHingeOpen = isOpen
+                // While the pager covers the grid, SwiftUI holds the grid's
+                // updates until it is back in the window, so unfolding has to
+                // put it back from here.
+                if isOpen == true { zoomPresenter.dismissAfterDisplayChange() }
+            }
+        )
+        .onChange(of: usesSidebar) { _, usesSidebar in
             didAutoOpenPrimary = true
-            path = usesSidebar ? [] : selectedDeviceId.map { [$0] } ?? []
+            if usesSidebar {
+                zoomPresenter.dismissAfterDisplayChange()
+            } else if let selectedDeviceId {
+                zoomPresenter.present(deviceId: selectedDeviceId, animated: false)
+            }
         }
         .onAppear {
             if scanIPV4Actor == nil { scanIPV4Actor = DeviceDiscoveryActor() }
@@ -82,31 +93,22 @@ struct PhoneHomeView: View {
         .onChange(of: deviceIds) { _, ids in
             if ids.isEmpty {
                 selectedDeviceId = nil
-                path = []
+                zoomPresenter.dismiss(animated: true)
             }
         }
         .task(id: autoOpenDeviceId) {
             guard !didAutoOpenPrimary, let deviceId = autoOpenDeviceId else { return }
-            // The zoom source must be laid out before the initial push.
-            do {
-                try await Task.sleep(for: .milliseconds(150))
-                try Task.checkCancellation()
-            } catch {
-                return
-            }
-            guard !didAutoOpenPrimary else { return }
             didAutoOpenPrimary = true
-            if path.isEmpty {
-                // No zoom-in from a card the user never tapped; the pop still zooms.
-                var transaction = Transaction()
-                transaction.disablesAnimations = true
-                withTransaction(transaction) { path = [deviceId] }
-            }
+            // No zoom-in from a card the user never tapped; the dismissal still zooms.
+            zoomPresenter.present(deviceId: deviceId, animated: false)
         }
     }
 
+    /// A foldable shows the grid on its outer display only, and the sidebar on
+    /// the inner display in either orientation.
     private var usesSidebar: Bool {
-        horizontalSizeClass == .regular && verticalSizeClass == .regular
+        if let isHingeOpen { return isHingeOpen }
+        return horizontalSizeClass == .regular && verticalSizeClass == .regular
     }
 
     private var autoOpenDeviceId: String? {
@@ -115,7 +117,7 @@ struct PhoneHomeView: View {
     }
 
     private var phoneNavigation: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             content
                 .navigationTitle(String(
                     localized: "Devices",
@@ -131,10 +133,13 @@ struct PhoneHomeView: View {
                         $0.safeAreaInset(edge: .bottom, spacing: 0) { simulatedBottomBar }
                     }
                 }
-                .background(NavigationTransitionRepair())
-                .navigationDestination(for: String.self) { deviceId in
-                    detailDestination(for: deviceId)
-                }
+                .background(
+                    DeviceZoomPresentationAnchor(
+                        presenter: zoomPresenter,
+                        selectedDeviceId: selectedDeviceId,
+                        content: presentedPager
+                    )
+                )
                 .customAccentColorTint()
         }
     }
@@ -228,8 +233,6 @@ struct PhoneHomeView: View {
         )
     }
 
-    // Because this inset lives inside `content`, it fades in alongside the
-    // `.navigationTransition(.zoom)` pop from `PhoneDeviceDetailPager`.
     private var simulatedBottomBar: some View {
         VStack(spacing: 0) {
             connectivityBanner
@@ -307,14 +310,9 @@ struct PhoneHomeView: View {
 
     private var deviceGrid: some View {
         ScrollView {
-            // Deliberately eager rather than a LazyVStack. Every card is a
-            // `.matchedTransitionSource` for the `.zoom` push into the detail
-            // pager, and UIKit's magic-morph animation hard-asserts - "Attempting
-            // to morph to a view that is not in the view hierarchy!",
-            // _UIMagicMorphAnimation.swift:71 - when the view behind the
-            // transition's sourceID is not realised. A lazy container drops
-            // scrolled-out cards, so zooming back to one killed the process.
-            // Device counts are small enough that building them all is cheap.
+            // Eager rather than a LazyVStack so every card's zoom source view
+            // exists when the pager is dismissed back to it. Device counts are
+            // small enough that building them all is cheap.
             VStack(spacing: 12) {
                 ForEach(cardRows, id: \.self) { row in
                     HStack(alignment: .top, spacing: 12) {
@@ -349,28 +347,25 @@ struct PhoneHomeView: View {
         }
     }
 
-    @ViewBuilder
     private func deviceCardButton(for deviceId: String) -> some View {
-        let card = DeviceSidebarCard(deviceId: deviceId)
-            .background(cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .deviceActions(
-                deviceId: deviceId,
-                deviceName: nil,
-                onEdit: { appDelegate.navigationPath.showEditDevice = deviceId }
-            )
+        ZoomSourceCard(presenter: zoomPresenter, deviceId: deviceId) {
+            deviceCard(for: deviceId)
+        }
+    }
 
+    /// Hosted by `ZoomSourceCard`, so it carries the accent tint itself.
+    private func deviceCard(for deviceId: String) -> some View {
         Button {
-            if path.last != deviceId {
-                selectedDeviceId = deviceId
-                path.append(deviceId)
-            }
+            openDevice(deviceId)
         } label: {
-            if #available(iOS 18.0, *) {
-                card.matchedTransitionSource(id: deviceId, in: cardNamespace)
-            } else {
-                card
-            }
+            DeviceSidebarCard(deviceId: deviceId)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .deviceActions(
+                    deviceId: deviceId,
+                    deviceName: nil,
+                    onEdit: { appDelegate.navigationPath.showEditDevice = deviceId }
+                )
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("DeviceCard_\(deviceId)")
@@ -397,6 +392,14 @@ struct PhoneHomeView: View {
                 }
             }
         }
+        .customAccentColorTint()
+    }
+
+    private func openDevice(_ deviceId: String) {
+        // A tap that lands while the pager is still zooming away is ignored.
+        guard !zoomPresenter.isPresenting else { return }
+        selectedDeviceId = deviceId
+        zoomPresenter.present(deviceId: deviceId, animated: true)
     }
 
     /// Moves `draggedId` to where `targetId` currently sits.
@@ -461,24 +464,19 @@ struct PhoneHomeView: View {
         .refreshable { await runManualScan() }
     }
 
-    // MARK: - Navigation destination
+    // MARK: - Presented pager
 
-    @ViewBuilder
-    private func detailDestination(for deviceId: String) -> some View {
-        let pager = PhoneDeviceDetailPager(
-            selectedDeviceId: $selectedDeviceId,
-            allDeviceIds: deviceIds,
-            unreadMessages: unreadMessages,
-            usesSidebar: false,
-            onScan: runManualScan,
-            onBackToHome: { path.removeAll() }
+    private func presentedPager() -> AnyView {
+        AnyView(
+            PresentedPagerRoot(
+                initialDeviceIds: deviceIds,
+                initialSelection: selectedDeviceId,
+                presenter: zoomPresenter,
+                onSelect: { selectedDeviceId = $0 },
+                onScan: runManualScan
+            )
+            .environmentObject(appDelegate)
         )
-
-        if #available(iOS 18.0, *), !isFoldable {
-            pager.navigationTransition(.zoom(sourceID: selectedDeviceId ?? deviceId, in: cardNamespace))
-        } else {
-            pager
-        }
     }
 
     // MARK: - Scanning
@@ -489,71 +487,436 @@ struct PhoneHomeView: View {
     }
 }
 
-/// Restores the grid after a cancelled zoom transition. Swiping back from the
-/// pager, or flinging back a push that was grabbed mid-zoom, reaches the grid
-/// as a cancelled push. UIKit then sometimes leaves the navigation bar the
-/// pager hid at zero alpha, so the large title draws over the list without
-/// its safe-area inset, and leaves the pager's own toolbar view on screen
-/// over the grid's bottom bar. Seen on iOS 27.0.
-private struct NavigationTransitionRepair: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> Controller { Controller() }
+// MARK: - Zoom presentation
 
-    func updateUIViewController(_ controller: Controller, context: Context) {}
+/// Presents the pager full screen with UIKit's zoom transition, out of and
+/// back into the tapped card.
+///
+/// This is UIKit rather than a SwiftUI push with `.navigationTransition(.zoom)`
+/// because the push shared one navigation bar and one bottom toolbar between
+/// the grid and the pager. That chrome cross-faded in place instead of
+/// zooming with the content, and a cancelled pop on iOS 27.0 could leave the
+/// bar invisible or the pager's toolbar stranded over the grid. A modal
+/// presentation gives the pager a screen of its own, and UIKit exposes what
+/// SwiftUI does not: the source view is looked up when the dismissal starts,
+/// the dismiss gesture can be refused, and touches can be cut off while the
+/// pager zooms away.
+@MainActor
+final class DeviceZoomPresenter {
+    /// Set by the pager while a gesture inside it should not dismiss it.
+    var blocksInteractiveDismiss = false
 
-    final class Controller: UIViewController {
-        override func viewWillAppear(_ animated: Bool) {
-            super.viewWillAppear(animated)
-            transitionCoordinator?.animate(alongsideTransition: nil) { [weak self] context in
-                guard context.isCancelled else { return }
-                // UIKit finishes unwinding after this callback returns.
-                DispatchQueue.main.async {
-                    self?.restoreNavigationBar()
-                    self?.hideOrphanedToolbars()
+    var selectedDeviceId: String?
+    fileprivate var makeContent: (() -> AnyView)?
+    fileprivate var onPresentedChange: ((Bool) -> Void)?
+
+    private weak var anchor: UIViewController?
+    private weak var presented: PagerHostingController?
+    private var isShowing = false
+    private var isDismissing = false
+    private var pending: (deviceId: String, animated: Bool)?
+    private let sources = NSMapTable<NSString, UIView>.strongToWeakObjects()
+
+    /// True from the moment a presentation starts until its dismissal ends.
+    var isPresenting: Bool { isShowing }
+
+    func present(deviceId: String, animated: Bool) {
+        guard !isShowing else { return }
+        pending = (deviceId, animated)
+        presentPendingIfPossible()
+    }
+
+    func dismiss(animated: Bool) {
+        pending = nil
+        guard let presenting = presented?.presentingViewController, !isDismissing else { return }
+        Log.userInteraction.notice("Dismissing pager animated \(animated, privacy: .public)")
+        isDismissing = true
+        // Through the presenter, so a sheet open over the pager goes too.
+        presenting.dismiss(animated: animated) { [weak self] in
+            self?.didDismiss()
+        }
+    }
+
+    /// Reached from the dismissal's completion, or from the pager's own
+    /// disappearance when the dismiss gesture ends it. During a Duo's move
+    /// between displays only the completion is called.
+    private func didDismiss() {
+        isDismissing = false
+        guard isShowing else { return }
+        isShowing = false
+        onPresentedChange?(false)
+    }
+
+    /// Dismisses once a Duo has finished moving to its inner display.
+    /// Dismissing during the move interrupts the window's resize, and the
+    /// window keeps the outer display's shape, drawing the grid sideways.
+    func dismissAfterDisplayChange() {
+        guard let presented, !isDismissing else { return }
+        presented.afterNextSizeTransition { [weak self, weak presented] in
+            // The fallback can land after a fold has presented a new pager.
+            guard let self, let presented, self.presented === presented else { return }
+            dismiss(animated: false)
+        }
+    }
+
+    fileprivate func register(_ view: UIView, for deviceId: String) {
+        sources.setObject(view, forKey: deviceId as NSString)
+    }
+
+    fileprivate func attach(_ anchor: UIViewController) {
+        self.anchor = anchor
+    }
+
+    fileprivate func anchorDidAppear() {
+        presentPendingIfPossible()
+    }
+
+    fileprivate func refreshPresentedContent() {
+        guard let presented, let makeContent else { return }
+        presented.rootView = presented.wrap(makeContent())
+    }
+
+    private func presentPendingIfPossible() {
+        guard let request = pending, !isShowing, let anchor, let makeContent,
+            let window = anchor.view.window
+        else {
+            return
+        }
+        pending = nil
+        guard window.rootViewController?.presentedViewController == nil else {
+            Log.userInteraction.notice("Not presenting the pager over another presentation")
+            return
+        }
+
+        let host = PagerHostingController(content: makeContent())
+        // Over-full-screen would keep the grid live underneath, but it stops
+        // following rotation when the Duo moves between displays.
+        host.modalPresentationStyle = .fullScreen
+        host.overrideUserInterfaceStyle = .dark
+        host.onDismissed = { [weak self] in
+            self?.didDismiss()
+        }
+        let options = UIViewController.Transition.ZoomOptions()
+        options.interactiveDismissShouldBegin = { [weak self] context in
+            MainActor.assumeIsolated {
+                guard let self, !self.blocksInteractiveDismiss else { return false }
+                // Horizontal drags belong to the pager's paging.
+                return abs(context.velocity.dy) >= abs(context.velocity.dx)
+            }
+        }
+        host.preferredTransition = .zoom(options: options) { [weak self] _ in
+            MainActor.assumeIsolated { self?.sourceView() }
+        }
+
+        presented = host
+        isShowing = true
+        onPresentedChange?(true)
+        Log.userInteraction.notice("Presenting pager animated \(request.animated, privacy: .public)")
+        anchor.present(host, animated: request.animated)
+    }
+
+    /// The card for the page on screen, scrolled into view. A card that is
+    /// gone, or never reached a window, gets the system's fallback zoom
+    /// instead, since morphing to a view outside the hierarchy asserts.
+    private func sourceView() -> UIView? {
+        guard let deviceId = selectedDeviceId,
+            let view = sources.object(forKey: deviceId as NSString), view.window != nil
+        else {
+            return nil
+        }
+        var ancestor = view.superview
+        while let candidate = ancestor, !(candidate is UIScrollView) {
+            ancestor = candidate.superview
+        }
+        if let scrollView = ancestor as? UIScrollView {
+            scrollView.scrollRectToVisible(view.convert(view.bounds, to: scrollView), animated: false)
+        }
+        return view
+    }
+}
+
+/// The pager's root in its own hosting controller. SwiftUI holds the grid's
+/// updates while a full-screen presentation has it out of the window, so
+/// this keeps its own device list, unread count and selection rather than
+/// reading the grid's.
+private struct PresentedPagerRoot: View {
+    let initialDeviceIds: [String]
+    let presenter: DeviceZoomPresenter
+    let onSelect: (String?) -> Void
+    let onScan: () async -> Void
+
+    @State private var devicesLoader = DeviceListLoader(dataHandler: .shared)
+    @State private var messageLoader = MessageListLoader(dataHandler: .shared)
+    @State private var selection: String?
+
+    init(
+        initialDeviceIds: [String],
+        initialSelection: String?,
+        presenter: DeviceZoomPresenter,
+        onSelect: @escaping (String?) -> Void,
+        onScan: @escaping () async -> Void
+    ) {
+        self.initialDeviceIds = initialDeviceIds
+        self.presenter = presenter
+        self.onSelect = onSelect
+        self.onScan = onScan
+        _selection = State(initialValue: initialSelection)
+    }
+
+    var body: some View {
+        NavigationStack {
+            PhoneDeviceDetailPager(
+                selectedDeviceId: $selection,
+                allDeviceIds: devicesLoader.devices ?? initialDeviceIds,
+                unreadMessages: messageLoader.unreadCount,
+                usesSidebar: false,
+                onScan: onScan,
+                onBackToHome: { presenter.dismiss(animated: true) },
+                onBlocksDismissChange: { presenter.blocksInteractiveDismiss = $0 }
+            )
+        }
+        .rootSheets(isActive: true)
+        .customAccentColorTint()
+        .onChange(of: selection) { _, selection in
+            presenter.selectedDeviceId = selection
+            onSelect(selection)
+        }
+    }
+}
+
+/// The hosted pager's scene phase. A hosting controller outside a SwiftUI
+/// scene reports `.background` throughout, which would pause discovery, so
+/// this follows the window scene's notifications instead.
+@MainActor @Observable
+private final class HostedScenePhase {
+    var phase: ScenePhase = .active
+}
+
+private struct HostedScenePhaseReader: View {
+    let model: HostedScenePhase
+    let content: AnyView
+
+    var body: some View {
+        content.environment(\.scenePhase, model.phase)
+    }
+}
+
+private final class PagerHostingController: UIHostingController<AnyView> {
+    var onDismissed: (() -> Void)?
+    private let scenePhase = HostedScenePhase()
+    private var sizeTransitionActions: [@MainActor () -> Void] = []
+
+    init(content: AnyView) {
+        super.init(rootView: AnyView(EmptyView()))
+        rootView = wrap(content)
+        let center = NotificationCenter.default
+        let phases: [(Notification.Name, ScenePhase)] = [
+            (UIScene.didActivateNotification, .active),
+            (UIScene.willDeactivateNotification, .inactive),
+            (UIScene.willEnterForegroundNotification, .inactive),
+            (UIScene.didEnterBackgroundNotification, .background),
+        ]
+        for (name, phase) in phases {
+            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                let sceneId = (note.object as AnyObject?).map(ObjectIdentifier.init)
+                MainActor.assumeIsolated {
+                    guard let self, self.isInScene(sceneId) else { return }
+                    self.scenePhase.phase = phase
                 }
             }
+        }
+    }
+
+    @MainActor required dynamic init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    /// Runs `action` when the next size transition ends, and again after a
+    /// second in case none starts, so it must be safe to repeat.
+    func afterNextSizeTransition(_ action: @escaping @MainActor () -> Void) {
+        sizeTransitionActions.append(action)
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1))
+            action()
+        }
+    }
+
+    override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        let actions = sizeTransitionActions
+        sizeTransitionActions = []
+        guard !actions.isEmpty else { return }
+        coordinator.animate(alongsideTransition: nil) { _ in
+            actions.forEach { $0() }
+        }
+    }
+
+    func wrap(_ content: AnyView) -> AnyView {
+        AnyView(HostedScenePhaseReader(model: scenePhase, content: content))
+    }
+
+    private func isInScene(_ sceneId: ObjectIdentifier?) -> Bool {
+        guard let scene = view.window?.windowScene else { return true }
+        return sceneId == ObjectIdentifier(scene)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        view.isUserInteractionEnabled = true
+        if let state = view.window?.windowScene?.activationState ?? presentingViewController?.view.window?.windowScene?.activationState {
+            scenePhase.phase = switch state {
+            case .foregroundActive: .active
+            case .foregroundInactive: .inactive
+            default: .background
+            }
+        }
+    }
+
+    /// Stops the remote taking touches as soon as any dismissal starts,
+    /// interactive or not, and gives them back if it is cancelled. Otherwise
+    /// a tap aimed at the grid lands on a remote button mid-zoom.
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        view.isUserInteractionEnabled = false
+        transitionCoordinator?.animate(alongsideTransition: nil) { [weak self] context in
+            if context.isCancelled {
+                self?.view.isUserInteractionEnabled = true
+            }
+        }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isBeingDismissed {
+            onDismissed?()
+        }
+    }
+}
+
+/// Sits behind the grid to give the presenter a view controller to present
+/// from, and to present a pending pager once the grid is in a window.
+struct DeviceZoomPresentationAnchor: UIViewControllerRepresentable {
+    @EnvironmentObject private var appDelegate: RoamAppDelegate
+
+    let presenter: DeviceZoomPresenter
+    let selectedDeviceId: String?
+    let content: () -> AnyView
+
+    func makeUIViewController(context: Context) -> Controller {
+        let controller = Controller()
+        controller.presenter = presenter
+        return controller
+    }
+
+    func updateUIViewController(_ controller: Controller, context: Context) {
+        let navigation = appDelegate.navigationPath
+        presenter.selectedDeviceId = selectedDeviceId
+        presenter.makeContent = content
+        presenter.onPresentedChange = { navigation.phonePagerIsPresented = $0 }
+        presenter.attach(controller)
+        presenter.refreshPresentedContent()
+    }
+
+    final class Controller: UIViewController {
+        weak var presenter: DeviceZoomPresenter?
+
+        override func loadView() {
+            view = UIView()
+            view.isUserInteractionEnabled = false
         }
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
-            restoreNavigationBar()
-            hideOrphanedToolbars()
+            presenter?.anchorDidAppear()
+        }
+    }
+}
+
+/// Hosts a card in its own view so UIKit's zoom has a real view to morph
+/// from and back into.
+struct ZoomSourceCard<Content: View>: UIViewControllerRepresentable {
+    let presenter: DeviceZoomPresenter
+    let deviceId: String
+    @ViewBuilder let content: () -> Content
+
+    func makeUIViewController(context: Context) -> UIHostingController<Content> {
+        let host = UIHostingController(rootView: content())
+        host.sizingOptions = .intrinsicContentSize
+        host.view.backgroundColor = .clear
+        presenter.register(host.view, for: deviceId)
+        return host
+    }
+
+    func updateUIViewController(_ host: UIHostingController<Content>, context: Context) {
+        host.rootView = content()
+        presenter.register(host.view, for: deviceId)
+    }
+
+    func sizeThatFits(
+        _ proposal: ProposedViewSize,
+        uiViewController host: UIHostingController<Content>,
+        context: Context
+    ) -> CGSize? {
+        guard let width = proposal.width, width.isFinite else { return nil }
+        let size = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: width, height: size.height)
+    }
+}
+
+/// Reports whether a foldable's hinge is open, or nil without a hinge. The
+/// interaction goes on the window so it outlives this view's moves.
+private struct HingeObserver: UIViewRepresentable {
+    let onChange: (Bool?) -> Void
+
+    func makeUIView(context: Context) -> ObserverView {
+        let view = ObserverView()
+        view.onChange = onChange
+        return view
+    }
+
+    func updateUIView(_ view: ObserverView, context: Context) {
+        view.onChange = onChange
+    }
+
+    static func dismantleUIView(_ view: ObserverView, coordinator: ()) {
+        view.uninstall()
+    }
+
+    final class ObserverView: UIView {
+        var onChange: ((Bool?) -> Void)?
+        private var interaction: (any UIInteraction)?
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            isUserInteractionEnabled = false
         }
 
-        /// The grid's bottom bar is drawn in its own view, and the navigation
-        /// controller's toolbar sits unused, so any other visible toolbar
-        /// belongs to a pager that is no longer on the stack.
-        private func hideOrphanedToolbars() {
-            guard let nav = navigationController, nav.viewControllers.count == 1,
-                nav.transitionCoordinator == nil, let window = nav.view.window
-            else {
-                return
+        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            guard #available(iOS 27.1, *), let window, interaction?.view !== window else { return }
+            uninstall()
+            let interaction = UIHingeInteraction { [weak self] _, update in
+                guard let status = update.hinge?.status else { return }
+                self?.onChange?(Self.isOpen(status))
             }
-            var orphans: [UIToolbar] = []
-            func collect(_ view: UIView) {
-                if let toolbar = view as? UIToolbar, toolbar !== nav.toolbar, !toolbar.isHidden,
-                    toolbar.bounds.height > 0, toolbar.bounds.height < window.bounds.height / 2
-                {
-                    orphans.append(toolbar)
-                }
-                view.subviews.forEach(collect)
-            }
-            collect(window)
-            for toolbar in orphans {
-                Log.userInteraction.notice("Hiding a toolbar left behind by a cancelled transition")
-                toolbar.isHidden = true
-            }
+            window.addInteraction(interaction)
+            self.interaction = interaction
         }
 
-        private func restoreNavigationBar() {
-            guard let nav = navigationController, !nav.isNavigationBarHidden,
-                nav.viewControllers.count == 1, nav.navigationBar.alpha < 1
-            else {
-                return
+        func uninstall() {
+            if let interaction {
+                interaction.view?.removeInteraction(interaction)
             }
-            Log.userInteraction.notice("Restoring navigation bar left invisible by a cancelled transition")
-            nav.navigationBar.alpha = 1
-            nav.view.setNeedsLayout()
-            nav.view.layoutIfNeeded()
+            interaction = nil
+        }
+
+        @available(iOS 27.1, *)
+        private static func isOpen(_ status: UIHinge.Status) -> Bool? {
+            switch status {
+            case .closed: false
+            case .partiallyOpen, .fullyOpen: true
+            default: nil
+            }
         }
     }
 }

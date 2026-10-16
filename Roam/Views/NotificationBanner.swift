@@ -87,73 +87,122 @@ struct NotificationBanner: View {
     }
 }
 #else
+/// One line of status under the remote, styled like `TimedMuteStatusPill` so
+/// stacked banners read as a set.
 struct NotificationBanner: View {
     let message: String
     let level: Level
+    let systemImage: String?
     let onDismiss: (() -> Void)?
     let onClick: (() -> Void)?
 
-    @Environment(\.colorScheme) private var colorScheme
     @AppStorageColor(UserDefaultKeys.customAccentColor) private var customAccentColor: Color = .accentColor
 
-    init(message: String, onClick: (() -> Void)? = nil, onDismiss: (() -> Void)? = nil, level: Level = .error) {
+    init(
+        message: String,
+        onClick: (() -> Void)? = nil,
+        onDismiss: (() -> Void)? = nil,
+        level: Level = .error,
+        systemImage: String? = nil
+    ) {
         self.message = message
         self.onDismiss = onDismiss
         self.level = level
+        self.systemImage = systemImage
         self.onClick = onClick
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(spacing: 8) {
             if let onClick {
-                Button(action: onClick, label: {
-                    Text(message)
-                        .lineLimit(2)
-                        .truncationMode(.tail)
-                        .font(.subheadline)
-                })
+                Button(action: onClick) {
+                    HStack(spacing: 8) {
+                        icon
+                        messageText
+                        Image(systemName: "chevron.forward")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
                 .buttonStyle(.plain)
             } else {
-                Text(message)
-#if os(macOS)
-                    .lineLimit(2)
-                    .truncationMode(.tail)
-#endif
-                    .font(.subheadline)
+                icon
+                messageText
             }
 
             if let onDismiss {
-                Button("Dismiss", systemImage: "x.circle.fill", action: onDismiss)
-                    .controlSize(.small)
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
+                BannerDismissButton(action: onDismiss)
             }
         }
-        .foregroundStyle(
-            colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
-        )
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(backgroundColor)
-        .cornerRadius(3.0)
-        .cornerRadius(5)
+        .bannerPill(tint: tint)
         .help(message)
         .preference(key: BottomBannerVisibleKey.self, value: true)
     }
 
-    private var backgroundColor: Color {
+    private var icon: some View {
+        Image(systemName: systemImage ?? level.systemImage)
+            .foregroundStyle(tint)
+    }
+
+    private var messageText: some View {
+        Text(message)
+            .truncationMode(.tail)
+    }
+
+    private var tint: Color {
         switch level {
         case .info:
-            customAccentColor.opacity(0.3)
+            customAccentColor
         case .warning:
-            Color.orange.opacity(0.3)
+            Color.orange
         case .error:
-            Color.red.opacity(0.3)
+            Color.red
         }
     }
 
     enum Level {
         case warning, error, info
+
+        var systemImage: String {
+            switch self {
+            case .info: "info.circle.fill"
+            case .warning: "exclamationmark.triangle.fill"
+            case .error: "exclamationmark.octagon.fill"
+            }
+        }
+    }
+}
+
+struct BannerDismissButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(
+            String(localized: "Dismiss", comment: "Button that hides a banner under the remote"),
+            systemImage: "xmark.circle.fill",
+            action: action
+        )
+        .labelStyle(.iconOnly)
+        .foregroundStyle(.secondary)
+        .buttonStyle(.plain)
+    }
+}
+
+extension View {
+    /// The shared banner shape: a capsule on one line, a rounded card on two.
+    func bannerPill(tint: Color) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+        return self
+            .font(.footnote.weight(.medium))
+            .lineLimit(2)
+            .multilineTextAlignment(.leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .frame(minHeight: 32)
+            .background(tint.opacity(0.18), in: shape)
+            .background(.regularMaterial, in: shape)
+            .frame(maxWidth: 420)
     }
 }
 #endif

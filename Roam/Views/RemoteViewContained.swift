@@ -33,7 +33,6 @@
         // iOS-only block below.
         @Environment(\.scenePhase) private var scenePhase
         #if os(iOS)
-            @Environment(\.colorScheme) private var colorScheme
             @AppStorageColor(UserDefaultKeys.customAccentColor) private var customAccentColor:
                 Color = Color("AccentColor")
             @State private var showPastedUrlOffer: Bool = false
@@ -733,33 +732,22 @@
             @ViewBuilder
             private var pastedUrlBanner: some View {
                 if showPastedUrlOffer {
-                    HStack(alignment: .center, spacing: 10) {
-                        Label(pastedUrlOfferMessage, systemImage: "play.rectangle")
-                            .lineLimit(2)
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.rectangle.fill")
+                            .foregroundStyle(customAccentColor)
+                        Text(pastedUrlOfferMessage)
                             .truncationMode(.tail)
-                            .font(.subheadline)
 
                         PasteButton(payloadType: String.self, onPaste: handlePastedUrlOffer)
                             .buttonBorderShape(.capsule)
-                            .controlSize(.small)
+                            .controlSize(.mini)
                             .labelStyle(.iconOnly)
 
-                        Button(
-                            "Dismiss", systemImage: "x.circle.fill",
-                            action: dismissPastedUrlOffer
-                        )
-                        .controlSize(.small)
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.plain)
+                        BannerDismissButton(action: dismissPastedUrlOffer)
                     }
-                    .foregroundStyle(
-                        colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.8)
-                    )
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(customAccentColor.opacity(0.3))
-                    .cornerRadius(5)
+                    .bannerPill(tint: customAccentColor)
                     .popoverTip(pastedUrlOfferTip)
+                    .padding(.bottom, 8)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -923,7 +911,8 @@
                             localized: "The developer chatted you back",
                             comment:
                                 "Notification indicator that there was is message response waiting to be read"
-                        ), onClick: openMessages, level: .info)
+                        ), onClick: openMessages, level: .info, systemImage: "bubble.left.fill")
+                    .padding(.bottom, 8)
                 }
                 NetworkConnectivityBanner()
             }

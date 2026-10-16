@@ -52,37 +52,9 @@ struct RemoteRoot: View {
         discoveryPaused(for: scenePhase)
     }
 
-    private var settingsNavigationPathBinding: Binding<[NavigationDestination]> {
-        $appDelegate.navigationPath.settingsNavigationPath
-    }
-
-    private var editDeviceBinding: Binding<String?> {
-        Binding(
-            get: { appDelegate.navigationPath.showEditDevice },
-            set: { appDelegate.navigationPath.showEditDevice = $0 }
-        )
-    }
-
     var body: some View {
         content
-            .sheet(isPresented: $appDelegate.navigationPath.showAddDevice) {
-                AddDeviceFlow()
-            }
-            .sheet(isPresented: $appDelegate.navigationPath.showSettings) {
-                SettingsNavigationWrapper(path: settingsNavigationPathBinding) {
-                    SettingsView(path: settingsNavigationPathBinding, destination: .global)
-                }
-            }
-            .sheet(isPresented: Binding(
-                get: { appDelegate.navigationPath.showEditDevice != nil },
-                set: { newValue in
-                    if !newValue {
-                        appDelegate.navigationPath.showEditDevice = nil
-                    }
-                }
-            )) {
-                EditDeviceSheet(deviceIdToEdit: editDeviceBinding)
-            }
+            .rootSheets(isActive: !appDelegate.navigationPath.phonePagerIsPresented)
             .task {
                 guard !runningInPreview else { return }
                 await RoamDataHandler.shared.initialize()
@@ -245,5 +217,63 @@ struct RemoteRoot: View {
         WatchConnectivity.shared.transferDevices(WCSession.default, devices: devices)
     }
 #endif
+}
+
+/// The add, settings and edit sheets. UIKit presents a sheet from the
+/// topmost controller only, so while the iPhone pager is presented full
+/// screen it hosts these and `RemoteRoot` stands down.
+struct RootSheets: ViewModifier {
+    @EnvironmentObject private var appDelegate: RoamAppDelegate
+    let isActive: Bool
+
+    private var navigation: NavigationManager { appDelegate.navigationPath }
+
+    private var settingsNavigationPath: Binding<[NavigationDestination]> {
+        Binding(
+            get: { navigation.settingsNavigationPath },
+            set: { navigation.settingsNavigationPath = $0 }
+        )
+    }
+
+    private var editDeviceId: Binding<String?> {
+        Binding(
+            get: { navigation.showEditDevice },
+            set: { navigation.showEditDevice = $0 }
+        )
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(isPresented: Binding(
+                get: { isActive && navigation.showAddDevice },
+                set: { navigation.showAddDevice = $0 }
+            )) {
+                AddDeviceFlow()
+            }
+            .sheet(isPresented: Binding(
+                get: { isActive && navigation.showSettings },
+                set: { navigation.showSettings = $0 }
+            )) {
+                SettingsNavigationWrapper(path: settingsNavigationPath) {
+                    SettingsView(path: settingsNavigationPath, destination: .global)
+                }
+            }
+            .sheet(isPresented: Binding(
+                get: { isActive && navigation.showEditDevice != nil },
+                set: { newValue in
+                    if !newValue {
+                        navigation.showEditDevice = nil
+                    }
+                }
+            )) {
+                EditDeviceSheet(deviceIdToEdit: editDeviceId)
+            }
+    }
+}
+
+extension View {
+    func rootSheets(isActive: Bool) -> some View {
+        modifier(RootSheets(isActive: isActive))
+    }
 }
 #endif

@@ -1,6 +1,5 @@
 #if os(iOS)
 import SwiftUI
-import UIKit
 
 /// A sidebar with one remote on the inner display, or a swipe pager pushed
 /// from the compact device grid. Selection survives changes between modes.
@@ -13,6 +12,7 @@ struct PhoneDeviceDetailPager: View {
     let usesSidebar: Bool
     let onScan: () async -> Void
     let onBackToHome: (() -> Void)?
+    let onBlocksDismissChange: ((Bool) -> Void)?
 
     @Binding private var selectedDeviceId: String?
     @State private var sidebarDropTargetId: String?
@@ -23,7 +23,6 @@ struct PhoneDeviceDetailPager: View {
     // user's thumb. Only membership changes are reconciled; see `syncPages`.
     @State private var pagerDeviceIds: [String]
     @State private var showKeyboard: Bool = CommandLine.arguments.contains("-OpenKeyboard")
-    @State private var isInteractivelyPopping: Bool = false
     @State private var isAppsScrolling: Bool = false
     @State private var lastPagerWidth: CGFloat = 0
     // The ScrollView's `.scrollPosition` binding. Held separately from
@@ -59,13 +58,15 @@ struct PhoneDeviceDetailPager: View {
         unreadMessages: Int,
         usesSidebar: Bool,
         onScan: @escaping () async -> Void,
-        onBackToHome: (() -> Void)? = nil
+        onBackToHome: (() -> Void)? = nil,
+        onBlocksDismissChange: ((Bool) -> Void)? = nil
     ) {
         self.usesSidebar = usesSidebar
         self.onScan = onScan
         self.allDeviceIds = allDeviceIds
         self.unreadMessages = unreadMessages
         self.onBackToHome = onBackToHome
+        self.onBlocksDismissChange = onBlocksDismissChange
         _selectedDeviceId = selectedDeviceId
         _scrollPositionId = State(initialValue: selectedDeviceId.wrappedValue)
         _pagerDeviceIds = State(initialValue: allDeviceIds)
@@ -131,19 +132,18 @@ struct PhoneDeviceDetailPager: View {
                                 .padding(.top, 8)
                                 .padding(.bottom, -10)
                                 // Without this, SwiftUI applies its default slow fade to
-                                // the inset when the pager appears via the zoom
-                                // transition, stretching it long after the zoom ends.
+                                // the inset when the pager zooms in, stretching it
+                                // long after the zoom ends.
                                 .transaction { $0.animation = nil }
                         }
                     }
                     .toolbar(.hidden, for: .bottomBar)
             }
         }
-        // While the user is interactively swiping back to the home grid,
-        // disable hit-testing so taps that visually appear to land on the
-        // revealed home view don't actually press remote buttons.
-        .allowsHitTesting(!isInteractivelyPopping)
-        .background(InteractivePopObserver { isInteractivelyPopping = $0 })
+        // A swipe down to the grid would fight typing and the apps row.
+        .onChange(of: showKeyboard || isAppsScrolling, initial: true) { _, blocks in
+            onBlocksDismissChange?(blocks)
+        }
         .onChange(of: allDeviceIds) { _, newIds in
             syncPages(with: newIds)
         }
@@ -161,7 +161,18 @@ struct PhoneDeviceDetailPager: View {
         }
     }
 
+    /// Paging steps by the scroll view's full width, but a horizontal safe
+    /// area (a vertical toolbar, a landscape notch) narrows the pages to less
+    /// than that. The neighbours then peek in and the pages drift off their
+    /// stops, so the pager spans the full width and each page insets itself.
     private var pager: some View {
+        GeometryReader { bounds in
+            pagerScrollView(insets: bounds.safeAreaInsets)
+        }
+        .ignoresSafeArea(.container, edges: .horizontal)
+    }
+
+    private func pagerScrollView(insets: EdgeInsets) -> some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
                 ForEach(pagerDeviceIds, id: \.self) { deviceId in
@@ -171,6 +182,8 @@ struct PhoneDeviceDetailPager: View {
                         isActive: deviceId == selectedDeviceId,
                         externalShowKeyboard: $showKeyboard
                     )
+                    .padding(.leading, insets.leading)
+                    .padding(.trailing, insets.trailing)
                     .id(deviceId)
                     .containerRelativeFrame(.horizontal)
                 }
@@ -192,12 +205,9 @@ struct PhoneDeviceDetailPager: View {
         // half-scrolled. Drive the position to `nil` and then back to the
         // selected device on the next runloop tick so the scroll view
         // re-snaps cleanly.
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(key: PagerWidthKey.self, value: proxy.size.width)
-            }
-        )
-        .onPreferenceChange(PagerWidthKey.self) { newWidth in
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.width
+        } action: { newWidth in
             handleWidthChange(newWidth)
         }
     }
@@ -337,14 +347,20 @@ struct PhoneDeviceDetailPager: View {
         guard newWidth > 0 else { return }
         let previousWidth = lastPagerWidth
         lastPagerWidth = newWidth
-        guard previousWidth > 0, abs(newWidth - previousWidth) > 1 else { return }
+        guard abs(newWidth - previousWidth) > 1 else { return }
         let target = selectedDeviceId
+        // The zoom-in first lays the pager out at zero width, where every
+        // page sits at offset 0, so the initial position lands on the first
+        // page. Snap as soon as there is a real width.
+        let isFirstLayout = previousWidth == 0
         resnapTask?.cancel()
         resnapTask = Task { @MainActor in
             // Wait past the iOS rotation animation (~0.3s) plus a small
             // buffer so the LazyHStack has settled into the new page
             // widths before we ask the scroll view to snap.
-            try? await Task.sleep(for: .milliseconds(450))
+            if !isFirstLayout {
+                try? await Task.sleep(for: .milliseconds(450))
+            }
             guard !Task.isCancelled else { return }
             scrollPositionId = nil
             // One runloop tick so SwiftUI registers the change before
@@ -637,51 +653,6 @@ private struct PageDots: View {
             return min(selected - (windowSize - 2), maxStart)
         }
         return start
-    }
-}
-
-/// Propagates the pager's current laid-out width up to the parent so it
-/// can detect rotation/resize and force the paged scroll view to re-snap
-/// to the current page.
-private struct PagerWidthKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-/// Surfaces UIKit's interactive-pop state into SwiftUI by embedding a
-/// near-empty child view controller. When the host's `viewWillDisappear`
-/// fires with an interactive transition coordinator, the swipe-back is
-/// in progress; we report `true` and listen for cancellation to flip back.
-private struct InteractivePopObserver: UIViewControllerRepresentable {
-    var onChange: (Bool) -> Void
-
-    func makeUIViewController(context: Context) -> Observer {
-        let vc = Observer()
-        vc.onChange = onChange
-        return vc
-    }
-
-    func updateUIViewController(_ uiViewController: Observer, context: Context) {
-        uiViewController.onChange = onChange
-    }
-
-    final class Observer: UIViewController {
-        var onChange: ((Bool) -> Void)?
-
-        override func viewWillDisappear(_ animated: Bool) {
-            super.viewWillDisappear(animated)
-            guard let coordinator = transitionCoordinator, coordinator.isInteractive else {
-                return
-            }
-            onChange?(true)
-            coordinator.notifyWhenInteractionChanges { [weak self] context in
-                if context.isCancelled {
-                    self?.onChange?(false)
-                }
-            }
-        }
     }
 }
 #endif
