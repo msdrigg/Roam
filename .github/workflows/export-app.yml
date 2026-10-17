@@ -122,17 +122,6 @@ jobs:
             - name: Install xcbeautify
               run: command -v xcbeautify >/dev/null || brew install xcbeautify
 
-            - name: Prune unavailable simulators
-              # The xcode-27 image ships Apple Watch simulators whose watchOS
-              # runtime is not installed, paired with iPhones. xcodebuild loads
-              # the default device set even for a macOS archive, and CoreSimulator
-              # can abort it with "Invalid parameter not satisfying: devicePair"
-              # while it reconciles those pairs (run 38983346558). Deleting the
-              # orphaned devices drops their pairs too.
-              run: |
-                  xcrun simctl delete unavailable || true
-                  xcrun simctl list pairs
-
             - name: Archive
               env:
                   XCODE_API_KEY: ${{ secrets.XCODE_API_KEY }}
