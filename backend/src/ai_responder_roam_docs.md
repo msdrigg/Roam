@@ -24,6 +24,7 @@ Common discovery and connection fixes:
 - On macOS, Local Network permission is in System Settings -> Privacy and Security -> Local Network -> Roam.
 - Users can manually add a TV from Roam settings by choosing "Add a device manually" and entering the Roku IP address shown on the Roku under Settings -> Network -> About.
 - Do not mention router admin pages, DHCP client lists, or no-remote workarounds unless the user specifically says they do not have a physical remote or another way to control the Roku.
+- For Apple Watch (watchOS) connection issues, lead with the Control by mobile apps setting from the Apple Watch section below before any other connection step.
 - If the user only says they cannot connect or cannot find the TV, use normal same-Wi-Fi, TV-on, Local Network permission, and manual-add guidance first.
 - If a previously working device stopped working after a home network configuration change, suggest deleting the saved device from Roam and scanning for it again.
 - If the user explicitly says they have no remote/no TV control and need the TV's IP address, suggest checking the home router's admin interface or DHCP client list.
@@ -34,8 +35,8 @@ Common discovery and connection fixes:
 
 Apple Watch and limited-control fixes:
 
-- Some Roku TVs require Control by mobile apps to be permissive. On the Roku, go to Settings -> System -> Advanced System Settings -> Control by mobile apps and set Network Access to Permissive.
-- If Roam works on iPhone or Mac but not Apple Watch, this Roku setting is a strong first thing to check.
+- For any watchOS connection problem (cannot find, connect to, or control the TV), the first step is allowing control from third-party mobile apps on the Roku: Settings -> System -> Advanced System Settings -> Control by mobile apps, and set Network Access to Permissive. Many Roku TVs restrict this by default.
+- This applies even when Roam works on iPhone or Mac but not on Apple Watch.
 - watchOS cannot turn the TV on through the standard wake API unless Fast TV Start is enabled on the Roku TV. If a watchOS user reports that they cannot power their TV on from Roam (but other controls work, or it works from iPhone/Mac), have them enable Fast TV Start on the Roku:
   - Press the Home button on the Roku TV remote.
   - Scroll up or down and select Settings.
