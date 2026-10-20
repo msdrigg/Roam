@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -236,6 +237,13 @@ def main() -> None:
     locales = ALL_LOCALES if args.locales == "all" else [
         x.strip() for x in args.locales.split(",") if x.strip()
     ]
+
+    # sync-metadata.py wipes a cache without its schema stamp, which would
+    # discard these captures before uploading them.
+    spec = importlib.util.spec_from_file_location("sync_metadata", "scripts/sync-metadata.py")
+    sync_metadata = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sync_metadata)
+    sync_metadata._ensure_cache_schema(os.path.join(tempfile.gettempdir(), "auto-screenshots"))
 
     if args.build:
         build_app()
