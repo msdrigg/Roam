@@ -36,6 +36,9 @@
             @AppStorageColor(UserDefaultKeys.customAccentColor) private var customAccentColor:
                 Color = Color("AccentColor")
             @State private var showPastedUrlOffer: Bool = false
+            // Outlives `showKeyboardEntry` while the keyboard slides away, so
+            // the field rides down with it instead of leaving first.
+            @State private var entryMounted: Bool = false
             // Once an offer is accepted or dismissed, don't re-offer until the
             // pasteboard contents actually change. `changeCount` is metadata,
             // so reading it never triggers the system paste notice.
@@ -56,12 +59,11 @@
         private let externalShowKeyboard: Binding<Bool>?
         private let hidesKeyboardToolbarButton: Bool
         private let isActive: Bool
+        private let preloads: Bool
 
-        // Tracks whether the heavier per-page content (volume overlay, app links)
-        // should be in the view tree at all. Stays in sync with `isActive`, but
-        // lags by the fade duration on the way out so the unmount happens after
-        // the opacity animation has played.
-        @State private var renderHeavyContent: Bool
+        // Whether the app row loads its icons. Set once and kept, so paging
+        // back to a page doesn't load them again.
+        @State private var iconsLoaded: Bool
 
         private var ecpSessionState: ECPMonitor {
             appDelegate.ecpMonitor
@@ -102,7 +104,8 @@
             isInMenuBar: Bool = false,
             externalShowKeyboard: Binding<Bool>? = nil,
             hidesKeyboardToolbarButton: Bool = false,
-            isActive: Bool = true
+            isActive: Bool = true,
+            preloads: Bool = false
         ) {
             self.device = device
             self.unreadMessages = unreadMessages
@@ -110,7 +113,8 @@
             self.externalShowKeyboard = externalShowKeyboard
             self.hidesKeyboardToolbarButton = hidesKeyboardToolbarButton
             self.isActive = isActive
-            self._renderHeavyContent = State(initialValue: isActive)
+            self.preloads = preloads
+            self._iconsLoaded = State(initialValue: isActive)
         }
 
         var headphonesModeDisabled: Bool {
@@ -124,28 +128,8 @@
             selectedDevice?.isTV == false
         }
 
-        var hideUIForKeyboardEntry: Bool {
-            #if os(iOS)
-                if UIDevice.current.userInterfaceIdiom == .pad {
-                    return false
-                }
-                // Regular in both axes on a phone is iPhone Duo's inner
-                // display, which has iPad's room for the buttons under the
-                // keyboard.
-                if horizontalSizeClass == .regular && verticalSizeClass == .regular {
-                    return false
-                }
-                return showKeyboardEntry
-            #else
-                // visionOS only hides the apps row (via `hideAppsForKeyboardEntry`).
-                // The button grid + d-pad stay rendered so the user can keep
-                // pressing remote buttons while typing.
-                return false
-            #endif
-        }
-
         var hideAppsForKeyboardEntry: Bool {
-            #if os(iOS) || os(visionOS)
+            #if os(visionOS)
                 return showKeyboardEntry
             #else
                 return false
@@ -180,12 +164,12 @@
 
             // The negative bottom padding intentionally pulls content below the
             // safe area when nothing renders at the bottom edge. Switch to a
-            // positive value while the keyboard-entry overlay or the pasted-URL
-            // offer is showing so that content stays above the system keyboard /
-            // the pager's floating button bar instead of clipping below them -
-            // the flexible Spacers above compress to absorb the difference.
+            // positive value while a banner or the pasted-URL offer is showing
+            // so that content stays above the pager's floating button bar
+            // instead of clipping below it - the flexible Spacers above
+            // compress to absorb the difference.
             private var iOSBottomPadding: CGFloat {
-                if showKeyboardEntry || showPastedUrlOffer || bottomBannerVisible {
+                if showPastedUrlOffer || bottomBannerVisible {
                     return 10
                 }
                 if UIDevice.current.userInterfaceIdiom == .phone {
@@ -357,16 +341,16 @@
             }
         }
 
-        // When this page becomes inactive, fade-out happens via the opacity
-        // animation; we wait for it to finish, then drop the heavy content from
-        // the view tree. Becoming active flips it back on immediately.
-        private func activeStateTask() async {
+        // Neighbor pages load their icons after a pause, so a swipe that
+        // lands keeps the main thread for the page coming into view.
+        private func loadIconsTask() async {
+            guard !iconsLoaded else { return }
             if isActive {
-                renderHeavyContent = true
-            } else {
-                try? await Task.sleep(for: .milliseconds(250))
+                iconsLoaded = true
+            } else if preloads {
+                try? await Task.sleep(for: .milliseconds(800))
                 if !Task.isCancelled {
-                    renderHeavyContent = false
+                    iconsLoaded = true
                 }
             }
         }
@@ -443,11 +427,12 @@
                 .task(id: "\(isActive),\(selectedDevice?.location ?? "--")", priority: .medium) {
                     await ecpSessionLocationTask()
                 }
-                .task(id: isActive) { await activeStateTask() }
+                .task(id: "\(isActive),\(preloads)", priority: .background) { await loadIconsTask() }
                 #if os(iOS)
                     // Re-check whenever the page becomes the active pager page,
                     // the app foregrounds, or the device changes.
                     .task(id: pasteboardCheckTaskId) { await checkForPastedUrl() }
+                    .task(id: showKeyboardEntry) { await handleEntryVisibilityChange(showKeyboardEntry) }
                 #endif
                 .onChange(of: focusKeyboardMonitor) { restoreFocusIfNeeded() }
                 .onChange(of: showKeyboardEntry) { handleShowKeyboardChange() }
@@ -771,58 +756,79 @@
             await self.pressKeyAsync(char, modifiers: EventModifiers())
         }
 
-        @ViewBuilder
-        private var keyboardEntryOverlay: some View {
-            if showKeyboardEntry {
-                // Pin KeyboardEntry to the BOTTOM of the overlay area using
-                // VStack alignment. Where the remote buttons are hidden during
-                // entry, and on iPad, the empty Button above it absorbs taps
-                // in the empty area so the user can tap anywhere to dismiss.
-                // On iPhone Duo's inner display the buttons stay visible and
-                // a Spacer lets those taps reach them.
-                //
-                // The previous GeometryReader + inner ScrollView approach
-                // measured the overlay parent's intrinsic content height
-                // rather than the visible-above-keyboard height. On iPad,
-                // where the remote buttons stay visible and have a small
-                // intrinsic height (~400pt), this parked the text field in
-                // the middle of the screen instead of just above the system
-                // keyboard. A plain VStack with alignment: .bottom anchors
-                // the field to the bottom of the actual overlay frame.
-                VStack(spacing: 0) {
-                    if hideUIForKeyboardEntry || UIDevice.current.userInterfaceIdiom == .pad {
-                        Button(
-                            action: dismissKeyboardEntry,
-                            label: {
-                                Color.clear.contentShape(Rectangle())
-                            }
-                        )
-                        .buttonStyle(.plain)
-                    } else {
-                        Spacer()
-                    }
-
-                    KeyboardEntry(
-                        showing: keyboardEntryShowingBinding,
-                        onKeyPress: handleKeyboardEntryPress,
-                        leaving: keyboardLeaving
-                    )
-                    .focused($focusKeyboardMonitor, equals: .entry)
-                    .frame(maxWidth: isHorizontal ? 480 : .infinity)
-                    .padding(.bottom, 10)
-                    .padding(.horizontal, 10)
-                    .zIndex(1)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            }
+        private var keyboardEntryField: some View {
+            KeyboardEntry(
+                showing: keyboardEntryShowingBinding,
+                onKeyPress: handleKeyboardEntryPress,
+                leaving: keyboardLeaving
+            )
+            .frame(maxWidth: isHorizontal ? 480 : .infinity)
         }
+
+        #if os(iOS)
+            @ViewBuilder
+            private var keyboardScrim: some View {
+                if showKeyboardEntry {
+                    Button(action: dismissKeyboardEntry) {
+                        Color.black.opacity(0.55).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHidden(true)
+                    .transition(.opacity)
+                }
+            }
+
+            private func handleEntryVisibilityChange(_ showing: Bool) async {
+                if showing {
+                    entryMounted = true
+                    return
+                }
+                guard entryMounted else { return }
+                UIApplication.shared.sendAction(
+                    #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                try? await Task.sleep(for: .milliseconds(450))
+                if !Task.isCancelled {
+                    entryMounted = false
+                }
+            }
+
+            @ViewBuilder
+            private var keyboardEntryFloating: some View {
+                if entryMounted {
+                    KeyboardFollowingContainer(
+                        content: keyboardEntryField
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 10)
+                            .environmentObject(appDelegate)
+                            .environment(\.scenePhase, scenePhase)
+                            .customAccentColorTint()
+                    )
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                }
+            }
+        #else
+            @ViewBuilder
+            private var keyboardEntryOverlay: some View {
+                if showKeyboardEntry {
+                    VStack(spacing: 0) {
+                        Spacer()
+                        keyboardEntryField
+                            .padding(.bottom, 10)
+                            .padding(.horizontal, 10)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                }
+            }
+        #endif
 
         @ViewBuilder
         private var mobileOverlays: some View {
             #if os(iOS)
                 volumeOverlay
+            #else
+                keyboardEntryOverlay
             #endif
-            keyboardEntryOverlay
         }
 
         private func handleRemoteSizeChange(_ size: CGSize) {
@@ -840,7 +846,7 @@
         #if os(iOS)
             @ViewBuilder
             private var iOSDeviceNameHeader: some View {
-                if selectedDevice?.name != nil, !hideUIForKeyboardEntry {
+                if selectedDevice?.name != nil {
                     if isHorizontal {
                         Spacer()
                     }
@@ -890,32 +896,30 @@
 
         @ViewBuilder
         private var banners: some View {
-            if !hideUIForKeyboardEntry {
-                TimedMuteStatusPill(
-                    phase: timedMutePhase,
-                    onUnmute: appDelegate.timedMute.unmuteNow,
-                    onDismiss: appDelegate.timedMute.dismissMessage
-                )
+            TimedMuteStatusPill(
+                phase: timedMutePhase,
+                onUnmute: appDelegate.timedMute.unmuteNow,
+                onDismiss: appDelegate.timedMute.dismissMessage
+            )
+            .padding(.bottom, 8)
+            .animation(.spring(duration: 0.3), value: timedMutePhase)
+            #if os(iOS)
+                pastedUrlBanner
+            #endif
+            // Suppress the unread-developer-message banner under
+            // screenshot tests - it's data-driven by an untrusted
+            // count from the testing data fixture and clutters
+            // marketing captures.
+            if unreadMessages > 0 && !inScreenshotTestingContext() {
+                NotificationBanner(
+                    message: String(
+                        localized: "The developer chatted you back",
+                        comment:
+                            "Notification indicator that there was is message response waiting to be read"
+                    ), onClick: openMessages, level: .info, systemImage: "bubble.left.fill")
                 .padding(.bottom, 8)
-                .animation(.spring(duration: 0.3), value: timedMutePhase)
-                #if os(iOS)
-                    pastedUrlBanner
-                #endif
-                // Suppress the unread-developer-message banner under
-                // screenshot tests - it's data-driven by an untrusted
-                // count from the testing data fixture and clutters
-                // marketing captures.
-                if unreadMessages > 0 && !inScreenshotTestingContext() {
-                    NotificationBanner(
-                        message: String(
-                            localized: "The developer chatted you back",
-                            comment:
-                                "Notification indicator that there was is message response waiting to be read"
-                        ), onClick: openMessages, level: .info, systemImage: "bubble.left.fill")
-                    .padding(.bottom, 8)
-                }
-                NetworkConnectivityBanner()
             }
+            NetworkConnectivityBanner()
         }
 
         private var directionalBody: some View {
@@ -949,9 +953,11 @@
                 topHeader
                 directionalBody
                 banners
-                if showKeyboardEntry {
-                    Spacer()
-                }
+                #if !os(iOS)
+                    if showKeyboardEntry {
+                        Spacer()
+                    }
+                #endif
             }
             .onPreferenceChange(BottomBannerVisibleKey.self) { visible in
                 withAnimation(.spring(duration: 0.3)) {
@@ -972,6 +978,16 @@
                         handleRemoteSizeChange(size)
                     }
             }
+            #if os(iOS)
+                // The keyboard never resizes the remote. Only the entry
+                // follows it, through UIKit's keyboard layout guide.
+                .ignoresSafeArea(.keyboard)
+                .overlay {
+                    keyboardScrim
+                        .ignoresSafeArea()
+                }
+                .overlay { keyboardEntryFloating }
+            #endif
             .customAccentColorTint()
             .defaultFocus($focusKeyboardMonitor, .monitor, priority: .userInitiated)
         }
@@ -1025,16 +1041,14 @@
         func horizontalBody() -> some View {
             VStack(alignment: .center) {
                 HStack(alignment: .center, spacing: globalButtonSpacing * 2) {
-                    if !hideUIForKeyboardEntry {
-                        Spacer()
-                        VStack {
-                            Spacer().frame(maxHeight: 100)
-                            // Center Controller with directional buttons
-                            CenterController(pressCounter: buttonPressCount, action: pressButton)
-                                .transition(.scale.combined(with: .opacity))
-                                .matchedGeometryEffect(id: "centerController", in: animation)
-                            Spacer().frame(maxHeight: 100)
-                        }
+                    Spacer()
+                    VStack {
+                        Spacer().frame(maxHeight: 100)
+                        // Center Controller with directional buttons
+                        CenterController(pressCounter: buttonPressCount, action: pressButton)
+                            .transition(.scale.combined(with: .opacity))
+                            .matchedGeometryEffect(id: "centerController", in: animation)
+                        Spacer().frame(maxHeight: 100)
                     }
                     Spacer()
 
@@ -1044,37 +1058,34 @@
                         TopBar(pressCounter: buttonPressCount, action: pressButton)
                             .matchedGeometryEffect(id: "topBar", in: animation)
 
-                        if !hideUIForKeyboardEntry {
-                            Spacer().frame(maxHeight: 60)
+                        Spacer().frame(maxHeight: 60)
 
-                            // Grid of 9 buttons
-                            ButtonGrid(
-                                pressCounter: buttonPressCount,
-                                action: pressButton,
-                                enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
-                                disabled: Set([]),
-                                volumeRoutedOverHDMI: volumeRoutedOverHDMI,
-                                headphonesModeUnsupported: headphonesModeDisabled,
-                                onTimedMute: startTimedMute
-                            )
-                            .transition(.scale.combined(with: .opacity))
-                            .matchedGeometryEffect(id: "buttonGrid", in: animation)
-                            .zIndex(1)
-                        }
+                        // Grid of 9 buttons
+                        ButtonGrid(
+                            pressCounter: buttonPressCount,
+                            action: pressButton,
+                            enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
+                            disabled: Set([]),
+                            volumeRoutedOverHDMI: volumeRoutedOverHDMI,
+                            headphonesModeUnsupported: headphonesModeDisabled,
+                            onTimedMute: startTimedMute
+                        )
+                        .transition(.scale.combined(with: .opacity))
+                        .matchedGeometryEffect(id: "buttonGrid", in: animation)
+                        .zIndex(1)
                     }
                     Spacer()
                 }
                 .frame(maxWidth: 600)
 
-                if !hideAppsForKeyboardEntry && selectedDevice != nil && renderHeavyContent {
+                if !hideAppsForKeyboardEntry && selectedDevice != nil {
                     Spacer()
                     AppLinksView(
-                        deviceId: selectedDevice?.udn, rows: appLinkRows, handleOpenApp: launchApp
+                        deviceId: selectedDevice?.udn, rows: appLinkRows, showsIcons: iconsLoaded,
+                        handleOpenApp: launchApp
                     )
                     .matchedGeometryEffect(id: "appLinksBar", in: animation)
-                    .opacity(isActive ? 1 : 0)
                     .allowsHitTesting(isActive)
-                    .animation(.easeInOut(duration: 0.2), value: isActive)
                     #if !os(visionOS)
                         .sensoryFeedback(
                             SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
@@ -1100,29 +1111,25 @@
                         .matchedGeometryEffect(id: "centerController", in: animation)
                         .focusSection()
 
-                    if !hideUIForKeyboardEntry {
-                        ButtonGrid(
-                            pressCounter: buttonPressCount,
-                            action: pressButton,
-                            enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
-                            disabled: Set([]),
-                            volumeRoutedOverHDMI: volumeRoutedOverHDMI,
-                            headphonesModeUnsupported: headphonesModeDisabled
-                        )
-                        .transition(.scale.combined(with: .opacity))
-                        .matchedGeometryEffect(id: "buttonGrid", in: animation)
-                        .focusSection()
-                    }
+                    ButtonGrid(
+                        pressCounter: buttonPressCount,
+                        action: pressButton,
+                        enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
+                        disabled: Set([]),
+                        volumeRoutedOverHDMI: volumeRoutedOverHDMI,
+                        headphonesModeUnsupported: headphonesModeDisabled
+                    )
+                    .transition(.scale.combined(with: .opacity))
+                    .matchedGeometryEffect(id: "buttonGrid", in: animation)
+                    .focusSection()
 
-                    if !hideAppsForKeyboardEntry && selectedDevice != nil && renderHeavyContent {
+                    if !hideAppsForKeyboardEntry && selectedDevice != nil {
                         AppLinksView(
-                            deviceId: selectedDevice?.udn, rows: appLinkRows,
+                            deviceId: selectedDevice?.udn, rows: appLinkRows, showsIcons: iconsLoaded,
                             handleOpenApp: launchApp
                         )
                         .matchedGeometryEffect(id: "appLinksBar", in: animation)
-                        .opacity(isActive ? 1 : 0)
                         .allowsHitTesting(isActive)
-                        .animation(.easeInOut(duration: 0.2), value: isActive)
                         .sensoryFeedback(
                             SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))
                     }
@@ -1144,33 +1151,29 @@
                         .transition(.scale.combined(with: .opacity))
                         .matchedGeometryEffect(id: "centerController", in: animation)
 
-                    if !hideUIForKeyboardEntry {
-                        Spacer()
-                        // Grid of 9 buttons
-                        ButtonGrid(
-                            pressCounter: buttonPressCount,
-                            action: pressButton,
-                            enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
-                            disabled: Set([]),
-                            volumeRoutedOverHDMI: volumeRoutedOverHDMI,
-                            headphonesModeUnsupported: headphonesModeDisabled,
-                            onTimedMute: startTimedMute
-                        )
-                        .transition(.scale.combined(with: .opacity))
-                        .matchedGeometryEffect(id: "buttonGrid", in: animation)
-                        .zIndex(1)
-                    }
+                    Spacer()
+                    // Grid of 9 buttons
+                    ButtonGrid(
+                        pressCounter: buttonPressCount,
+                        action: pressButton,
+                        enabled: headphonesModeEnabled ? Set([.headphonesMode]) : Set([]),
+                        disabled: Set([]),
+                        volumeRoutedOverHDMI: volumeRoutedOverHDMI,
+                        headphonesModeUnsupported: headphonesModeDisabled,
+                        onTimedMute: startTimedMute
+                    )
+                    .transition(.scale.combined(with: .opacity))
+                    .matchedGeometryEffect(id: "buttonGrid", in: animation)
+                    .zIndex(1)
 
-                    if !hideAppsForKeyboardEntry && selectedDevice != nil && renderHeavyContent {
+                    if !hideAppsForKeyboardEntry && selectedDevice != nil {
                         Spacer()
                         AppLinksView(
-                            deviceId: selectedDevice?.udn, rows: appLinkRows,
+                            deviceId: selectedDevice?.udn, rows: appLinkRows, showsIcons: iconsLoaded,
                             handleOpenApp: launchApp
                         )
                         .matchedGeometryEffect(id: "appLinksBar", in: animation)
-                        .opacity(isActive ? 1 : 0)
                         .allowsHitTesting(isActive)
-                        .animation(.easeInOut(duration: 0.2), value: isActive)
                         #if !os(visionOS)
                             .sensoryFeedback(
                                 SensoryFeedback.impact, trigger: buttonPressCount(.inputAV1))

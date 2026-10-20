@@ -5,6 +5,7 @@ import SwiftUI
 /// from the compact device grid. Selection survives changes between modes.
 struct PhoneDeviceDetailPager: View {
     @EnvironmentObject private var appDelegate: RoamAppDelegate
+    @Environment(\.layoutDirection) private var layoutDirection
     @AppStorage(UserDefaultKeys.phoneSidebarHidden) private var sidebarHidden = false
 
     let allDeviceIds: [String]
@@ -109,33 +110,26 @@ struct PhoneDeviceDetailPager: View {
                 sidebarRoom = width
             }
         }
-        // When the keyboard-entry overlay's text field becomes first
-        // responder, let the system keyboard push the pager content up so
-        // the entry floats above the keyboard. Otherwise the keyboard
-        // would cover the field. While the keyboard is hidden, ignore its
-        // safe area so layout stays stable.
-        .ignoresSafeArea(.keyboard, edges: showKeyboard ? [] : .all)
+        // The remote stays put under the keyboard; the entry tracks the
+        // keyboard on its own. The bar stays too, since hiding it would
+        // change the bottom safe area and resize every page.
+        .ignoresSafeArea(.keyboard)
         .toolbar(.hidden, for: .navigationBar)
         .applyBuilder {
             if #available(iOS 26.0, *) {
-                // Hidden while the on-screen keyboard is up so the bar doesn't
-                // sit between the user and the keys.
                 $0
                     .toolbar { pagerToolbar }
-                    .toolbar(showKeyboard ? .hidden : .visible, for: .bottomBar)
             } else {
                 $0
                     .safeAreaInset(edge: .bottom, spacing: 0) {
-                        if !showKeyboard {
-                            floatingButtonBar
-                                .padding(.horizontal, 18)
-                                .padding(.top, 8)
-                                .padding(.bottom, -10)
-                                // Without this, SwiftUI applies its default slow fade to
-                                // the inset when the pager zooms in, stretching it
-                                // long after the zoom ends.
-                                .transaction { $0.animation = nil }
-                        }
+                        floatingButtonBar
+                            .padding(.horizontal, 18)
+                            .padding(.top, 8)
+                            .padding(.bottom, -10)
+                            // Without this, SwiftUI applies its default slow fade to
+                            // the inset when the pager zooms in, stretching it
+                            // long after the zoom ends.
+                            .transaction { $0.animation = nil }
                     }
                     .toolbar(.hidden, for: .bottomBar)
             }
@@ -180,6 +174,7 @@ struct PhoneDeviceDetailPager: View {
                         deviceId: deviceId,
                         unreadMessages: unreadMessages,
                         isActive: deviceId == selectedDeviceId,
+                        preloads: isNeighborOfSelection(deviceId),
                         externalShowKeyboard: $showKeyboard
                     )
                     .padding(.leading, insets.leading)
@@ -193,7 +188,16 @@ struct PhoneDeviceDetailPager: View {
         .scrollIndicators(.hidden)
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $scrollPositionId)
-        .scrollDisabled(isAppsScrolling)
+        .scrollDisabled(isAppsScrolling || showKeyboard)
+        // While typing, a sideways swipe closes the keyboard instead of paging.
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 20).onChanged { value in
+                if abs(value.translation.width) > abs(value.translation.height) {
+                    withAnimation { showKeyboard = false }
+                }
+            },
+            isEnabled: showKeyboard
+        )
         .onPreferenceChange(AppsScrollingPreferenceKey.self) { newValue in
             isAppsScrolling = newValue
         }
@@ -210,6 +214,15 @@ struct PhoneDeviceDetailPager: View {
         } action: { newWidth in
             handleWidthChange(newWidth)
         }
+    }
+
+    private func isNeighborOfSelection(_ deviceId: String) -> Bool {
+        guard let selected = pagerDeviceIds.firstIndex(where: { $0 == selectedDeviceId }),
+            let index = pagerDeviceIds.firstIndex(of: deviceId)
+        else {
+            return false
+        }
+        return abs(index - selected) == 1
     }
 
     // MARK: - Sidebar
@@ -451,14 +464,18 @@ struct PhoneDeviceDetailPager: View {
     @ViewBuilder
     private var verticalBarDots: some View {
         if !usesSidebar, toolbarIsVertical, pagerDeviceIds.count > 1, let slot = dotsSlotFrame {
+            // Global frames are left to right and the system bar does not
+            // mirror in right-to-left languages, so neither does this.
             GeometryReader { proxy in
                 let bounds = proxy.frame(in: .global)
                 pageDotsOverlay
+                    .environment(\.layoutDirection, layoutDirection)
                     .frame(height: slot.height)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                     .padding(.trailing, bounds.maxX - slot.maxX)
                     .padding(.bottom, bounds.maxY - slot.maxY)
             }
+            .environment(\.layoutDirection, .leftToRight)
             .ignoresSafeArea()
         }
     }
@@ -577,14 +594,19 @@ private struct PhoneDetailPage: View {
     let deviceId: String
     let unreadMessages: Int
     let isActive: Bool
+    var preloads: Bool = false
     @Binding var externalShowKeyboard: Bool
 
     @State private var deviceLoader: DeviceLoader
 
-    init(deviceId: String, unreadMessages: Int, isActive: Bool, externalShowKeyboard: Binding<Bool>) {
+    init(
+        deviceId: String, unreadMessages: Int, isActive: Bool, preloads: Bool = false,
+        externalShowKeyboard: Binding<Bool>
+    ) {
         self.deviceId = deviceId
         self.unreadMessages = unreadMessages
         self.isActive = isActive
+        self.preloads = preloads
         self._externalShowKeyboard = externalShowKeyboard
         _deviceLoader = State(initialValue: DeviceLoader(deviceId: deviceId, dataHandler: .shared))
     }
@@ -595,7 +617,8 @@ private struct PhoneDetailPage: View {
             unreadMessages: unreadMessages,
             externalShowKeyboard: $externalShowKeyboard,
             hidesKeyboardToolbarButton: true,
-            isActive: isActive
+            isActive: isActive,
+            preloads: preloads
         )
     }
 }

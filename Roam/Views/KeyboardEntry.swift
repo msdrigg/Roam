@@ -134,20 +134,37 @@
         }
 
         var body: some View {
-            TextFieldContainer(
-                String(localized: "Enter some text...", comment: "Placeholder for a text field"),
-                text: $str,
-                onDelete: handleDelete,
-                onDone: handleDone,
-                fullFeatures: texteditId != nil
-            )
-            .textSelection(.disabled)
-            .focused($keyboardFocused)
-            .font(.body)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(RoundedRectangle(cornerRadius: 8).fill(.fill.tertiary))
-            .frame(height: 60)
+            HStack(spacing: 10) {
+                TextFieldContainer(
+                    String(localized: "Enter some text...", comment: "Placeholder for a text field"),
+                    text: $str,
+                    onDelete: handleDelete,
+                    onDone: handleDone,
+                    fullFeatures: texteditId != nil
+                )
+                .textSelection(.disabled)
+                .focused($keyboardFocused)
+                .font(.body)
+                .padding(.horizontal, 18)
+                .frame(height: 48)
+                .background(.regularMaterial, in: Capsule())
+                .glassEffectIfSupported(in: Capsule())
+
+                Button(action: handleDone) {
+                    Image(systemName: "xmark")
+                        .font(.body.weight(.semibold))
+                        .frame(width: 48, height: 48)
+                        .background(.regularMaterial, in: Circle())
+                        .glassEffectIfSupported(in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("CloseKeyboardButton")
+                .accessibilityLabel(
+                    String(
+                        localized: "Close keyboard",
+                        comment: "Accessibility label for the button that closes the keyboard text entry"
+                    ))
+            }
             .task(id: scenePhase) { await scenePhaseTask() }
             .onChange(of: str) { _, newStr in handleStringChange(newStr) }
             .onChange(of: texteditId) { handleTexteditIdChange() }
@@ -159,6 +176,18 @@
     final class EndOnlyTextField: UITextField {
         var didDelete: (() -> Void)?
         var fullFeatures: Bool?
+        // `becomeFirstResponder` is a no-op outside a window, which is where
+        // the field is the first time the keyboard-following container
+        // builds it.
+        var focusesOnWindow = false
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if window != nil, focusesOnWindow {
+                focusesOnWindow = false
+                becomeFirstResponder()
+            }
+        }
 
         override func closestPosition(to point: CGPoint) -> UITextPosition? {
             if self.fullFeatures == true {
@@ -265,7 +294,11 @@
             func setup(_ textField: UITextField) {
                 Log.userInteraction.debug("Getting setup")
                 textField.addTarget(self, action: #selector(textFieldDidChange), for: .allEditingEvents)
-                textField.becomeFirstResponder()
+                if textField.window == nil, let textField = textField as? EndOnlyTextField {
+                    textField.focusesOnWindow = true
+                } else {
+                    textField.becomeFirstResponder()
+                }
             }
 
             #if !os(iOS)
@@ -298,6 +331,48 @@
             }
         }
     }
+
+    #if os(iOS)
+        /// Pins its content to the top of the system keyboard with UIKit's
+        /// keyboard layout guide, which moves with the keyboard's own
+        /// animation. SwiftUI's keyboard safe area trails it inside the pager.
+        struct KeyboardFollowingContainer<Content: View>: UIViewRepresentable {
+            let content: Content
+
+            func makeCoordinator() -> UIHostingController<Content> {
+                let host = UIHostingController(rootView: content)
+                host.view.backgroundColor = .clear
+                host.safeAreaRegions = []
+                host.sizingOptions = .intrinsicContentSize
+                return host
+            }
+
+            func makeUIView(context: Context) -> PassthroughView {
+                let view = PassthroughView()
+                let hosted: UIView = context.coordinator.view
+                hosted.translatesAutoresizingMaskIntoConstraints = false
+                view.addSubview(hosted)
+                view.keyboardLayoutGuide.followsUndockedKeyboard = true
+                NSLayoutConstraint.activate([
+                    hosted.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+                    hosted.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+                    hosted.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+                ])
+                return view
+            }
+
+            func updateUIView(_: PassthroughView, context: Context) {
+                context.coordinator.rootView = content
+            }
+
+            final class PassthroughView: UIView {
+                override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+                    let hit = super.hitTest(point, with: event)
+                    return hit === self ? nil : hit
+                }
+            }
+        }
+    #endif
 
     @MainActor
     final class KeyboardListener {

@@ -33,18 +33,30 @@ struct AppLinksView: View {
     var handleOpenApp: (AppLink) -> Void
     let rows: Int
     let deviceId: String?
+    let showsIcons: Bool
 
-    init(handleOpenApp: @escaping (AppLink) -> Void, rows: Int, deviceId: String?) {
+    init(handleOpenApp: @escaping (AppLink) -> Void, rows: Int, deviceId: String?, showsIcons: Bool = true) {
         self.handleOpenApp = handleOpenApp
         self.rows = rows
         self.deviceId = deviceId
+        self.showsIcons = showsIcons
         self._appLoader = State(initialValue: Self.makeAppLoader(deviceId: deviceId))
+        self._lastKnownHasApps = State(initialValue: Self.assumesApps(deviceId: deviceId))
+    }
+
+    // Devices seen with an empty app list this launch. Every other row starts
+    // at full height so a page mounting mid-swipe doesn't grow once its apps
+    // load and push the buttons up.
+    @MainActor private static var devicesWithoutApps: Set<String> = []
+
+    @MainActor
+    private static func assumesApps(deviceId: String?) -> Bool {
+        guard let deviceId else { return false }
+        return !devicesWithoutApps.contains(deviceId)
     }
 
     @State private var appLoader: DeviceAppsLoader?
-    // Remember whether the previous device had apps so we don't collapse the
-    // grid back to zero height while a new device's apps are still loading.
-    @State private var lastKnownHasApps: Bool = false
+    @State private var lastKnownHasApps: Bool
     @State private var isInnerScrolling: Bool = false
 
     @ScaledMetric var gridWidth: CGFloat = globalGridWidth
@@ -80,11 +92,11 @@ struct AppLinksView: View {
     @Namespace var linkAnimation
 
     @MainActor
-    init(deviceId: String?, rows: Int, handleOpenApp: @escaping ( AppLink) -> Void) {
-        self.handleOpenApp = handleOpenApp
-        self.rows = rows
-        self.deviceId = deviceId
-        self._appLoader = State(initialValue: Self.makeAppLoader(deviceId: deviceId))
+    init(
+        deviceId: String?, rows: Int, showsIcons: Bool = true,
+        handleOpenApp: @escaping (AppLink) -> Void
+    ) {
+        self.init(handleOpenApp: handleOpenApp, rows: rows, deviceId: deviceId, showsIcons: showsIcons)
     }
 
     @MainActor
@@ -107,6 +119,7 @@ struct AppLinksView: View {
                         ForEach(Array(appLinks.enumerated()), id: \.element.id) { _, app in
                             AppLinkButton(
                                 app: app,
+                                showsIcon: showsIcons,
                                 action: handleOpenApp
                             )
                                 .scrollTransition(.interactive) { content, phase in
@@ -153,6 +166,13 @@ struct AppLinksView: View {
             .onChange(of: confirmedHasApps) { _, newValue in
                 if let newValue {
                     lastKnownHasApps = newValue
+                    if let deviceId {
+                        if newValue {
+                            Self.devicesWithoutApps.remove(deviceId)
+                        } else {
+                            Self.devicesWithoutApps.insert(deviceId)
+                        }
+                    }
                 }
             }
             .foregroundStyle(.white.opacity(0.8))
@@ -165,6 +185,7 @@ struct AppLinksView: View {
 
 struct AppLinkButton: View {
     let app: AppLink
+    var showsIcon: Bool = true
     let action: ( AppLink) -> Void
 
     @ScaledMetric var gridWidth: CGFloat = globalGridWidth
@@ -184,7 +205,12 @@ struct AppLinkButton: View {
 
     @ViewBuilder
     private var icon: some View {
-        if app.iconIsPending {
+        if !showsIcon {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(.quaternary)
+                .aspectRatio(4 / 3, contentMode: .fit)
+                .frame(width: gridWidth)
+        } else if app.iconIsPending {
             Image(systemName: "rays")
                 .resizable()
                 .aspectRatio(contentMode: .fit)

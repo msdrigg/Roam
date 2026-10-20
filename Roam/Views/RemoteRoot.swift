@@ -171,40 +171,31 @@ struct RemoteRoot: View {
                         unreadMessages: unreadMessages,
                         externalShowKeyboard: $iPadKeyboardShown
                     )
-                    .frame(maxHeight: iPadKeyboardShown ? .infinity : iPadMaxContentHeight)
+                    .frame(maxHeight: iPadMaxContentHeight)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     // A two-axis ScrollView proposes an unbounded size and
                     // pins its content top-leading, so `.frame(minWidth:)`
                     // alone leaves the remote in the top corner of a large
                     // pane. Sizing this container to the larger of the viewport
                     // and the minimum centers the height-capped remote above,
-                    // while a smaller pane still scrolls. While the
-                    // keyboard is up the height is the viewport exactly, so
-                    // the keyboardEntry overlay (`.frame(maxHeight:
-                    // .infinity, alignment: .bottom)`) anchors the text
-                    // field just above the system keyboard.
+                    // while a smaller pane still scrolls.
                     .containerRelativeFrame([.horizontal, .vertical]) { length, axis in
                         switch axis {
                         case .horizontal:
                             max(length, iPadMinContentWidth)
                         case .vertical:
-                            iPadKeyboardShown ? length : max(length, iPadMinContentHeight)
+                            max(length, iPadMinContentHeight)
                         }
                     }
                 }
-                // While the keyboard-entry text field is up, respect the
-                // keyboard safe area so the field sits just above the system
-                // keyboard. Otherwise iPadOS's automatic ScrollView keyboard
-                // inset over-corrects and parks the field with a large gap
-                // above the keyboard. While closed, ignore the keyboard so
-                // an external keyboard's auto-correct bar doesn't shift
-                // the remote layout.
                 .scrollDisabled(iPadKeyboardShown)
                 // Only rubber-band on an axis when the remote actually
                 // overflows the viewport. When it fits (the common case),
                 // this kills the empty bounce in both directions.
                 // .scrollBounceBehavior(.basedOnSize, axes: [.vertical, .horizontal])
-                .ignoresSafeArea(.keyboard, edges: iPadKeyboardShown ? [] : .all)
+                // The remote never moves for the keyboard; the entry field
+                // tracks it on its own.
+                .ignoresSafeArea(.keyboard)
                 #endif
             }
         }
