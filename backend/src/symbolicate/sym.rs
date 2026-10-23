@@ -2809,9 +2809,10 @@ fn render_faulting_thread_backtraces(
     )?;
     writeln!(
         report,
-        "Captured by the app's own SIGSEGV/SIGBUS handler, running on an alternate signal \
-         stack, in the run that died. Unlike the MetricKit call stacks above this survives a \
-         stack overflow - a frame repeating down this list is the recursion."
+        "Captured in the run that died, by the app's own SIGSEGV/SIGBUS handler on an \
+         alternate signal stack, or by its uncaught-exception handler at the throw site. \
+         Unlike the MetricKit call stacks above this survives a stack overflow - a frame \
+         repeating down this list is the recursion."
     )?;
     for backtrace in backtraces {
         for line in backtrace.lines() {

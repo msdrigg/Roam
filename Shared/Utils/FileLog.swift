@@ -50,8 +50,12 @@ public enum FileLog {
     /// there and batch normally afterwards.
     private static let eagerFlushWindow: TimeInterval = 10
 
-    private static let queue = DispatchQueue(
-        label: "com.msdrigg.roam.file-log", qos: .utility)
+    private static let queueKey = DispatchSpecificKey<Bool>()
+    private static let queue: DispatchQueue = {
+        let queue = DispatchQueue(label: "com.msdrigg.roam.file-log", qos: .utility)
+        queue.setSpecific(key: queueKey, value: true)
+        return queue
+    }()
 
     private static let selfLog = Logger(subsystem: Log.getLogSubsystem(), category: "FileLog")
 
@@ -121,6 +125,22 @@ public enum FileLog {
 
     public static func flushNow() {
         queue.sync { flush() }
+    }
+
+    /// Write a line and flush it before returning, for a process about to
+    /// abort. Callable from the file-log queue itself, where `sync` would
+    /// deadlock.
+    public static func appendAndFlush(level: String, category: String, message: String) {
+        let timestamp = Date().timeIntervalSince1970
+        let write = {
+            appendEncoded(timestamp: timestamp, level: level, category: category, message: message)
+            flush()
+        }
+        if DispatchQueue.getSpecific(key: queueKey) == true {
+            write()
+        } else {
+            queue.sync(execute: write)
+        }
     }
 
     // MARK: Writing
@@ -518,6 +538,22 @@ public enum CrashStackTrap {
         FileLog.directoryURL()?.appendingPathComponent(FileLog.runFileName(extension: "stack"))
     }
 
+    /// Append a trace captured outside the signal handler, where allocating is
+    /// safe. `collectPrevious` uploads it the same way.
+    static func appendTrace(_ text: String) {
+        guard let url = traceFileURL() else { return }
+        let manager = FileManager.default
+        if !manager.fileExists(atPath: url.path) {
+            try? manager.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            manager.createFile(atPath: url.path, contents: nil)
+        }
+        guard let handle = try? FileHandle(forWritingTo: url) else { return }
+        _ = try? handle.seekToEnd()
+        try? handle.write(contentsOf: Data(text.utf8))
+        try? handle.close()
+    }
+
     // Called from the signal handler. Kept here so the handler itself is a
     // plain C function with no Swift metadata work in its path.
     fileprivate static func writeTrace(signal: Int32) {
@@ -586,3 +622,40 @@ private let crashStackTrapHandler:
         CrashStackTrap.writeTrace(signal: signalNumber)
     }
 #endif
+
+/// Records an uncaught Objective-C exception before the process aborts.
+///
+/// MetricKit reports one as a bare `EXC_CRASH`/`SIGABRT`: no name, no reason,
+/// and a stack that ends at the framework's rethrow rather than the throw. The
+/// name and reason go to the file log; the throw-site stack goes to the trace
+/// file, since a log line is cut at 2000 characters on the backend.
+public enum UncaughtExceptionTrap {
+    nonisolated(unsafe) private static var installed = false
+    nonisolated(unsafe) fileprivate static var previous: (@convention(c) (NSException) -> Void)?
+
+    public static func install() {
+        guard !installed else { return }
+        installed = true
+        previous = NSGetUncaughtExceptionHandler()
+        NSSetUncaughtExceptionHandler(uncaughtExceptionHandler)
+    }
+
+    fileprivate static func record(_ exception: NSException) {
+        let reason = exception.reason ?? "(no reason)"
+        FileLog.appendAndFlush(
+            level: "Fault", category: "Crash",
+            message: "Uncaught exception \(exception.name.rawValue): \(reason)")
+
+        var trace = "Uncaught exception \(exception.name.rawValue): \(reason)\n"
+        trace += "Backtrace at the throw (innermost first):\n"
+        for line in exception.callStackSymbols {
+            trace += line + "\n"
+        }
+        CrashStackTrap.appendTrace(trace)
+    }
+}
+
+private let uncaughtExceptionHandler: @convention(c) (NSException) -> Void = { exception in
+    UncaughtExceptionTrap.record(exception)
+    UncaughtExceptionTrap.previous?(exception)
+}
